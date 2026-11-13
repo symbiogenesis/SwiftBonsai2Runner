@@ -34,12 +34,16 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
+      - name: Reject owned Python code and runtime setup
+        run: pwsh -NoProfile -File tools/ci/check_owned_languages.ps1
+      - name: Check source-language policy regression fixtures
+        run: pwsh -NoProfile -File tools/ci/test_owned_languages.ps1
       - name: Check exact startup lock coverage and full action pins offline
-        run: python3 -B tools/ci/check_workflow_startup.py
+        run: pwsh -NoProfile -File tools/ci/check_workflow_startup.ps1
       - name: Check startup lock regression fixtures
-        run: python3 -B -m unittest discover -s tools/ci -p test_workflow_startup.py
+        run: pwsh -NoProfile -File tools/ci/test_workflow_startup.ps1
       - name: Check staged workflow guard regression fixtures
-        run: python3 -B -m unittest discover -s tools/ci -p test_staged_workflows.py
+        run: pwsh -NoProfile -File tools/ci/test_staged_workflows.ps1
       - name: Download and verify the sole additional CI security tool
         run: |
           set -euo pipefail
@@ -68,63 +72,14 @@ jobs:
           fetch-depth: 0
       - name: Select source checks without compiling a planner
         id: select
-        shell: python
+        shell: pwsh
         env:
           EVENT_NAME: ${{ github.event_name }}
           EVENT_REF: ${{ github.ref }}
           BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
           HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
         run: |
-          import os
-          import re
-          import subprocess
-
-          event = os.environ['EVENT_NAME']
-          main = os.environ['EVENT_REF'] == 'refs/heads/main'
-          eligible = {
-              'portable': event in ('pull_request', 'workflow_dispatch'),
-              'markdown': event in ('push', 'pull_request', 'workflow_dispatch'),
-              'audit': main and event in ('push', 'schedule', 'workflow_dispatch'),
-          }
-          selected = eligible.copy()
-          reason = 'Manual checks or weekly fresh-advisory audit.'
-          if event in ('push', 'pull_request'):
-              try:
-                  base, head = os.environ['BASE_SHA'], os.environ['HEAD_SHA']
-                  if not all(re.fullmatch(r'[0-9a-fA-F]{40}', sha) and int(sha, 16) for sha in (base, head)):
-                      raise ValueError('Missing, zero or malformed source range.')
-                  # PRs compare their own head with its merge base, excluding
-                  # unrelated base-branch changes; pushes cover the whole push.
-                  separator = '...' if event == 'pull_request' else '..'
-                  raw = subprocess.check_output(
-                      ['git', 'diff', '--name-only', '--no-renames', '-z', base + separator + head, '--'],
-                      stderr=subprocess.DEVNULL, timeout=20,
-                  )
-                  paths = raw.decode('utf-8').split('\0')
-                  paths = [path for path in paths if path]
-              except (OSError, ValueError, subprocess.SubprocessError):
-                  reason = 'Unavailable source range: conservatively select every eligible check.'
-              else:
-                  workflow = '.github/workflows/source-checks.yml'
-                  docs_only = lambda path: path.endswith('.md') or path.startswith('docs/') or path == '.rumdl.toml'
-                  dependency = lambda path: (
-                      path in ('Cargo.lock', 'Cargo.toml', 'rust-toolchain.toml', workflow)
-                      or path.endswith('/Cargo.toml')
-                      or path.startswith('.github/actions/rust-toolchain/')
-                  )
-                  selected = {
-                      'portable': eligible['portable'] and any(not docs_only(path) for path in paths),
-                      'markdown': eligible['markdown'] and any(path.endswith('.md') or path in ('.rumdl.toml', workflow) for path in paths),
-                      'audit': eligible['audit'] and any(dependency(path) for path in paths),
-                  }
-                  reason = 'Selected from the complete changed-path range.'
-          with open(os.environ['GITHUB_OUTPUT'], 'a', encoding='utf-8') as output:
-              for name, enabled in selected.items():
-                  print(f'{name}={str(enabled).lower()}', file=output)
-          with open(os.environ['GITHUB_STEP_SUMMARY'], 'a', encoding='utf-8') as summary:
-              print(reason, file=summary)
-              for name, enabled in selected.items():
-                  print(f'- {name}: {str(enabled).lower()}', file=summary)
+          & ./tools/ci/select_source_checks.ps1
   portable:
     needs: changes
     if: >-

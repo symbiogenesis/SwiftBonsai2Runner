@@ -17,14 +17,18 @@ runs:
         $PSNativeCommandUseErrorActionPreference = $true
         $package = Join-Path $env:RUNNER_TEMP 'SwiftBonsai-CheckedTools'
         $tool = Join-Path $package 'bonsai-tools.exe'
+        $numeric = Join-Path $package 'bonsai-reference-numerics.exe'
         $probe = Join-Path $package 'bonsai-completion-test-probe.exe'
         $receipt = Get-Content -LiteralPath (Join-Path $package 'receipt.json') -Raw | ConvertFrom-Json
-        if ($receipt.SchemaVersion -ne 2 -or $receipt.Revision -cne $env:GITHUB_SHA -or
+        if ($receipt.SchemaVersion -ne 3 -or $receipt.Revision -cne $env:GITHUB_SHA -or
             $receipt.Sha256 -cne (Get-FileHash -LiteralPath $tool -Algorithm SHA256).Hash.ToLowerInvariant() -or
+            $receipt.NumericSha256 -cne (Get-FileHash -LiteralPath $numeric -Algorithm SHA256).Hash.ToLowerInvariant() -or
             $receipt.ProbeSha256 -cne (Get-FileHash -LiteralPath $probe -Algorithm SHA256).Hash.ToLowerInvariant()) {
           throw 'Checked maintenance CLI revision or digest differs.'
         }
         & $tool artifact --json (@{ operation = 'arm64'; path = $tool } | ConvertTo-Json -Compress) | Out-Null
         & $tool artifact --json (@{ operation = 'arm64'; path = $probe } | ConvertTo-Json -Compress) | Out-Null
+        & $tool artifact --json (@{ operation = 'arm64'; path = $numeric } | ConvertTo-Json -Compress) | Out-Null
         "BONSAI_TOOLS_PATH=$tool" >> $env:GITHUB_ENV
         "BONSAI_COMPLETION_PROBE_PATH=$probe" >> $env:GITHUB_ENV
+        "BONSAI_REFERENCE_NUMERIC_TOOL=$numeric" >> $env:GITHUB_ENV

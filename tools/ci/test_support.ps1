@@ -28,17 +28,19 @@ function Invoke-CiCases([Collections.IDictionary]$Cases,[string]$SelectedCase) {
     "$($selected.Count) focused fixture(s) passed."
 }
 function Get-CiJobBlocks([string]$Text) {
+    $Text=$Text.Replace("`r`n","`n")
     $body=([regex]::Split($Text,'(?m)^jobs:\s*$'))[1]; $starts=[regex]::Matches($body,'(?m)^  ([a-z][a-z-]*):\s*$'); $result=@{}
     for ($i=0;$i -lt $starts.Count;$i++) { $end=if ($i+1 -lt $starts.Count) { $starts[$i+1].Index } else { $body.Length }; $start=$starts[$i].Index+$starts[$i].Length; $result[$starts[$i].Groups[1].Value]=$body.Substring($start,$end-$start) }
     return $result
 }
-function Get-CiDependencies([string]$Block) { if ($Block -cmatch '(?m)^    needs: (.+)$') { return @($Matches[1].Trim('[]').Replace(' ','') -split ',') }; return @() }
+function Get-CiDependencies([string]$Block) { if ($Block -cmatch '(?m)^    needs: (.+)$') { return @($Matches[1].Trim().Trim('[]').Replace(' ','') -split ',') }; return @() }
 function Test-CiAcyclic([hashtable]$Jobs) {
     $pending=@{}; foreach ($name in $Jobs.Keys) { $pending[$name]=@(Get-CiDependencies $Jobs[$name]) }; $done=@()
     while ($pending.Count) { $ready=@($pending.Keys | Where-Object { @($pending[$_] | Where-Object { $_ -cnotin $done }).Count -eq 0 }); if (-not $ready.Count) { return $false }; $done+=$ready; foreach ($name in $ready) { $pending.Remove($name) } }
     return $true
 }
 function Get-CiActionSteps([string]$Text) {
+    $Text=$Text.Replace("`r`n","`n")
     $starts=[regex]::Matches($Text,'(?m)^    - name: (.+)$'); $result=@{}
     for ($i=0;$i -lt $starts.Count;$i++) { $end=if ($i+1 -lt $starts.Count) { $starts[$i+1].Index } else { $Text.Length }; $start=$starts[$i].Index+$starts[$i].Length; $result[$starts[$i].Groups[1].Value]=$Text.Substring($start,$end-$start) }
     return $result

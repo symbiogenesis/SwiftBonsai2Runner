@@ -84,7 +84,7 @@ jobs:
           Set-StrictMode -Version Latest
           $ErrorActionPreference = 'Stop'
           $PSNativeCommandUseErrorActionPreference = $true
-          python -B (Join-Path $env:GITHUB_WORKSPACE 'tools/ci/test_native_regressions.py')
+          & (Join-Path $env:GITHUB_WORKSPACE 'tools/ci/test_native_regressions.ps1')
           if ($LASTEXITCODE -ne 0) { throw 'Shared native regression command controls failed.' }
       - name: Check actual PowerShell syntax and typed receipt rejection controls
         shell: pwsh

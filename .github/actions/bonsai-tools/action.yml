@@ -11,7 +11,7 @@ runs:
       shell: pwsh
       working-directory: ${{ runner.temp }}
       env:
-        TOOLS_SOURCE_ID: ${{ hashFiles('Cargo.toml', 'Cargo.lock', '**/Cargo.toml', 'tools/bonsai/**', 'src/audio/**', 'src/artifacts/**', 'src/cpu-policy/**', 'src/windows-*/**', 'src/speech-asr/model.lock.json', 'src/speech-tts/model*.lock.json', 'tools/canary-asr/**', 'tools/qwen-tts/**', 'tools/hexagon/diagnostic.manifest', 'src/chat-ui/assets/bonsai.ico', 'LICENSE', 'NOTICE', '.cargo/**', 'rust-toolchain.toml', 'tools/ci/**', '.github/actions/ci-tool/**', '.github/actions/rust-toolchain/**', 'config/**', '.github/actions/bonsai-tools/action.yml') }}
+        TOOLS_SOURCE_ID: ${{ hashFiles('Cargo.toml', 'Cargo.lock', '**/Cargo.toml', 'tools/bonsai/**', 'tools/native-reference/reference_numerics.rs', 'src/audio/**', 'src/artifacts/**', 'src/cpu-policy/**', 'src/windows-*/**', 'src/speech-asr/model.lock.json', 'src/speech-tts/model*.lock.json', 'tools/canary-asr/**', 'tools/qwen-tts/**', 'tools/hexagon/diagnostic.manifest', 'src/chat-ui/assets/bonsai.ico', 'LICENSE', 'NOTICE', '.cargo/**', 'rust-toolchain.toml', 'tools/ci/**', '.github/actions/ci-tool/**', '.github/actions/rust-toolchain/**', 'config/**', '.github/actions/bonsai-tools/action.yml') }}
         RUNNER_ENVIRONMENT: ${{ runner.environment }}
       run: |
         Set-StrictMode -Version Latest
@@ -85,14 +85,17 @@ runs:
         [void][IO.Directory]::CreateDirectory($env:BONSAI_TOOLS_PACKAGE)
         $tool = Join-Path $env:BONSAI_TOOLS_PACKAGE 'bonsai-tools.exe'
         Copy-Item -LiteralPath $builtTool -Destination $tool
+        Copy-Item -LiteralPath (Join-Path $env:BONSAI_TOOLS_TARGET 'aarch64-pc-windows-msvc/release/bonsai-reference-numerics.exe') -Destination (Join-Path $env:BONSAI_TOOLS_PACKAGE 'bonsai-reference-numerics.exe')
+        $numeric = Join-Path $env:BONSAI_TOOLS_PACKAGE 'bonsai-reference-numerics.exe'
         $probe = Join-Path $env:BONSAI_TOOLS_PACKAGE 'bonsai-completion-test-probe.exe'
         Copy-Item -LiteralPath (Join-Path $env:BONSAI_TOOLS_TARGET 'aarch64-pc-windows-msvc/release/bonsai-completion-test-probe.exe') -Destination $probe
         @{
-          SchemaVersion = 3
+          SchemaVersion = 4
           HostId = $env:BONSAI_TOOLS_CACHE_HOST
           SourceId = $env:BONSAI_TOOLS_SOURCE_ID
           Toolchain = 'nightly-2026-11-12-aarch64-pc-windows-msvc'
           Sha256 = (Get-FileHash -LiteralPath $tool -Algorithm SHA256).Hash.ToLowerInvariant()
+          NumericSha256 = (Get-FileHash -LiteralPath $numeric -Algorithm SHA256).Hash.ToLowerInvariant()
           ProbeSha256 = (Get-FileHash -LiteralPath $probe -Algorithm SHA256).Hash.ToLowerInvariant()
         } | ConvertTo-Json | Set-Content -LiteralPath (Join-Path $env:BONSAI_TOOLS_PACKAGE 'receipt.json')
     - name: Verify the packaged CLI and select it for script invocations
@@ -105,17 +108,21 @@ runs:
         $ErrorActionPreference = 'Stop'
         $PSNativeCommandUseErrorActionPreference = $true
         $tool = Join-Path $env:BONSAI_TOOLS_PACKAGE 'bonsai-tools.exe'
+        $numeric = Join-Path $env:BONSAI_TOOLS_PACKAGE 'bonsai-reference-numerics.exe'
         $probe = Join-Path $env:BONSAI_TOOLS_PACKAGE 'bonsai-completion-test-probe.exe'
         $receipt = Get-Content -LiteralPath (Join-Path $env:BONSAI_TOOLS_PACKAGE 'receipt.json') -Raw | ConvertFrom-Json
-        if ($receipt.SchemaVersion -ne 3 -or $receipt.HostId -cne $env:BONSAI_TOOLS_CACHE_HOST -or
+        if ($receipt.SchemaVersion -ne 4 -or $receipt.HostId -cne $env:BONSAI_TOOLS_CACHE_HOST -or
             $receipt.SourceId -cne $env:BONSAI_TOOLS_SOURCE_ID -or
             $receipt.Toolchain -cne 'nightly-2026-11-12-aarch64-pc-windows-msvc' -or
             $receipt.Sha256 -cne (Get-FileHash -LiteralPath $tool -Algorithm SHA256).Hash.ToLowerInvariant() -or
+            $receipt.NumericSha256 -cne (Get-FileHash -LiteralPath $numeric -Algorithm SHA256).Hash.ToLowerInvariant() -or
             $receipt.ProbeSha256 -cne (Get-FileHash -LiteralPath $probe -Algorithm SHA256).Hash.ToLowerInvariant()) { throw 'Packaged CLI digest or build identity differs.' }
         & $tool artifact --json (@{ operation = 'arm64'; path = $tool } | ConvertTo-Json -Compress) | Out-Null
         & $tool artifact --json (@{ operation = 'arm64'; path = $probe } | ConvertTo-Json -Compress) | Out-Null
+        & $tool artifact --json (@{ operation = 'arm64'; path = $numeric } | ConvertTo-Json -Compress) | Out-Null
         "BONSAI_TOOLS_PATH=$tool" >> $env:GITHUB_ENV
         "BONSAI_COMPLETION_PROBE_PATH=$probe" >> $env:GITHUB_ENV
+        "BONSAI_REFERENCE_NUMERIC_TOOL=$numeric" >> $env:GITHUB_ENV
         "Exact packaged CLI cache hit: $env:EXECUTABLE_CACHE_HIT; correctness checks still run in every lane." >> $env:GITHUB_STEP_SUMMARY
     - name: Retain packaged CLI build evidence
       if: always() && steps.executable-cache.outputs.cache-hit != 'true' && env.BONSAI_TOOLS_BUILD_EVIDENCE != ''

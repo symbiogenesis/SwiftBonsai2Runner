@@ -73,7 +73,7 @@ jobs:
       - name: Validate fixed native-state decoding and control binding
         shell: pwsh
         run: >-
-          python -B tools/native-reference/test_compare.py
+          & tools/native-reference/test_compare.ps1
           NativeStateTests.test_transposed_v_and_complete_recurrent_inventory_match_logical_rows
           NativeStateTests.test_state_decoder_rejects_truncation_trailing_bytes_and_changed_schema
           NativeStateTests.test_comparator_enforces_finite_values_exact_extents_and_original_tolerance
@@ -97,12 +97,15 @@ jobs:
           $package = Join-Path $env:RUNNER_TEMP 'SwiftBonsai-CheckedTools'
           [void][IO.Directory]::CreateDirectory($package)
           $tool = Join-Path $package 'bonsai-tools.exe'
+          $numeric = Join-Path $package 'bonsai-reference-numerics.exe'
           $probe = Join-Path $package 'bonsai-completion-test-probe.exe'
           Copy-Item -LiteralPath $env:BONSAI_TOOLS_PATH -Destination $tool
+          Copy-Item -LiteralPath $env:BONSAI_REFERENCE_NUMERIC_TOOL -Destination (Join-Path $package 'bonsai-reference-numerics.exe')
           Copy-Item -LiteralPath $env:BONSAI_COMPLETION_PROBE_PATH -Destination $probe
           @{
-            SchemaVersion = 2; Revision = $env:GITHUB_SHA
+            SchemaVersion = 3; Revision = $env:GITHUB_SHA
             Sha256 = (Get-FileHash -LiteralPath $tool -Algorithm SHA256).Hash.ToLowerInvariant()
+            NumericSha256 = (Get-FileHash -LiteralPath $numeric -Algorithm SHA256).Hash.ToLowerInvariant()
             ProbeSha256 = (Get-FileHash -LiteralPath $probe -Algorithm SHA256).Hash.ToLowerInvariant()
           } | ConvertTo-Json | Set-Content -LiteralPath (Join-Path $package 'receipt.json') -Encoding utf8NoBOM
       - name: Retain bounded hosted compiler and collector-test evidence

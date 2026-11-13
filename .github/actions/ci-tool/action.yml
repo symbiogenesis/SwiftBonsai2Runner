@@ -70,7 +70,7 @@ runs:
         Copy-Item -LiteralPath (Join-Path $target 'release/bonsai-ci.exe') -Destination (Join-Path $env:BONSAI_CI_PACKAGE 'bonsai-ci.exe')
         $compiler = Join-Path $env:RUNNER_TEMP 'SwiftBonsai-CiBootstrap-Compiler.txt'
         rustup run nightly-2026-11-12-aarch64-pc-windows-msvc rustc -vV | Set-Content -LiteralPath $compiler -Encoding utf8NoBOM
-        python -B (Join-Path $env:GITHUB_WORKSPACE 'tools/ci/native_ci_cache.py') create --package $env:BONSAI_CI_PACKAGE --source $env:BONSAI_CI_SOURCE_ID --host $env:BONSAI_CI_CACHE_HOST --compiler $compiler
+        & (Join-Path $env:GITHUB_WORKSPACE 'tools/ci/native_ci_cache.ps1') create -PackageDirectory $env:BONSAI_CI_PACKAGE -SourceId $env:BONSAI_CI_SOURCE_ID -HostId $env:BONSAI_CI_CACHE_HOST -Compiler $compiler
     - name: Verify cached CI bytes before selecting a separate executable image
       if: env.BONSAI_CI_PATH == ''
       shell: pwsh
@@ -81,7 +81,7 @@ runs:
         Set-StrictMode -Version Latest
         $ErrorActionPreference = 'Stop'
         $PSNativeCommandUseErrorActionPreference = $true
-        python -B (Join-Path $env:GITHUB_WORKSPACE 'tools/ci/native_ci_cache.py') verify --package $env:BONSAI_CI_PACKAGE --source $env:BONSAI_CI_SOURCE_ID --host $env:BONSAI_CI_CACHE_HOST
+        & (Join-Path $env:GITHUB_WORKSPACE 'tools/ci/native_ci_cache.ps1') verify -PackageDirectory $env:BONSAI_CI_PACKAGE -SourceId $env:BONSAI_CI_SOURCE_ID -HostId $env:BONSAI_CI_CACHE_HOST
         # A separate running image permits the checks to rebuild bonsai-ci itself.
         $directory = Join-Path $env:RUNNER_TEMP ('SwiftBonsai-CiCommand-' + [guid]::NewGuid().ToString('N'))
         [void][IO.Directory]::CreateDirectory($directory)

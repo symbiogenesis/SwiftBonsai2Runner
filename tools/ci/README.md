@@ -62,6 +62,15 @@ The routing, baseline, output and gate regressions are Rust tests. Use named
 focused selections locally with external targets/working directories; complete
 suites remain CI-only under [the validation policy](../../docs/validation.md).
 
+Repository tooling and CI need Rust and PowerShell 7.6 or newer. They do not
+install or invoke a Python runtime. Standalone PowerShell startup/index/cache
+guards run before any Rust bootstrap, using .NET APIs without downloaded modules.
+The source-language guard rejects owned Python files, bytecode, Python workflow
+shells/setup and direct interpreter commands; historical evidence and external
+artifact identities retain their original names. Vendored sources are excluded.
+Each `test_*.ps1` fixture script accepts `-Case NAME` for a focused local check;
+their complete selections remain hosted CI work.
+
 ## Workflow scope
 
 The retained workflows own current checks or open gates in [PLAN.md](../../PLAN.md):
@@ -138,10 +147,10 @@ grouped selections require the declared positive count or a nonempty result. Mis
 failed, ignored, duplicate or malformed output cannot pass. All selections are
 validated before the first command. It never enables ignored model tests or infers
 qualification from a cache hit. Hosted preparation runs
-`python -B tools/ci/test_native_regressions.py` on Windows
+`pwsh -NoProfile -File tools/ci/test_native_regressions.ps1` on Windows
 ARM64 with PowerShell 7; these fixtures substitute inert Cargo/guard scripts and do
 not compile Rust or load models. Foundation also runs the focused
-`test_foundation_handoff.py` structural fixtures before its Rust routing/gate tests.
+`test_foundation_handoff.ps1` structural fixtures before its Rust routing/gate tests.
 
 [Source checks](../../.github/workflows/source-checks.yml) run separate portable,
 Markdown and dependency-audit jobs on hosted Linux ARM64. Pull requests to `main`
@@ -235,7 +244,7 @@ so GitHub and the lockfile tool can inspect their dependency closure.
 The generated [actions.lock](../../.github/workflows/actions.lock) records the
 upstream reference, resolved commit and repository identities. Source checks run
 `gh actions-lock --verify` to reject missing, stale or unverifiable lock entries.
-The independent [startup preflight](check_workflow_startup.py) also checks the
+The independent [startup preflight](check_workflow_startup.ps1) also checks the
 literal references GitHub requires before creating any jobs, including the
 dependency closure of same-repository composites, and enforces our inline-SHA
 policy. A tag-keyed lock entry does not cover an inline `@SHA` reference even when
@@ -265,8 +274,8 @@ When changing an action, use a disposable worktree and the same verified tool:
    the closure, and verify that reviewed commits and repository identities stay
    unchanged. A routine generation can otherwise retain the existing tag keys.
 3. Before committing any workflow, composite action or lockfile change, run
-   `python -B tools/ci/check_workflow_startup.py` and
-   `python -B -m unittest discover -s tools/ci -p test_workflow_startup.py` from
+   `pwsh -NoProfile -File tools/ci/check_workflow_startup.ps1` and
+   `pwsh -NoProfile -File tools/ci/test_workflow_startup.ps1` from
    the repository root. These offline checks need no compiler or downloaded tool.
    A GitHub startup rejection also prevents its CI preflight from running, so
    this local check is required.
@@ -288,13 +297,13 @@ integrate this check into that hook instead of replacing it.
 git config --local core.hooksPath .githooks
 ```
 
-The hook runs `python -B tools/ci/check_staged_workflows.py` with Python 3.10 or
+The hook runs `pwsh -NoProfile -File tools/ci/check_staged_workflows.ps1` with PowerShell 7.6 or
 newer. It checks the index that will become the commit: an unstaged lockfile
 repair cannot conceal a broken staged workflow, and an unrelated unstaged edit
 cannot invalidate a correct staged snapshot. It copies only staged YAML and
 `actions.lock` to temporary storage, follows the existing startup preflight's
 same-repository dependency closure, and removes that storage afterward. Git errors,
-conflicted inputs, unsupported manifest symlinks and missing Python block the
+conflicted inputs, unsupported manifest symlinks and missing PowerShell 7.6+ block the
 commit. The guard leaves the index and working tree unchanged and uses no
 network, compiler or models.
 
@@ -306,4 +315,4 @@ offline preflight and `gh actions-lock --verify`. The guard checks lock coverage
 and pin policy, not general YAML/Actions syntax or upstream provenance.
 
 Run its focused real-index regressions with
-`python -B -m unittest discover -s tools/ci -p test_staged_workflows.py`.
+`pwsh -NoProfile -File tools/ci/test_staged_workflows.ps1`.
