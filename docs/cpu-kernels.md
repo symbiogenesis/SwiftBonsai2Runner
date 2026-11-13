@@ -687,7 +687,7 @@ The **2026-10-30 source audit found no eligible production caller in Runner**:
 
 | Existing arithmetic | Applicability |
 | --- | --- |
-| Speech graph `(n_kv_pad + 255) / 256` in `src/speech-tts/build_overlay.rs` | Nonnegative ceiling division by a power of two |
+| Former generated speech graph `(n_kv_pad + 255) / 256` (retired overlay) | Nonnegative ceiling division by a power of two; no current caller |
 | Audio elapsed time `/ 48` in `src/chat-ui/src/speech/pipeline.rs` | Unsigned byte-count conversion |
 | Buffer, sample and packed-code indexing | Unsigned extents or power-of-two divisors |
 | Quantization scales and timing ratios | Floating-point division |

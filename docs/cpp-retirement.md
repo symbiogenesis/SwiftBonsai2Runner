@@ -124,10 +124,19 @@ need their corresponding Rust/hosted and actual-model acceptance. No historical
 native-linked pass qualifies this replacement. Q8/Q4 model parity, listening,
 state/lifecycle and memory acceptance remain open in S1.
 
-The optional Hexagon source-overlay helper files and old extern declarations
-are not compiled or dispatched by the Rust TTS service. Their presence supplies
-no acceleration. Removing these historical developer paths and introducing
-signed Rust RPC keep separate inventory and acceptance obligations.
+TTS retains no source-overlay generator, native Qwen parameter declarations or
+GGML DLL registration module. The no-op Cargo build script and ordinary Rust
+modules own its build. Historical generator/source hashes and captured results
+remain evidence, with their original identities and licenses; they are not live
+build inputs. The Rust scalar, tokenizer and graph-lifetime replay modules and
+their complete fixture bytes remain independent controls.
+
+TTS has no signed RPC dispatcher. The unused six-word packet API did not describe
+the signed tensor/operation/completion protocol and has been removed. Implement
+the [signed-dispatch prerequisites](../src/speech-tts/README.md#optional-hexagon-runtime)
+against the existing independent wire/Windows ABI controls before selecting any
+TTS hybrid placement. Fixed F32/guarded-Q2 RPC controls do not qualify Q8 TTS
+prefill, shared KV ownership or complete speech state.
 
 The remaining ASR dependency is `transcribe-cpp` /`transcribe-cpp-sys`, including its bundled
 Qwen3-ASR/GGML core. Native Rust replacements
