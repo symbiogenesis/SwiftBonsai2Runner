@@ -742,6 +742,16 @@ still needs independent listening.
 
 ## Standards
 
+Repository tooling uses Rust and PowerShell 7.6 or newer, without an owned Python
+runtime dependency. Rust owns binary/numerical work, typed policy and validation,
+and native process lifetimes. PowerShell owns small environment/command adapters
+and checks that must run before Rust bootstrap. Native application provisioning
+and supervision stay in Rust; installed use must not require PowerShell.
+Historical receipts, provenance fields and pinned external source paths retain
+their original identities. The [language guard](../tools/ci/check_owned_languages.ps1)
+checks executable source rather than deleting those records. Remaining migrations
+are tracked under [tooling implementation](../PLAN.md#tooling-implementation).
+
 Rust uses the [exact nightly](../rust-toolchain.toml), edition 2024, checked Release
 arithmetic, warnings-as-errors and strict Clippy/rustdoc. Safe roots forbid unsafe
 code; documented Win32 operations stay in boundary crates reused by maintenance.

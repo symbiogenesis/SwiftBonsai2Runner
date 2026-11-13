@@ -74,9 +74,14 @@ Use Rust or PowerShell 7.6 or later for repository tooling and CI. Do not add
 owned Python files, Python runtime setup, inline Python or Python subprocesses.
 Use `tools/ci/check_owned_languages.ps1` to check the boundary. Historical
 provenance records and external source citations remain evidence, not executable
-dependencies. Keep large numerical operations in Rust and orchestration in
-PowerShell; owner-device qualification must consume source-bound native helpers
-without compiling them inside its allowance.
+dependencies. Keep binary parsing, numerical work, typed validation and policy,
+and process lifetime enforcement in Rust. Keep PowerShell small: environment
+setup, command composition, entry-point adapters and checks that must run before
+Rust bootstrap. Reuse native commands instead of duplicating their policy in
+scripts or routing Rust through PowerShell back into Rust. Native application
+provisioning and supervision stay in Rust so installed use needs no shell.
+Owner-device qualification must consume source-bound native helpers without
+compiling them inside its allowance.
 
 # Runner repository workflow
 
