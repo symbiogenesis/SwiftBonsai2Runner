@@ -533,6 +533,7 @@ struct EncoderStage {
 }
 
 struct Encoder {
+    threads: usize,
     first: CausalConv1d,
     stages: Vec<EncoderStage>,
     last: CausalConv1d,
@@ -626,6 +627,7 @@ impl Encoder {
         }
         Ok(Self {
             first,
+            threads,
             stages,
             last: conv(
                 weights,
@@ -679,27 +681,35 @@ impl Encoder {
         // Preserve qt_extract_voice_ref's whole-frame reference alignment.
         // Generated references already contain an integral number of frames.
         let mut frames = samples.len() / TOKENIZER_HOP_24K * TOKENIZER_HOP_24K;
-        let (mut hidden, _) = self.first.forward(&samples[..frames], frames)?;
+        let (mut hidden, _) =
+            self.first
+                .forward_parallel(&samples[..frames], frames, self.threads)?;
         for stage in &self.stages {
             let residual = hidden.clone();
             elu(&mut hidden);
-            (hidden, _) = stage.first.forward(&hidden, frames)?;
+            (hidden, _) = stage
+                .first
+                .forward_parallel(&hidden, frames, self.threads)?;
             elu(&mut hidden);
-            (hidden, _) = stage.second.forward(&hidden, frames)?;
+            (hidden, _) = stage
+                .second
+                .forward_parallel(&hidden, frames, self.threads)?;
             for (value, residual) in hidden.iter_mut().zip(residual) {
                 *value += residual;
             }
             elu(&mut hidden);
-            (hidden, frames) = stage.down.forward(&hidden, frames)?;
+            (hidden, frames) = stage.down.forward_parallel(&hidden, frames, self.threads)?;
         }
         elu(&mut hidden);
-        (hidden, frames) = self.last.forward(&hidden, frames)?;
+        (hidden, frames) = self.last.forward_parallel(&hidden, frames, self.threads)?;
         let mut state = TransformerState::default();
         let mut transformed = Vec::with_capacity(hidden.len());
         for frame in hidden.chunks_exact(self.transformer.hidden) {
             transformed.extend(self.transformer.step(frame, &mut state)?);
         }
-        (hidden, frames) = self.down.forward(&transformed, frames)?;
+        (hidden, frames) = self
+            .down
+            .forward_parallel(&transformed, frames, self.threads)?;
         let mut flat = Vec::with_capacity(frames * 16);
         self.semantic.encode(&hidden, frames, &mut flat)?;
         self.acoustic.encode(&hidden, frames, &mut flat)?;
@@ -772,6 +782,7 @@ struct DecodeState {
 }
 
 pub(crate) struct Codec {
+    threads: usize,
     quantizer: RvqDecoder,
     pre: CausalConv1d,
     transformer: Transformer,
@@ -929,6 +940,7 @@ impl Codec {
         };
         let encoder = Encoder::load(weights, threads)?;
         let mut codec = Self {
+            threads,
             quantizer,
             pre,
             transformer,
@@ -1014,20 +1026,29 @@ impl Codec {
         // attention windows, convolution context, or floating-point grouping.
         for row in codes {
             let latent = self.quantizer.decode(row, 1)?;
-            let latent = self
-                .pre
-                .forward_stream(&latent, 1, &mut self.state.audio.pre_conv)?;
+            let latent = self.pre.forward_stream_parallel(
+                &latent,
+                1,
+                &mut self.state.audio.pre_conv,
+                self.threads,
+            )?;
             let mut latent = self
                 .transformer
                 .step(&latent, &mut self.state.transformer)?;
             let mut frames = 1;
             for (stage, context) in self.upsample.iter().zip(&mut self.state.audio.upsample_dw) {
-                (latent, frames) = stage.conv.forward(&latent, frames)?;
-                latent = stage.block.forward_stream(&latent, frames, context)?;
+                (latent, frames) = stage.conv.forward_parallel(&latent, frames, self.threads)?;
+                latent =
+                    stage
+                        .block
+                        .forward_stream_parallel(&latent, frames, context, self.threads)?;
             }
-            let samples = self
-                .dac
-                .forward_stream(&latent, frames, &mut self.state.audio)?;
+            let samples = self.dac.forward_stream_parallel(
+                &latent,
+                frames,
+                &mut self.state.audio,
+                self.threads,
+            )?;
             if samples.len() != TOKENIZER_HOP_24K || !samples.iter().all(|value| value.is_finite())
             {
                 return Err(invalid());

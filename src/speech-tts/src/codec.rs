@@ -15,7 +15,17 @@ use std::io;
 
 use fearless_simd::{Level, dispatch, f32x4, prelude::*};
 
-use crate::{SAMPLE_RATE, SAMPLE_RATE_48K};
+use crate::{SAMPLE_RATE, SAMPLE_RATE_48K, engine::row_workers};
+
+fn frame_workers(threads: usize, frames: usize, work: usize) -> usize {
+    if frames <= 1 || work < 65_536 {
+        1
+    } else {
+        // Preserve the shared Talker/codec team size through 2/4/8-frame
+        // stages; fewer jobs may use that team without recreating its workers.
+        threads.clamp(1, 18)
+    }
+}
 
 #[expect(
     clippy::inline_always,
@@ -215,12 +225,17 @@ fn matvec_4rows_simd<S: Simd>(
     reason = "fearless_simd dispatch! requires inline(always) to inherit target_feature attributes."
 )]
 #[inline(always)]
+#[expect(
+    clippy::too_many_arguments,
+    reason = "Clip the original scatter kernel to one disjoint output-time window without changing its weight layout."
+)]
 fn trans_conv1d_scatter_frame_simd<S: Simd>(
     simd: S,
     in_row: &[f32],
     weight: &[f32],
     out_c: usize,
     kernel: usize,
+    kernel_range: std::ops::Range<usize>,
     raw_window: &mut [f32],
 ) {
     let oc_quads = out_c / 4;
@@ -236,8 +251,9 @@ fn trans_conv1d_scatter_frame_simd<S: Simd>(
                 &weight[ic_w_base + (oc_base + 2) * kernel..ic_w_base + (oc_base + 3) * kernel];
             let w3 =
                 &weight[ic_w_base + (oc_base + 3) * kernel..ic_w_base + (oc_base + 4) * kernel];
-            for k in 0..kernel {
-                let dst = &mut raw_window[k * out_c + oc_base..k * out_c + oc_base + 4];
+            for k in kernel_range.clone() {
+                let dst_base = (k - kernel_range.start) * out_c + oc_base;
+                let dst = &mut raw_window[dst_base..dst_base + 4];
                 let wv = f32x4::from_slice(simd, &[w0[k], w1[k], w2[k], w3[k]]);
                 let rv = f32x4::from_slice(simd, dst);
                 xv.mul_add(wv, rv).store_slice(dst);
@@ -245,8 +261,8 @@ fn trans_conv1d_scatter_frame_simd<S: Simd>(
         }
         for oc in (oc_quads * 4)..out_c {
             let w_base = ic_w_base + oc * kernel;
-            for k in 0..kernel {
-                let dst_idx = k * out_c + oc;
+            for k in kernel_range.clone() {
+                let dst_idx = (k - kernel_range.start) * out_c + oc;
                 raw_window[dst_idx] = x.mul_add(weight[w_base + k], raw_window[dst_idx]);
             }
         }
@@ -536,7 +552,19 @@ impl CausalConv1d {
 
     /// Offline causal forward pass on `[frames, in_c]` time-first input.
     pub fn forward(&self, input: &[f32], frames: usize) -> io::Result<(Vec<f32>, usize)> {
+        self.forward_parallel(input, frames, 1)
+    }
+
+    /// Offline forward pass using bounded workers for independent output frames.
+    pub fn forward_parallel(
+        &self,
+        input: &[f32],
+        frames: usize,
+        threads: usize,
+    ) -> io::Result<(Vec<f32>, usize)> {
         if frames == 0
+            || self.in_c == 0
+            || self.out_c == 0
             || self.stride == 0
             || self.dilation == 0
             || self.kernel == 0
@@ -571,7 +599,7 @@ impl CausalConv1d {
             }
         }
 
-        let out = self.compute_frames(&padded, out_frames, self.stride);
+        let out = self.compute_frames(&padded, out_frames, self.stride, threads);
         Ok((out, out_frames))
     }
 
@@ -582,8 +610,21 @@ impl CausalConv1d {
         frames: usize,
         state: &mut [f32],
     ) -> io::Result<Vec<f32>> {
+        self.forward_stream_parallel(input, frames, state, 1)
+    }
+
+    /// Stream independent output frames on bounded workers, preserving context order.
+    pub fn forward_stream_parallel(
+        &self,
+        input: &[f32],
+        frames: usize,
+        state: &mut [f32],
+        threads: usize,
+    ) -> io::Result<Vec<f32>> {
         let ctx_frames = self.stream_context_frames();
         if self.stride != 1
+            || self.in_c == 0
+            || self.out_c == 0
             || frames == 0
             || input.len() != frames * self.in_c
             || state.len() != ctx_frames * self.in_c
@@ -603,42 +644,50 @@ impl CausalConv1d {
             state.copy_from_slice(&ext[tail_start..]);
         }
 
-        Ok(self.compute_frames(&ext, frames, 1))
+        Ok(self.compute_frames(&ext, frames, 1, threads))
     }
 
-    fn compute_frames(&self, ext: &[f32], out_frames: usize, stride: usize) -> Vec<f32> {
+    fn compute_frames(
+        &self,
+        ext: &[f32],
+        out_frames: usize,
+        stride: usize,
+        threads: usize,
+    ) -> Vec<f32> {
         let mut out = vec![0.0_f32; out_frames * self.out_c];
         let level = Level::new();
         let bias = self.bias.as_deref();
-        if self.kernel == 1 {
-            for t_out in 0..out_frames {
-                let t_in = t_out * stride;
-                let in_row = &ext[t_in * self.in_c..(t_in + 1) * self.in_c];
-                let out_row = &mut out[t_out * self.out_c..(t_out + 1) * self.out_c];
+        let work = out_frames.saturating_mul(self.weight.len());
+        let workers = frame_workers(threads, out_frames, work);
+        row_workers::run_aligned(&mut out, workers, self.out_c, &|offset, output| {
+            let first_frame = offset / self.out_c;
+            if self.kernel == 1 {
+                for (frame, out_row) in output.chunks_exact_mut(self.out_c).enumerate() {
+                    let t_in = (first_frame + frame) * stride;
+                    let in_row = &ext[t_in * self.in_c..(t_in + 1) * self.in_c];
+                    dispatch!(
+                        level,
+                        simd => matvec_4rows_simd(simd, &self.weight, in_row, bias, out_row)
+                    );
+                }
+                return;
+            }
+            let mut patch = vec![0.0_f32; self.in_c * self.kernel];
+            for (frame, out_row) in output.chunks_exact_mut(self.out_c).enumerate() {
+                let t_in_base = (first_frame + frame) * stride;
+                for ic in 0..self.in_c {
+                    let p_base = ic * self.kernel;
+                    for k in 0..self.kernel {
+                        let t_in = t_in_base + k * self.dilation;
+                        patch[p_base + k] = ext[t_in * self.in_c + ic];
+                    }
+                }
                 dispatch!(
                     level,
-                    simd => matvec_4rows_simd(simd, &self.weight, in_row, bias, out_row)
+                    simd => matvec_4rows_simd(simd, &self.weight, &patch, bias, out_row)
                 );
             }
-            return out;
-        }
-        let patch_len = self.in_c * self.kernel;
-        let mut patch = vec![0.0_f32; patch_len];
-        for t_out in 0..out_frames {
-            let t_in_base = t_out * stride;
-            for ic in 0..self.in_c {
-                let p_base = ic * self.kernel;
-                for k in 0..self.kernel {
-                    let t_in = t_in_base + k * self.dilation;
-                    patch[p_base + k] = ext[t_in * self.in_c + ic];
-                }
-            }
-            let out_row = &mut out[t_out * self.out_c..(t_out + 1) * self.out_c];
-            dispatch!(
-                level,
-                simd => matvec_4rows_simd(simd, &self.weight, &patch, bias, out_row)
-            );
-        }
+        });
         out
     }
 }
@@ -670,8 +719,18 @@ impl CausalTransConv1d {
     /// Offline causal transposed convolution on `[frames, in_c]` time-first input,
     /// returning `[frames * stride, out_c]`.
     pub fn forward(&self, input: &[f32], frames: usize) -> io::Result<(Vec<f32>, usize)> {
+        self.forward_parallel(input, frames, 1)
+    }
+
+    /// Offline transposed convolution using bounded workers over output windows.
+    pub fn forward_parallel(
+        &self,
+        input: &[f32],
+        frames: usize,
+        threads: usize,
+    ) -> io::Result<(Vec<f32>, usize)> {
         let mut carry = vec![0.0_f32; self.carry_frames() * self.out_c];
-        let out = self.forward_stream(input, frames, &mut carry)?;
+        let out = self.forward_stream_parallel(input, frames, &mut carry, threads)?;
         Ok((out, frames * self.stride))
     }
 
@@ -682,8 +741,21 @@ impl CausalTransConv1d {
         frames: usize,
         carry: &mut [f32],
     ) -> io::Result<Vec<f32>> {
+        self.forward_stream_parallel(input, frames, carry, 1)
+    }
+
+    /// Stream disjoint output windows while retaining source-frame and FMA order.
+    pub fn forward_stream_parallel(
+        &self,
+        input: &[f32],
+        frames: usize,
+        carry: &mut [f32],
+        threads: usize,
+    ) -> io::Result<Vec<f32>> {
         let trim = self.carry_frames();
         if frames == 0
+            || self.in_c == 0
+            || self.out_c == 0
             || self.stride == 0
             || self.kernel < self.stride
             || input.len() != frames * self.in_c
@@ -704,35 +776,51 @@ impl CausalTransConv1d {
         }
 
         let level = Level::new();
-        for t in 0..frames {
-            let in_row = &input[t * self.in_c..(t + 1) * self.in_c];
-            let out_base = t * self.stride;
-            let raw_window = &mut raw[out_base * self.out_c..(out_base + self.kernel) * self.out_c];
-            dispatch!(
-                level,
-                simd => trans_conv1d_scatter_frame_simd(
-                    simd,
-                    in_row,
-                    &self.weight,
-                    self.out_c,
-                    self.kernel,
-                    raw_window,
-                )
-            );
-        }
+        let work = frames.saturating_mul(self.weight.len());
+        let workers = frame_workers(threads, raw_frames, work);
+        row_workers::run_aligned(&mut raw, workers, self.out_c, &|offset, output| {
+            let first_frame = offset / self.out_c;
+            let end_frame = first_frame + output.len() / self.out_c;
+            let first_source = first_frame
+                .saturating_sub(self.kernel - 1)
+                .div_ceil(self.stride);
+            let end_source = end_frame.div_ceil(self.stride).min(frames);
+            // Adjacent jobs can read the same input frame, but write disjoint
+            // windows. Each sample keeps the original t -> ic -> FMA sequence.
+            for t in first_source..end_source {
+                let base = t * self.stride;
+                let start = base.max(first_frame);
+                let end = (base + self.kernel).min(end_frame);
+                let in_row = &input[t * self.in_c..(t + 1) * self.in_c];
+                let raw_window = &mut output
+                    [(start - first_frame) * self.out_c..(end - first_frame) * self.out_c];
+                dispatch!(
+                    level,
+                    simd => trans_conv1d_scatter_frame_simd(
+                        simd,
+                        in_row,
+                        &self.weight,
+                        self.out_c,
+                        self.kernel,
+                        start - base..end - base,
+                        raw_window,
+                    )
+                );
+            }
+        });
 
         if trim > 0 {
             carry.copy_from_slice(&raw[emit * self.out_c..]);
         }
 
-        let mut emitted = raw[..emit * self.out_c].to_vec();
+        raw.truncate(emit * self.out_c);
         if let Some(bias) = &self.bias {
             for t in 0..emit {
-                let row = &mut emitted[t * self.out_c..(t + 1) * self.out_c];
+                let row = &mut raw[t * self.out_c..(t + 1) * self.out_c];
                 dispatch!(level, simd => add_slice_in_place_simd(simd, row, bias));
             }
         }
-        Ok(emitted)
+        Ok(raw)
     }
 }
 
@@ -804,12 +892,27 @@ impl DacResUnit {
         frames: usize,
         conv1_state: &mut [f32],
     ) -> io::Result<Vec<f32>> {
+        self.forward_stream_parallel(input, frames, conv1_state, 1)
+    }
+
+    /// Execute a residual unit using bounded convolution workers.
+    pub fn forward_stream_parallel(
+        &self,
+        input: &[f32],
+        frames: usize,
+        conv1_state: &mut [f32],
+        threads: usize,
+    ) -> io::Result<Vec<f32>> {
         let mut h = input.to_vec();
         self.act1.apply_in_place(&mut h, frames)?;
-        let mut h = self.conv1.forward_stream(&h, frames, conv1_state)?;
+        let mut h = self
+            .conv1
+            .forward_stream_parallel(&h, frames, conv1_state, threads)?;
         self.act2.apply_in_place(&mut h, frames)?;
         let mut dummy_state = [];
-        let mut out = self.conv2.forward_stream(&h, frames, &mut dummy_state)?;
+        let mut out = self
+            .conv2
+            .forward_stream_parallel(&h, frames, &mut dummy_state, threads)?;
         let level = Level::new();
         dispatch!(level, simd => add_slice_in_place_simd(simd, &mut out, input));
         Ok(out)
@@ -836,12 +939,26 @@ impl DacBlock {
         carry: &mut [f32],
         ru_states: &mut [Vec<f32>; 3],
     ) -> io::Result<(Vec<f32>, usize)> {
+        self.forward_stream_parallel(input, frames, carry, ru_states, 1)
+    }
+
+    /// Execute a DAC block with bounded independent-frame convolution workers.
+    pub fn forward_stream_parallel(
+        &self,
+        input: &[f32],
+        frames: usize,
+        carry: &mut [f32],
+        ru_states: &mut [Vec<f32>; 3],
+        threads: usize,
+    ) -> io::Result<(Vec<f32>, usize)> {
         let mut h = input.to_vec();
         self.snake1.apply_in_place(&mut h, frames)?;
-        let mut h = self.trans_conv.forward_stream(&h, frames, carry)?;
+        let mut h = self
+            .trans_conv
+            .forward_stream_parallel(&h, frames, carry, threads)?;
         let out_frames = frames * self.trans_conv.stride;
         for (ru, st) in self.res_units.iter().zip(ru_states.iter_mut()) {
-            h = ru.forward_stream(&h, out_frames, st)?;
+            h = ru.forward_stream_parallel(&h, out_frames, st, threads)?;
         }
         Ok((h, out_frames))
     }
@@ -882,6 +999,17 @@ impl ConvNeXtBlock {
         frames: usize,
         dw_state: &mut [f32],
     ) -> io::Result<Vec<f32>> {
+        self.forward_stream_parallel(input, frames, dw_state, 1)
+    }
+
+    /// Execute independent frames on bounded workers with unchanged normalization.
+    pub fn forward_stream_parallel(
+        &self,
+        input: &[f32],
+        frames: usize,
+        dw_state: &mut [f32],
+        threads: usize,
+    ) -> io::Result<Vec<f32>> {
         let c = self.channels;
         let k = self.kernel;
         let ctx_len = k.saturating_sub(1);
@@ -908,13 +1036,15 @@ impl ConvNeXtBlock {
         let inv_c = 1.0_f32 / usize_to_f32(c);
         let mid_c = self.pwconv1_b.len();
         let mut out = input.to_vec();
-        let mut y = vec![0.0_f32; c];
-        let mut mid = vec![0.0_f32; mid_c];
         let level = Level::new();
-
-        for t in 0..frames {
-            let out_row = &mut out[t * c..(t + 1) * c];
-            dispatch!(
+        let work = frames.saturating_mul(self.pwconv1_w.len() + self.pwconv2_w.len());
+        let workers = frame_workers(threads, frames, work);
+        row_workers::run_aligned(&mut out, workers, c, &|offset, output| {
+            let mut y = vec![0.0_f32; c];
+            let mut mid = vec![0.0_f32; mid_c];
+            for (frame, out_row) in output.chunks_exact_mut(c).enumerate() {
+                let t = offset / c + frame;
+                dispatch!(
                 level,
                 simd => convnext_frame_simd(
                     simd,
@@ -936,8 +1066,9 @@ impl ConvNeXtBlock {
                     &mut mid,
                     out_row,
                 )
-            );
-        }
+                );
+            }
+        });
         Ok(out)
     }
 }
@@ -1299,30 +1430,42 @@ impl DacDecoder {
         frames: usize,
         state: &mut CodecStreamState,
     ) -> io::Result<Vec<f32>> {
+        self.forward_stream_parallel(input, frames, state, 1)
+    }
+
+    /// Decode using bounded workers for each independent convolution stage.
+    pub fn forward_stream_parallel(
+        &self,
+        input: &[f32],
+        frames: usize,
+        state: &mut CodecStreamState,
+        threads: usize,
+    ) -> io::Result<Vec<f32>> {
         if state.dac_carry.len() != self.blocks.len() || state.dac_ru.len() != self.blocks.len() {
             return Err(io::Error::new(
                 io::ErrorKind::InvalidInput,
                 "DAC streaming state block count mismatch.",
             ));
         }
-        let mut h = self
-            .conv_pre
-            .forward_stream(input, frames, &mut state.dac_pre)?;
+        let mut h =
+            self.conv_pre
+                .forward_stream_parallel(input, frames, &mut state.dac_pre, threads)?;
         let mut cur_frames = frames;
         for (i, blk) in self.blocks.iter().enumerate() {
-            let (next_h, next_f) = blk.forward_stream(
+            let (next_h, next_f) = blk.forward_stream_parallel(
                 &h,
                 cur_frames,
                 &mut state.dac_carry[i],
                 &mut state.dac_ru[i],
+                threads,
             )?;
             h = next_h;
             cur_frames = next_f;
         }
         self.snake_post.apply_in_place(&mut h, cur_frames)?;
-        let mut audio = self
-            .conv_post
-            .forward_stream(&h, cur_frames, &mut state.dac_post)?;
+        let mut audio =
+            self.conv_post
+                .forward_stream_parallel(&h, cur_frames, &mut state.dac_post, threads)?;
         for sample in &mut audio {
             *sample = sample.clamp(-1.0_f32, 1.0_f32);
         }
@@ -1338,6 +1481,128 @@ mod tests {
         RvqGroup, SnakeBeta, codec_ref_key, decimate_48k_to_24k,
     };
     use crate::{SAMPLE_RATE, SAMPLE_RATE_48K};
+
+    fn values(count: usize) -> Vec<f32> {
+        (0..count)
+            .map(|i| f32::from(i16::try_from(i % 37).unwrap_or(0) - 18) * 0.013)
+            .collect()
+    }
+
+    #[test]
+    #[expect(
+        clippy::too_many_lines,
+        reason = "Keep independent scatter replay and the paired convolution/context controls in one fixed codec workload."
+    )]
+    fn parallel_codec_frames_preserve_bits_context_and_scatter_order() -> std::io::Result<()> {
+        // Odd widths exercise SIMD tails; enough fixed work selects workers.
+        let conv = CausalConv1d {
+            in_c: 19,
+            out_c: 17,
+            kernel: 7,
+            dilation: 3,
+            stride: 1,
+            pad_mode: PadMode::Constant,
+            weight: values(19 * 17 * 7),
+            bias: Some(values(17)),
+        };
+        let input = values(41 * 19);
+        let mut serial_state = values(conv.stream_context_frames() * 19);
+        let mut parallel_state = serial_state.clone();
+        let serial = conv.forward_stream(&input, 41, &mut serial_state)?;
+        let parallel = conv.forward_stream_parallel(&input, 41, &mut parallel_state, 4)?;
+        assert_eq!(
+            serial.iter().map(|v| v.to_bits()).collect::<Vec<_>>(),
+            parallel.iter().map(|v| v.to_bits()).collect::<Vec<_>>()
+        );
+        assert_eq!(serial_state, parallel_state);
+        assert_eq!(
+            conv.forward(&input, 41)?,
+            conv.forward_parallel(&input, 41, 4)?
+        );
+
+        for (kernel, stride) in [(16, 8), (9, 2), (4, 4)] {
+            let trans = CausalTransConv1d {
+                in_c: 41,
+                out_c: 17,
+                kernel,
+                stride,
+                weight: values(41 * 17 * kernel),
+                bias: Some(values(17)),
+            };
+            let frames = 41;
+            let input = values(frames * trans.in_c);
+            let initial = values(trans.carry_frames() * trans.out_c);
+            let mut expected =
+                vec![0.0_f32; (frames * stride + trans.carry_frames()) * trans.out_c];
+            expected[..initial.len()].copy_from_slice(&initial);
+            // Independent scalar replay of the original whole-window scatter.
+            for t in 0..frames {
+                for ic in 0..trans.in_c {
+                    for oc in 0..trans.out_c {
+                        for k in 0..kernel {
+                            let dest = (t * stride + k) * trans.out_c + oc;
+                            expected[dest] = input[t * trans.in_c + ic].mul_add(
+                                trans.weight[(ic * trans.out_c + oc) * kernel + k],
+                                expected[dest],
+                            );
+                        }
+                    }
+                }
+            }
+            let expected_carry = expected[frames * stride * trans.out_c..].to_vec();
+            expected.truncate(frames * stride * trans.out_c);
+            for row in expected.chunks_exact_mut(trans.out_c) {
+                for (value, bias) in row.iter_mut().zip(trans.bias.as_deref().unwrap_or(&[])) {
+                    *value += bias;
+                }
+            }
+            for threads in [1, 4, 18] {
+                let mut carry = initial.clone();
+                let output = trans.forward_stream_parallel(&input, frames, &mut carry, threads)?;
+                assert_eq!(
+                    output.iter().map(|v| v.to_bits()).collect::<Vec<_>>(),
+                    expected.iter().map(|v| v.to_bits()).collect::<Vec<_>>()
+                );
+                assert_eq!(carry, expected_carry);
+            }
+        }
+
+        let channels = 17;
+        let mid = channels * 4;
+        let block = ConvNeXtBlock {
+            channels,
+            kernel: 7,
+            dw_weight: values(channels * 7),
+            dw_bias: values(channels),
+            norm_w: vec![1.0; channels],
+            norm_b: values(channels),
+            pwconv1_w: values(channels * mid),
+            pwconv1_b: values(mid),
+            pwconv2_w: values(channels * mid),
+            pwconv2_b: values(channels),
+            gamma: values(channels),
+        };
+        let input = values(41 * channels);
+        let mut serial_state = values(6 * channels);
+        let mut parallel_state = serial_state.clone();
+        let serial = block.forward_stream(&input, 41, &mut serial_state)?;
+        let parallel = block.forward_stream_parallel(&input, 41, &mut parallel_state, 4)?;
+        assert_eq!(
+            serial.iter().map(|v| v.to_bits()).collect::<Vec<_>>(),
+            parallel.iter().map(|v| v.to_bits()).collect::<Vec<_>>()
+        );
+        assert_eq!(serial_state, parallel_state);
+        Ok(())
+    }
+
+    #[test]
+    fn codec_stage_sizes_preserve_selected_worker_team() {
+        for frames in [2, 4, 8, 32, 1920] {
+            assert_eq!(super::frame_workers(18, frames, 65_536), 18);
+        }
+        assert_eq!(super::frame_workers(18, 1, 1_000_000), 1);
+        assert_eq!(super::frame_workers(18, 1920, 65_535), 1);
+    }
 
     #[test]
     fn causal_conv1d_and_trans_conv1d_streaming_match_offline_bit_for_bit() -> std::io::Result<()> {
