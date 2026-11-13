@@ -151,11 +151,12 @@ pub(super) fn folded<'a>(
     signs: &[i8],
     block: usize,
 ) -> io::Result<Cow<'a, [f32]>> {
-    if let Some(existing) = pre_folded.filter(|values| values.len() == input.len()) {
-        Ok(Cow::Borrowed(existing))
-    } else {
-        super::apply_hadamard_sign_fold(input, signs, block).map(Cow::Owned)
-    }
+    pre_folded
+        .filter(|values| values.len() == input.len())
+        .map_or_else(
+            || super::apply_hadamard_sign_fold(input, signs, block).map(Cow::Owned),
+            |existing| Ok(Cow::Borrowed(existing)),
+        )
 }
 
 #[cfg(test)]
