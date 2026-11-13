@@ -13,6 +13,9 @@ retain every selected file before loading. `weights.rs` reads bounded GGUF
 metadata/tensor descriptions, validates dimensions and retains compressed
 projection weights. Text embeddings dequantize individual rows instead of
 expanding the complete vocabulary into floating-point storage.
+Packed projections validate their bytes once at construction; dense tensors
+validate decoded values. Metadata parsing reuses bounded scratch for discarded
+tokenizer strings instead of allocating each spelling separately.
 
 Only plain text and a plain-language voice description are exposed. Design
 weights must identify `voice_design`, and reusable-speaker weights must identify
@@ -54,6 +57,9 @@ each row's original accumulation order. Codec convolutions and ConvNeXt frames
 share the projection worker team and honor the selected thread count. Independent
 output ranges run concurrently; streaming history and overlap carry retain their
 sequential ownership. The serial path remains available with `--threads 1`.
+Short, expensive convolutions split output channels across the same team when
+there are too few audio frames to occupy it. Four-row SIMD groups and each
+output's accumulation order remain unchanged.
 
 Base synthesis retains one bounded, exact reference-prefix snapshot between
 successful utterances. Reuse requires identical input-row bits; changed rows,

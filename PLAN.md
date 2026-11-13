@@ -243,6 +243,10 @@ under [AGENTS.md](AGENTS.md).
 - [ ] Qualify TTS packed projections/worker teams, codec transformer/output tiles,
   convolution/ConvNeXt and exact Base-prefix reuse for cold/repeated/edited,
   voice-changed and failed utterances; diagnose the observed latency regression.
+- [ ] Qualify single-pass TTS tensor validation and metadata scratch reuse,
+  short-frame convolution channel tiling, 400 ms playback pre-roll and queued-PCM
+  underrun recovery. Measure cold load, first audible output and sustained
+  readout/listening with matched power, including slow supply and chat overlap.
 - [ ] Implement the signed Rust `hexagon-native-rpc` dispatcher, immutable hybrid
   placement/cache ownership and contained HTP0 execution. Qualify buffer lifetime,
   completion fences, cancellation and teardown; packet serialization alone does
