@@ -98,7 +98,7 @@ seed 42, top-k 50 and repetition penalty 1.05:
 | Profile | Semantic temperature / top-p | Acoustic temperature / top-p |
 | --- | --- | --- |
 | Design | 0.9 / 1.0 | 0.9 / 1.0 |
-| Base | 0.85 / 0.9 | 0.6 / 1.0 |
+| Base | 0.85 / 0.9 | 0.6 / 0.9 |
 
 Reserved semantic tokens except EOS are suppressed. Exhausting token/context
 budgets without EOS fails. Independent scalar fixtures retain tie ordering,
