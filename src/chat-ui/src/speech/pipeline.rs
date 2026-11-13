@@ -316,6 +316,7 @@ struct Frames {
     recycled: Option<Receiver<Vec<u8>>>,
     packet_bytes: usize,
     previous_tail_sample: Option<i16>,
+    onset_midpoint: Option<f32>,
     onset_remaining: usize,
 }
 
@@ -326,6 +327,7 @@ impl Default for Frames {
             recycled: None,
             packet_bytes: PACKET_BYTES,
             previous_tail_sample: None,
+            onset_midpoint: None,
             onset_remaining: 0,
         }
     }
@@ -343,6 +345,7 @@ impl Frames {
             recycled: Some(recycled),
             packet_bytes,
             previous_tail_sample: None,
+            onset_midpoint: None,
             onset_remaining: 0,
         }
     }
@@ -366,11 +369,15 @@ impl Frames {
         if to_smooth == 0 {
             return;
         }
-        let first_sample = f32::from(i16::from_le_bytes([
-            self.pending[start_offset],
-            self.pending[start_offset + 1],
-        ]));
-        let midpoint = f32::midpoint(f32::from(prev_last), first_sample);
+        // The transition belongs to the segment, not to transport callbacks.
+        // Retain its first complete sample's midpoint even across split samples.
+        let midpoint = *self.onset_midpoint.get_or_insert_with(|| {
+            let first_sample = f32::from(i16::from_le_bytes([
+                self.pending[start_offset],
+                self.pending[start_offset + 1],
+            ]));
+            f32::midpoint(f32::from(prev_last), first_sample)
+        });
         let total = HANN_BOUNDARY_SAMPLES;
         let already_done = total.saturating_sub(self.onset_remaining);
         let denom = f32::from(u16::try_from(total + 1).unwrap_or(2));
@@ -435,6 +442,7 @@ impl Frames {
         &mut self,
         sink: impl FnOnce(Vec<u8>) -> Result<(), tts::Failure>,
     ) -> Result<(), tts::Failure> {
+        self.onset_midpoint = None;
         if self.pending.is_empty() {
             self.onset_remaining = HANN_BOUNDARY_SAMPLES;
             Ok(())
@@ -982,6 +990,39 @@ mod tests {
         assert!(last_prev.abs() < 200);
         assert!(first_next.abs() < 200);
         assert!((i32::from(last_prev) - i32::from(first_next)).abs() < 400);
+    }
+
+    #[test]
+    fn segment_onset_smoothing_is_identical_across_fragmented_pcm_callbacks() -> Result<(), Failure>
+    {
+        fn render(fragment: usize) -> Result<Vec<u8>, Failure> {
+            let mut frames = Frames::default();
+            let mut output = Vec::new();
+            // Two transitions also check that each new segment chooses its own
+            // midpoint. Odd fragments exercise samples split across callbacks.
+            for polarity in [1_i16, -1, 1] {
+                let pcm: Vec<u8> = (0_i16..180)
+                    .flat_map(|index| (polarity * (12_000 - index * 100)).to_le_bytes())
+                    .collect();
+                for bytes in pcm.chunks(fragment) {
+                    frames.push(bytes, |packet| {
+                        output.extend(packet);
+                        Ok(())
+                    })?;
+                }
+                frames.finish_segment(|packet| {
+                    output.extend(packet);
+                    Ok(())
+                })?;
+            }
+            Ok(output)
+        }
+
+        let contiguous = render(usize::MAX)?;
+        for fragment in [1, 2, 3, 17, 128] {
+            assert_eq!(render(fragment)?, contiguous);
+        }
+        Ok(())
     }
 
     #[test]
