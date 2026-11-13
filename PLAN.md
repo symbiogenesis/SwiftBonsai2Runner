@@ -29,6 +29,10 @@ under [AGENTS.md](AGENTS.md).
 - [ ] Qualify Runner's checked-tools producer, shared regression runner and
   native-acceptance caches: cold build, exact hit and relevant-input invalidation,
   fresh same-run packages, source/digest verification and every selected check.
+- [ ] Complete owning-lane compiler/analyzer and focused regression acceptance
+  for centralized UI bounded reads, TTS numerical/GGUF primitives and tools
+  release/Hexagon validation. The Hexagon inventory alias correction still needs
+  compiled verification; the local Windows process-identity control passed.
 - [ ] Qualify compiler-cache recovery after failed analyzers/tests, immutable
   exact hits, cancelled/setup-failure skips and nonblocking optional saves.
   Qualify same-run publication recovery from partial drafts and ambiguous API
