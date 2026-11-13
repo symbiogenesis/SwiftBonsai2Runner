@@ -27,6 +27,10 @@ must be expanded absolute paths under the existing package path policy.
 
 Double-click the resulting executable to verify, extract and launch it, or use
 `bundled-chat` with installed-chat options except `--installation-directory`.
+Application packages use the GUI-subsystem `bonsai-launcher` binary as their
+maintenance executable so startup creates no terminal. The normal `bonsai-tools`
+binary retains its console command-line behavior; both entry points share the
+same maintenance commands and protocol.
 The extracted application preserves separate owned model/speech processes.
 Models, adapters, inference-runtime downloads and the Microsoft ARM64 C++ runtime
 remain separate. Integrity checks detect changed bytes within the bundle's trust

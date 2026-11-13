@@ -54,10 +54,11 @@ $scratch = Join-Path (Resolve-ReleasePath ([IO.Path]::GetTempPath())) ('SwiftBon
 [void][IO.Directory]::CreateDirectory($scratch)
 try {
     $target = Join-Path $DataDirectory 'build/maintenance'
-    Write-Host 'Building the native maintenance executable with the repository compiler pin.'
+    Write-Host 'Building the console maintenance tool and windowless launcher with the repository compiler pin.'
     $null = Invoke-ReleaseCommand 'cargo' @("+$channel", 'build', '--locked', '--release', '--manifest-path', $manifestPath,
-        '--package', 'bonsai-tools', '--bin', 'bonsai-tools', '--target-dir', $target) -TimeoutSeconds 600
+        '--package', 'bonsai-tools', '--bin', 'bonsai-tools', '--bin', 'bonsai-launcher', '--target-dir', $target) -TimeoutSeconds 600
     $tool = Resolve-ReleasePath (Join-Path $target 'release/bonsai-tools.exe') -Kind File
+    $launcher = Resolve-ReleasePath (Join-Path $target 'release/bonsai-launcher.exe') -Kind File
     $chatRequest = @{
         operation = 'chat'; repositoryRoot = $RepositoryRoot; workingDirectory = $scratch
         dataDirectory = $DataDirectory; packages = @('bonsai-chat', 'bonsai-broker')
@@ -81,7 +82,7 @@ try {
     $packageRequest = @{
         operation = 'create'; outputDirectory = $PackageDirectory; version = $version; sourceRevision = $revision
         chatPath = $chat.ChatPath; brokerPath = $chat.BrokerPath; asrPath = $speech.AsrPath
-        ttsPath = $speech.TtsPath; toolPath = $tool; thirdPartyNoticePath = $notices
+        ttsPath = $speech.TtsPath; toolPath = $launcher; thirdPartyNoticePath = $notices
     } | ConvertTo-Json -Compress
     $package = Invoke-ReleaseCommand $tool @('chat-package', '--json', $packageRequest) | ConvertFrom-Json
     & (Join-Path $PSScriptRoot 'release/Build-WindowsExecutable.ps1') -PackageDirectory $PackageDirectory -ManifestSha256 $package.ManifestSha256 -OutputPath $OutputPath

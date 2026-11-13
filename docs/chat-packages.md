@@ -82,6 +82,9 @@ The same verified schema-2 package can become one distributable `.exe`. This
 embeds the five application executables, package metadata and notices in the
 native maintenance launcher; it preserves the separate worker processes and
 their containment. Models, adapters and inference runtime downloads stay separate.
+Use the dedicated GUI-subsystem `bonsai-launcher.exe` build as the package's
+`toolPath`; it is stored as `bin/bonsai-tools.exe`. The console maintenance build
+remains available for source tooling, while the packaged launcher opens no terminal.
 
 ```powershell
 ./scripts/release/Build-WindowsExecutable.ps1 -PackageDirectory C:\BonsaiPackages\0.1.0 -ManifestSha256 REPLACE_WITH_THE_REVIEWED_64_HEX_DIGEST -OutputPath C:\BonsaiPackages\SwiftBonsai2Runner.exe

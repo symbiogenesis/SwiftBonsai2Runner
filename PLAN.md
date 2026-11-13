@@ -126,7 +126,8 @@ These checks do not establish a successful installer or close hosted acceptance.
 Include the single-file Windows executable in the next owner-run Windows Release
 acceptance. Verify the source-bound bundle, model-free extraction and executable
 inventory alongside the existing MSI install/uninstall checks, then qualify
-double-click launch on a supported clean Windows ARM64 machine. Exercise the same
+double-click launch without a terminal on a supported clean Windows ARM64 machine,
+including a visible native startup error when preparation fails. Exercise the same
 bundle builder from a local checkout; local focused checks do not establish hosted
 publication, clean-machine prerequisites or actual-model acceptance. Preserve the
 separate-process containment and MSI-only update contracts.

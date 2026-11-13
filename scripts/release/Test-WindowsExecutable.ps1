@@ -11,6 +11,21 @@ $ErrorActionPreference = 'Stop'
 $PSNativeCommandUseErrorActionPreference = $true
 . (Join-Path $PSScriptRoot 'Release-Common.ps1')
 $ExecutablePath = Resolve-ReleasePath $ExecutablePath -Kind File
+# Require the GUI subsystem before launching the image: hiding an already-created
+# console would still flash a terminal during ordinary Explorer startup.
+$reader = [IO.BinaryReader]::new([IO.File]::OpenRead($ExecutablePath))
+try {
+    if ($reader.ReadUInt16() -ne 0x5a4d) { throw 'Invalid executable DOS header.' }
+    $reader.BaseStream.Position = 0x3c
+    $pe = $reader.ReadUInt32()
+    if ($pe -lt 64 -or [int64]$pe + 94 -gt $reader.BaseStream.Length) { throw 'Invalid executable PE offset.' }
+    $reader.BaseStream.Position = $pe
+    if ($reader.ReadUInt32() -ne 0x4550 -or $reader.ReadUInt16() -ne 0xaa64) { throw 'Expected a native ARM64 PE image.' }
+    $reader.BaseStream.Position = $pe + 24
+    if ($reader.ReadUInt16() -ne 0x20b) { throw 'Expected a PE32+ application.' }
+    $reader.BaseStream.Position = $pe + 24 + 68
+    if ($reader.ReadUInt16() -ne 2) { throw 'The bundled application must use the Windows GUI subsystem.' }
+} finally { $reader.Dispose() }
 $EvidenceDirectory = Resolve-ReleasePath $EvidenceDirectory -AllowMissing
 if (Test-Path -LiteralPath $EvidenceDirectory) { throw 'Executable smoke evidence must use a new directory.' }
 [void][IO.Directory]::CreateDirectory($EvidenceDirectory)
@@ -46,7 +61,7 @@ if (-not $checked) { throw 'The single executable smoke check did not complete.'
 [ordered]@{
     schemaVersion = 1; version = $bundle.Manifest.version; sourceRevision = $bundle.Manifest.sourceRevision
     manifestSha256 = $ManifestSha256; executableSha256 = (Get-FileHash -LiteralPath $ExecutablePath -Algorithm SHA256).Hash.ToLowerInvariant()
-    inventoryVerified = $true; extractionVerified = $true; maintenanceExecutableStarted = $true
+    guiSubsystemVerified = $true; inventoryVerified = $true; extractionVerified = $true; maintenanceExecutableStarted = $true
     extractedFilesRemoved = $true; modelStarted = $false; softwareInstalled = $false
     actualModelAcceptance = 'pending'; cleanMachineAcceptance = 'pending'
 } | ConvertTo-Json | Set-Content -LiteralPath (Join-Path $EvidenceDirectory 'smoke-receipt.json') -Encoding utf8NoBOM

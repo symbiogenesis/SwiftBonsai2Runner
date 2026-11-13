@@ -161,8 +161,8 @@ application launch or CI operation.
 The executable contains the native window, broker, ASR, TTS, maintenance tool,
 package manifest and license notices. Double-clicking it verifies and extracts
 the package into the user's application cache before starting the native chat
-launcher. Separate owned worker processes retain their existing containment and
-teardown rules. Model weights, adapters, the downloaded inference runtime and
+launcher without opening a terminal. Separate owned worker processes retain their
+existing containment and teardown rules. Model weights, adapters, the downloaded inference runtime and
 the Microsoft Visual C++ ARM64 runtime remain separately provisioned. Extraction
 and launching need no checkout, PowerShell or compiler. Portable launches retain
 the package's explicit update policy; MSI-only automatic updates remain separate.

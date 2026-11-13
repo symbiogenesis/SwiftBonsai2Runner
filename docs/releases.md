@@ -25,8 +25,8 @@ Get-FileHash .\SwiftBonsai2Runner-0.1.0-windows-arm64.exe -Algorithm SHA256
 
 The native launcher extracts a verified package under
 `%LOCALAPPDATA%\SwiftBonsai2\application-bundles\<first-24-manifest-sha256-characters>\` and starts
-chat without a source checkout or compiler. It retains and rechecks that cache
-on subsequent launches. One file is distributed;
+chat without a terminal, source checkout or compiler. It retains and rechecks that
+cache on subsequent launches. One file is distributed;
 the application still runs its UI, broker and speech workers as separate owned
 processes. The bundle includes license notices and verifies its embedded inventory
 before launch. The first release is unsigned; published SHA-256 detects changed
