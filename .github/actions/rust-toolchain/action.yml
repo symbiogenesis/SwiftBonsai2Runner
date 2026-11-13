@@ -21,8 +21,8 @@ outputs:
     description: SHA256 of the verified rustc verbose identity.
     value: ${{ steps.verify.outputs.compiler-identity }}
   cache-hit:
-    description: Whether the exact toolchain cache was restored.
-    value: ${{ steps.cache.outputs.cache-hit }}
+    description: Whether the exact toolchain was reused from cache or an earlier verified installation in this job.
+    value: ${{ steps.paths.outputs.reuse-verified == 'true' && 'true' || steps.cache.outputs.cache-hit }}
 runs:
   using: composite
   steps:
@@ -55,6 +55,13 @@ runs:
         $imageIdentity = "$env:ImageOS-$env:ImageVersion-$([Environment]::OSVersion.Version)"
         $componentKey = [Convert]::ToHexString([Security.Cryptography.SHA256]::HashData([Text.Encoding]::UTF8.GetBytes(($components -join ',')))).ToLowerInvariant()
         $imageKey = [Convert]::ToHexString([Security.Cryptography.SHA256]::HashData([Text.Encoding]::UTF8.GetBytes($imageIdentity))).ToLowerInvariant()
+        # Nested build actions request this same installation repeatedly. Avoid
+        # downloading/extracting it again only after this exact request passed
+        # verification in this job; compiler and component checks still run below.
+        $reuseIdentity = @($env:PINNED_TOOLCHAIN, $toolchainPath, $imageKey, $componentKey) -join "`n"
+        $reuseKey = [Convert]::ToHexString([Security.Cryptography.SHA256]::HashData([Text.Encoding]::UTF8.GetBytes($reuseIdentity))).ToLowerInvariant()
+        "reuse-key=$reuseKey" >> $env:GITHUB_OUTPUT
+        "reuse-verified=$($env:BONSAI_RUST_TOOLCHAIN_VERIFIED_KEY -ceq $reuseKey)".ToLowerInvariant() >> $env:GITHUB_OUTPUT
         "toolchain-path=$toolchainPath" >> $env:GITHUB_OUTPUT
         "image-identity=$imageIdentity" >> $env:GITHUB_OUTPUT
         "component-key=$componentKey" >> $env:GITHUB_OUTPUT
@@ -64,14 +71,14 @@ runs:
     - name: Reuse only the exact toolchain directory
       id: cache
       # Owner-managed runners retain their installation between jobs already.
-      if: runner.environment == 'github-hosted'
+      if: runner.environment == 'github-hosted' && steps.paths.outputs.reuse-verified != 'true'
       uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
       with:
         # Never retain rustup settings, Cargo home, credentials or proxy binaries.
         path: ${{ steps.paths.outputs.toolchain-path }}
         key: rust-toolchain-v1-${{ runner.os }}-${{ runner.arch }}-${{ steps.paths.outputs.image-key }}-${{ inputs.toolchain }}-${{ steps.paths.outputs.component-key }}
     - name: Install the pinned compiler on a cache miss
-      if: steps.cache.outputs.cache-hit != 'true'
+      if: steps.paths.outputs.reuse-verified != 'true' && steps.cache.outputs.cache-hit != 'true'
       shell: pwsh
       working-directory: ${{ runner.temp }}
       env:
@@ -93,6 +100,7 @@ runs:
         REQUIRED_COMPONENTS: ${{ steps.paths.outputs.components }}
         EXPECTED_HOST: ${{ steps.paths.outputs.host }}
         TOOLCHAIN_PATH: ${{ steps.paths.outputs.toolchain-path }}
+        TOOLCHAIN_REUSE_KEY: ${{ steps.paths.outputs.reuse-key }}
       run: |
         Set-StrictMode -Version Latest
         $ErrorActionPreference = 'Stop'
@@ -109,3 +117,6 @@ runs:
         $identity | Write-Output
         $digest = [Convert]::ToHexString([Security.Cryptography.SHA256]::HashData([Text.Encoding]::UTF8.GetBytes(($identity -join "`n")))).ToLowerInvariant()
         "compiler-identity=$digest" >> $env:GITHUB_OUTPUT
+        # Set the job-local hint only after all validation has succeeded. It is
+        # never cached and cannot suppress this verification on later requests.
+        "BONSAI_RUST_TOOLCHAIN_VERIFIED_KEY=$env:TOOLCHAIN_REUSE_KEY" >> $env:GITHUB_ENV
