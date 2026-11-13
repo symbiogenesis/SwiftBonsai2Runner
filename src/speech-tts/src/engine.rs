@@ -25,7 +25,7 @@ use fearless_simd::{Level, dispatch, f32x4, prelude::*};
 use crate::{codec::codec_ref_key, sampling};
 
 mod packed;
-mod row_workers;
+pub(crate) mod row_workers;
 
 /// Number of residual acoustic codebooks predicted by `CodePredictor` (`15`).
 pub const NUM_ACOUSTIC_CODEBOOKS: usize = 15;

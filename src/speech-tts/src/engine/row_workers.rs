@@ -62,8 +62,21 @@ impl Drop for OwnedTeam {
     }
 }
 
-pub(super) fn run<F>(out: &mut [f32], worker_count: usize, compute_slice: &F)
+pub(crate) fn run<F>(out: &mut [f32], worker_count: usize, compute_slice: &F)
 where
+    F: Fn(usize, &mut [f32]) + Sync,
+{
+    run_aligned(out, worker_count, 1, compute_slice);
+}
+
+// Frame/channel kernels must keep their indivisible output groups together.
+// Reuse the projection team instead of creating another pool or per-call threads.
+pub(crate) fn run_aligned<F>(
+    out: &mut [f32],
+    worker_count: usize,
+    alignment: usize,
+    compute_slice: &F,
+) where
     F: Fn(usize, &mut [f32]) + Sync,
 {
     let worker_count = worker_count.clamp(1, 18).min(out.len().max(1));
@@ -94,7 +107,8 @@ where
         let Some(pool) = team.pool.as_ref() else {
             return false;
         };
-        let chunk_rows = out.len().div_ceil(worker_count);
+        let alignment = alignment.max(1).min(out.len());
+        let chunk_rows = out.len().div_ceil(alignment).div_ceil(worker_count) * alignment;
         pool.install(|| {
             out.par_chunks_mut(chunk_rows)
                 .enumerate()
@@ -118,7 +132,43 @@ mod tests {
         thread::{self, ThreadId},
     };
 
-    use super::{CachedTeam, OwnedTeam, TEAM, run};
+    use super::{CachedTeam, OwnedTeam, TEAM, run, run_aligned};
+
+    #[test]
+    fn projection_workers_keep_frame_groups_whole_and_cover_partial_tail() {
+        for alignment in [0, 1, 4, 16, 64] {
+            let ranges = Mutex::new(Vec::new());
+            let mut output = [0.0; 53];
+            run_aligned(&mut output, 3, alignment, &|offset, rows| {
+                let alignment = alignment.max(1);
+                assert_eq!(offset % alignment, 0);
+                if offset + rows.len() < 53 {
+                    assert_eq!(rows.len() % alignment, 0);
+                }
+                ranges
+                    .lock()
+                    .unwrap_or_else(std::sync::PoisonError::into_inner)
+                    .push((offset, rows.len()));
+                for (local, value) in rows.iter_mut().enumerate() {
+                    *value = f32::from(u16::try_from(offset + local).unwrap_or(0));
+                }
+            });
+            assert_eq!(
+                output,
+                std::array::from_fn(|index| f32::from(u16::try_from(index).unwrap_or(0)))
+            );
+            let mut ranges = ranges
+                .into_inner()
+                .unwrap_or_else(std::sync::PoisonError::into_inner);
+            assert!(!ranges.is_empty() && ranges.len() <= 3);
+            ranges.sort_unstable();
+            assert_eq!(ranges[0].0, 0);
+            for pair in ranges.windows(2) {
+                assert_eq!(pair[0].0 + pair[0].1, pair[1].0);
+            }
+            assert_eq!(ranges.last().map(|(start, len)| start + len), Some(53));
+        }
+    }
 
     #[test]
     fn projection_workers_reuse_threads_and_cover_uneven_rows() -> io::Result<()> {
