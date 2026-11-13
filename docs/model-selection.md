@@ -100,6 +100,44 @@ document thinking control. A future non-thinking creative candidate uses tempera
 0.7, top-p 0.8, top-k 20, min-p 0, presence penalty 1.5 and repetition penalty 1; that
 does not establish that a lower-reasoning switch works.
 
+## Conditional future Bonsai MoE design
+
+Revisit this design only after Qwen 4 is released and a corresponding Bonsai
+upgrade is available. The expected MoE architecture remains an assumption until
+the published weights, tokenizer, quantization and adapter identities establish
+the actual graph. This design authorizes no current implementation or device
+trial; [PLAN](../PLAN.md#future-qwen-moe-migration) owns the conditional tasks.
+
+The pinned [Colibri source](https://github.com/JustVugg/colibri/tree/0a5504a1dc64f86fcd0fe7db298b0448c730e7e6)
+supplies design references, not Snapdragon qualification:
+
+- [Resident/expert capacity accounting](https://github.com/JustVugg/colibri/blob/0a5504a1dc64f86fcd0fe7db298b0448c730e7e6/c/resource_plan.py)
+  reserves dense/shared and router weights, context/recurrent state, workspace,
+  metadata, staging and host headroom before sizing expert caches. Unequal experts
+  use each layer's maximum resident size. Count retained host/device copies and
+  shared physical GPU/NPU RAM once; separate discrete memory only when established.
+  Keep arithmetic checked and unknown capacity explicit. Capacity coverage does
+  not establish cache hit rate or admission.
+- Hot/warm/cold placement may keep frequently used experts on an accelerator,
+  warm experts in RAM and cold experts in verified local storage. Preserve every
+  weight, precision and router decision. Admit only tiers justified by a measured
+  batch-one bottleneck, including integrated-device copies, transfer and full
+  restoration costs. Bound metadata, staging, I/O and cancellation/teardown;
+  persistent usage traces require an explicit storage/privacy policy.
+- [Download-space preflight](https://github.com/JustVugg/colibri/blob/0a5504a1dc64f86fcd0fe7db298b0448c730e7e6/c/setup_catalog.py)
+  checks the actual destination's additional locked bytes after a valid partial
+  download, then rechecks the full requirement before an ignored-Range restart
+  can truncate that partial. Retain resumable data on failure, explicit unknown
+  space and immutable verification, with separate staging/extraction accounting.
+  A free-space snapshot reserves no storage.
+
+Any selected upgrade needs native Rust support, complete state/resource admission,
+quality, cancellation, Stop/Retry, cleanup, native application acceptance and
+measured benefit before profile selection. Preserve explicit Swift rollback and
+the [native UI boundary](ui-architecture.md). Colibri CUDA/Vulkan results establish
+neither Adreno/Hexagon behavior nor local disk latency; use the existing
+[qualification budgets and power observations](validation.md).
+
 ## Stop and reopen conditions
 
 Reject file/hash/header mismatches and unsupported graphs or types. Limit the first
