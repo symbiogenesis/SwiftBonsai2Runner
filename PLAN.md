@@ -199,7 +199,8 @@ under [AGENTS.md](AGENTS.md).
 - [ ] Qualify all 33 Swift control-token spellings in real template/tokenizer
   sessions, including escaped/split content, history/reasoning and lookalikes;
   require fixed-400 recovery and identical count/generation handling. Qualify the
-  reference vocabulary separately under the [token contract](docs/oxibonsai-reuse.md).
+  reference vocabulary separately under the
+  [token contract](docs/prism-upstream-tests.md#chat-parser-and-tokenizer-contracts).
 - [ ] Qualify load/allocation/backend-loss recovery, bounded restore attempts and
   unchanged workspace on failure, with no restart loops, silent profile changes,
   corruption or automatic cloud fallback.
@@ -234,10 +235,9 @@ under [AGENTS.md](AGENTS.md).
   [qualification reuse](docs/validation.md#reusing-qualification-controls).
 - [ ] Use batch-one attribution to select allocation/copy work. Qualify existing
   reset checkpoints, top-20/finite-logit checks, rank-one/attention changes,
-  immutable logits and BPE/special parsing under the [engine contract](docs/native-rust-engine.md)
-  and [performance contracts](docs/performance-deliver.md), including
-  [paired values](docs/performance-close.md), [KV/FFN reuse](docs/performance-finish.md)
-  and [paired prefill](docs/performance-resolve.md).
+  immutable logits and BPE/special parsing under the
+  [engine contract](docs/native-rust-engine.md) and
+  [Hexagon execution contract](docs/hexagon.md).
 - [ ] Qualify 8/16/32-token CPU prefill, distinct `gdn-wy-f32-v1` arithmetic,
   selected-cache service consumers and independent packed-KV head workers:
   scratch/admission, complete state, adapters, cancellation and whole-request benefit.
