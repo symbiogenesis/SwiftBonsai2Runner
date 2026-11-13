@@ -241,7 +241,10 @@ fn checksum(bytes: &[u8], expected_name: &str) -> crate::Result<String> {
 
 impl Installer {
     pub(super) fn distribution(&self) -> Distribution {
-        if self.asset.name.ends_with(".exe") {
+        if std::path::Path::new(&self.asset.name)
+            .extension()
+            .is_some_and(|extension| extension == "exe")
+        {
             Distribution::Portable
         } else {
             Distribution::Installer

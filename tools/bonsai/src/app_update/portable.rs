@@ -218,7 +218,7 @@ pub(super) fn replace(request: &Replacement) -> crate::Result<Value> {
         );
     }
     original(&request.target, &request.previous_sha256)?;
-    validate_restart_arguments(&request)?;
+    validate_restart_arguments(request)?;
     let directory = super::staged(&request.version)?;
     let _lock = crate::startup_cache::lock_file(&directory.join("update.lock"))?;
     let candidate = super::published_portable_release(&request.version, &directory)?;
