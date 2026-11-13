@@ -583,9 +583,49 @@ fn wait_ready(
     }
 }
 
+fn model_verification_message(diagnostic: &str) -> Option<&'static str> {
+    if !diagnostic
+        .lines()
+        .any(|line| line == "Development backend launch failed: Artifacts.")
+    {
+        return None;
+    }
+    diagnostic.lines().find_map(|line| match line {
+        "Selected model verification failed: reason=missing, representation=original." => Some(
+            "The selected Swift model file is missing from this app's data directory. Close and reopen Swift to download it automatically. If setup needs another attempt, select Retry setup.",
+        ),
+        "Selected model verification failed: reason=storage, representation=original." => Some(
+            "Swift cannot safely read the selected model file. Close any program moving or writing it, and check that the app's data directory is an accessible local folder without links or redirects. Close and reopen Swift to retry setup.",
+        ),
+        "Selected model verification failed: reason=identity, representation=original." => Some(
+            "The selected Swift model did not pass its size and integrity checks. Close and reopen Swift so setup can download a verified replacement. Your saved conversations are kept.",
+        ),
+        "Selected model verification failed: reason=missing, representation=ptq1." => Some(
+            "The explicitly selected PTQ1 model export is missing from the app's data directory. Restore the verified current-weight PTQ1 export, or close and relaunch Swift with the original model selection. Setup will not substitute a different model.",
+        ),
+        "Selected model verification failed: reason=storage, representation=ptq1." => Some(
+            "Swift cannot safely read the explicitly selected PTQ1 model export. Close any program moving or writing it, and check the data directory's permissions and local storage path. Reopen Swift to check the same selected export again.",
+        ),
+        "Selected model verification failed: reason=identity, representation=ptq1." => Some(
+            "The explicitly selected PTQ1 export did not pass its size and integrity checks. Restore the verified current-weight PTQ1 export, or close and relaunch Swift with the original model selection. Setup will not replace it with another model.",
+        ),
+        "Selected model verification failed: reason=configuration, representation=original."
+        | "Selected model verification failed: reason=configuration, representation=ptq1." => Some(
+            "This app could not apply its selected model configuration. Reopen the complete official application download and retry setup. Your model and conversation data remain separate from the executable.",
+        ),
+        "Selected model verification failed: reason=cancelled, representation=original."
+        | "Selected model verification failed: reason=cancelled, representation=ptq1." => Some(
+            "Model verification was cancelled. Close and reopen Swift when you want to continue setup.",
+        ),
+        _ => None,
+    })
+}
+
 fn startup_failure(diagnostic: &[u8], native_engine: bool) -> Failure {
     let text = String::from_utf8_lossy(diagnostic);
-    if native_engine
+    if let Some(message) = model_verification_message(&text) {
+        Failure::Message(message)
+    } else if native_engine
         && text.lines().any(|line| {
             line == "Development backend launch failed: NativeRuntime."
                 || line == "Development backend launch failed: NativeRuntime. Provision the pinned Rust runtime with bonsai-tools provision, operation inference, using the same dataDirectory."
@@ -618,15 +658,15 @@ fn startup_failure(diagnostic: &[u8], native_engine: bool) -> Failure {
         )
     } else if text.contains("Adapter") {
         Failure::Message(
-            "The pinned abliteration LoRA could not be verified. Run bonsai-tools provision with operation adapter for this data directory, or restart with --no-abliterate-lora.",
+            "The model's required adapter is missing or failed verification. Close and reopen Swift to check and repair its download automatically. If setup needs another attempt, select Retry setup.",
         )
     } else if native_engine && text.contains("Artifacts") {
         Failure::Message(
-            "The selected Swift model could not be verified. Run bonsai-tools provision with operation model, this data directory and config/swift-assessment.lock.json. For PTQ1, verify the selected current-weight export instead. Then select Retry model.",
+            "The selected Swift model could not be verified. Close and reopen Swift to check its downloads and repair setup automatically. If setup fails, select Retry setup or copy its diagnostics. An explicitly selected PTQ1 export must be prepared separately.",
         )
     } else if text.contains("Artifacts") {
         Failure::Message(
-            "The pinned Swift model or selected CPU runtime could not be verified. Use bonsai-tools provision with operation model and the Swift assessment lock, then operation inference for --native-engine or operation engine with the same assessment lock for the publisher runtime.",
+            "The selected model or publisher CPU runtime could not be verified. Close and reopen Swift to check the selected downloads again. If setup fails, select Retry setup or copy its diagnostics.",
         )
     } else {
         Failure::Message("Swift could not start. Check the retained broker diagnostic logs.")
@@ -2260,9 +2300,72 @@ mod tests {
         else {
             return Err(Failure::Message("Missing adapter startup guidance"));
         };
-        assert!(message.contains("bonsai-tools provision"));
-        assert!(message.contains("--no-abliterate-lora"));
+        assert!(message.contains("adapter"));
+        assert!(message.contains("repair its download automatically"));
+        assert!(message.contains("Retry setup"));
+        assert!(!message.contains("bonsai-tools"));
         Ok(())
+    }
+
+    #[test]
+    fn model_verification_guidance_distinguishes_fixed_reasons_and_selected_exports()
+    -> Result<(), Failure> {
+        for (reason, selection, expected) in [
+            ("missing", "original", "model file is missing"),
+            ("storage", "original", "cannot safely read"),
+            ("identity", "original", "size and integrity checks"),
+            ("missing", "ptq1", "PTQ1 model export is missing"),
+            ("storage", "ptq1", "cannot safely read"),
+            ("identity", "ptq1", "PTQ1 export did not pass"),
+            ("configuration", "original", "model configuration"),
+            ("cancelled", "original", "verification was cancelled"),
+        ] {
+            let diagnostic = format!(
+                "Selected model verification failed: reason={reason}, representation={selection}.\r\nSelected model verifier error: Path.\r\nDevelopment backend launch failed: Artifacts.\r\nsynthetic-private-backend-detail\r\n"
+            );
+            for native_engine in [true, false] {
+                let Failure::Message(message) =
+                    startup_failure(diagnostic.as_bytes(), native_engine)
+                else {
+                    return Err(Failure::Message(
+                        "Model failure lost its actionable message",
+                    ));
+                };
+                assert!(message.contains(expected));
+                assert!(!message.contains("synthetic-private-backend-detail"));
+                assert!(!message.contains("bonsai-tools"));
+                assert!(!message.contains("config/"));
+            }
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn model_verification_guidance_requires_complete_known_lines_and_artifact_failure() {
+        const MARKER: &str =
+            "Selected model verification failed: reason=missing, representation=original.";
+        for diagnostic in [
+            MARKER.to_owned(),
+            format!("{MARKER}\nDevelopment backend launch failed: Memory."),
+            format!("prefix {MARKER}\nDevelopment backend launch failed: Artifacts."),
+            format!("{MARKER} suffix\nDevelopment backend launch failed: Artifacts."),
+            format!(
+                "{}\nDevelopment backend launch failed: Artifacts.",
+                MARKER.replace("missing", "unknown")
+            ),
+            format!(
+                "{}\nDevelopment backend launch failed: Artifacts.",
+                MARKER.replace("original", "unknown")
+            ),
+        ] {
+            assert_eq!(super::model_verification_message(&diagnostic), None);
+        }
+        assert!(
+            super::model_verification_message(&format!(
+                "{MARKER}\nDevelopment backend launch failed: Artifacts."
+            ))
+            .is_some_and(|message| message.contains("model file is missing"))
+        );
     }
 
     #[test]

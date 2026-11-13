@@ -6,6 +6,49 @@ use std::path::{Path, PathBuf};
 
 pub use bonsai_artifacts::ArtifactError;
 
+fn model_failure_reason(path: &Path, error: ArtifactError) -> &'static str {
+    match error {
+        ArtifactError::Path => {
+            // This is a diagnostic snapshot after rejection, never an admission
+            // decision. Path errors also include denied access and unsafe
+            // ancestors, so an arbitrary failed open must not imply corruption.
+            if bonsai_artifacts::validate_external_path(path).is_ok()
+                && std::fs::symlink_metadata(path)
+                    .is_err_and(|error| error.kind() == std::io::ErrorKind::NotFound)
+            {
+                "missing"
+            } else {
+                "storage"
+            }
+        }
+        ArtifactError::Identity => "identity",
+        ArtifactError::Cancelled => "cancelled",
+        ArtifactError::Configuration
+        | ArtifactError::Archive
+        | ArtifactError::Installation
+        | ArtifactError::Architecture => "configuration",
+    }
+}
+
+fn write_model_failure(
+    output: &mut impl std::io::Write,
+    path: &Path,
+    use_repacked_ptq1: bool,
+    error: ArtifactError,
+) -> std::io::Result<()> {
+    let representation = if use_repacked_ptq1 {
+        "ptq1"
+    } else {
+        "original"
+    };
+    writeln!(
+        output,
+        "Selected model verification failed: reason={}, representation={representation}.",
+        model_failure_reason(path, error)
+    )?;
+    writeln!(output, "Selected model verifier error: {error:?}.")
+}
+
 /// Verified policy paths and guards retained until the backend child exits.
 pub struct VerifiedArtifacts {
     executable: PathBuf,
@@ -109,7 +152,17 @@ impl VerifiedArtifacts {
             .join("models")
             .join(&pins.model.revision)
             .join(&pins.model.filename);
-        let guard = VerifiedFile::verify(&model, pins.model.bytes, &pins.model.sha256)?;
+        let guard = VerifiedFile::verify(&model, pins.model.bytes, &pins.model.sha256)
+            .inspect_err(|error| {
+                // Only fixed classifications enter stderr; paths, file contents
+                // and inherited process output never enter the UI error text.
+                let _written = write_model_failure(
+                    &mut std::io::stderr().lock(),
+                    &model,
+                    use_repacked_ptq1,
+                    *error,
+                );
+            })?;
         Ok((model, guard))
     }
 
@@ -149,6 +202,52 @@ mod tests {
     use super::*;
     use crate::launch_policy::reviewed_pins;
     use std::fs;
+
+    #[test]
+    fn model_failure_markers_distinguish_missing_storage_and_identity_without_paths()
+    -> std::io::Result<()> {
+        let stamp = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map_err(std::io::Error::other)?
+            .as_nanos();
+        let parent = std::env::temp_dir();
+        let directory = parent.join(format!(
+            "Bonsai-model-failure-{}-{stamp}",
+            std::process::id()
+        ));
+        fs::create_dir(&directory)?;
+        let path = directory.join("private-model-name.gguf");
+        for (error, reason) in [
+            (ArtifactError::Path, "missing"),
+            (ArtifactError::Identity, "identity"),
+            (ArtifactError::Configuration, "configuration"),
+            (ArtifactError::Cancelled, "cancelled"),
+        ] {
+            for (ptq1, representation) in [(false, "original"), (true, "ptq1")] {
+                let mut output = Vec::new();
+                write_model_failure(&mut output, &path, ptq1, error)?;
+                assert_eq!(
+                    output,
+                    format!(
+                        "Selected model verification failed: reason={reason}, representation={representation}.\nSelected model verifier error: {error:?}.\n"
+                    )
+                    .into_bytes()
+                );
+            }
+        }
+        fs::write(&path, b"model bytes must never appear in diagnostics")?;
+        assert_eq!(model_failure_reason(&path, ArtifactError::Path), "storage");
+        fs::create_dir(directory.join(".git"))?;
+        assert_eq!(
+            model_failure_reason(&directory.join("missing.gguf"), ArtifactError::Path),
+            "storage"
+        );
+        fs::remove_file(path)?;
+        fs::remove_dir(directory.join(".git"))?;
+        assert_eq!(directory.parent(), Some(parent.as_path()));
+        fs::remove_dir(directory)?;
+        Ok(())
+    }
 
     #[test]
     fn ptq1_verification_rejects_missing_or_altered_selected_file_without_pq2_fallback()
