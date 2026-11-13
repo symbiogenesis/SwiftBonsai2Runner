@@ -1252,7 +1252,8 @@ fn audio_file_progress_cancel_and_rejection_are_visible_in_wide_and_narrow_windo
         app.dictation_finishing = true;
         app.microphone_generation = Some(7);
         app.input = "Keep draft".to_owned();
-        chat.run();
+        // The active transcription spinner deliberately keeps requesting frames.
+        chat.run_steps(2);
         let status = chat.get_by_label("Audio transcription in progress").rect();
         assert!(status.is_positive() && status.bottom() <= size[1]);
         chat.get_by_role_and_label(egui::Role::Button, "Cancel transcription")
