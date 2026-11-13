@@ -1306,7 +1306,6 @@ impl QwenDecoderLayer {
     /// Run a single-token step (`pos = kv.seq_len`), appending K/V into `kv` and applying optional `LoRA` patches.
     #[expect(
         clippy::too_many_arguments,
-        clippy::too_many_lines,
         reason = "Passes explicit GQA geometry, RoPE/RMSNorm scalars, KV cache, and optional LoRA adapter."
     )]
     pub fn forward_step(
@@ -1320,6 +1319,43 @@ impl QwenDecoderLayer {
         kv: &mut LayerKvCache,
         adapter: Option<&TalkerLoraAdapter>,
     ) -> io::Result<Vec<f32>> {
+        self.forward_step_parallel(
+            input,
+            num_q_heads,
+            num_kv_heads,
+            head_dim,
+            rope_theta,
+            rms_eps,
+            kv,
+            adapter,
+            1,
+        )
+    }
+
+    /// Run one decoder step with an explicit bounded CPU worker count.
+    #[expect(
+        clippy::too_many_arguments,
+        clippy::too_many_lines,
+        reason = "Keep GQA geometry, cache ownership and compute budget explicit."
+    )]
+    pub fn forward_step_parallel(
+        &self,
+        input: &[f32],
+        num_q_heads: usize,
+        num_kv_heads: usize,
+        head_dim: usize,
+        rope_theta: f32,
+        rms_eps: f32,
+        kv: &mut LayerKvCache,
+        adapter: Option<&TalkerLoraAdapter>,
+        workers: usize,
+    ) -> io::Result<Vec<f32>> {
+        if !(1..=256).contains(&workers) {
+            return Err(io::Error::new(
+                io::ErrorKind::InvalidInput,
+                "Invalid CPU worker count.",
+            ));
+        }
         if num_q_heads == 0 || num_kv_heads == 0 || !num_q_heads.is_multiple_of(num_kv_heads) {
             return Err(io::Error::new(
                 io::ErrorKind::InvalidInput,
@@ -1357,19 +1393,19 @@ impl QwenDecoderLayer {
             &h_norm,
             qkv_fold_for(q_sig),
             patch(&self.q_proj),
-            1,
+            workers,
         )?;
         let mut k = self.k_proj.forward_vec_with_pre_folded(
             &h_norm,
             qkv_fold_for(k_sig),
             patch(&self.k_proj),
-            1,
+            workers,
         )?;
         let v = self.v_proj.forward_vec_with_pre_folded(
             &h_norm,
             qkv_fold_for(v_sig),
             patch(&self.v_proj),
-            1,
+            workers,
         )?;
 
         for h in 0..num_q_heads {
@@ -1434,7 +1470,9 @@ impl QwenDecoderLayer {
             }
         });
 
-        let o_vec = self.o_proj.forward_vec(&attn_out, patch(&self.o_proj))?;
+        let o_vec = self
+            .o_proj
+            .forward_vec_parallel(&attn_out, patch(&self.o_proj), workers)?;
         let mut x_res: Vec<f32> = input
             .iter()
             .zip(o_vec.iter())
@@ -1455,13 +1493,13 @@ impl QwenDecoderLayer {
             &h2,
             shared_ffn_folded.as_deref(),
             patch(&self.gate_proj),
-            1,
+            workers,
         )?;
         let up = self.up_proj.forward_vec_with_pre_folded(
             &h2,
             shared_ffn_folded.as_deref(),
             patch(&self.up_proj),
-            1,
+            workers,
         )?;
         let swiglu: Vec<f32> = gate
             .iter()
@@ -1473,7 +1511,7 @@ impl QwenDecoderLayer {
             .collect();
         let down = self
             .down_proj
-            .forward_vec(&swiglu, patch(&self.down_proj))?;
+            .forward_vec_parallel(&swiglu, patch(&self.down_proj), workers)?;
         dispatch!(level, simd => axpy_simd(simd, 1.0_f32, &down, &mut x_res));
         Ok(x_res)
     }
@@ -1511,11 +1549,16 @@ pub struct CodePredictorModel {
 }
 
 impl CodePredictorModel {
-    fn project_in<'a>(&self, raw: &'a [f32]) -> io::Result<std::borrow::Cow<'a, [f32]>> {
+    fn project_in_parallel<'a>(
+        &self,
+        raw: &'a [f32],
+        workers: usize,
+    ) -> io::Result<std::borrow::Cow<'a, [f32]>> {
         self.mtp_proj
             .as_ref()
             .map_or(Ok(std::borrow::Cow::Borrowed(raw)), |proj| {
-                proj.forward_vec(raw, None).map(std::borrow::Cow::Owned)
+                proj.forward_vec_parallel(raw, None, workers)
+                    .map(std::borrow::Cow::Owned)
             })
     }
     /// Predict all 15 acoustic codes (`c1..=c15`) for one frame given `talker_hidden`,
@@ -1530,6 +1573,40 @@ impl CodePredictorModel {
         seed: i64,
         subseq_base: i64,
     ) -> io::Result<[i32; TOTAL_CODE_GROUPS]> {
+        self.predict_frame_with_control(
+            talker_hidden,
+            c0,
+            talker_codec_embd,
+            params,
+            seed,
+            subseq_base,
+            1,
+            &mut || Ok(()),
+        )
+    }
+
+    /// Predict one frame with explicit CPU workers and cancellation between layers/codebooks.
+    #[expect(
+        clippy::too_many_arguments,
+        reason = "Retain the independently selected sampler, seed, worker and cancellation controls."
+    )]
+    pub fn predict_frame_with_control(
+        &self,
+        talker_hidden: &[f32],
+        c0: i32,
+        talker_codec_embd: &[f32],
+        params: DecoupledSamplingParams,
+        seed: i64,
+        subseq_base: i64,
+        workers: usize,
+        cancel: &mut dyn FnMut() -> io::Result<()>,
+    ) -> io::Result<[i32; TOTAL_CODE_GROUPS]> {
+        if !(1..=256).contains(&workers) {
+            return Err(io::Error::new(
+                io::ErrorKind::InvalidInput,
+                "Invalid CPU worker count.",
+            ));
+        }
         if self.num_acoustic_codebooks != NUM_ACOUSTIC_CODEBOOKS
             || self.codec_embeddings.len() != NUM_ACOUSTIC_CODEBOOKS
             || self.lm_heads.len() != NUM_ACOUSTIC_CODEBOOKS
@@ -1558,9 +1635,11 @@ impl CodePredictorModel {
         let mut seen_scratch = Vec::new();
 
         // Step 0 prefill: position 0 = talker_hidden, position 1 = embed(c0)
-        let mut h = self.project_in(talker_hidden)?;
+        cancel()?;
+        let mut h = self.project_in_parallel(talker_hidden, workers)?;
         for (layer, kv) in self.layers.iter().zip(kv_caches.iter_mut()) {
-            h = std::borrow::Cow::Owned(layer.forward_step(
+            cancel()?;
+            h = std::borrow::Cow::Owned(layer.forward_step_parallel(
                 &h,
                 self.num_q_heads,
                 self.num_kv_heads,
@@ -1569,14 +1648,17 @@ impl CodePredictorModel {
                 self.rms_norm_eps,
                 kv,
                 None,
+                workers,
             )?);
         }
 
         let mut next_raw = c0_emb;
         for g in 0..NUM_ACOUSTIC_CODEBOOKS {
-            let mut h_step = self.project_in(next_raw)?;
+            cancel()?;
+            let mut h_step = self.project_in_parallel(next_raw, workers)?;
             for (layer, kv) in self.layers.iter().zip(kv_caches.iter_mut()) {
-                h_step = std::borrow::Cow::Owned(layer.forward_step(
+                cancel()?;
+                h_step = std::borrow::Cow::Owned(layer.forward_step_parallel(
                     &h_step,
                     self.num_q_heads,
                     self.num_kv_heads,
@@ -1585,10 +1667,11 @@ impl CodePredictorModel {
                     self.rms_norm_eps,
                     kv,
                     None,
+                    workers,
                 )?);
             }
             let normed = rms_norm(&h_step, &self.norm_w, self.rms_norm_eps)?;
-            let mut logits = self.lm_heads[g].forward_vec(&normed, None)?;
+            let mut logits = self.lm_heads[g].forward_vec_parallel(&normed, None, workers)?;
             let sampled_idx = sampling::sample_top_k_p(
                 &mut logits,
                 sampling::SampleTopKPParams {
@@ -2029,6 +2112,40 @@ mod tests {
         )?;
         assert_eq!(codes[0], 3);
         assert!(codes.iter().all(|&c| (0..8).contains(&c)));
+        let parallel = cp.predict_frame_with_control(
+            &[0.1, -0.2, 0.3, 0.4],
+            3,
+            &talker_embd,
+            DecoupledSamplingParams::base_clone(),
+            42,
+            100,
+            4,
+            &mut || Ok(()),
+        )?;
+        assert_eq!(codes, parallel);
+        let mut polls = 0;
+        let cancelled = cp.predict_frame_with_control(
+            &[0.1, -0.2, 0.3, 0.4],
+            3,
+            &talker_embd,
+            DecoupledSamplingParams::base_clone(),
+            42,
+            100,
+            1,
+            &mut || {
+                polls += 1;
+                if polls == 4 {
+                    Err(std::io::Error::new(
+                        std::io::ErrorKind::Interrupted,
+                        "cancelled",
+                    ))
+                } else {
+                    Ok(())
+                }
+            },
+        );
+        assert_eq!(polls, 4);
+        assert!(cancelled.is_err_and(|error| error.kind() == std::io::ErrorKind::Interrupted));
 
         let mut pcache = PromptCache::default();
         let ref_codes = [1_i32; 32];
