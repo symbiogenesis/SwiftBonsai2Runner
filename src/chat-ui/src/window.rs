@@ -18,6 +18,7 @@ use std::{
 };
 
 mod appearance;
+mod atomic_file;
 mod audio_files;
 #[cfg(test)]
 mod background_tests;

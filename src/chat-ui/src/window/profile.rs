@@ -2,8 +2,8 @@
 use super::{State, VOICE_LIMIT};
 use serde::{Deserialize, Serialize};
 use std::{
-    fs::{self, File, OpenOptions},
-    io::{self, Write as _},
+    fs::File,
+    io,
     path::Path,
     sync::{
         Arc, Mutex,
@@ -11,7 +11,7 @@ use std::{
         mpsc::{self, SyncSender},
     },
     thread::JoinHandle,
-    time::{Duration, Instant, SystemTime, UNIX_EPOCH},
+    time::{Duration, Instant},
 };
 
 const MAX_BYTES: usize = 8_192;
@@ -182,34 +182,16 @@ fn save(path: &Path, voice: &str) -> io::Result<()> {
         return Err(io::Error::other("Voice profile exceeds its size limit."));
     }
     let sealed = bonsai_windows_credentials::protect_private_data(&bytes)?;
-    let stamp = SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .map_err(io::Error::other)?
-        .as_nanos();
-    let temporary = path.with_extension(format!("{}.{stamp}.pending", std::process::id()));
-    bonsai_windows_credentials::validate_external_path(&temporary)?;
-    let mut created = false;
-    let result = (|| {
-        let mut file = OpenOptions::new()
-            .write(true)
-            .create_new(true)
-            .open(&temporary)?;
-        created = true;
-        file.write_all(&sealed)?;
-        file.sync_all()?;
-        drop(file);
-        bonsai_windows_credentials::validate_external_path(path)?;
-        fs::rename(&temporary, path)
-    })();
-    if result.is_err() && created {
-        let _removed = fs::remove_file(temporary);
-    }
-    result
+    super::atomic_file::replace(path, &sealed)
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::{
+        fs,
+        time::{SystemTime, UNIX_EPOCH},
+    };
 
     fn fixture() -> io::Result<std::path::PathBuf> {
         let stamp = SystemTime::now()

@@ -3,8 +3,8 @@ use super::{egui, platform};
 use egui::{Color32, FontId};
 use serde::{Deserialize, Serialize};
 use std::{
-    fs::{self, File, OpenOptions},
-    io::{self, Write as _},
+    fs::File,
+    io,
     path::Path,
     sync::{
         Arc, Mutex,
@@ -12,7 +12,7 @@ use std::{
         mpsc::{self, SyncSender},
     },
     thread::JoinHandle,
-    time::{Duration, Instant, SystemTime, UNIX_EPOCH},
+    time::{Duration, Instant},
 };
 
 const MAX_BYTES: u64 = 4_096;
@@ -276,40 +276,21 @@ fn read(path: &Path) -> io::Result<Preferences> {
 }
 
 fn save(path: &Path, preferences: Preferences) -> io::Result<()> {
-    bonsai_windows_credentials::validate_external_path(path)?;
-    let stamp = SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .map_err(io::Error::other)?
-        .as_nanos();
-    let temporary = path.with_extension(format!("{}.{stamp}.pending", std::process::id()));
-    bonsai_windows_credentials::validate_external_path(&temporary)?;
     let bytes = serde_json::to_vec(&Saved {
         version: 1,
         preferences,
     })
     .map_err(io::Error::other)?;
-    let mut created = false;
-    let result = (|| {
-        let mut file = OpenOptions::new()
-            .write(true)
-            .create_new(true)
-            .open(&temporary)?;
-        created = true;
-        file.write_all(&bytes)?;
-        file.sync_all()?;
-        drop(file);
-        bonsai_windows_credentials::validate_external_path(path)?;
-        fs::rename(&temporary, path)
-    })();
-    if result.is_err() && created {
-        let _removed = fs::remove_file(temporary);
-    }
-    result
+    super::atomic_file::replace(path, &bytes)
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::{
+        fs,
+        time::{SystemTime, UNIX_EPOCH},
+    };
 
     #[test]
     fn appearance_preferences_reject_unbounded_or_nonfinite_geometry() {
