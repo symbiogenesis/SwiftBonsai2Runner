@@ -28,6 +28,69 @@ function Resolve-ReleasePath {
     $resolved
 }
 
+function Test-ReleaseSharingViolation([Exception]$Exception) {
+    while ($null -ne $Exception) {
+        # Exact HRESULT_FROM_WIN32(ERROR_SHARING_VIOLATION/ERROR_LOCK_VIOLATION).
+        if ($Exception -is [IO.IOException] -and $Exception.HResult -in @(-2147024864, -2147024863)) {
+            return $true
+        }
+        $Exception = $Exception.InnerException
+    }
+    $false
+}
+
+function Remove-ReleaseDirectory {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)][string]$Path,
+        [Parameter(Mandatory)][string]$ParentDirectory,
+        [Parameter(Mandatory)][string]$LeafName,
+        [ValidateRange(0, 10000)][int]$TimeoutMilliseconds = 5000,
+        [Management.Automation.ErrorRecord]$PrimaryFailure
+    )
+    try {
+        if ($LeafName -in @('.', '..') -or
+            $LeafName.IndexOfAny([IO.Path]::GetInvalidFileNameChars()) -ge 0 -or
+            [IO.Path]::GetFileName($LeafName) -cne $LeafName) {
+            throw 'Release cleanup requires one exact directory leaf name.'
+        }
+        $parent = [IO.Path]::TrimEndingDirectorySeparator((Resolve-ReleasePath $ParentDirectory))
+        $resolved = Resolve-ReleasePath $Path -AllowMissing
+        if ([IO.Path]::GetDirectoryName($resolved) -ine $parent -or
+            [IO.Path]::GetFileName($resolved) -cne $LeafName) {
+            throw 'Refusing cleanup outside the exact private release directory.'
+        }
+        $clock = [Diagnostics.Stopwatch]::StartNew()
+        while (Test-Path -LiteralPath $resolved) {
+            # Revalidate the exact target and every ancestor on each attempt.
+            # Never follow a redirected entry introduced into the private stage.
+            $null = Resolve-ReleasePath $resolved
+            foreach ($entry in Get-ChildItem -LiteralPath $resolved -Force -Recurse -ErrorAction Stop) {
+                if ($entry.Attributes -band [IO.FileAttributes]::ReparsePoint) {
+                    throw "Redirected release cleanup entry: $($entry.FullName)"
+                }
+            }
+            try {
+                Remove-Item -LiteralPath $resolved -Recurse -Force -ErrorAction Stop
+                if (Test-Path -LiteralPath $resolved) { throw 'Release cleanup left its directory behind.' }
+                return
+            } catch {
+                $remaining = $TimeoutMilliseconds - $clock.ElapsedMilliseconds
+                if (-not (Test-ReleaseSharingViolation $_.Exception) -or $remaining -le 0) { throw }
+                Start-Sleep -Milliseconds ([int][Math]::Min(100, $remaining))
+                if ($clock.ElapsedMilliseconds -ge $TimeoutMilliseconds) { throw }
+            }
+        }
+    } catch {
+        if ($null -ne $PrimaryFailure) {
+            $PrimaryFailure.Exception.Data['ReleaseCleanupFailure'] = $_.Exception.Message
+            [Console]::Error.WriteLine("Release cleanup also failed: $($_.Exception.Message)")
+            throw $PrimaryFailure
+        }
+        throw
+    }
+}
+
 function Format-ReleaseFailureOutput([string]$Text) {
     if ([string]::IsNullOrWhiteSpace($Text)) { return '<empty>' }
     # Retain the first error and final context without flooding CI exceptions.

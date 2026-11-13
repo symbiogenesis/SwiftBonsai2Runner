@@ -22,6 +22,7 @@ foreach ($source in $sources) {
 & (Join-Path $PSScriptRoot 'Test-ReleasePolicy.ps1')
 & (Join-Path $PSScriptRoot 'Test-PortableReleaseAssets.ps1')
 & (Join-Path $PSScriptRoot 'Test-ReleaseCommandFailures.ps1')
+& (Join-Path $PSScriptRoot 'Test-ReleaseCleanup.ps1')
 $fixture = Join-Path ([IO.Path]::GetTempPath()) ('SwiftBonsai-Release-Controls-' + [guid]::NewGuid().ToString('N'))
 [void][IO.Directory]::CreateDirectory($fixture)
 $echoScript = Join-Path $fixture 'arguments.ps1'

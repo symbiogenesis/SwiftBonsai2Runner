@@ -31,6 +31,7 @@ if (Test-Path -LiteralPath $EvidenceDirectory) { throw 'Executable smoke evidenc
 [void][IO.Directory]::CreateDirectory($EvidenceDirectory)
 $installation = Join-Path $EvidenceDirectory 'extracted'
 $checked = $false
+$smokeFailure = $null
 try {
     $request = @{
         operation = 'extract'; executablePath = $ExecutablePath; installationDirectory = $installation
@@ -47,15 +48,11 @@ try {
         throw 'Extracted application inventory differs from the bundled package.'
     }
     $checked = $true
+} catch {
+    $smokeFailure = $_
+    throw
 } finally {
-    if (Test-Path -LiteralPath $installation) {
-        $resolved = Resolve-ReleasePath $installation
-        $parent = [IO.Path]::GetDirectoryName($resolved)
-        if ($parent -ine $EvidenceDirectory -or [IO.Path]::GetFileName($resolved) -cne 'extracted') {
-            throw 'Refusing cleanup outside the private extraction stage.'
-        }
-        Remove-Item -LiteralPath $resolved -Recurse -Force
-    }
+    Remove-ReleaseDirectory -Path $installation -ParentDirectory $EvidenceDirectory -LeafName 'extracted' -PrimaryFailure $smokeFailure
 }
 if (-not $checked) { throw 'The single executable smoke check did not complete.' }
 [ordered]@{

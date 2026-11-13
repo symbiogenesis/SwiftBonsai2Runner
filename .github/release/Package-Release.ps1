@@ -46,8 +46,11 @@ $notices = Resolve-ReleasePath (Join-Path $InputDirectory 'release-build-tts/THI
 if ((Get-Item -LiteralPath $notices).Length -lt 1024) { throw 'The complete third-party notice bundle is missing.' }
 [void][IO.Directory]::CreateDirectory($OutputDirectory)
 [void][IO.Directory]::CreateDirectory($EvidenceDirectory)
-$stage = Join-Path (Resolve-ReleasePath ([IO.Path]::GetTempPath())) ('SwiftBonsai-ReleasePackage-' + [guid]::NewGuid().ToString('N'))
+$stageParent = Resolve-ReleasePath ([IO.Path]::GetTempPath())
+$stageLeaf = 'SwiftBonsai-ReleasePackage-' + [guid]::NewGuid().ToString('N')
+$stage = Join-Path $stageParent $stageLeaf
 [void][IO.Directory]::CreateDirectory($stage)
+$packageFailure = $null
 try {
     $package = Join-Path $stage 'package'
     $request = @{
@@ -78,10 +81,9 @@ try {
     })
     [IO.File]::WriteAllLines((Join-Path $OutputDirectory 'SHA256SUMS.txt'), $checksums, [Text.UTF8Encoding]::new($false))
     $null = Assert-PortableReleaseAssets -AssetDirectory $OutputDirectory -Tag $Tag -SourceRevision $SourceRevision
+} catch {
+    $packageFailure = $_
+    throw
 } finally {
-    $resolved = Resolve-ReleasePath $stage
-    $tempRoot = [IO.Path]::GetFullPath([IO.Path]::GetTempPath()).TrimEnd('\') + '\'
-    if (-not $resolved.StartsWith($tempRoot, [StringComparison]::OrdinalIgnoreCase) -or
-        [IO.Path]::GetFileName($resolved) -notlike 'SwiftBonsai-ReleasePackage-*') { throw 'Refusing cleanup outside the private release stage.' }
-    Remove-Item -LiteralPath $resolved -Recurse -Force
+    Remove-ReleaseDirectory -Path $stage -ParentDirectory $stageParent -LeafName $stageLeaf -PrimaryFailure $packageFailure
 }
