@@ -392,6 +392,9 @@ impl State {
                 .id_salt("audio-transcript-scroll")
                 .auto_shrink([false, false])
                 .stick_to_bottom(self.audio_file_active)
+                // A modal inherits its previous frame's available size. Reserve
+                // the admitted height so transcript growth cannot resize it.
+                .min_scrolled_height(viewport_height)
                 .max_height(viewport_height)
                 .show(ui, |ui| {
                     // Borrowed &str keeps native selection/copy without any
