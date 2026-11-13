@@ -246,28 +246,7 @@ impl State {
     }
 
     pub(super) fn audio_file_fits_composer(&self, text: &str) -> bool {
-        let length = self.input.chars().count();
-        let range = self.composer_cursor.map_or(length..length, |cursor| {
-            let range = cursor.as_sorted_char_range();
-            usize::from(range.start).min(length)..usize::from(range.end).min(length)
-        });
-        let prefix = range.start > 0
-            && self
-                .input
-                .chars()
-                .nth(range.start - 1)
-                .is_some_and(|character| !character.is_whitespace());
-        let suffix = self
-            .input
-            .chars()
-            .nth(range.end)
-            .is_some_and(|character| !character.is_whitespace());
-        text.trim()
-            .chars()
-            .count()
-            .saturating_add(usize::from(prefix))
-            .saturating_add(usize::from(suffix))
-            <= super::INPUT_LIMIT.saturating_sub(length - (range.end - range.start))
+        self.transcript_insertion(text.trim()).is_some()
     }
 
     pub(super) fn audio_file_error_actions(&mut self, ui: &mut egui::Ui) {
@@ -800,6 +779,30 @@ mod tests {
                 .as_deref()
                 .is_some_and(|message| message.contains("cancelled"))
         );
+        Ok(())
+    }
+
+    #[test]
+    fn audio_file_acceptance_rechecks_the_changed_draft_before_inserting() -> io::Result<()> {
+        let (mut state, _speech_commands, requests) = fixture()?;
+        state.input = "雨".repeat(super::super::INPUT_LIMIT - 2);
+        let generation = 1_u64 << 63;
+        state.audio_file_part(generation, "語");
+        state.finish_audio_file(generation);
+        assert!(state.pending_voice_transcript.is_some());
+        // Editing while the result is staged consumes its previously available space.
+        state.input.push('雪');
+        state.flush_voice_transcript(&egui::Context::default());
+        assert_eq!(state.input.chars().count(), super::super::INPUT_LIMIT - 1);
+        assert!(state.input.ends_with('雪'));
+        assert_eq!(state.audio_file_transcript, "語");
+        assert!(
+            state
+                .audio_file_notice
+                .as_deref()
+                .is_some_and(|message| message.contains("full transcript"))
+        );
+        assert!(requests.try_recv().is_err());
         Ok(())
     }
 

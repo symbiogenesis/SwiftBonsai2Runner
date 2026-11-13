@@ -24,6 +24,7 @@ mod audio_files;
 mod background_tests;
 mod branding;
 mod composer;
+mod composer_insertion;
 mod context_capacity;
 mod controls;
 mod draft_buffer;
@@ -1497,11 +1498,11 @@ impl State {
             }
             return;
         }
-        if from_file && !self.audio_file_fits_composer(text) {
+        let complete = self.insert_dictation(text);
+        if from_file && !complete {
             self.audio_file_notice = Some("Transcription complete. View or copy the full transcript below. It exceeds the chat prompt size, so no message was sent. Your draft was kept.".to_owned());
             return;
         }
-        let complete = self.insert_dictation(text);
         if !complete {
             "Voice message exceeds the prompt limit. Your draft was kept; no message was sent."
                 .clone_into(&mut self.speech_status);
@@ -1565,44 +1566,20 @@ impl State {
         self.pending_cursor = Some(cursor);
     }
 
-    fn insert_dictation(&mut self, text: &str) -> bool {
-        let length = self.input.chars().count();
-        let range = self.composer_cursor.map_or(length..length, |cursor| {
+    fn transcript_insertion<'a>(&self, text: &'a str) -> Option<composer_insertion::Plan<'a>> {
+        let selection = self.composer_cursor.map(|cursor| {
             let range = cursor.as_sorted_char_range();
-            usize::from(range.start).min(length)..usize::from(range.end).min(length)
+            usize::from(range.start)..usize::from(range.end)
         });
-        let available = INPUT_LIMIT.saturating_sub(length - (range.end - range.start));
-        let byte_index = |index| {
-            self.input
-                .char_indices()
-                .nth(index)
-                .map_or(self.input.len(), |(byte, _)| byte)
-        };
-        let bytes = byte_index(range.start)..byte_index(range.end);
-        let prefix = if self.input[..bytes.start]
-            .chars()
-            .next_back()
-            .is_some_and(|character| !character.is_whitespace())
-        {
-            " "
-        } else {
-            ""
-        };
-        let suffix = if self.input[bytes.end..]
-            .chars()
-            .next()
-            .is_some_and(|character| !character.is_whitespace())
-        {
-            " "
-        } else {
-            ""
-        };
-        let phrase = format!("{prefix}{text}{suffix}");
-        if phrase.chars().count() > available {
+        composer_insertion::Plan::new(&self.input, selection, text, INPUT_LIMIT)
+    }
+
+    fn insert_dictation(&mut self, text: &str) -> bool {
+        let Some(plan) = self.transcript_insertion(text) else {
             return false;
-        }
-        self.input.replace_range(bytes, &phrase);
-        self.place_composer_cursor(range.start + phrase.chars().count());
+        };
+        let cursor = plan.apply(&mut self.input);
+        self.place_composer_cursor(cursor);
         true
     }
 
