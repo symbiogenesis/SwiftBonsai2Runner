@@ -370,44 +370,54 @@ impl State {
             return;
         }
         let mut close = false;
-        let modal = egui::Modal::new(egui::Id::unique("audio-transcript-modal"))
-            .show(ctx, |ui| {
-                ui.set_width((ctx.content_rect().width() - 64.0).clamp(260.0, 680.0));
-                ui.heading("Audio transcript");
-                ui.label("Kept for this session until you dismiss the audio status or transcribe another file. Copy the text to keep it.");
-                if self.audio_file_active {
-                    ui.label("Transcription continues while this view is open. If it finishes here, review the draft and select Send. Escape closes this view; use Cancel transcription to stop.");
-                }
-                ui.add_space(8.0);
-                let label = ui.label("Transcript text (read only)");
-                let viewport_height = (ctx.content_rect().height() - 280.0).clamp(80.0, 480.0);
-                let scroll = egui::ScrollArea::vertical()
-                    .id_salt("audio-transcript-scroll")
-                    .auto_shrink([false, false])
-                    .max_height(viewport_height)
-                    .show(ui, |ui| {
-                        // Borrowed &str keeps native selection/copy without any
-                        // route for editing the retained transcript.
-                        ui.add(
-                            egui::TextEdit::multiline(&mut self.audio_file_transcript.as_str())
-                                .id_salt("audio-transcript-text")
-                                .desired_width(ui.available_width())
-                                .desired_rows(4),
-                        )
-                        .labelled_by(label.id);
-                    });
-                #[cfg(test)]
-                ctx.data_mut(|data| {
-                    data.insert_temp(egui::Id::unique("audio-transcript-viewport"), scroll.inner_rect);
+        let modal = egui::Modal::new(egui::Id::unique("audio-transcript-modal")).show(ctx, |ui| {
+            ui.set_width((ctx.content_rect().width() - 64.0).clamp(260.0, 680.0));
+            let content_top = ui.cursor().top();
+            ui.heading("Audio transcript");
+            ui.label("Session only. Copy the text to keep it.");
+            if self.audio_file_active {
+                ui.label(
+                    "Still transcribing. If it finishes here, review the draft before sending.",
+                );
+            }
+            ui.weak("Escape closes this view.");
+            ui.add_space(8.0);
+            let label = ui.label("Transcript text (read only)");
+            // Header wrapping and text scaling consume real space. Reserve
+            // footer/frame/screen margins before admitting the text viewport.
+            let header_height = ui.cursor().top() - content_top;
+            let viewport_height =
+                (ctx.content_rect().height() - header_height - 112.0).clamp(40.0, 480.0);
+            let scroll = egui::ScrollArea::vertical()
+                .id_salt("audio-transcript-scroll")
+                .auto_shrink([false, false])
+                .max_height(viewport_height)
+                .show(ui, |ui| {
+                    // Borrowed &str keeps native selection/copy without any
+                    // route for editing the retained transcript.
+                    ui.add(
+                        egui::TextEdit::multiline(&mut self.audio_file_transcript.as_str())
+                            .id_salt("audio-transcript-text")
+                            .desired_width(ui.available_width())
+                            .desired_rows(4),
+                    )
+                    .labelled_by(label.id);
                 });
-                #[cfg(not(test))]
-                let _scroll = scroll;
-                ui.add_space(10.0);
-                ui.horizontal_wrapped(|ui| {
-                    self.copy_audio_transcript(ui, "Copy full transcript");
-                    close = ui.button("Close transcript").clicked();
-                });
+            #[cfg(test)]
+            ctx.data_mut(|data| {
+                data.insert_temp(
+                    egui::Id::unique("audio-transcript-viewport"),
+                    scroll.inner_rect,
+                );
             });
+            #[cfg(not(test))]
+            let _scroll = scroll;
+            ui.add_space(10.0);
+            ui.horizontal_wrapped(|ui| {
+                self.copy_audio_transcript(ui, "Copy full transcript");
+                close = ui.button("Close transcript").clicked();
+            });
+        });
         #[cfg(test)]
         ctx.data_mut(|data| {
             data.insert_temp(
