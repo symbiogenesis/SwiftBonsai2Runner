@@ -107,6 +107,12 @@ under [AGENTS.md](AGENTS.md).
 - [ ] Qualify pre-reply failure recovery with actual complex prompts: distinguish
   canonical request-size/schema rejections from counter/generation stage failures,
   preserve drafts/history and require confirmed cleanup before model retry.
+- [ ] Publish and pin the reviewed Prism ordinary-request deadline correction.
+  The current 0.1.27 private server still caps requests at ten minutes, including
+  prefill. Preserve explicit diagnostic deadlines, Stop/cancellation and bounded
+  intake/writes; qualify long-prefill completion and stage/cause diagnostics after
+  installing the verified release. Measure the supplied modest critique prompt
+  before selecting prefill optimizations; keep its private text out of evidence.
 - [ ] Qualify compact message headers, thinking expansion, speech/iteration
   controls, styled Unicode/code selection, copying and Find geometry.
 - [ ] Qualify Settings scope, compact/wrapped navigation, persistence, generation

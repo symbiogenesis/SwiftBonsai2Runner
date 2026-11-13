@@ -192,6 +192,15 @@ until owned-process cleanup completes. No error response is appended after
 streaming starts; malformed headers, incomplete intake or unauthenticated
 requests still close silently.
 
+The broker retains the fixed stage (`token-count` or `generation`), typed
+backend error category and elapsed stage milliseconds in `broker.stderr.log`
+before sending a failure response. The generation stage covers connection,
+request write and waiting for headers; it is not a prefill or decode measurement.
+It records no upstream headers/body, prompt, credentials or native I/O message.
+Expected context rejection is not recorded as a model failure. A category such
+as `WireSyntax` alone does not establish whether the backend exited, timed out
+or returned malformed data; the runtime's separate diagnostics supply that cause.
+
 ### Native client completion and recovery
 
 The native SSE client accepts fragmented UTF-8 BOM, CR/LF/CRLF line endings and

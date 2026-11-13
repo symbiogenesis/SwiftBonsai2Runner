@@ -174,6 +174,22 @@ acceptance and measured benefit remain pending.
 
 ## Acceptance ownership
 
+### Long-request runtime deadline
+
+Runner's ordinary chat path supplies no total generation deadline. The pinned
+Prism 0.1.27 private HTTP server nevertheless imposes its own ten-minute deadline,
+including prompt ingestion before the first response headers. Expiry there can
+surface as `backend_generation_failed` with no reply, even when the request fits
+the byte and token limits. A reported failure after about ten minutes is consistent
+with this path; older empty backend logs do not establish its actual cause.
+
+The runtime correction must preserve explicit diagnostic deadlines, cancellation,
+bounded header/body intake and per-write limits while removing the ordinary
+request cutoff. Local Prism source changes do not update the pinned installed
+runtime. A published, verified bundle and synchronized source/file locks are
+required before Runner can consume the fix. Actual-model acceptance remains
+separate from model-free deadline controls.
+
 The [conformance contract](prism-upstream-tests.md) preserves original source inputs,
 assertions, tolerances, unsupported results and production bridges. Full source
 conformance, generic APIs and accelerator coverage exceed the bounded Swift subset.

@@ -133,6 +133,7 @@ where
     let mut surplus = [0u8; 1];
     let mut abandoned = pin!(input.read(&mut surplus));
     let mut pipeline = Box::pin(async move {
+        let count_started = Instant::now();
         let counted = async {
             let counter = backend
                 .connect(deadline.limit(Instant::now() + CONNECT_TIMEOUT))
@@ -146,6 +147,7 @@ where
                 let reply = if error == BackendError::Admission(Rejection::ContextLimit) {
                     ErrorReply::ContextLimit
                 } else {
+                    note_backend_failure("token-count", error, count_started);
                     ErrorReply::BackendTokenCountFailed
                 };
                 send_error_reply(output, reply, deadline)
@@ -155,6 +157,7 @@ where
             }
         };
         let streaming = chat.streams_response();
+        let generation_started = Instant::now();
         let generated = async {
             let generation = backend
                 .connect(deadline.limit(Instant::now() + CONNECT_TIMEOUT))
@@ -165,6 +168,7 @@ where
         let response = match generated {
             Ok(response) => response,
             Err(error) => {
+                note_backend_failure("generation", error, generation_started);
                 send_error_reply(output, ErrorReply::BackendGenerationFailed, deadline)
                     .await
                     .map_err(ServeError::Response)?;
@@ -190,6 +194,20 @@ where
     .await;
     ensure_time(deadline)?;
     result
+}
+
+// Retain the failure category before a client write or teardown can obscure it.
+// BackendError contains only fixed classifications, never upstream bytes,
+// prompts, credentials or native I/O messages. Expected context rejection is
+// handled above without recording a model failure.
+fn note_backend_failure(stage: &str, error: BackendError, started: Instant) {
+    use std::io::Write as _;
+
+    let _recorded = writeln!(
+        std::io::stderr().lock(),
+        "Local model request failed: stage={stage}, error={error:?}, elapsed_ms={}.",
+        started.elapsed().as_millis()
+    );
 }
 
 async fn receive_admitted<C>(
