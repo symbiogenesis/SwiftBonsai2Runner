@@ -11,8 +11,8 @@ pub(super) fn transcribe(
     current: &AtomicU64,
     events: &Sender<Event>,
 ) {
-    let result = input.as_deref_mut().map_or_else(
-        || Err(canary::Failure::Message("Qwen3-ASR 1.7B is unavailable. Restart the app to prepare speech, then try the audio file again.")),
+    let result = input.as_deref_mut().map_or(
+        Err(canary::Failure::Message("Qwen3-ASR 1.7B is unavailable. Restart the app to prepare speech, then try the audio file again.")),
         |input| run(generation, first, &mut import, current, events,
             &mut |wav| input.transcribe(generation, wav, current), &mut admit_text),
     );

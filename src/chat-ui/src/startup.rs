@@ -21,6 +21,12 @@ use std::{
 
 const MAX_OUTPUT: u64 = 1024 * 1024;
 
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum Preparation {
+    Combined,
+    Staged,
+}
+
 pub(crate) struct Request {
     executable: PathBuf,
     payload: PathBuf,
@@ -28,7 +34,7 @@ pub(crate) struct Request {
     pub(crate) data: PathBuf,
     pub(crate) canary_configured: bool,
     pub(crate) tts_configured: bool,
-    staged: bool,
+    preparation: Preparation,
     pub(crate) portable_update: bool,
 }
 
@@ -85,7 +91,11 @@ impl Request {
         // New launchers advertise the stage contract in their serialized request.
         // An older maintenance executable can still build this UI from source;
         // retain its combined preparation protocol until it is rebuilt too.
-        let staged = speech.preparation_stage.as_deref() == Some("all");
+        let preparation = if speech.preparation_stage.as_deref() == Some("all") {
+            Preparation::Staged
+        } else {
+            Preparation::Combined
+        };
         let portable_update = speech.portable_executable.as_deref() == Some(executable.as_path());
         let has_canary_key = speech
             .canary_key_file
@@ -112,7 +122,7 @@ impl Request {
             data,
             canary_configured,
             tts_configured,
-            staged,
+            preparation,
             portable_update,
         })
     }
@@ -297,7 +307,8 @@ fn prepare_stages(
     cancelled: &AtomicBool,
     mut prepare: impl FnMut(&str, Option<&Path>) -> io::Result<crate::client::Config>,
 ) {
-    let config = match prepare(if request.staged { "model" } else { "all" }, None) {
+    let staged = request.preparation == Preparation::Staged;
+    let config = match prepare(if staged { "model" } else { "all" }, None) {
         Ok(config) => config,
         Err(error) => {
             let _sent = outgoing.send(Err(error));
@@ -305,7 +316,7 @@ fn prepare_stages(
         }
     };
     let broker = config.broker.clone();
-    let speech_pending = request.staged && (request.canary_configured || request.tts_configured);
+    let speech_pending = staged && (request.canary_configured || request.tts_configured);
     if outgoing
         .send(Ok(Progress::Model {
             config,
@@ -409,7 +420,7 @@ mod tests {
             data: config.data.clone(),
             canary_configured: true,
             tts_configured: true,
-            staged: true,
+            preparation: Preparation::Staged,
             portable_update: false,
         };
         let (outgoing, incoming) = mpsc::sync_channel(2);
@@ -461,7 +472,7 @@ mod tests {
             data: config.data.clone(),
             canary_configured: true,
             tts_configured: true,
-            staged: true,
+            preparation: Preparation::Staged,
             portable_update: false,
         };
         for (cancelled, staged, speech) in [
@@ -470,7 +481,11 @@ mod tests {
             (false, false, true),
             (false, true, false),
         ] {
-            request.staged = staged;
+            request.preparation = if staged {
+                Preparation::Staged
+            } else {
+                Preparation::Combined
+            };
             request.canary_configured = speech;
             request.tts_configured = speech;
             let (outgoing, incoming) = mpsc::sync_channel(2);

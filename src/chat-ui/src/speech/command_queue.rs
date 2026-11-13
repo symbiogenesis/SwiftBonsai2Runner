@@ -133,16 +133,16 @@ impl Sender {
         &self,
         envelope: Envelope,
         current: &AtomicU64,
-    ) -> Result<(), mpsc::SendError<Envelope>> {
+    ) -> Result<(), Box<mpsc::SendError<Envelope>>> {
         #[cfg(test)]
         if let Some(observed) = &self.observed {
-            return observed.send(envelope);
+            return observed.send(envelope).map_err(Box::new);
         }
         let Ok(mut queue) = self.shared.0.lock() else {
-            return Err(mpsc::SendError(envelope));
+            return Err(Box::new(mpsc::SendError(envelope)));
         };
         if queue.receiver_closed || queue.sender_closed {
-            return Err(mpsc::SendError(envelope));
+            return Err(Box::new(mpsc::SendError(envelope)));
         }
         match &envelope.command {
             Command::Shutdown => queue.retain(|_| false),
@@ -198,7 +198,7 @@ impl Sender {
         }
         let payload_bytes = bytes(&envelope.command);
         if payload_bytes > MAX_BYTES {
-            return Err(mpsc::SendError(envelope));
+            return Err(Box::new(mpsc::SendError(envelope)));
         }
         let command_limit = if matches!(envelope.command, Command::AppendStream { .. }) {
             STREAM_COMMANDS
@@ -212,7 +212,7 @@ impl Sender {
             ) {
                 queue.overflow(current);
             } else {
-                return Err(mpsc::SendError(envelope));
+                return Err(Box::new(mpsc::SendError(envelope)));
             }
         } else {
             if matches!(envelope.command, Command::Shutdown) {

@@ -80,30 +80,27 @@ impl State {
         } else {
             self.cancel_microphone();
             self.audio_file_transcript.clear();
-            match audio_import::Session::start(source) {
-                Ok(import) => {
-                    // Disjoint from microphone generations and speech's NO_INPUT
-                    // sentinel, even after the counter wraps.
-                    self.audio_file_generation =
-                        self.audio_file_generation.wrapping_add(1) & ((1_u64 << 62) - 1);
-                    let generation = (1_u64 << 63) | self.audio_file_generation;
-                    if let Some(session) = &self.speech {
-                        session.set_input_generation(Some(generation));
-                    }
-                    self.audio_import = Some(import);
-                    self.audio_file_active = true;
-                    self.microphone_generation = Some(generation);
-                    self.dictation_requested = true;
-                    self.dictation_finishing = true;
-                    "Opening and checking audio file. Cancel or Escape stops import."
-                        .clone_into(&mut self.speech_status);
-                    self.focus_composer = true;
+            if let Ok(import) = audio_import::Session::start(source) {
+                // Disjoint from microphone generations and speech's NO_INPUT
+                // sentinel, even after the counter wraps.
+                self.audio_file_generation =
+                    self.audio_file_generation.wrapping_add(1) & ((1_u64 << 62) - 1);
+                let generation = (1_u64 << 63) | self.audio_file_generation;
+                if let Some(session) = &self.speech {
+                    session.set_input_generation(Some(generation));
                 }
-                Err(_) => {
-                    self.audio_file_error = true;
-                    "Could not open audio input. Your draft was kept."
-                        .clone_into(&mut self.speech_status);
-                }
+                self.audio_import = Some(import);
+                self.audio_file_active = true;
+                self.microphone_generation = Some(generation);
+                self.dictation_requested = true;
+                self.dictation_finishing = true;
+                "Opening and checking audio file. Cancel or Escape stops import."
+                    .clone_into(&mut self.speech_status);
+                self.focus_composer = true;
+            } else {
+                self.audio_file_error = true;
+                "Could not open audio input. Your draft was kept."
+                    .clone_into(&mut self.speech_status);
             }
         }
         self.audio_file_notice = Some(self.speech_status.clone());
@@ -205,13 +202,13 @@ impl State {
         if !self.audio_file_active || self.microphone_generation != Some(generation) {
             return;
         }
-        if !self.audio_file_fits_composer(&self.audio_file_transcript) {
-            self.cancel_microphone();
-            self.audio_file_notice = Some("Transcription complete. View or copy the full transcript below. It exceeds the chat prompt size, so no message was sent. Your draft was kept.".to_owned());
-        } else {
+        if self.audio_file_fits_composer(&self.audio_file_transcript) {
             // Use the existing deferred insertion path so same-frame Escape,
             // conversation changes and composer input settle before submission.
             self.pending_voice_transcript = Some((generation, self.audio_file_transcript.clone()));
+        } else {
+            self.cancel_microphone();
+            self.audio_file_notice = Some("Transcription complete. View or copy the full transcript below. It exceeds the chat prompt size, so no message was sent. Your draft was kept.".to_owned());
         }
     }
 

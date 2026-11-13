@@ -206,6 +206,24 @@ impl State {
     ) -> Self {
         let speech = config
             .and_then(|config| speech::start(config.canary.clone(), config.qwen_tts.clone()).ok());
+        let mut state = Self::initial_state(commands, events, microphone, speech);
+        if let Some(config) = config {
+            state.model = ModelLifecycle::Preparing;
+            state.preview = false;
+            state.runtime_description = runtime_description(config);
+            state.abliteration_enabled = config.use_abliterate_lora;
+            state.canary_configured = config.canary.is_some();
+            state.tts_configured = config.qwen_tts.is_some();
+        }
+        state
+    }
+
+    fn initial_state(
+        commands: Sender<Command>,
+        events: client::EventReceiver,
+        microphone: Option<microphone::Microphone>,
+        speech: Option<speech::Session>,
+    ) -> Self {
         let speech_checked = speech.is_none();
         Self {
             commands,
@@ -216,12 +234,8 @@ impl State {
             startup_failure: None,
             updates: None,
             update_exit: None,
-            model: if config.is_some() {
-                ModelLifecycle::Preparing
-            } else {
-                ModelLifecycle::Unavailable
-            },
-            preview: config.is_none(),
+            model: ModelLifecycle::Unavailable,
+            preview: true,
             input: String::new(),
             transcript: Transcript::default(),
             committed: Vec::new(),
@@ -247,8 +261,7 @@ impl State {
             last_recovery_save: Instant::now(),
             restore_history: false,
             status: "Preparing your local model…".to_owned(),
-            runtime_description: config
-                .map_or_else(|| "Model-free preview".to_owned(), runtime_description),
+            runtime_description: "Model-free preview".to_owned(),
             warning: false,
             diagnostics: VecDeque::new(),
             show_diagnostics: false,
@@ -264,7 +277,7 @@ impl State {
             enable_thinking: false,
             output_budget: 3,
             abliteration_scale: client::DEFAULT_ABLITERATION_SCALE,
-            abliteration_enabled: config.is_none_or(|config| config.use_abliterate_lora),
+            abliteration_enabled: true,
             focus_composer: false,
             composing: false,
             composer_id: None,
@@ -284,8 +297,8 @@ impl State {
             native_owner: None,
             audio_paste: None,
             speech_output: false,
-            canary_configured: config.is_some_and(|config| config.canary.is_some()),
-            tts_configured: config.is_some_and(|config| config.qwen_tts.is_some()),
+            canary_configured: false,
+            tts_configured: false,
             speech_status: "Select Microphone or a response's speaker button for setup.".to_owned(),
             speech_notice: false,
             voice_profile: DEFAULT_VOICE.to_owned(),
