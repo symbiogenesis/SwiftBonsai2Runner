@@ -411,7 +411,7 @@ impl State {
                 );
             });
             #[cfg(not(test))]
-            let _scroll = scroll;
+            let _ = scroll;
             ui.add_space(10.0);
             ui.horizontal_wrapped(|ui| {
                 self.copy_audio_transcript(ui, "Copy full transcript");
@@ -481,7 +481,7 @@ fn audio_time(duration: Duration) -> String {
 mod tests {
     use super::*;
     use crate::{client, window::ModelLifecycle};
-    use std::{io, sync::mpsc, time::Duration};
+    use std::{io, sync::mpsc};
 
     type Fixture = (
         State,
@@ -724,7 +724,7 @@ mod tests {
             speech_commands.try_recv(),
             Ok(speech::Command::TranscribeFile { .. })
         ));
-        assert!(state.audio_file_transcript.is_empty());
+        assert_eq!(state.audio_file_transcript, "");
         state.audio_file_part(1_u64 << 63, "New transcript");
         assert_eq!(state.audio_file_transcript, "New transcript");
         assert!(requests.try_recv().is_err());
