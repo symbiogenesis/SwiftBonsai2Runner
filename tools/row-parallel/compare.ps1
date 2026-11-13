@@ -52,7 +52,7 @@ function Get-RowControls([string]$Directory, [int]$Workers, [hashtable]$Geometry
     $weights = @($records | Where-Object { $_.event -ceq 'weights-loaded' }); $adapters = @($records | Where-Object { $_.event -ceq 'rank-one-adapter-loaded' }); $steps = @($records | Where-Object { $_.event -ceq 'forward-step' })
     Assert-Row (@($records | Where-Object { $_.event -ceq 'error' }).Count -eq 0) 'checker reported an error'
     Assert-Row ($weights.Count -eq 1 -and $weights[0].model_sha256 -ceq $script:RowModel -and $weights[0].weight_representation -ceq 'PQ2_0') 'PQ2 model control changed'
-    Assert-Row ($adapters.Count -eq 1 -and $adapters[0].adapter_sha256 -ceq $script:RowAdapter -and $adapters[0].model_sha256 -ceq $script:RowModel -and $adapters[0].target_pairs -eq 129 -and $adapters[0].scale_bits -ceq '3fa66666') 'adapter control changed'
+    Assert-Row ($adapters.Count -eq 1 -and $adapters[0].adapter_sha256 -ceq $script:RowAdapter -and $adapters[0].model_sha256 -ceq $script:RowModel -and (Test-RowInteger $adapters[0].target_pairs) -and $adapters[0].target_pairs -eq 129 -and $adapters[0].scale_bits -ceq '3fa66666') 'adapter control changed'
     Assert-Row ($steps.Count -eq 1) 'expected exactly one fixed forward step'; $step = $steps[0]
     foreach ($key in @('position','input_token','logit_count')) { Assert-Row (Test-RowInteger $step[$key]) 'forward controls changed' }
     Assert-Row ($step.position -eq 0 -and $step.input_token -eq 248045 -and $step.backend_requested -ceq 'auto' -and $step.logit_count -eq $Geometry.vocabulary) 'forward controls changed'

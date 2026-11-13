@@ -426,7 +426,7 @@ function Evaluate([string]$PreparationPath,[string]$OwnerPath) {
     foreach ($condition in $conditions) { Require (Equal $condition $conditions[0]) 'Unknown or mismatched power conditions.' }
     foreach ($snapshot in $snapshots) { Require ((Equal $snapshot $snapshots[0]) -and (Equal $snapshot.power $conditions[0])) 'Native CPU or effective power conditions changed across arms.' }
     foreach ($receipt in $receipts) { foreach ($field in @('output_text','output_sha256','output_bytes','prompt_tokens','generated_tokens','finish')) { Require (Equal $receipt[$field] $receipts[0][$field]) 'Output, token counts or terminal reason differ across arms.' } }
-    Require ($packet.minimum_relative_request_improvement -eq 0.10 -and $packet.maximum_owned_arm_regression -eq 0.10) 'Benefit thresholds differ.'
+    Require ((Equal $packet.minimum_relative_request_improvement 0.10) -and (Equal $packet.maximum_owned_arm_regression 0.10)) 'Benefit thresholds differ.'
     $requestMs=@($receipts | ForEach-Object { $_.preparation_milliseconds+$_.request_milliseconds }); $ratios=@(($requestMs[1]/$requestMs[0]),($requestMs[2]/$requestMs[3])); $wallRatios=@(($wallMs[1]/$wallMs[0]),($wallMs[2]/$wallMs[3])); $ownedRatios=@(($ownedMs[1]/$ownedMs[0]),($ownedMs[2]/$ownedMs[3]))
     $benefit=$wallRatios[0] -le 0.90 -and $wallRatios[1] -le 0.90 -and $ownedRatios[0] -le 1.10 -and $ownedRatios[1] -le 1.10
     @{schema_version=2; kind='prism-cpu-bundle-comparison'; status='admitted'; short_request_benefit_observed=$benefit; primary_metric='supervised_load_inclusive_process_wall_milliseconds'
