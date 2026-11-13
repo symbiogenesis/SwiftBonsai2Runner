@@ -50,6 +50,7 @@ impl bonsai_speech_service::Engine for NativeEngine {
         };
         self.synthesizer
             .synthesize_stream(text, voice_description, sink)
+            .inspect_err(report_synthesis_failure)
     }
 
     fn kind(&self) -> Kind {
@@ -73,6 +74,7 @@ impl bonsai_speech_service::Engine for NativeEngine {
         let audio = self
             .synthesizer
             .synthesize_owned(text, voice_description)
+            .inspect_err(report_synthesis_failure)
             .map_err(|_| io::Error::other("Native synthesis failed."))?;
         let sample_rate = audio.sample_rate();
         Ok(bonsai_speech_service::Output::Waveform {
@@ -80,6 +82,23 @@ impl bonsai_speech_service::Engine for NativeEngine {
             sample_rate,
         })
     }
+}
+
+#[cfg(any(windows, test))]
+fn synthesis_failure(error: &io::Error) -> String {
+    #[cfg(windows)]
+    let stage = bonsai_speech_tts::synthesis_failure_stage(error).unwrap_or("request execution");
+    #[cfg(not(windows))]
+    let stage = "request execution";
+    format!(
+        "Qwen TTS synthesis failed at {stage}; error kind: {:?}.",
+        error.kind()
+    )
+}
+
+#[cfg(windows)]
+fn report_synthesis_failure(error: &io::Error) {
+    let _written = writeln!(io::stderr().lock(), "{}", synthesis_failure(error));
 }
 
 #[cfg(any(windows, test))]
@@ -193,6 +212,19 @@ fn main() -> ExitCode {
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn synthesis_failure_retains_kind_without_untrusted_error_text() {
+        let error = std::io::Error::new(
+            std::io::ErrorKind::BrokenPipe,
+            "private prompt, voice description and C:/private/credential.key",
+        );
+        let message = super::synthesis_failure(&error);
+        assert!(message.contains("request execution"));
+        assert!(message.contains("BrokenPipe"));
+        assert!(!message.contains("private"));
+        assert!(!message.contains("credential"));
+    }
+
     #[test]
     fn startup_failure_retains_stage_and_kind_without_private_error_text() {
         let error = std::io::Error::new(

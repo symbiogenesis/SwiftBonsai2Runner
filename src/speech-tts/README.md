@@ -52,7 +52,14 @@ or extraction.
 Production TTS has no foreign model-inference ABI, C++ exception boundary or native
 waveform allocator. Rust errors propagate through the owned speech service without
 exposing supplied text, descriptions or model diagnostics. Speech failure leaves
-text chat available. Cancellation is checked during prompt projection, between
+text chat available. Request failures retain a fixed synthesis-stage label and
+the I/O error category in the app-owned service diagnostics. These distinguish
+reference generation, speaker extraction, Base loading, codec work and audio
+output without retaining request text, descriptions or raw engine errors.
+Readiness confirms initial model loading; it does not certify the first
+profile's lazy voice-reference and Base initialization.
+
+Cancellation is checked during prompt projection, between
 decoder layers/codebooks and before frame delivery. The supervisor retains process
 teardown for work already executing.
 
