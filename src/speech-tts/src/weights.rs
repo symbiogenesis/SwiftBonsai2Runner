@@ -66,14 +66,26 @@ fn read_u64(reader: &mut impl Read) -> io::Result<u64> {
 }
 
 fn text(reader: &mut impl Read, budget: &mut usize, limit: usize) -> io::Result<String> {
+    let mut bytes = Vec::new();
+    text_bytes(reader, budget, limit, &mut bytes)?;
+    String::from_utf8(bytes).map_err(|_| invalid())
+}
+
+fn text_bytes(
+    reader: &mut impl Read,
+    budget: &mut usize,
+    limit: usize,
+    bytes: &mut Vec<u8>,
+) -> io::Result<()> {
     let length = usize::try_from(read_u64(reader)?).map_err(|_| invalid())?;
     if length > limit || length > *budget {
         return Err(invalid());
     }
     *budget -= length;
-    let mut bytes = vec![0; length];
-    reader.read_exact(&mut bytes)?;
-    String::from_utf8(bytes).map_err(|_| invalid())
+    bytes.clear();
+    bytes.try_reserve_exact(length).map_err(|_| invalid())?;
+    bytes.resize(length, 0);
+    reader.read_exact(bytes)
 }
 
 fn skip(reader: &mut (impl Read + Seek), bytes: u64, length: u64) -> io::Result<()> {
@@ -144,8 +156,13 @@ fn metadata_value(
                     Metadata::U32Array(values)
                 }
             } else if kind == 8 {
+                // These are predominantly tokenizer tokens and merge rules.
+                // Validate every byte without allocating a new String for each
+                // discarded entry; the tokenizer loads its own bounded tables.
+                let mut scratch = Vec::new();
                 for _ in 0..count {
-                    let _ = text(reader, budget, 16 * 1024 * 1024)?;
+                    text_bytes(reader, budget, 16 * 1024 * 1024, &mut scratch)?;
+                    let _ = std::str::from_utf8(&scratch).map_err(|_| invalid())?;
                 }
                 Metadata::Other
             } else {
@@ -193,7 +210,7 @@ impl Weights {
     }
 
     fn read(file: File, length: u64) -> io::Result<Self> {
-        let mut reader = BufReader::new(file);
+        let mut reader = BufReader::with_capacity(256 * 1024, file);
         let mut magic = [0; 4];
         reader.read_exact(&mut magic)?;
         if &magic != b"GGUF" || !matches!(read_u32(&mut reader)?, 2 | 3) {
@@ -330,7 +347,9 @@ impl Weights {
         bytes.resize(tensor.bytes, 0);
         self.file.seek(SeekFrom::Start(tensor.offset))?;
         self.file.read_exact(&mut bytes)?;
-        validate_packed(tensor.kind, &bytes)?;
+        // Each consumer validates its final representation: projection() uses
+        // LinearProjection::new's packed validation, and tensor_f32() checks all
+        // decoded values. Avoid scanning the entire model a second time here.
         Ok((tensor.kind, bytes))
     }
 
@@ -580,6 +599,69 @@ mod tests {
             metadata_value(&mut io::Cursor::new(bytes), length, &mut budget)?,
             Metadata::Other
         ));
+        Ok(())
+    }
+
+    #[test]
+    fn discarded_tokenizer_arrays_preserve_utf8_budget_and_truncation_checks() -> io::Result<()> {
+        let mut bytes = Vec::new();
+        bytes.extend(9_u32.to_le_bytes());
+        bytes.extend(8_u32.to_le_bytes());
+        bytes.extend(3_u64.to_le_bytes());
+        let strings = ["a long initial spelling", "é", ""];
+        for spelling in strings {
+            bytes.extend(
+                u64::try_from(spelling.len())
+                    .map_err(|_| invalid())?
+                    .to_le_bytes(),
+            );
+            bytes.extend(spelling.bytes());
+        }
+        let length = u64::try_from(bytes.len()).map_err(|_| invalid())?;
+        let required: usize = strings.iter().map(|spelling| spelling.len()).sum();
+        let mut budget = required;
+        assert!(matches!(
+            metadata_value(&mut io::Cursor::new(&bytes), length, &mut budget)?,
+            Metadata::Other
+        ));
+        assert_eq!(budget, 0);
+        budget = required - 1;
+        assert!(metadata_value(&mut io::Cursor::new(&bytes), length, &mut budget).is_err());
+        budget = required;
+        assert!(
+            metadata_value(
+                &mut io::Cursor::new(&bytes[..bytes.len() - 1]),
+                length - 1,
+                &mut budget,
+            )
+            .is_err()
+        );
+        // Corrupt the multibyte spelling while leaving lengths and bounds valid.
+        let unicode = 16 + 8 + strings[0].len() + 8;
+        bytes[unicode] = 0xff;
+        budget = required;
+        assert!(metadata_value(&mut io::Cursor::new(bytes), length, &mut budget).is_err());
+        Ok(())
+    }
+
+    #[test]
+    fn tensor_consumers_reject_nonfinite_payloads_after_loading() -> io::Result<()> {
+        for kind in [0, 1, 8, 12, 14] {
+            let (width, size) = packed_layout(kind)?;
+            let mut bytes = vec![0; size];
+            match kind {
+                0 => bytes.copy_from_slice(&f32::INFINITY.to_le_bytes()),
+                1 | 8 => bytes[..2].copy_from_slice(&0x7c00_u16.to_le_bytes()),
+                12 => bytes[2..4].copy_from_slice(&0x7c00_u16.to_le_bytes()),
+                14 => bytes[208..].copy_from_slice(&0x7c00_u16.to_le_bytes()),
+                _ => return Err(invalid()),
+            }
+            let shape = [u64::try_from(width).map_err(|_| invalid())?, 1];
+            let file = fixture(&[("weight", &shape, kind, 0)], &bytes)?;
+            let mut loaded = Weights::open(&file.0)?;
+            assert!(loaded.projection("weight", width, 1).is_err());
+            assert!(loaded.tensor_f32("weight", &[width, 1]).is_err());
+        }
         Ok(())
     }
 
