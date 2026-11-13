@@ -591,7 +591,177 @@ fn invalid(message: &'static str) -> io::Error {
 
 #[cfg(test)]
 mod tests {
-    use super::{align_icl, embedding_row};
+    use super::{Geometry, REFERENCE_TEXT, Reference, Specials, Talker, align_icl, embedding_row};
+    use crate::{
+        engine::{CodePredictorModel, LinearProjection, WeightQuantization},
+        tokenizer::Tokenizer,
+    };
+
+    fn prompt_fixture(base: bool) -> std::io::Result<Talker> {
+        let mut tokenizer = Tokenizer::new();
+        tokenizer.finish()?;
+        for (text, id) in [
+            ("<|im_start|>", 1),
+            ("assistant", 2),
+            ("\n", 3),
+            ("x", 4),
+            ("<|im_end|>", 5),
+            ("user", 6),
+            ("i", 7),
+            (REFERENCE_TEXT, 8),
+        ] {
+            tokenizer.add_special(text.as_bytes(), id)?;
+        }
+        let linear =
+            || LinearProjection::new("fixture", 1, 1, WeightQuantization::F32(vec![1.0]), None);
+        Ok(Talker {
+            geometry: Geometry {
+                hidden: 1,
+                intermediate: 1,
+                layers: 0,
+                heads: 1,
+                kv_heads: 1,
+                head_dim: 2,
+                vocab: 10,
+                rope_theta: 1_000_000.0,
+                norm_eps: 1e-6,
+            },
+            layers: Vec::new(),
+            norm: vec![1.0],
+            head: linear()?,
+            text_embedding: LinearProjection::new(
+                "fixture.text",
+                1,
+                9,
+                WeightQuantization::F32(vec![0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0]),
+                None,
+            )?,
+            text_fc1: linear()?,
+            text_fc2: linear()?,
+            codec_embedding: vec![
+                0.0, 1000.0, 2000.0, 3000.0, 4000.0, 5000.0, 6000.0, 7000.0, 8000.0, 9000.0,
+            ],
+            predictor: CodePredictorModel {
+                hidden_size: 1,
+                num_q_heads: 1,
+                num_kv_heads: 1,
+                head_dim: 2,
+                vocab_size: 2,
+                num_acoustic_codebooks: 15,
+                rope_theta: 1_000_000.0,
+                rms_norm_eps: 1e-6,
+                mtp_proj: None,
+                layers: Vec::new(),
+                norm_w: vec![1.0],
+                codec_embeddings: (1_u8..=15)
+                    .map(|codebook| vec![0.0, f32::from(codebook)])
+                    .collect(),
+                lm_heads: Vec::new(),
+            },
+            tokenizer,
+            specials: Specials {
+                pad: 0,
+                bos: 1,
+                eos: 2,
+                nothink: 3,
+                think_bos: 4,
+                think_eos: 5,
+                text_pad: 0,
+                text_bos: 0,
+                text_eos: 0,
+            },
+            tts_pad: vec![100.0],
+            tts_bos: vec![200.0],
+            tts_eos: vec![300.0],
+            threads: 1,
+            base,
+        })
+    }
+
+    fn assert_rows(rows: &[Vec<f32>], expected: &[f32]) {
+        assert_eq!(rows.len(), expected.len());
+        for (row, expected) in rows.iter().zip(expected) {
+            assert_eq!(row.len(), 1);
+            assert!(
+                (row[0] - expected).abs() < 0.001,
+                "unexpected prompt row: {} vs {expected}",
+                row[0]
+            );
+        }
+    }
+
+    #[test]
+    fn complete_design_prompt_keeps_instruction_role_codec_and_text_order() -> std::io::Result<()> {
+        let talker = prompt_fixture(false)?;
+        let prompt = talker.prompt("x", Some("i"), None, &mut || Ok(()))?;
+        // Independent one-dimensional sentinel vectors identify every prompt slot.
+        // Noninteger entries are fixed SiLU(1..=7) observations, not an execution oracle.
+        assert_rows(
+            &prompt.rows,
+            &[
+                0.731_058_6,
+                5.985_164_6,
+                2.857_722_5,
+                6.993_623,
+                4.966_535_6,
+                2.857_722_5,
+                0.731_058_6,
+                1.761_594,
+                2.857_722_5,
+                3100.0,
+                4100.0,
+                5100.0,
+                200.0,
+                3.928_055,
+                300.0,
+                1100.0,
+            ],
+        );
+        assert_rows(&prompt.trailing, &[100.0]);
+        Ok(())
+    }
+
+    #[test]
+    fn complete_base_prompt_inserts_speaker_and_keeps_reference_text_suffix() -> std::io::Result<()>
+    {
+        let talker = prompt_fixture(true)?;
+        let mut frame = [1; 16];
+        frame[0] = 6;
+        let reference = Reference {
+            speaker: vec![6000.0],
+            codes: vec![frame],
+        };
+        let prompt = talker.prompt("x", None, Some(&reference), &mut || Ok(()))?;
+        assert_rows(
+            &prompt.rows,
+            &[
+                0.731_058_6,
+                1.761_594,
+                2.857_722_5,
+                3100.0,
+                4100.0,
+                5100.0,
+                6100.0,
+                200.0,
+                1_007.997_3,
+                6_123.928,
+            ],
+        );
+        assert_rows(&prompt.trailing, &[300.0]);
+        assert!(
+            talker
+                .prompt("x", Some("i"), Some(&reference), &mut || Ok(()))
+                .is_err()
+        );
+        let cancelled = talker.prompt("x", None, Some(&reference), &mut || {
+            Err(std::io::Error::new(
+                std::io::ErrorKind::Interrupted,
+                "cancelled",
+            ))
+        });
+        assert!(cancelled.is_err_and(|error| error.kind() == std::io::ErrorKind::Interrupted));
+        Ok(())
+    }
 
     #[test]
     fn icl_alignment_retains_unconsumed_text_and_pads_short_text() -> std::io::Result<()> {
