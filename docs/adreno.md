@@ -9,14 +9,11 @@ admission, state transitions and promotion for both Vulkan and OpenCL.
 
 ## Backend and device boundaries
 
-The pinned publisher C++ Vulkan backend is a reference for candidate implementations.
-Rust GPU execution has its own
-safety/coverage boundary after Rust CPU parity; reusable Rust storage does not provide GPU
-execution. PQ2 and [current-weight PTQ1](swift-memory.md#current-weight-ptq1-option) are distinct
-qualification lanes. The
-[Prism backend audit][prism-audit] describes packed scalar, coopmat1 and integer-dot
-paths/transforms, with no direct coopmat2 decoder for these formats. Source support alone does not
-establish Adreno kernel or graph coverage.
+The publisher C++ Vulkan backend is a reference for independent Rust GPU work.
+PQ2 and [current-weight PTQ1](swift-memory.md#current-weight-ptq1-option) qualify
+separately. The [backend audit][prism-audit] identifies packed scalar, coopmat1
+and integer-dot paths, without a direct coopmat2 decoder. Source support does
+not establish Adreno execution.
 
 | Repository fact | Execution boundary |
 | --- | --- |
@@ -46,12 +43,9 @@ or allocation entitlements.
 
 ## Swift arithmetic and placement
 
-A placement ledger covers packed/floating projections, activation quantizers/scales, transforms,
-embedding/output, attention/RoPE, GDN/convolution, KV/recurrent state, approved LoRA and every
-fallback, transfer and synchronization boundary. A layer offload count is insufficient. Fixed token
-IDs/settings, same-artifact CPU controls and declared precision/tolerances define numerical scope;
-plausible text does not.
-
+Use the [placement/state contract](hexagon.md#packed-arithmetic-and-graph-state)
+for complete graph ownership, transfers and synchronization. Fix token IDs,
+settings, artifact, CPU oracle and numerical tolerances before comparison.
 CPU PQ2/Q8_K, PTQ1/Q8_0 and odd-width PQ2/Q8_0 differ from the Vulkan integer-dot [Q8_1 shader
 family][prism-matvec] ([PTQ1 shader][prism-ptq1]). Exact weights do not imply bit-identical logits
 across activation arithmetic. Awkward shapes, supported strides, extremes/zeros and explicit
@@ -74,28 +68,19 @@ separate qualification scopes.
 
 ## Resources, failure and acceptance
 
-Apply [profile eligibility/lifecycle](hardware-capabilities.md#automatic-profile-selection) and
-[measurement rules](performance-expectations.md#measurement-and-comparison).
-Screen CPU-only, partial and maximum offload independently for prefill/decode; maximum offload
-is not automatically best. Charge cold pipeline compilation/repack, submissions/waits, transfers,
-phase/state migrations, duplicate storage and complete-task latency. Contiguous residency needs
-correct numerical/ownership contracts.
+Follow [profile eligibility](hardware-capabilities.md#automatic-profile-selection),
+[accelerator storage/lifetimes](hardware-capabilities.md#accelerator-storage-and-lifetime)
+and [measurement rules](performance-expectations.md#measurement-and-comparison).
+Apply cache identity/invalidation to pipelines, descriptors and allocations.
+Compare CPU-only, partial and maximum offload for both phases, charging cold
+compilation/repack, submission/waits, transfers, state migration and duplicates.
 
-The shared
-[accelerator resource contract](hardware-capabilities.md#accelerator-storage-and-lifetime)
-owns storage accounting, asynchronous lifetimes, cache keys/invalidation and failure recovery.
-Apply it to pipelines, descriptors and reused allocations as well as compiled kernels.
-Persistent expansion pays cold-load/residency cost; precision/decoding changes need separate
-qualification.
-
-[Profile qualification](hardware-capabilities.md#qualification-scope) owns receipt identities,
-workloads, acceptance and upgrade gates. GPU attribution additionally separates pipeline first use,
-queue/kernel timestamps, submission/waits and critical-path traces, recording faults/evictions and
-sustained failures. Overlapping durations cannot be added; utilization is not energy.
-[GPUView][gpuview] needs compatible native ARM64 tooling.
-
-Native diagnostics use absolute system-temp lanes and inherited Windows system/profile variables.
-Moving source links below are leads, not build pins.
+GPU attribution separates pipeline first use, queue/kernel timestamps,
+submission/waits and critical-path traces, including faults, evictions and
+sustained failures. Overlapping durations cannot be summed; utilization is not
+energy. [GPUView][gpuview] requires native ARM64 tooling. Native diagnostics use
+absolute system-temp lanes and inherited Windows system/profile variables.
+Moving source links are leads, not build pins.
 
 ## Cross-device research limits
 
