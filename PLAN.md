@@ -15,24 +15,29 @@ under [AGENTS.md](AGENTS.md).
 ## Publication and qualification prerequisites
 
 - [ ] **L1 — Qualify the Rust/PowerShell tooling migration.** Have the owner
-  publish reviewed source and qualify Source checks/Foundation, migrated fixture
+  qualify published source in Source checks/Foundation, migrated fixture
   inventories, exact native helper/cache handoffs and separate SDK/ABI controls.
   Public reconstruction and replay retain P1's schema-2 scalar-v2 identity.
-- [ ] **C1 — Qualify current CI source.** Have the owner publish the reviewed
-  startup, staged-index, ASR/UI fixture, workflow-consolidation and dependency
-  corrections; require Source checks, Foundation and dependency-audit acceptance.
+- [ ] **C1 — Qualify current CI source.** Require owner-operated Source checks,
+  Foundation and dependency-audit acceptance for the published startup,
+  staged-index, ASR/UI fixture, workflow-consolidation and dependency corrections.
   Follow the [startup preflight](tools/ci/README.md#action-dependency-pins) before
   workflow changes and verify supported self-hosted runner versions.
 - [ ] Qualify Runner's checked-tools producer, shared regression runner and
   native-acceptance caches: cold build, exact hit and relevant-input invalidation,
   fresh same-run packages, source/digest verification and every selected check.
+- [ ] Qualify compiler-cache recovery after failed analyzers/tests, immutable
+  exact hits, cancelled/setup-failure skips and nonblocking optional saves.
+  Qualify same-run publication recovery from partial drafts and ambiguous API
+  responses, plus exact completed-release verification without writes; reject
+  changed source, tag, metadata or asset identities.
 - [ ] Qualify Prism's Foundation scheduling and source-package/Hexagon caches
   on matching hosted images, preserving complete correctness, mutation, packaging
   and independent ABI/SDK obligations.
-- [ ] **R1 — Publish Runner v0.3.0 and qualify the pinned Prism 0.1.27
-  development release.** Require all five Rust release lanes, source-bound
-  compressed packaging, extraction/smoke checks, notices and independently
-  verified three-asset/source identities under the [release guide](docs/releases.md).
+- [ ] **R1 — Qualify the published Runner v0.3.0 with pinned Prism 0.1.27.**
+  Complete actual-model, state, resource, quality and device acceptance using
+  the immutable identities in the [release guide](docs/releases.md).
+  Model-free release checks leave these development-runtime gates pending.
 - [ ] Qualify the single-executable builder from a checkout and on a clean
   Windows ARM64 installation: double-click launch, visible native startup errors,
   stored/deflated package compatibility, malformed compression and expansion limits.

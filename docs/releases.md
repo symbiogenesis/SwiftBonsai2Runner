@@ -1,10 +1,13 @@
 # Windows releases
 
 Swift Bonsai 2 Runner ships as a **portable Windows ARM64 executable** for
-Snapdragon X and X2 laptops. [v0.3.0](releases/v0.3.0.md) is the experimental
-release target; check [GitHub releases](https://github.com/symbiogenesis/SwiftBonsai2Runner/releases)
-for completed publication. The published [v0.2.2 prerelease](https://github.com/symbiogenesis/SwiftBonsai2Runner/releases/tag/v0.2.2)
-remains available.
+Snapdragon X and X2 laptops. The experimental [v0.3.0 prerelease](https://github.com/symbiogenesis/SwiftBonsai2Runner/releases/tag/v0.3.0)
+is published from `80b085d7d320493e57a4ad45d21fa9874f1d8c58`.
+[Release CI](https://github.com/symbiogenesis/SwiftBonsai2Runner/actions/runs/43499917247)
+passed all five Rust lanes, packaging, extraction smoke checks and publication.
+Independent downloads verified all three asset digests, source/tag identities and
+model-free extraction; the [verification record](evidence/windows-release-030-20261113/summary.json)
+retains results and limits. See the [release notes](releases/v0.3.0.md).
 
 ## Download and open
 
