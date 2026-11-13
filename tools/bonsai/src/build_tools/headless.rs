@@ -399,7 +399,7 @@ pub(super) fn build(repository: &Path, output: &Path) -> crate::Result<Value> {
         let compiler = llvm.join("clang-cl.exe");
         let linker = llvm.join("lld-link.exe");
         let cmake = crate::startup_process::resolve("cmake.exe".as_ref())?;
-        let python = crate::startup_process::resolve("python.exe".as_ref())?;
+        let powershell = crate::startup_process::resolve("pwsh.exe".as_ref())?;
         let build = working.join("build");
         let mut flags: Vec<OsString> = vec![
             "-S".into(),
@@ -481,21 +481,23 @@ pub(super) fn build(repository: &Path, output: &Path) -> crate::Result<Value> {
         receipt["Phase"] = "static-import-closure".into();
         save(&receipt_path, &receipt, false)?;
         candidate.tool(
-            &python,
+            &powershell,
             &[
-                "-B".into(),
+                "-NoLogo".into(),
+                "-NoProfile".into(),
+                "-File".into(),
                 repository
-                    .join("tools/runtime-candidates/pe_closure.py")
+                    .join("tools/runtime-candidates/pe_closure.ps1")
                     .into_os_string(),
-                "--bundle".into(),
+                "-Bundle".into(),
                 bundle.clone().into_os_string(),
-                "--system".into(),
+                "-System".into(),
                 crate::startup_download::system_tool("kernel32.dll")?
                     .parent()
                     .ok_or("Missing system directory.")?
                     .as_os_str()
                     .to_owned(),
-                "--output".into(),
+                "-Output".into(),
                 output.join("imports.json").into_os_string(),
             ],
             "static-imports.txt",
