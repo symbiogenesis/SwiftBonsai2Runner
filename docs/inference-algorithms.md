@@ -100,10 +100,12 @@ input projections, preserves causal convolution and uses interval decay products
 without cumulative-product division, then reconstructs outputs and final FP32
 state. Its declared `1e-3 + 1e-3 * abs(reference)` qualification tolerance differs
 from bit identity. Both paths require explicit empty-graph selection, extra scratch
-reservation and whole-request rollback. Source inclusion does not enable either
-mode through Runner's launch policy. Source controls and work counts establish no
-actual-model parity or prompt-time gain. The plan retains full-model, long-prefix,
-adapter and resource qualification before service selection.
+reservation and whole-request rollback. New local Prism source exposes the exact
+FP16 tile mode through an explicitly admitted private-service profile; triangular
+GDN remains separate. Neither mode is enabled by Runner's current launch policy
+or bundle. Source controls and work counts establish no actual-model parity or
+prompt-time gain. The plan retains full-model, long-prefix, adapter and resource
+qualification before application selection.
 
 Packed tiles now have an exact baseline NEON integer path that shares one decoded
 weight block across tokens, honors the graph's scalar/auto/NEON policy and retains
@@ -158,13 +160,24 @@ Stochastic speculation needs proven acceptance/rejection correction, as in [Levi
 al.](https://proceedings.mlr.press/v202/leviathan23a.html); greedy agreement does not qualify
 creative sampling. Retain request rollback even if candidate recovery becomes cheaper.
 
-As reviewed on **2026-11-12**, both `Runtime::verify_draft_block` and
-`generate_speculative_inner` test candidates and call target `evaluate` one
-token at a time. `SwiftSession::complete_speculative` uses that greedy path.
-It does not amortize target weight reads over a candidate block. The standalone
-`verify_stochastic_step` helper is not integrated with Swift's default
-temperature 1, top-20 and top-p 0.95 sampler. Runner still requires speculation
-to be disabled; these source APIs establish no serving speedup or sampler pass.
+The published 0.1.25 `Runtime::verify_draft_block` and
+`generate_speculative_inner` call target `evaluate` one token at a time.
+New local Prism source adds an explicitly selected exact FP16 tiled verifier:
+`Qwen35::with_tiled_verification` reserves per-position logits separately and
+shares layer and output-head packed weights across a bounded candidate block.
+`Runtime::verify_draft_block` consumes that capability, verifies each candidate
+against the preceding target distribution, and restores the complete checkpoint
+before accepted-prefix replay and correction on rejection. Admission charges
+proposed and replayed work; ordinary graphs retain sequential verification.
+Triangular GDN, rotated KV and installed external projection executors reject
+this exact CPU selection.
+
+This local candidate is not in Runner's runtime bundle. The suffix-generation
+loop and `SwiftSession::complete_speculative` remain sequential greedy paths.
+The standalone `verify_stochastic_step` helper is not integrated with Swift's
+default temperature 1, top-20 and top-p 0.95 sampler. Runner still requires
+speculation to be disabled; source batching establishes no serving speedup,
+actual-model parity or sampler pass.
 
 A weight-amortizing verifier needs layerwise token-tiled target projections,
 causal attention and convolution, and target logits at every candidate position.

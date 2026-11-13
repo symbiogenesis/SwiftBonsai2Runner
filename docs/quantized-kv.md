@@ -102,10 +102,15 @@ establish unbiased softmax, negligible quality loss or faster inference.
 
 X1 and X2 share a runtime-detected 128-bit NEON execution path with an explicit
 scalar reference. There is no SKU-specific timing or thread-count tuning.
-Compressed attention currently streams query heads serially while preserving
-the existing projection worker policy. Further grouped-head tiling needs its
-own checks and measured benefit. X2 qualification cannot establish an X1 result,
-and source-level work reduction is not a measured speedup.
+The published 0.1.25 compressed-attention path streams query heads serially.
+New local Prism source distributes independent query heads over the existing
+private row-worker pool. Each head retains its score, softmax, value and inverse
+transform order; joined workers return the earliest failing head chunk. The
+candidate adds no cache expansion or second pool, and cancellation retains the
+ordinary synchronous-token boundary. Complete-model state/adapter/recovery,
+resource and matched request-time qualification remain required before delivery.
+This source change is not in Runner's current runtime bundle. X2 qualification
+cannot establish an X1 speedup, and source concurrency is not a measured benefit.
 
 Checkpoint/restore must preserve the **exact bytes of the selected quantized
 profile**, including scale bits, packed tails, page ownership and sequence

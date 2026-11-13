@@ -112,6 +112,30 @@ Keep the passing command observations separate from this aggregate limit failure
 neither this check nor the earlier preflight qualifies a promotion or new README
 performance figure. The original clocks are closed without a retry.
 
+## New local prompt and attention consumers
+
+The November 13 local Prism candidate (runtime integration `7283213`) adds two
+consumers independently of the published 0.1.25 bundle and the fixed 0.1.23
+comparison control:
+
+- Quantized KV attention shares the existing private row pool across independent
+  query heads, preserving each head's arithmetic and complete-state transaction.
+  The current release's serial compressed-attention path remains the control.
+- `SwiftSession::load_profile_with_prefill` and the private server expose explicit
+  exact 8/16/32-token CPU prompt tiles. Trusted launch arguments must pair tile
+  size and scratch, select FP16 KV, and provide context/process-memory admission.
+  The entire additional reserve is charged before artifact I/O. Startup readiness
+  binds the tile, reserve and graph identity; this profile skips implicit Hexagon
+  installation and can retain explicit latest-prefix reuse. K4/V4 and triangular
+  GDN are rejected rather than selected implicitly.
+
+These are local implementation candidates, not a runtime repin, new default or
+measured speedup. Require final-source focused/native/fallback checks, complete
+model logits/state/adapter and cancellation recovery, resource accounting and
+matched selected-device whole-request benefit. The independent batched target
+verifier retains its [algorithm contract](inference-algorithms.md#hybrid-cache-reuse-and-speculative-state)
+and does not enable sampled speculation through this service profile.
+
 ## X1-oriented source candidates
 
 Three further CPU changes are implemented in local Prism source. They target

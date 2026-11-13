@@ -19,7 +19,7 @@ the corresponding detailed task changes; keep every acceptance obligation below.
 | C1 / owner | Runner | Reviewed local CI corrections and startup preflight | Publish through the owner and qualify Source checks and Foundation on that source; see [publication prerequisites](#publication-and-qualification-prerequisites). |
 | A1 / qualification | Runner with pinned Prism | C1 and an exact-source acceptance package | Qualify Rust/PQ2 DX12 startup, readiness, Stop/Retry, recovery and explicit publisher rollback under [actual-model acceptance](#actual-model-acceptance). |
 | R1 / owner, qualification | Runner with Prism | Published source-bound 0.1.25 prerelease and atomic runtime/source pins | Have the owner publish the reviewed Runner repin, then qualify the new active release. This is a development upgrade, not a performance promotion. Keep the fixed 0.1.23 CPU comparison baseline and all historical evidence identities unchanged. |
-| R2 / implementation, qualification | Prism, then Runner | Settled candidate, published comparison tooling and owning hosted checks | Publish and run the prepared [native CPU bundle comparison](docs/cpu-bundle-comparison.md) against registry 0.1.25; the existing X2 screen compares publisher thread counts, while one-token source timing is attribution only. Qualify the explicit exact LUT candidate, integrate selected cross-token consumers and genuinely batched verification; close CPU/prefill codegen, fallback, state/adapter/cancellation and matched selected-device benefit gates. X2 CPU benefit may promote reviewed shared CPU paths on X1 under [cross-generation CPU promotion](docs/cpu-kernels.md#cross-generation-cpu-promotion); device-specific tuning and claims retain matching-family gates. Qualify changes already consumed in 0.1.23 without another repin; follow the [inference delivery order](#lossless-inference-delivery-order). |
+| R2 / implementation, qualification | Prism, then Runner | Settled candidate, published comparison tooling and owning hosted checks | Publish and run the prepared [native CPU bundle comparison](docs/cpu-bundle-comparison.md) against registry 0.1.25; the existing X2 screen compares publisher thread counts, while one-token source timing is attribution only. Qualify the explicit exact LUT, FP16 service tiles, packed-KV head workers and local batched target verifier; integrate sampled verification and selected cross-token consumers. Close CPU/prefill codegen, fallback, state/adapter/cancellation and matched selected-device benefit gates. X2 CPU benefit may promote reviewed shared CPU paths on X1 under [cross-generation CPU promotion](docs/cpu-kernels.md#cross-generation-cpu-promotion); device-specific tuning and claims retain matching-family gates. Qualify changes already consumed in 0.1.23 without another repin; follow the [inference delivery order](#lossless-inference-delivery-order). |
 | R3 / integration, qualification | Prism and Runner harnesses | Agreed execution/state identities and existing complete-state fixtures | Prepare shared state/restore and fault-control tooling independently of runtime qualification; map each prefix/prefill/speculation/accelerator path to its independent assertions and evidence. |
 | M1 / owner, qualification | Prism, then Runner | Reviewed memory-selected context source and a genuine compatible runtime release | Publish a source-bound Prism release with paired context/memory child arguments, review its exact identity and repin Runner to activate native memory sizing under the [context expansion roadmap](#native-context-expansion-roadmap). Qualify selected context/admission/Job limits, unknown and changing memory, retry, UI reporting and full-state/resource behavior at the selected capacities. Current native 0.1.25 remains fixed at 8K; publisher serving uses memory selection. Historical fixed-8K controls retain their identities. |
 | M2 / implementation, qualification | Prism, then Runner | M1-compatible launch contract and reviewed K4/V4 storage identity | Implement cache-aware process/state/checkpoint sizing, then native sequential scratch accounting; synchronize runtime and Runner limits and qualify staged 64K/128K capacities. Follow the [cumulative estimates and conditional extensions](#native-context-expansion-roadmap); projections do not reduce current admission or qualify a larger window. |
@@ -1162,6 +1162,15 @@ and retain the reset-every-request serving policy until reuse is qualified.
   [prefill contract](docs/inference-algorithms.md#chunkwise-gated-deltanet-prefill),
   then matched whole-prompt benefit against qualified NEON/worker execution.
   Source work reuse and the SIMD tiled candidate establish no speedup or release gate.
+  Qualify the new local `SwiftSession::load_profile_with_prefill` private-service
+  consumer separately: explicit FP16, paired tile/scratch and context/process
+  allowance, full extra reserve before artifact I/O, CPU-only startup, exact
+  readiness identity and compatible latest-prefix reuse. It retains sequential
+  GDN and rejects K4/V4; no published bundle or Runner default selects it yet.
+  Qualify the independent new packed-KV query-head worker consumer against the
+  published serial control, including complete state/adapter/page-boundary
+  recovery, synchronous-token cancellation, worker resources and selected-device
+  complete-request benefit. Neither source change supplies a speedup claim.
 - Qualify the implemented complete six-head decode and tiled-prefill KV reuse,
   including [paired-token cached-key scoring](docs/performance-resolve.md),
   [paired-token value conversion](docs/performance-close.md), and
@@ -1203,16 +1212,21 @@ and retain the reset-every-request serving policy until reuse is qualified.
   versus incremental accounting: two 149.625 MiB recurrent/convolution snapshots already
   cost **299.25 MiB before KV/metadata**, exceeding a 256 MiB total cache. Keep that
   budget and conservative per-snapshot page charges.
-- Implement a genuinely batched short-chain CPU target verifier before proposals.
-  Existing `Runtime::verify_draft_block` and `generate_speculative_inner` evaluate
-  candidates sequentially; `SwiftSession::complete_speculative` is greedy and
-  `verify_stochastic_step` is a standalone helper. Their source presence establishes
-  neither target-weight reuse nor Swift sampling integration. Reuse layer-wise packed
-  projection tiles across candidates, expose per-position target logits and preserve
-  causal attention plus complete GDN/convolution state. Qualify accepted-prefix recovery,
+- Qualify the new local exact FP16 short-chain CPU target verifier before proposals.
+  Its explicit `Qwen35::with_tiled_verification` selection charges separate
+  per-position logits and shares layer/output-head packed projections across
+  candidates. `Runtime::verify_draft_block` consumes that capability with complete
+  checkpoint restoration, accepted-prefix replay and conservative rejected-work
+  admission; ordinary graphs retain their sequential path. The candidate rejects
+  rotated KV, triangular GDN and installed external projection executors. It is
+  not in the published 0.1.25 bundle. `generate_speculative_inner` still evaluates
+  sequentially; `SwiftSession::complete_speculative` is greedy and
+  `verify_stochastic_step` remains standalone. Complete final-source native/fallback
+  checks and actual-model per-position logits, causal attention and complete
+  GDN/convolution parity. Qualify accepted-prefix recovery,
   partial acceptance, EOS/output limits, Stop, failed commit and rollback. Preserve the
   declared arithmetic boundaries or identify changed numerics separately. Establish
-  greedy parity, then conditional acceptance and residual sampling for the actual
+  greedy parity, then integrate conditional acceptance and residual sampling for the actual
   temperature, top-k, top-p and penalties. Distribution preservation does not promise
   identical RNG use or seeded output. Include rejected work, checkpoints, replay and
   output-head costs when demonstrating fewer weight passes and complete-cycle benefit.
@@ -1257,7 +1271,7 @@ this ordering grants no new model workload, default, release or device qualifica
 | --- | --- | --- |
 | 1 | Qualify explicit latest-prefix reuse and deliver settled existing CPU/prefill candidates. | Repeated-history prefill benefit, full state/adapter/lifecycle acceptance, reviewed release identities and repin only where needed. |
 | 2 | Use batch-one attribution to choose production exact activation LUTs, cross-token Vec-LUT or true multi-token projections. | Bounded source integration and matched whole-request benefit; existing tiled matvec and N=1 NPU packets do not establish these consumers. |
-| 3 | Implement genuinely tiled short-chain target verification and actual Swift sampler correction. | Per-position logits, complete accepted-prefix KV/GDN/convolution recovery and full-cycle benefit, with numerical and distribution contracts kept explicit. |
+| 3 | Qualify the local tiled short-chain target verifier and integrate actual Swift sampler correction. | Per-position logits, complete accepted-prefix KV/GDN/convolution recovery and full-cycle benefit, with numerical and distribution contracts kept explicit. |
 | 4 | Screen short suffix proposals, then a compatible published Bonsai drafter and bounded adaptive length. | Creative and repetitive controls, admitted total memory, artifacts/features/adapter compatibility and retained losing/no-go outcomes. |
 | Conditional | Revisit compact recurrent factors, learned tree/overlap methods and lossless weight/KV codecs. | A measured relevant bottleneck, native execution route and the specific prerequisites under [survey dispositions](#survey-ideas-outside-the-current-laptop-backlog). |
 
