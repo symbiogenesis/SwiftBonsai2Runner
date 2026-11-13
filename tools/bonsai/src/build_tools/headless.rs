@@ -480,10 +480,25 @@ pub(super) fn build(repository: &Path, output: &Path) -> crate::Result<Value> {
         receipt["Phase"] = "static-import-closure".into();
         save(&receipt_path, &receipt, false)?;
         let kernel = crate::startup_download::system_tool("kernel32.dll")?;
-        let imports = crate::pe_closure::run(json!({
+        let request = json!({
             "bundleDirectory":bundle,
             "systemDirectory":kernel.parent().ok_or("Missing system directory.")?
-        }));
+        });
+        // Retain the hard process cutoff even if a filesystem read blocks.
+        let imports = candidate
+            .tool(
+                &current_executable,
+                &[
+                    "pe-closure".into(),
+                    "--json".into(),
+                    request.to_string().into(),
+                ],
+                "static-imports.txt",
+                120,
+            )
+            .and_then(|report| {
+                serde_json::from_str::<Value>(&report).map_err(|error| error.to_string())
+            });
         let report = match &imports {
             Ok(report) => report.clone(),
             Err(error) => json!({"schemaVersion":1,"status":"rejected",
@@ -495,6 +510,15 @@ pub(super) fn build(repository: &Path, output: &Path) -> crate::Result<Value> {
         )
         .map_err(|error| error.to_string())?;
         imports?;
+        // imports.json owns the complete successful report; keep raw diagnostics
+        // only for a failed process, timeout or malformed response.
+        for name in [
+            "static-imports.txt",
+            "static-imports.txt.stdout.txt",
+            "static-imports.txt.stderr.txt",
+        ] {
+            fs::remove_file(output.join("logs").join(name)).map_err(|error| error.to_string())?;
+        }
         let mut files = Vec::new();
         let mut artifacts = Vec::new();
         for entry in fs::read_dir(&bundle).map_err(|error| error.to_string())? {

@@ -64,7 +64,10 @@ system delays without following them. The schema-1 report retains bounded file
 digests, import edges and the unresolved forwarded-export scope. The optional
 `tools/runtime-candidates/pe_closure.ps1` facade accepts `-ToolPath` or
 `BONSAI_TOOLS_PATH`; synthetic fixtures can supply explicit alias maps through
-`Invoke-PeClosure`. Native build tooling calls the Rust audit directly.
+`Invoke-PeClosure`. Native build tooling supervises the native audit executable
+with a hard 120-second process cutoff, without a PowerShell child. Failed raw
+diagnostics and rejected reports remain available; successful reports retain
+one `imports.json`.
 
 For a source checkout, build the maintenance executable once with the pinned
 compiler and an external target, then run it directly:
