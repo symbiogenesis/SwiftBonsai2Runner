@@ -1317,7 +1317,11 @@ fn audio_transcript_modal_stays_bounded_as_a_long_recording_arrives() -> io::Res
             let copy = chat
                 .get_by_role_and_label(egui::Role::Button, "Copy full transcript")
                 .rect();
+            let cancel = chat
+                .get_by_role_and_label(egui::Role::Button, "Cancel transcription in viewer")
+                .rect();
             assert!(bounds.contains_rect(close) && bounds.contains_rect(copy));
+            assert!(bounds.contains_rect(cancel));
             assert!(close.top() >= viewport.bottom());
             if let Some(first) = initial {
                 assert_eq!(modal, first, "transcript growth changed the modal bounds");
@@ -1325,6 +1329,13 @@ fn audio_transcript_modal_stays_bounded_as_a_long_recording_arrives() -> io::Res
                 initial = Some(modal);
             }
         }
+        let retained = chat.state().app.audio_file_transcript.clone();
+        chat.get_by_role_and_label(egui::Role::Button, "Cancel transcription in viewer")
+            .click();
+        chat.run();
+        assert!(!chat.state().app.audio_file_active);
+        assert!(chat.state().app.show_audio_transcript);
+        assert_eq!(chat.state().app.audio_file_transcript, retained);
         assert_eq!(chat.state().app.input, "Keep draft");
         assert!(chat.state().commands.try_recv().is_err());
     }
