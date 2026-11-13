@@ -196,4 +196,12 @@ jobs:
           RELEASE_TAG: ${{ needs.validate.outputs.tag }}
           RELEASE_PRERELEASE: ${{ inputs.prerelease }}
         run: |
-          & (Join-Path $env:GITHUB_WORKSPACE '.github/release/Publish-Release.ps1') -RepositoryRoot $env:GITHUB_WORKSPACE -AssetDirectory (Join-Path $env:RUNNER_TEMP 'release-assets') -Tag $env:RELEASE_TAG -SourceRevision $env:GITHUB_SHA -Prerelease ($env:RELEASE_PRERELEASE -ceq 'true')
+          $release = & (Join-Path $env:GITHUB_WORKSPACE '.github/release/Publish-Release.ps1') -RepositoryRoot $env:GITHUB_WORKSPACE -AssetDirectory (Join-Path $env:RUNNER_TEMP 'release-assets') -Tag $env:RELEASE_TAG -SourceRevision $env:GITHUB_SHA -Prerelease ($env:RELEASE_PRERELEASE -ceq 'true')
+          @(
+            "## Published $env:RELEASE_TAG"
+            "[Download the Windows ARM64 executable]($release)"
+            "Source: $env:GITHUB_SHA"
+            ''
+            'All five Rust lanes, portable packaging and model-free executable smoke checks passed.'
+            'The release includes its manifest and SHA-256 inventory. Application qualification remains separate.'
+          ) | Add-Content -LiteralPath $env:GITHUB_STEP_SUMMARY -Encoding utf8NoBOM
