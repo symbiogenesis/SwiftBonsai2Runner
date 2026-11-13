@@ -487,9 +487,9 @@ fn decode_chunks(
             wav,
             start: sample_duration(emitted_samples)?,
             end,
-            // Metadata is guidance only; decoded EOF and sample counts own
-            // completion, including recordings with inaccurate duration tags.
-            total: if last { end } else { total.max(end) },
+            // Keep absent/underestimated metadata visible to presentation.
+            // Only decoded EOF establishes the complete recording length.
+            total: if last { end } else { total },
             last,
         };
         if shared.cancelled.load(Ordering::Acquire) {
@@ -614,7 +614,14 @@ mod tests {
                 .ok_or_else(|| io::Error::other("Missing stream chunk"))?;
             assert!(!last);
             assert_eq!(chunk.start, previous_end);
-            assert!(chunk.total >= chunk.end);
+            assert_eq!(
+                chunk.total,
+                if chunk.last {
+                    chunk.end
+                } else {
+                    Duration::from_secs(1)
+                }
+            );
             let data = bonsai_audio::mono_pcm16_data(&chunk.wav, 16_000, 480_000)
                 .ok_or_else(|| io::Error::other("Invalid stream PCM"))?;
             emitted.extend_from_slice(data);
