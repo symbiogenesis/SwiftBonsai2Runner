@@ -70,6 +70,17 @@ $tests.json={param($f) $path=Join-Path $f.Root 'duplicate.json';foreach ($raw in
 $tests.local={param($f) $old=$env:GITHUB_ACTIONS;try {$env:GITHUB_ACTIONS='false';Reject {Prepare '' '' '0.1.25' '' ''}}finally{$env:GITHUB_ACTIONS=$old}}
 $tests.lock={param($f) $source=Join-Path $f.Root 'source.lock';$driver=Join-Path $f.Root 'driver.lock';[IO.File]::WriteAllText($source,"[[package]]`nname = `"example`"`nversion = `"1.0.0`"`n");[IO.File]::WriteAllText($driver,"[[package]]`nname = `"example`"`nversion = `"1.0.1`"`n");Reject {LockSubset $driver $source $false}}
 $tests.registry={param($f) $f.Packet.registry_packages['bonsai-neon-dot'].sha256='0'*64;Reject {EvaluateFixture $f}}
+$tests.strict_identity_types={param($f)
+    foreach ($change in @(@('schema_version','2'),@('per_arm_timeout_seconds','60'))) {$old=$f.Packet[$change[0]];$f.Packet[$change[0]]=$change[1];Reject {EvaluateFixture $f};$f.Packet[$change[0]]=$old}
+    $f.Proof.schema_version='1';Reject {EvaluateFixture $f};$f.Proof.schema_version=1
+    $f.Starts[1].original_deadline_unix_milliseconds=[string]$f.Starts[1].original_deadline_unix_milliseconds;Reject {EvaluateFixture $f}
+}
+$tests.redirected_member={param($f)
+    $outside=Join-Path $f.Root 'outside';$inside=Join-Path $f.Root 'inside';[void][IO.Directory]::CreateDirectory($outside);[void][IO.Directory]::CreateDirectory($inside);[IO.File]::WriteAllText((Join-Path $outside 'proof.json'),'{}')
+    $link=Join-Path $inside 'link'
+    if ($IsWindows) {[void](New-Item -ItemType Junction -Path $link -Target $outside)} else {[void][IO.Directory]::CreateSymbolicLink($link,$outside)}
+    try {Reject {Member $inside 'link/proof.json'}} finally {Remove-Item -LiteralPath $link -Force}
+}
 $tests.archive={param($f)
     $cache=Join-Path $f.Root 'registry/cache/index';$source=Join-Path $f.Root 'registry/src/index/example-1.0.0';[void][IO.Directory]::CreateDirectory($cache);[void][IO.Directory]::CreateDirectory($source)
     $archive=Join-Path $cache 'example-1.0.0.crate';$expected=[Text.Encoding]::UTF8.GetBytes('reviewed source');[IO.File]::WriteAllBytes((Join-Path $source 'lib.rs'),$expected)

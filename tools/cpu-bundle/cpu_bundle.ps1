@@ -47,7 +47,10 @@ function Equal($First,$Second) {
         if ($First.Count -ne $Second.Count) { return $false }; for ($i=0;$i -lt $First.Count;$i++) { if (-not (Equal $First[$i] $Second[$i])) { return $false } }; return $true
     }
     if ($First -is [bool] -or $Second -is [bool] -or $First -is [string] -or $Second -is [string]) { return $First.GetType() -eq $Second.GetType() -and $First -ceq $Second }
-    return $First -eq $Second
+    $firstInteger=$First -is [int] -or $First -is [long] -or $First -is [System.Numerics.BigInteger]
+    $secondInteger=$Second -is [int] -or $Second -is [long] -or $Second -is [System.Numerics.BigInteger]
+    if ($firstInteger -or $secondInteger) { return $firstInteger -and $secondInteger -and $First -eq $Second }
+    return $First.GetType() -eq $Second.GetType() -and $First -eq $Second
 }
 function Integer($Value,[decimal]$Minimum,[decimal]$Maximum,[string]$Name) {
     Require (($Value -is [int] -or $Value -is [long] -or $Value -is [System.Numerics.BigInteger]) -and $Value -ge $Minimum -and $Value -le $Maximum) "Invalid $Name."
@@ -82,11 +85,19 @@ function WriteNew([string]$Path,$Value) {
     $file=[IO.File]::Open($Path,[IO.FileMode]::CreateNew,[IO.FileAccess]::Write,[IO.FileShare]::None)
     try { $file.Write($bytes) } finally { $file.Dispose() }
 }
+function RejectRedirects([string]$Path) {
+    $current=[IO.Path]::GetFullPath($Path); $depth=0
+    while ($current) {
+        $depth++; Require ($depth -le 65) 'Path ancestry exceeds bound.'
+        if (Test-Path -LiteralPath $current) { Require (-not ([IO.File]::GetAttributes($current) -band [IO.FileAttributes]::ReparsePoint)) 'Redirected evidence/source path.' }
+        $current=[IO.Path]::GetDirectoryName($current)
+    }
+}
 function Member([string]$Root,$Relative) {
     Require ($Relative -is [string] -and $Relative -and -not [IO.Path]::IsPathRooted($Relative) -and $Relative -notmatch '[:\\]') 'Evidence member must be relative.'
     $prefix=[IO.Path]::GetFullPath($Root).TrimEnd([IO.Path]::DirectorySeparatorChar) + [IO.Path]::DirectorySeparatorChar
     $path=[IO.Path]::GetFullPath((Join-Path $Root $Relative))
-    Require ($path.StartsWith($prefix,[StringComparison]::Ordinal)) 'Evidence member escapes its root.'; $path
+    Require ($path.StartsWith($prefix,[StringComparison]::Ordinal)) 'Evidence member escapes its root.'; RejectRedirects $path; $path
 }
 function CheckedJson([string]$Root,$Reference) {
     Require ($Reference -is [Collections.IDictionary] -and (Equal @($Reference.Keys | Sort-Object) @('path','sha256'))) 'Expected a digest-bound JSON reference.'
@@ -103,6 +114,7 @@ function Command([string[]]$Arguments,[string]$Directory,[hashtable]$Environment
 function Git([string]$Root,[string[]]$Arguments) { Command (@('git','-c',('safe.directory='+$Root.Replace('\','/')),'-C',$Root)+$Arguments) $Root }
 function SourceIdentity([string]$Root,[string]$Revision) {
     Require ([IO.Path]::IsPathFullyQualified($Root) -and [IO.Directory]::Exists($Root)) 'Source root must be absolute and present.'
+    RejectRedirects $Root
     Require ((Git $Root @('rev-parse','HEAD')) -ceq $Revision) 'Source revision differs.'
     Require (-not (Git $Root @('status','--porcelain','--untracked-files=normal'))) 'Source checkout is not clean.'
     @{revision=$Revision; tree=(Git $Root @('rev-parse','HEAD^{tree}')); clean=$true; manifest_sha256=(FileDigest (Join-Path $Root 'Cargo.toml')); lock_sha256=(FileDigest (Join-Path $Root 'Cargo.lock')); toolchain_sha256=(FileDigest (Join-Path $Root 'rust-toolchain.toml'))}
@@ -202,8 +214,17 @@ function Prepare([string]$BaselineDirectory,[string]$ToolingDirectory,[string]$R
     Require ($IsWindows -and [Runtime.InteropServices.RuntimeInformation]::ProcessArchitecture -eq 'Arm64' -and $env:GITHUB_REPOSITORY -cin @('symbiogenesis/prism-inference','symbiogenesis/SwiftBonsai2Runner')) 'Preparation requires native owning Windows ARM64 CI.'
     $revision=Hex $env:GITHUB_SHA 40 'orchestrator revision'; Require ($revision -ceq $RunnerCommit -and $env:GITHUB_RUN_ID -cmatch '^[1-9][0-9]*$') 'Missing or changed hosted source/run identity.'
     $orchestrator=@{repository=$env:GITHUB_REPOSITORY; revision=$revision; run_id=$env:GITHUB_RUN_ID; run_attempt=$env:GITHUB_RUN_ATTEMPT}
+    $runnerRoot=[IO.Path]::GetFullPath((Join-Path $PSScriptRoot '../..'))
+    $reviewedEvaluator=Join-Path $runnerRoot 'tools/cpu-bundle/cpu_bundle.ps1'
+    Require ([IO.Path]::GetFullPath($PSCommandPath) -ceq [IO.Path]::GetFullPath($reviewedEvaluator)) 'Preparation must execute the tracked Runner evaluator.'
+    $runnerIdentity=SourceIdentity $runnerRoot $RunnerCommit
+    $evaluatorDigest=FileDigest $reviewedEvaluator
+    $orchestrator.source=$runnerIdentity
     Require ($RegistryVersion -ceq '0.1.25') 'Only the reviewed exact registry candidate is admitted.'
     Require ([IO.Path]::IsPathFullyQualified($BaselineDirectory) -and [IO.Path]::IsPathFullyQualified($ToolingDirectory) -and $BaselineDirectory -cne $ToolingDirectory) 'Use independent absolute source checkouts.'
+    RejectRedirects $BaselineDirectory; RejectRedirects $ToolingDirectory; RejectRedirects $OutputDirectory
+    $pathComparison=if ($IsWindows) { [StringComparison]::OrdinalIgnoreCase } else { [StringComparison]::Ordinal }
+    Require (-not [string]::Equals([IO.Path]::GetFullPath($BaselineDirectory).TrimEnd('\','/'),[IO.Path]::GetFullPath($ToolingDirectory).TrimEnd('\','/'),$pathComparison)) 'Use independent source checkouts.'
     Require ([IO.Path]::IsPathFullyQualified($OutputDirectory) -and -not (Test-Path -LiteralPath $OutputDirectory)) 'Use a new external artifact directory.'
     foreach ($source in @($BaselineDirectory,$ToolingDirectory)) { $prefix=[IO.Path]::GetFullPath($source).TrimEnd('\','/')+[IO.Path]::DirectorySeparatorChar; Require (-not ([IO.Path]::GetFullPath($OutputDirectory).StartsWith($prefix,[StringComparison]::OrdinalIgnoreCase))) 'Artifact directory must be outside both source trees.' }
     $toolingIdentity=SourceIdentity $ToolingDirectory (Git $ToolingDirectory @('rev-parse','HEAD'))
@@ -269,8 +290,10 @@ function Prepare([string]$BaselineDirectory,[string]$ToolingDirectory,[string]$R
     }
     Require (Equal (SourceIdentity $ToolingDirectory $toolingIdentity.revision) $toolingIdentity) 'Collector/tooling checkout changed during preparation.'
     foreach ($name in $hashes.Keys) { Require ((FileDigest (Join-Path $ToolingDirectory $name)) -ceq $hashes[$name]) 'Collector sources changed during preparation.' }
+    Require ((Equal (SourceIdentity $runnerRoot $RunnerCommit) $runnerIdentity) -and (FileDigest $reviewedEvaluator) -ceq $evaluatorDigest) 'Runner evaluator source changed during preparation.'
     # Bind this new native evaluator to Runner, independently of immutable Prism collector sources.
-    $evaluator=Join-Path $OutputDirectory 'evaluator.ps1'; [IO.File]::Copy($PSCommandPath,$evaluator)
+    $evaluator=Join-Path $OutputDirectory 'evaluator.ps1'; [IO.File]::Copy($reviewedEvaluator,$evaluator)
+    Require ((FileDigest $evaluator) -ceq $evaluatorDigest) 'Retained evaluator differs from reviewed Runner source.'
     $registryIdentities=@{}; foreach ($name in $packages.Keys) { $identity=$packages[$name].Clone(); $identity.Remove('root'); $registryIdentities[$name]=$identity }
     $receipt=@{schema_version=2; kind='prism-cpu-bundle-preparation'; compiler=$compiler; orchestrator=$orchestrator; evaluator_sha256=(FileDigest $evaluator); evaluator_language='PowerShell 7.6'; tooling_source=$toolingIdentity; registry_packages=$registryIdentities
         retained_files=@('preparation.json','messages.json','evaluator.ps1'); target=$script:Target; features=$script:Features; collector_sources=$hashes
@@ -286,6 +309,7 @@ function Power($Value) {
 }
 function NativeConditions($Report,$ExpectedHost) {
     Require ($Report -is [Collections.IDictionary] -and (Get-Field $Report 'schema_version') -eq 1 -and (Get-Field $Report 'kind') -ceq 'runner-native-cpu-observations' -and (Get-Field $Report 'status') -ceq 'observed' -and (Get-Field $Report 'architecture') -ceq 'aarch64' -and (Get-Field $Report 'scope') -ceq 'current-process' -and (Get-Field $Report 'source') -ceq 'GetSystemCpuSetInformation') 'Unknown native CPU conditions.'
+    [void](Integer (Get-Field $Report 'schema_version') 1 1 'native observation schema')
     $hostValue=Get-Field $Report 'host_identity'
     Require ((Equal $hostValue $ExpectedHost) -and $hostValue.status -ceq 'observed' -and $hostValue.source -ceq 'HKLM/HARDWARE/DESCRIPTION/System/CentralProcessor/0;RtlGetVersion;IsProcessorFeaturePresent') 'Unknown or changed native host identity.'
     foreach ($field in @('processor_name','processor_identifier','vendor_identifier')) { $value=Get-Field $hostValue $field; Require ($value -is [string] -and $value.Trim() -and $value.Trim() -ine 'unknown') 'Incomplete native host identity.' }
@@ -297,6 +321,7 @@ function NativeConditions($Report,$ExpectedHost) {
     $topology=Get-Field $Report 'topology'; Require ($topology -is [Collections.IDictionary] -and (Get-Field $topology 'cpu_sets')) 'Missing CPU topology.'; [void](Integer (Get-Field $topology 'logical_processors') 4 4096 'native logical processor count')
     $policy=Get-Field $Report 'power_policy_snapshot'
     Require ($policy -is [Collections.IDictionary] -and (Get-Field $policy 'status') -ceq 'observed' -and (Get-Field $policy 'source') -ceq 'PowerGetActiveScheme/PowerRegisterForEffectivePowerModeNotifications' -and (Get-Field $policy 'notification_version') -eq 2) 'Unknown effective power policy.'
+    [void](Integer (Get-Field $policy 'notification_version') 2 2 'power notification version')
     $scheme=Get-Field $policy 'active_scheme'; Require ($scheme -is [string] -and $scheme -cmatch '^[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}$' -and $scheme -cne '00000000-0000-0000-0000-000000000000') 'Invalid power scheme.'
     Require ($policy.effective_mode -cin @('battery-saver','better-battery','balanced','high-performance','max-performance','game-mode','mixed-reality')) 'Unknown effective power mode.'
     @{host=$hostValue; topology=$topology; power=(Power (Get-Field $Report 'power_snapshot')); scheme=$scheme; mode=$policy.effective_mode}
@@ -319,6 +344,7 @@ function ValidateArm($Receipt,$OwnerProof,$Packet,[string]$Role,[long]$SourceDea
     $timings=@(foreach ($key in @('load_milliseconds','preparation_milliseconds','request_milliseconds','elapsed_milliseconds')) { Positive (Get-Field $Receipt $key) $key }); Require ($timings[0]+$timings[1]+$timings[2] -le $timings[3]) 'Operation durations exceed their enclosing clock.'
 }
 function ValidatePreparation($Packet,[string]$Path) {
+    [void](Integer $Packet.schema_version 2 2 'packet schema'); [void](Integer $Packet.per_arm_timeout_seconds 60 60 'per-arm timeout')
     Require ($Packet.schema_version -eq 2 -and $Packet.kind -ceq 'prism-cpu-bundle-preparation' -and $Packet.target -ceq $script:Target -and (Equal $Packet.features $script:Features) -and (Equal $Packet.schedule $script:Schedule) -and (Equal $Packet.profile $script:Profile) -and
         $Packet.per_arm_timeout_seconds -eq 60 -and $Packet.model_sha256 -ceq $script:Model -and $Packet.adapter_sha256 -ceq $script:Adapter -and $Packet.model_executed -is [bool] -and $Packet.model_executed -eq $false -and $Packet.promotion_qualified -is [bool] -and $Packet.promotion_qualified -eq $false) 'Preparation identity or fixed policy differs.'
     Require (Equal $Packet.retained_files @('preparation.json','messages.json','evaluator.ps1')) 'Evidence selection differs from declared replay inputs.'
@@ -352,6 +378,7 @@ function ValidatePreparation($Packet,[string]$Path) {
 }
 function Evaluate([string]$PreparationPath,[string]$OwnerPath) {
     $packet=ReadJson $PreparationPath; $proof=ReadJson $OwnerPath; ValidatePreparation $packet $PreparationPath
+    [void](Integer $proof.schema_version 1 1 'owner schema')
     Require ($proof.schema_version -eq 1 -and $proof.kind -ceq 'prism-cpu-bundle-owner' -and $proof.preparation_sha256 -ceq (FileDigest $PreparationPath) -and (Equal $proof.workload_predeclared $true) -and (Equal $proof.completed $true)) 'Owner proof is missing, changed or incomplete.'
     $budget=Integer $proof.budget_seconds 1 900 'aggregate allowance'; $frequency=Integer $proof.clock_frequency 1 1000000000000 'clock frequency'; $started=Integer $proof.started_tick 0 ([long]::MaxValue) 'original start'; $deadline=Integer $proof.deadline_tick 1 ([long]::MaxValue) 'original deadline'; $retained=Integer $proof.retention_completed_tick 1 ([long]::MaxValue) 'retention completion'
     Require ([decimal]$deadline -eq [decimal]$started+[decimal]$budget*$frequency -and $started -lt $retained -and $retained -le $deadline) 'Work or retention escaped the original aggregate allowance.'
@@ -370,6 +397,7 @@ function Evaluate([string]$PreparationPath,[string]$OwnerPath) {
         Require ((Equal $arm.owned_job_empty $true) -and (Equal $arm.cleanup_succeeded $true)) 'Owned model cleanup was not confirmed.'
         foreach ($name in @('receipt','started_receipt','supervision')) { $reference=Get-Field $arm $name; Require ($reference -is [Collections.IDictionary] -and $seen.Add($reference.path)) 'Missing or reused arm evidence path.' }
         $directory=[IO.Path]::GetDirectoryName($OwnerPath); $receipt=CheckedJson $directory $arm.receipt; $startReceipt=CheckedJson $directory $arm.started_receipt; $supervision=CheckedJson $directory $arm.supervision
+        [void](Integer $startReceipt.original_deadline_unix_milliseconds $armDeadline $armDeadline 'started deadline')
         Require ($startReceipt.source_commit_declaration -ceq $receipt.source_commit_declaration -and $startReceipt.original_deadline_unix_milliseconds -eq $armDeadline) 'Started/final source deadline identity differs.'
         Require ($supervision.Status -ceq 'completed' -and (Equal $supervision.ModelProcessStarted $true) -and -not (Get-Field $supervision 'CancellationFailure')) 'Native supervision did not complete successfully.'; [void](Integer $supervision.ExitCode 0 0 'supervisor exit')
         $snapshots.Add((NativeConditions $supervision.CpuConditions.Before $proof.host_identity)); $snapshots.Add((NativeConditions $supervision.CpuConditions.After $proof.host_identity))
