@@ -655,6 +655,31 @@ impl CausalConv1d {
         let bias = self.bias.as_deref();
         let work = out_frames.saturating_mul(self.weight.len());
         let workers = frame_workers(threads, out_frames, work);
+        // Streaming starts with one latent frame; splitting only by time leaves
+        // the large 512 -> 1024 pre-convolution entirely on one CPU. For short
+        // stages, tile independent output channels while preserving the same
+        // four-row dot products, bias and accumulation order as frame splitting.
+        if out_frames < threads.clamp(1, 18) && work >= 65_536 && self.out_c >= 4 {
+            let width = self.in_c * self.kernel;
+            let mut patch = vec![0.0; width];
+            for (frame, out_row) in out.chunks_exact_mut(self.out_c).enumerate() {
+                let first = frame * stride;
+                for (ic, row) in patch.chunks_exact_mut(self.kernel).enumerate() {
+                    for (k, value) in row.iter_mut().enumerate() {
+                        *value = ext[(first + k * self.dilation) * self.in_c + ic];
+                    }
+                }
+                row_workers::run_aligned(out_row, threads, 4, &|offset, rows| {
+                    let weights = &self.weight[offset * width..(offset + rows.len()) * width];
+                    let bias = bias.map(|values| &values[offset..offset + rows.len()]);
+                    dispatch!(
+                        level,
+                        simd => matvec_4rows_simd(simd, weights, &patch, bias, rows)
+                    );
+                });
+            }
+            return out;
+        }
         row_workers::run_aligned(&mut out, workers, self.out_c, &|offset, output| {
             let first_frame = offset / self.out_c;
             if self.kernel == 1 {
@@ -1584,6 +1609,54 @@ mod tests {
             parallel.iter().map(|v| v.to_bits()).collect::<Vec<_>>()
         );
         assert_eq!(serial_state, parallel_state);
+        Ok(())
+    }
+
+    #[test]
+    fn short_codec_convolutions_tile_channels_without_changing_pcm_or_context()
+    -> std::io::Result<()> {
+        for kernel in [1, 3] {
+            for out_c in [128, 129] {
+                let layer = CausalConv1d {
+                    in_c: 512,
+                    out_c,
+                    kernel,
+                    dilation: 2,
+                    stride: 1,
+                    weight: values(out_c * 512 * kernel),
+                    bias: Some(values(out_c)),
+                    pad_mode: PadMode::Constant,
+                };
+                for frames in [1, 2, 4] {
+                    let input = values(frames * 512);
+                    let mut serial_state = values(layer.stream_context_frames() * 512);
+                    let mut parallel_state = serial_state.clone();
+                    let serial =
+                        layer.forward_stream_parallel(&input, frames, &mut serial_state, 1)?;
+                    let parallel =
+                        layer.forward_stream_parallel(&input, frames, &mut parallel_state, 8)?;
+                    assert_eq!(
+                        serial
+                            .iter()
+                            .map(|value| value.to_bits())
+                            .collect::<Vec<_>>(),
+                        parallel
+                            .iter()
+                            .map(|value| value.to_bits())
+                            .collect::<Vec<_>>()
+                    );
+                    assert_eq!(serial_state, parallel_state);
+                    // A later callback must observe exactly the same retained
+                    // convolution context after the channel-tiled work joins.
+                    let tail = values(512);
+                    assert_eq!(
+                        layer.forward_stream_parallel(&tail, 1, &mut serial_state, 1)?,
+                        layer.forward_stream_parallel(&tail, 1, &mut parallel_state, 8)?
+                    );
+                    assert_eq!(serial_state, parallel_state);
+                }
+            }
+        }
         Ok(())
     }
 
