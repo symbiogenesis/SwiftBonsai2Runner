@@ -105,6 +105,14 @@ fn metadata_value(
 ) -> io::Result<Metadata> {
     Ok(match read_u32(reader)? {
         4 => Metadata::U32(read_u32(reader)?),
+        5 => {
+            let value = read_u32(reader)?;
+            if value <= i32::MAX.unsigned_abs() {
+                Metadata::U32(value)
+            } else {
+                Metadata::Other
+            }
+        }
         6 => {
             let value = f32::from_bits(read_u32(reader)?);
             if !value.is_finite() {
@@ -119,7 +127,7 @@ fn metadata_value(
             if count > 1_000_000 {
                 return Err(invalid());
             }
-            if kind == 4 {
+            if kind == 4 || kind == 5 {
                 let count = usize::try_from(count).map_err(|_| invalid())?;
                 let bytes = count.checked_mul(4).ok_or_else(invalid)?;
                 if bytes > *budget {
@@ -130,7 +138,11 @@ fn metadata_value(
                 for _ in 0..count {
                     values.push(read_u32(reader)?);
                 }
-                Metadata::U32Array(values)
+                if kind == 5 && values.iter().any(|value| *value > i32::MAX.unsigned_abs()) {
+                    Metadata::Other
+                } else {
+                    Metadata::U32Array(values)
+                }
             } else if kind == 8 {
                 for _ in 0..count {
                     let _ = text(reader, budget, 16 * 1024 * 1024)?;
@@ -550,6 +562,28 @@ mod tests {
             let invalid_file = fixture(&tensors, &[0; 64])?;
             assert!(Weights::open(&invalid_file.0).is_err());
         }
+        Ok(())
+    }
+
+    #[test]
+    fn gguf_integer_metadata_accepts_nonnegative_signed_rates_and_rejects_negative_rates()
+    -> io::Result<()> {
+        let mut bytes = Vec::new();
+        bytes.extend(9_u32.to_le_bytes());
+        bytes.extend(5_u32.to_le_bytes());
+        bytes.extend(4_u64.to_le_bytes());
+        for value in [8_i32, 5, 4, 3] {
+            bytes.extend(value.to_le_bytes());
+        }
+        let length = u64::try_from(bytes.len()).map_err(|_| invalid())?;
+        let mut budget = MAX_METADATA_BYTES;
+        let value = metadata_value(&mut io::Cursor::new(&bytes), length, &mut budget)?;
+        assert!(matches!(value, Metadata::U32Array(values) if values == [8,5,4,3]));
+        bytes[16..20].copy_from_slice(&(-1_i32).to_le_bytes());
+        assert!(matches!(
+            metadata_value(&mut io::Cursor::new(bytes), length, &mut budget)?,
+            Metadata::Other
+        ));
         Ok(())
     }
 
