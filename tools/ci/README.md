@@ -96,13 +96,8 @@ The retained workflows own current checks or open gates in [PLAN.md](../../PLAN.
 | Native accelerator and containment controls | `hexagon-qualification`, `sandbox-qualification` |
 | Pending paired performance and dependency gates | `cpu-bundle-comparison`, `tts-evaluation`, `x2-cpu-evaluation`, `json-candidate` |
 
-Source checks select portable pull-request checks, Markdown standards and the
-weekly dependency audit by changed paths, without compiling a planner. Hexagon
-qualification owns the independent hosted Windows ABI control. Retired chat,
-speech and runtime-parity pipelines duplicated Foundation, release and native-runtime
-acceptance; X2 compute duplicated Hexagon qualification. The frozen-source row-worker experiment
-is also retired; its CLI recipes and evidence remain available. These retirements
-close no current-runtime qualification gate.
+Source checks select portable, Markdown and dependency jobs by changed paths.
+Hexagon qualification owns the independent hosted Windows ABI control.
 
 The [native CPU bundle comparison](../../docs/cpu-bundle-comparison.md) prepares
 the fixed 0.1.23 control and registry 0.1.25 candidate on hosted ARM64. Its default
@@ -110,11 +105,8 @@ is preparation only; explicit device selection requires the owner's predeclared
 ten-minute aggregate workload. The X2 thread screen compares publisher thread
 counts and cannot substitute for that runtime-bundle comparison.
 
-Completed publisher startup, SDK inventory, public QAIC, adapter direction and
-numerical audit pipelines are retired; their recipes, immutable inputs and evidence
-remain available. Native CLI plan commands replace LoRA/PTQ1 plan-only pipelines,
-which captured no model qualification. Model, device, provenance, performance
-and human acceptance gates remain pending.
+Native `plan`/`screen-plan` commands inspect LoRA/PTQ1 policy without capture.
+Outstanding model/device/provenance/performance/human gates live in [PLAN.md](../../PLAN.md).
 
 ## Native acceptance admission
 
@@ -274,12 +266,8 @@ save, and exact hits remain immutable. Optional save failures cannot change a
 check verdict. Cache paths contain no evidence or acceptance receipts; every
 format, analyzer, documentation, test and build command still runs. Hosted cold,
 warm and failed-check recovery acceptance remains pending under C1.
-A self-hosted cache miss does not compile the CI bootstrap. The deleted
-PowerShell registry, check module and check script have no compatibility
-wrappers; feature, batching, selection and suite-guard regressions are Rust
-tests. The maintenance PowerShell/C# bootstrap and its tests have also been
-retired; native command input, caller identity, build ownership and immutable
-publication tests own those contracts.
+A self-hosted cache miss never compiles the CI bootstrap. Rust tests own feature,
+batching, selection, suite guards, caller identity and immutable publication.
 
 ## Action dependency pins
 

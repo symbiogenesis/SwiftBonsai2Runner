@@ -51,482 +51,168 @@ without proving the machine otherwise idle. [PLAN.md](../PLAN.md) owns pending a
 
 ### Actual-model application acceptance
 
-Main-only, manually dispatched
-[native-runtime acceptance](../.github/workflows/native-runtime-acceptance.yml)
-defaults to `run_device: false`: hosted ARM64 prepares and retains the exact-source
-analyzer receipt and acceptance package without queuing a laptop job or occupying
-the shared device lane. Review that preparation before selecting `run_device: true`
-for one predeclared owner workload. The explicit device dispatch prepares and verifies
-its own same-run package; it does not reuse another run's package or reopen a closed
-trial. It runs an explicitly ignored case on the owner-managed Snapdragon X/X2 runner.
-The default case requires provisioned original PQ2, the pinned Rust release, native
-sandbox admission, unchanged limits and retained artifact handles. It tests supplied-history
-streaming, framed context rejection/reuse, shutdown, abandonment after content,
-and fresh restart. Uploads contain credential-free receipts and bounded sanitized
-worker logs; protected key directories are excluded. Failure rejects without an unrestricted retry.
-Ordinary Foundation/local runs never execute the ignored case.
+The main-only [native-runtime acceptance workflow](../.github/workflows/native-runtime-acceptance.yml)
+defaults to `run_device: false`, preparing an exact-source package on hosted ARM64.
+The owner must review that package and predeclare one feasible workload before
+selecting `run_device: true`. Device dispatch builds its own same-run package;
+cached compiler outputs never supply acceptance receipts. Ignored model cases
+never run in ordinary local or Foundation checks.
 
-The default is **five minutes total**. `owner_budget_minutes` selects 5, 10 or 15;
-10/15 requires `budget_reason` with the fixed workload estimate and why five minutes
-cannot fit. The same total sets the job timeout. UTC and monotonic clocks start
-before checkout/intake; admission charges the larger elapsed value, rounded up
-with integer arithmetic. Clock corrections cannot enlarge the allowance. Receipts
-retain both observations, and an inherited monotonic limit can shorten admission.
-Each actual-model case receives a validated aggregate soft allowance, at most **240,
-540 or 840 seconds** respectively, reduced by preceding setup, verification and
-case inventory. Startup and cleanup share this allowance. Missing, malformed or
-excessive limits reject before model use. The process hard limit leaves ten seconds
-after the Rust allowance for owned-task teardown, and stops at least thirty seconds
-before the original whole-job deadline for forced cleanup, sanitized diagnostics
-and evidence uploads. Host and model receipts retain the declared total, preparation
-cost and actual/maximum case allowance. Per-request deadlines cannot extend it. Do not
-split a long matrix across repeated owner jobs. Hosted ARM64 prepares exact
-source-bound test and maintenance binaries without loading models; the owner job
-verifies their run/revision, SHA-256 and native architecture before direct execution,
-with no Cargo build on the laptop.
+Preparation requires strict Release all-target Clippy and production linking for
+`bonsai-chat`, `bonsai-broker` and `bonsai-tools`. The schema-2 package contains
+`native-model-acceptance.exe`, `bonsai-tools.exe`, `bonsai-ci.exe`,
+`strict-release-analyzers.json`, `workflow-contract.json` and `receipt.json`.
+The shared [admission guard](../tools/ci/README.md#native-acceptance-admission)
+validates source/compiler identities, exact inventory, successful checks and
+workflow syntax/regression receipts at publication and intake. Renderer/default/
+rollback and `owner_shutdown_`/`owned_broker_` controls run without a model;
+actual native UI Stop/Retry remains an independent device gate.
 
-Hosted preparation must first pass strict Release all-target Clippy for
-`bonsai-chat`, `bonsai-broker` and `bonsai-tools`, then link their production native
-executables with a Release build on that exact source and compiler. Clippy alone
-does not establish native linking. Schema-2 packages contain five digest-bound
-files: `native-model-acceptance.exe`, `bonsai-tools.exe`, `bonsai-ci.exe`,
-`strict-release-analyzers.json` and `workflow-contract.json`, plus `receipt.json`.
-The shared native `bonsai-ci native-acceptance-guard` validates both publication
-and owner intake. It requires exactly one successful `clippy` and one
-successful `build` check, each covering all three packages, with matching revision,
-toolchain and compiler identities before model use; failed hosted analyzer/build
-logs remain independently retained. This is a source prerequisite, and closes no
-device or promotion gate.
+#### Budget and cleanup
 
-Before those production checks, hosted preparation uses the native parser to
-check all eleven PowerShell blocks in the workflow and shared regression action,
-plus the launcher. It exercises typed receipt/output negative fixtures and
-executes two exact Rust guard controls.
-The workflow-contract receipt binds those results to the revision and normalized
-source-file hashes. Publication and owner intake both require that complete
-receipt, the exact package inventory and verified guard executable. Older schema-1
-packages and prepared external helpers require new source-bound preparation;
-their previous selection does not authorize this package or a model workload.
+`owner_budget_minutes` selects 5, 10 or 15 minutes. Extended totals require
+`budget_reason` recording fixed work, estimate and why five minutes cannot fit.
+UTC and monotonic clocks start before checkout/intake; charge the larger elapsed
+value, rounded up. An inherited shorter allowance remains binding.
 
-Hosted preparation also executes four exact model-free controls for renderer
-selection, deferred native defaults and explicit publisher rollback, requiring one
-passed test for each name, plus nonempty `owner_shutdown_` broker and `owned_broker_`
-UI controls. The UI's private shutdown request requires a fresh model-cleanup
-acknowledgment from the broker, broker exit and confirmed
-outer Job cleanup before Retry. PSEC-created models can bypass outer Job
-inheritance, so outer Job accounting alone cannot satisfy this contract.
-These controls exercise marker validation and failure gates without loading a
-model. Owner-observed native UI Stop/Retry must separately qualify the complete
-private handshake with the selected runtime and sandbox.
-
-An inherited owner may predeclare a canonical work allowance up to thirty seconds
-less than that same declared whole-job total (270 by default, at most 870).
-The budget tool subtracts all elapsed time from its original monotonic start and
-retains fifteen seconds for owner process exit plus the ten-second case/process
-gap. The independent declared job limit, thirty-second postprocess reserve and
-case maximum still apply. Selecting a longer job never enlarges a shorter inherited
-owner allowance: original 210/270-second declarations retain their earlier limits.
-A larger declaration neither resets the original clock nor authorizes another
-attempt. Receipts record the declared work and exit reserve separately.
-
-The workflow defaults to `profile: pq2-no-adapter`, preserving the original case
-within that aggregate bound. Explicit `bounded_history` and `stalled_consumer`
-dispatch inputs add reduced workloads only to `pq2-no-adapter`; both default to
-false and share the existing lifecycle case's budget, including its three owned
-startups and cleanup. They are not separate jobs or a way to partition a longer
-qualification matrix. They remain unqualified until successful device evidence
-is retained. Before either optional workload starts, more than 120 seconds must
-remain for cleanup and fresh-owner recovery. A skipped requested workload records
-`status: pending` and `insufficient-cleanup-and-recovery-reserve`; lifecycle
-success remains separate from `allRequestedWorkloadsPassed`. Core successful
-responses use four-token caps with thinking disabled to preserve that reserve.
-Skipped requested workloads leave `passed: false` and fail the case only after
-owned cleanup and fresh-owner recovery, even when `lifecyclePassed: true`.
-Explicit `profile: ptq1-adapter`
-selects a minimal required-sandbox smoke case for the exact current-weight export
-and approved adapter: one scale-1.3 streamed request with a four-token cap and
-owned cleanup. A scale-zero two-token request and invalid-scale connection-close/reuse
-may run only if the same budget retains a conservative teardown reserve. Skipped
-checks remain pending. Signed-zero/scale-two trials, supplied history, context
-rejection, restart, long output and sustained use are not qualified by this smoke.
-Credential-free progress receipts bind the complete runtime/model/adapter locks,
-terminal reason, reported usage when supplied and cleanup. Partial failure retains
-completed observations with `passed: false`. This does not establish complete-state
-parity, adapter authoring basis, performance, output quality or default promotion.
-
-Explicit `profile: ptq1-adapter-lifecycle` requires the current pinned Rust
-service, exact current-weight PTQ1 and approved adapter with one row worker.
-It requires three one-token-cap streams: scale 1.3, scale zero, then scale 1.3
-with supplied user/assistant/user history after the invalid-scale connection-close
-check. User messages remain the fixed public word `Hi`; the assistant message is
-the exact UTF-8 visible response from the initial scale-1.3 stream. Its text,
-SHA-256, source-message hash, finish reason and reported usage are retained and
-bound before replay. Missing visible output or an incomplete source identity
-keeps acceptance pending; no fixture text substitutes for model output. It preserves the request
-deadlines, cleanup reserve and partial-evidence rules of
-`pq2-adapter-lifecycle-row4`, whose user prompts and caps are unchanged. Its receipt
-binds the exact messages and completion caps, actual PTQ1 filename, byte
-count and digest plus the complete export receipt; it cannot inherit PQ2 or
-historical-release acceptance. Optional history/stalled-consumer dispatch inputs
-are rejected. Missing, skipped or cancelled required steps keep `passed: false`
-and fail after owned cleanup. This prepares a bounded qualification lane;
-actual-model evidence for its complete required sequence remains pending. It does not qualify
-zero/no-adapter
-logit identity, writer basis, generated/edited-history parity, full context/output,
-recovery, quality, benefit or daily-service isolation. Supplying the captured
-short response checks application history input only; fresh recomputation and
-complete-state parity of generated/edited history remain independent.
-
-Explicit `profile: ptq1-adapter-lifecycle-row4` prepares the same three-stream
-PTQ1 scale/rejection/captured-history workload with four native row workers.
-It keeps the same model and adapter identities, prompt, one-token caps, sampler,
-request deadline, cleanup reserves and missing-evidence failures. Only the worker
-count and selected case/profile change. Its receipt separately identifies four
-configured workers; this does not independently observe actual thread use or
-establish a throughput gain. One-worker or PQ2 evidence cannot qualify this
-profile, and its evidence cannot qualify those controls. Hosted argument and
-partial-progress controls prepare the lane; actual-device acceptance remains
-pending. A later bounded trial requires its own complete allowance and cannot
-continue the missing steps of an earlier workload.
-
-Explicit `profile: ptq1-adapter-boundaries-row4` prepares a separate bounded
-released-service scale-boundary/reset control with four workers. Four one-token
-streams use the same `Hi` prompt at scale 1.3, negative zero, 2.0, then 1.3;
-invalid-scale connection close and oversized-context rejection precede the final
-stream. The final stream must reproduce the initial visible UTF-8 bytes, digest,
-finish reason and reported one-token usage. Each selected request is bound by its
-exact JSON digest and scale bits, preserving negative zero through serialization.
-These request identities do not establish a server acknowledgement of each scale,
-numerical adapter effect, complete live-state identity or absence of all stale state.
-The released worker/adapter readiness remains independently verified by the broker.
-
-The profile shares the original case deadline, thirty-second cleanup reserve and
-forty-five-second minimum before each further request. Missing, expired or mismatched
-observations stay pending and fail only after owned cleanup. It admits neither
-extra history nor stalled consumers, and does not continue any earlier trial.
-Actual-device execution remains pending; cancellation, fresh-owner restart,
-numerical state, throughput, quality and the complete service-promotion gate still
-require their own evidence. Its four minimal streams avoid the earlier history
-lane's longer supplied-history prefill; this source choice establishes no device
-timing or proof that every preparation can fit the owner allowance.
-
-Explicit `profile: ptq1-adapter-service-row4` combines the remaining bounded
-released-service transitions in one original allowance. Three cap-one streams
-use the same `Hi` prompt at 1.3, negative zero and 2.0, followed by invalid-scale
-and oversized-context rejections. A fourth request keeps that prompt and scale
-1.3 with a 4096-token reservation. Stop follows its first visible prefix, which
-is retained with its exact text/digest and bound request; a terminal SSE record
-already received cannot qualify interruption. The prefix parser waits for a
-complete SSE record, including its blank-line delimiter. Same-owner prefix
-equality is informational because sampler draws advance between requests;
-the fresh owner below resets the seed for exact baseline replay.
-Three completed and three failed broker operations bind
-the two rejections and interrupted operation, with verified empty Job/listener.
-A fresh owner must independently verify readiness, replace credentials, then
-reproduce the exact initial cap-one response and report one completed operation
-without failures before its own verified cleanup.
-
-Every request/startup uses the same absolute deadline with thirty seconds held
-for owned cleanup. Fresh startup requires more than sixty seconds remaining;
-missing work stays pending. Power endpoints are retained for the Rust model case
-and each owner, without claiming uninterrupted stability. Exact request/message
-digests and matching positive reported prompt counts bind completed streams;
-the production broker retains one canonical body for counting and generation.
-This source-bound contract is distinct from a private wire capture or a server
-acknowledgement of each requested scale. The receipt leaves the complete service
-gate to independent source/retained-data review and establishes no numerical
-adapter effect, full-state parity, 4096 generated tokens, performance, quality,
-full promotion or continuation of an earlier trial.
-
-Explicit `profile: ptq1-adapter-service-rollback-row4` adds an original-PQ2 rollback
-to the complete five-request PTQ1 service sequence above in the same allowance.
-The existing service-only profile retains its workload. After both PTQ1 owners
-have verified empty Jobs and released listeners, a third fresh owner selects
-`--use-original-pq2` with pinned the active Prism release, adapter 1.3 and four workers.
-These current cases embed the active [runtime lock](../config/prism-inference.lock.json);
-older packet receipts cannot pin or qualify a newly built harness.
-
-Both service cases retain one absolute case deadline with their outer timeout.
-The combined case gives its PTQ1 sequence an earlier deadline, withholding the
-seventy-five-second PQ2 tail through both PTQ1 teardowns. With at most 135 seconds
-remaining, it rejects before the first PTQ1 owner: the existing sixty-second fresh
-PTQ1 owner floor must fit in addition to the rollback tail. This necessary floor
-does not establish that the complete packet can fit a particular allowance.
-Their Stop path caps its existing thirty-second allowance at the applicable deadline,
-reserving ten seconds to abort and await a stuck owner task so ownership is not
-detached. Fixed pending reasons preserve failed Stop delivery, task/run failures,
-unexpected exits and unconfirmed listener release before retaining power-after.
-Only explicit connection refusal confirms listener release; an accepted connection
-means occupied, while timeout, access, network and other probe failures remain unknown.
-A task error leaves Job emptiness unknown. Confirmed cleanup is required before
-another owner or the post-cleanup PQ2 hash check; synchronous native teardown
-remains non-preemptible. These source controls require hosted and device acceptance.
-
-The original-PQ2 owner must naturally complete the existing fixed tree-name request within its
-32-token cap and release its Job/listener with one completed operation and no
-failures. A complete post-cleanup CNG length/SHA-256 verification then binds
-the retained original model file, with file/ancestor guards through the final
-combined receipt. Transport errors and malformed/truncated rollback responses
-remain pending; response parsing follows owned cleanup so those failures retain
-the cleanup and power observations.
-
-This profile keeps one absolute deadline and the existing thirty-second cleanup
-reserve. The third startup requires more than seventy-five seconds remaining;
-startup/request work stops forty-five seconds before that deadline, retaining
-fifteen seconds after owned cleanup for complete-file verification. Hashing checks
-cancellation before each bounded read; blocking OS work still requires the outer
-owner deadline. Rust power endpoints cover each owner and the model case; the
-separately retained aggregate observations above must cover setup and final retention.
-`serviceIntegration` and `originalPq2Rollback` keep their distinct partial verdicts;
-the complete case requires both plus post-cleanup file verification. Missing or
-expired work remains pending, without a continuation job. Hosted preparation
-does not authorize another owner trial or reopen an earlier closed allowance.
-Performance/resource benefit, full-context numerics, provenance, human quality,
-comfort, isolation and default promotion remain independent.
-
-Before executing a combined packet, freeze the final source and review its hosted
-package and prerequisites. Declare a conservative workload estimate covering every
-startup, generation/prefix operation, cleanup reserve, full-file verification and
-retention. Select the smallest supported allowance that can fit it, retaining
-aggregate power endpoints. A previous packet estimate is no current feasibility
-measurement or permission to restart a closed trial.
-Explicit `profile: pq2-adapter-row4` selects original PQ2, the approved adapter at
-scale 1.3 and pinned the active Prism release with `--native-row-workers 4`. It requires exactly
-one four-token-cap stream, verified model/adapter readiness and owned Job/listener
-cleanup within the same budget. Its receipt binds the runtime lock, original
-model identity and adapter lock, and distinguishes the configured worker count
-from an independently observed thread count. It runs no optional requests or
-retry. Multi-scale, rejection/reuse, history, context, restart, quality, sustained
-service and TPS gates remain unrun; this smoke cannot enable a default.
-
-Explicit `profile: pq2-adapter-service-row4` prepares Stop/fresh-owner recovery
-coverage for the Rust development default: original PQ2, the pinned standard
-adapter and four row workers. It uses the same fixed service sequence as
-`ptq1-adapter-service-row4`: three cap-one scale streams, invalid-scale and
-context rejections, an interrupted scale-1.3 request after visible content, then
-fresh authenticated ownership and a matching cap-one replay with new credentials.
-Both owners must release their Jobs and listeners before the case passes. The
-original absolute deadline, thirty-second cleanup reserve and greater-than-sixty
-second fresh-owner admission floor apply. Optional history and stalled-consumer
-extensions reject; there is no automatic representation or engine switch.
-
-Hosted preparation runs the shared model-free service controls and checks that
-both ignored representation cases exist before packaging. This prepares an
-owner-operated model workload; it supplies no actual-model or UI acceptance
-verdict. Predeclare a feasible complete allowance and retain aggregate and
-per-owner power observations under the rules above. PTQ1 export metadata belongs
-only to PTQ1 receipts. Manual publisher rollback, explicit DX12 launch, complete
-state/context/output, quality, comfort and promotion remain separate gates.
-
-Explicit `profile: pq2-adapter-lifecycle-row4` separately requires the original
-PQ2 and approved adapter with four row workers through three short streams in
-one owner: scale 1.3 (four-token cap), scale zero (two-token cap), invalid-scale
-connection close, then scale 1.3 with a supplied user/assistant/user history (two-token
-cap). The assistant message is the exact initial scale-1.3 model output, with
-the same retained source binding and missing-output policy as the PTQ1 profile.
-Every further request needs more than 45 seconds remaining; the complete
-sequence has a request deadline thirty seconds before the aggregate deadline
-for owned cleanup. A completed zero-scale or rejection observation is saved
-before the next request. A skipped or cancelled step remains pending and fails
-the case after cleanup, even when initial streaming and cleanup passed.
-`allRequestedWorkloadsPassed` and the individual step flags are independent of
-`lifecyclePassed`. No other workloads or retry are admitted to this profile.
-This is application scale-change/rejection/supplied-history coverage; it does not
-establish zero/no-adapter numerical identity, adapter writer basis, exact live
-prefix reuse, edited/generated-history parity, full context/output, quality or
-performance. Its actual-model gate remains pending until retained device CI
-evidence within the shared predeclared total budget; do not partition a longer
-matrix across repeated profiles/jobs.
-
-All adapter-profile HTTP work, including the first required stream and optional
-PTQ1 requests, shares the deadline thirty seconds before owned cleanup. Expiry
-drops the in-flight request before Stop, retains completed observations, records
-`requestBudgetExpired: true` and leaves `passed: false`; the test fails after
-confirming the owned Job is empty and the listener released. No HTTP work starts
-when only the cleanup allowance remains.
-
-Explicit `profile: pq2-adapter-speed` makes one fixed-order application request
-comparison with original PQ2, adapter scale 1.3, seed 42 and one then four row
-workers, each in a fresh required-sandbox owner. Both use the same short public
-counting prompt, thinking disabled and an eight-token output cap. Setup, both
-model loads, requests, comparison and cleanup share the existing aggregate
-predeclared owner deadline; no retry or continuation job is permitted. A new
-owner needs more than 60 seconds remaining and each request ends at least 30
-seconds before the deadline for owned cleanup. Completed observations are saved
-before the second startup; a skipped or expired half remains pending.
-
-`requestTokensPerSecond` divides reported completion usage by monotonic elapsed
-time from connection start through complete framed HTTP response delivery and
-connection closure,
-including prefill, generation and transport. Model startup and response parsing
-are excluded; startup is recorded separately. This is application request
-throughput, **not device decode TPS**, TTFT or a rate inferred from SSE event or
-byte counts. The ratio requires both streams to end with `length` at eight
-reported tokens, identical visible output, empty Jobs and released listeners.
-Early stop, unknown usage, different output or missing cleanup leaves comparison
-pending. A single fixed-order pair establishes neither repeated-trial benefit,
-complete-state parity, energy/comfort, creative quality nor default promotion.
-
-Explicit `profile: ptq1-pq2-complete-response` prepares a separate complete-response
-feasibility pair with original PQ2 then the verified current-weight PTQ1 export,
-each in a fresh required-sandbox owner with one row worker, the approved adapter
-at scale 1.3, production sampling and seed 42. The fixed public request asks for
-one tree name with thinking disabled and a 32-token ceiling. Both responses must
-stop naturally, report positive completion usage and complete owned cleanup;
-`length` means a truncated capture and leaves the pair pending. Exact UTF-8
-response strings and SHA-256 digests, model/export/runtime/adapter identities,
-template and sampler controls, startup and framed request times are retained.
-Different complete responses remain available for review; the request-latency
-ratio requires identical response bytes and completion usage.
-
-The pair also compares resource observations already retained during owned cleanup,
-without additional probes or model work. Matched response bytes and usage are
-required for these ratios too. Each accounting domain has its own PQ2 and PTQ1
-byte counts and ratio: OS lifetime Job commitment, OS lifetime root residency,
-sampled serving root private commitment and sampled serving root residency.
-The domains are non-additive. Both arms require positive native queries and
-serving guard samples; missing, malformed or internally inconsistent telemetry
-leaves the resource comparison pending even when complete responses were captured.
-Guard counts and minimum sampled system available memory accompany the comparison;
-system available memory is context, not attributed model consumption. These are
-bounded observations, with full-context resources, paging, sustained comfort and
-resource benefit still unqualified.
-
-Explicit `profile: ptq1-pq2-complete-response-row4` selects the same fixed pair
-with four configured native row workers for both fresh owners. Its separate
-case and receipts retain that policy; the original complete-response profile
-keeps one worker. Prompt, sampler, adapter, model identities and all completion,
-cleanup and budget requirements are identical. Each sample must bind the compiled
-runtime's worker-readiness identity. For a runtime that supplies the strict worker-readiness
-identity,
-the effective graph worker budget is independently observed at readiness; missing
-or mismatched observations leave the pair pending. This does not measure executing
-threads or parallel work, and qualification does not transfer between counts.
-Neither profile admits extra history or stalled-consumer workloads.
-
-The original-PQ2 arm now selects `--use-original-pq2` explicitly, so a later
-application-default change cannot change the rollback artifact. Its
-`originalPq2Rollback` observation is saved immediately after owned cleanup and
-survives a pending PTQ1 arm. Capture requires the exact original model identity,
-matching released worker-readiness observation, a complete nonempty response and
-released Job/listener. Independent review still binds CI, runtime/adapter policy
-and preservation of the original artifact on disk before scoring the rollback
-gate; this observation cannot qualify the pair, benefit or default.
-
-The existing aggregate deadline includes both loads and cleanup. Each startup
-requires more than 60 seconds remaining, each request reserves 30 seconds for
-owned cleanup, and completed observations are saved before the next operation.
-An unfittable arm stays pending; do not split the pair or a larger matrix into
-repeated owner jobs. The small prompt measures feasibility only. It does not
-replace repeated interleaved complete-task trials, independent quality review,
-per-prompt adapter decode-TPS gates, loaded-zero/no-adapter controls, writer-basis
-evidence, full context/output acceptance or default promotion.
-
-Before runner temp cleanup, the workflow reads only `backend.stdout` and
-`backend.stderr` from at most eight immediate protected session directories, with
-a 64 KiB limit per log and strict UTF-8 decoding. It validates both actual keys
-for every session, redacts those values across all retained logs, checks again
-before publication, and suppresses logs when key validation fails. Only two fixed
-sanitized top-level log names and `startup-diagnostics.json` enter the upload
-selection, in a separate artifact gated on successful collection and final
-regular-file, reparse and credential checks of all three paths. Unsafe output
-directories or reparse points remain untouched and suppress the entire diagnostic
-artifact; the three base acceptance JSON receipts retain their existing upload.
-`host.json` retains fixed broker startup stage/error/exit-status markers;
-the acceptance test process exit code is recorded separately. No raw exception,
-argument or key content is copied into those classifications.
-
-| Workload | Required behavior | Evidence limit |
-| --- | --- | --- |
-| Default | Valid streaming, context rejection/reuse, owned shutdown, abandonment and fresh restart | Short outputs do not qualify 8K/4K, numerical state, LoRA, sustained resources, speed or broker-only isolation. |
-| Optional `bounded_history` (`BONSAI_NATIVE_EXTENDED` internally) | Reject 4,500 synthetic forest-note repetitions with a 4,096-token reservation; admit 128 repetitions in assistant history with a four-token cap and thinking disabled; complete another four-token non-thinking stream in the same instance | This replaces the larger disabled 3,900-repetition/4K-generation workload. Fixture repetitions are not tokens. Record visible bytes, terminal reason and usage when supplied; missing usage is unknown and events are not tokens. Bounded history does not qualify long-history behavior, 4K generation or exact 8K occupancy. |
-| Optional `stalled_consumer` | Request the full 4,096-token output reservation with thinking disabled, read first nonempty content, retain the connection without reads for one second, then explicit owner Stop. Finish within 30 seconds with empty Job/released listener; require one additional failed operation and no completed operation, require generated content from a fresh owner after Stop and a further successful fresh-owner request after the existing abandonment trial | The output cap reserves capacity; this workload never waits for 4K generation. Natural completion cannot qualify interruption. The receipt proves unfinished broker forwarding, not backend activity at Stop, socket saturation, maximum backlog or measured cancellation latency. |
-
-The original per-request safety limits, 8K context, 64-token margin, output, memory and containment
-limits remain; the shorter aggregate device budget takes precedence over every longer timeout.
-Streams require complete HTTP framing, a supported terminal reason and `[DONE]`. Interrupted
-instances never reopen admission or replay the request. Optional workloads remain unqualified until
-successful device CI receipts are retained. The credential-free `acceptance.json` is saved before
-startup and at each workload/cleanup/recovery phase with `passed: false`; only complete success
-changes it to true. A timeout/failure retains the latest phase and completed observations without
-claiming unrun checks. The [promotion evaluator](native-rust-engine.md#default-runtime-promotion)
-keeps exits independent.
-
-The core PQ2 receipt saves supplied-history termination, visible bytes and reported
-usage, context rejection and same-owner reuse as each completes. Initial Stop,
-fresh-owner abandonment and final fresh-owner shutdown retain separate operation
-counts and Job/listener cleanup observations. Missing usage remains null; visible
-bytes never stand in for tokens. These observations survive a later phase failure
-with `passed: false`; they do not qualify the missing phase or either optional
-workload. The bounded supplied-history and stalled-consumer device gates remain
-pending until successful owner-device evidence is retained within the shared budget.
-
-The adapter profiles additionally require positive reported completion usage within
-each stream's cap. A `length` termination must report exactly that cap. Missing,
-zero, excessive or inconsistent usage leaves the stream and required scale/history
-workload pending even when visible text arrived. The receipt preserves the text,
-reported usage and fixed failure reason before owned cleanup; events and bytes
-cannot replace worker token accounting.
-
-Adapter lifecycle and paired-response receipts distinguish configured row workers
-from the effective graph budget verified at readiness. Supported runtime releases record that budget
-as independently observed only after
-successful strict readiness, bound to the compiled runtime lock and selected one/four-worker
-policy. Startup receipts and legacy releases retain an unobserved/null result.
-This observes neither executing threads nor parallel operations or device benefit.
-
-Adapter startup begins cancellation at the original request-work deadline before
-the 30-second cleanup reserve, even when readiness never arrives. Native teardown
-may consume part of that reserve; synchronous artifact verification is not
-preemptible by the async timeout. Its pending receipt records
-`startup-budget-expired`; future cancellation does not establish independently
-observed Job/listener cleanup or successful readiness.
-
-The adapter lifecycle's `startupProgress` observations bracket broker policy and
-admission, complete model verification, adapter verification, credentials/runtime
-preparation, process creation, authenticated readiness, native identity and frontend
-binding. The fixed phase/time callback records in memory; the acceptance harness
-copies observations into its receipt after startup returns or its work deadline
-cancels it. A returned startup error retains `startup-failed`. An outer process
-termination or panic can prevent this final copy and leaves attribution pending.
-A phase without a completion observation remains unfinished. Readiness combines
-unobserved Prism verification, tensor loading, graph/state construction and broker
-polling; these brackets do not identify an inference hotspot or establish a gain.
-Observer overhead is included, and synchronous verification is not preemptible.
-
-Optional supplied-history receipts persist context rejection and the completed
-history stream separately before same-owner reuse. Cancellation or failure of a
-later step leaves the workload pending while preserving those observations.
-The stalled-consumer receipt likewise saves its visible prefix before the fixed
-nonreading pause and owned Stop, recording pause completion separately; that
-prefix alone establishes neither interruption nor cleanup.
-
-Model-free acceptance regressions:
-
-| Exact case | Property |
+| Bound | Requirement |
 | --- | --- |
-| `native_extended_acceptance_distinguishes_output_usage_from_delta_count` | Fixture policy; usage separate from bytes/events |
-| `native_lifecycle_observations_separate_generation_usage_and_owned_cleanup` | Visible UTF-8 bytes remain distinct from reported tokens; unknown usage stays null, over-cap usage rejects and cleanup requires the expected owner exit |
-| `native_bounded_history_retains_completed_steps_when_followup_is_cancelled` | Cancel the real HTTP fixture after rejection or history streaming; retain completed observations on disk without qualifying reuse or the workload |
-| `native_bounded_history_and_stall_requests_preserve_distinct_output_limits` | Bounded history has 128 repetitions/four tokens; stopped stream reserves 4K; both disable thinking and stay in one aggregate lifecycle case |
-| `native_stalled_consumer_retains_fragmented_prefix_connection_until_dropped` | Fragmented UTF-8/SSE intake and retained connection |
-| `native_stalled_consumer_never_qualifies_natural_completion_as_interruption` | Operation-counter interruption guard |
-| `native_stalled_consumer_rejects_error_or_unframed_stream_headers` | HTTP 200 and chunked event-stream framing before accepting content |
-| `native_case_budget_rejects_missing_unbounded_and_malformed_allowances` | Reject missing, zero, malformed, overflowing and over-240-second default allowances; optional workloads use the reduced allowance and retain the 120-second recovery reserve |
-| `native_case_budget_extension_requires_a_valid_predeclared_total` | Five-minute default remains 240 case seconds; explicit 10/15-minute totals permit at most 540/840, rejecting malformed totals or excessive/missing case limits |
-| `native_representation_row4_profile_is_explicit_and_preserves_pair` | Separate complete-response selection configures both fixed-order owners with four workers while retaining the one-worker profile and identical approved model, adapter, request and containment policies |
-| `native_representation_comparison_requires_released_worker_observation` | Both representation samples must retain the compiled release's matching worker-readiness version, observation flag and graph budget; missing or mismatched observations cannot produce a latency ratio |
-| `native_representation_rollback_observation_survives_pending_ptq1_arm` | A complete original-PQ2 arm retains a separate observation when PTQ1 is missing; wrong identities, worker counts, truncated output and incomplete cleanup leave rollback pending, and independent gate review remains required |
-| `native_representation_resources_compare_matching_domains_only` | Matched complete responses and usage permit separate Job-commit, root-residency and sampled-serving ratios without summing domains or claiming full resource qualification |
-| `native_representation_resources_reject_missing_or_inconsistent_observations` | Missing, nonpositive or inconsistent native resource telemetry leaves the resource comparison pending while preserving complete-answer captures |
-| `native_representation_profiles_leave_skipped_arms_pending_at_original_deadline` | Both worker policies retain partial observations and pending status when the original shared deadline reaches the 60-second startup/cleanup reserve; no missing owner starts or receives a new clock |
-| `native_adapter_scale_history_profile_requires_separate_explicit_selection` | Scale/history lifecycle is a distinct original-PQ2 row4 selection; the one-stream smoke and no-extra-workload restrictions remain |
-| `native_adapter_scale_history_retains_partial_steps_without_qualifying_missing_work` | Real model-free HTTP peers verify zero/rejected/changed-back scales and supplied history; cancelling after zero or rejection preserves completed receipts without qualifying later work; exhausted request reserve starts no HTTP work |
-| `native_adapter_scale_history_requires_reported_bounded_terminal_usage` | Model-free zero/history HTTP responses with missing, zero, excessive or inconsistent usage retain exact visible output and pending status for each explicit worker policy; valid earlier steps remain recorded |
-| `native_worker_receipts_require_exact_release_and_verified_readiness` | Exact reviewed release admission and worker identities; no observed budget before readiness, for legacy/missing versions or invalid counts; mutable report fields cannot replace the compiled runtime identity |
-| `native_adapter_request_budget_drops_inflight_work_before_owned_cleanup` | Paused-time cancellation drops request-owned state before Stop and preserves the complete cleanup allowance; no request starts at or below the reserve and successful work retains the remaining budget |
-| `native_adapter_startup_budget_retains_pending_receipt_and_cleanup_reserve` | Paused-time startup cancellation retains its pending on-disk receipt and unfinished fixed-phase observation at the async timeout boundary; no startup starts inside the reserve. This does not measure native teardown duration, preempt synchronous verification or establish readiness/cleanup |
-| `native_adapter_startup_error_retains_unfinished_phase_without_qualifying_cleanup` | A returned startup error retains the unfinished fixed phase and failure reason in the on-disk receipt without manufacturing deadline expiry, readiness or cleanup |
+| Rust case allowance | At most 240/540/840 seconds for a 5/10/15-minute job, reduced by setup, verification and inventory. |
+| Process exit | Ten seconds after the Rust allowance; stop at least 30 seconds before the original job deadline for forced cleanup, diagnostics and uploads. |
+| Inherited work allowance | At most 270/570/870 seconds from the original monotonic start, retaining 15 seconds for owner exit and the ten-second process gap. |
+| Adapter request work | Ends 30 seconds before the case deadline, including startup. Drop expired HTTP work before Stop; start none inside the cleanup reserve. |
+| Further lifecycle/boundary request | Requires more than 45 seconds remaining. |
+| Fresh owner | Requires more than 60 seconds remaining, except the rollback tail below. |
+| Optional history/stall work | Requires more than 120 seconds for cleanup and fresh-owner recovery. |
+
+Device intake verifies run/revision, SHA-256 and ARM64 identity, then executes
+prebuilt native helpers without Cargo. All setup, owners, comparisons, power,
+cleanup and retention share the declared allowance. Never retry, renew a clock,
+continue missing steps in another job or divide a larger matrix into profiles.
+
+The UI requires the broker's private model-cleanup acknowledgment, broker exit
+and outer-Job cleanup before Retry: a PSEC model can bypass outer-Job inheritance.
+Only connection refusal confirms listener release; timeout/access/network errors
+leave it unknown. Task errors leave Job emptiness unknown. Stop retains ten
+seconds to abort and await a stuck task within its existing 30-second bound;
+synchronous native verification/teardown cannot be preempted by an async timeout.
+Unknown cleanup blocks another owner and post-cleanup hashing.
+
+#### Profiles
+
+All adapter profiles bind the compiled runtime lock, verified model/adapter,
+scale, sampler, canonical request/message digests and selected worker policy.
+PTQ1 also binds its exact export receipt. Optional history/stall extensions are
+accepted only by `pq2-no-adapter`; other profiles reject them. All require native
+sandbox admission, unchanged resource limits and retained artifact guards.
+
+| `profile` | Fixed workload |
+| --- | --- |
+| `pq2-no-adapter` (default) | Original PQ2: supplied-history streaming, framed context rejection/reuse, owned shutdown, abandonment after content and fresh restart. Core streams use four-token caps with thinking disabled. |
+| `ptq1-adapter` | Current-weight PTQ1, adapter 1.3: one four-token stream and cleanup. Scale-zero two-token and invalid-scale close/reuse checks are optional only while the same cleanup reserve fits. |
+| `pq2-adapter-row4` | Original PQ2, adapter 1.3, four workers: exactly one four-token stream, readiness and cleanup; no extra requests. |
+| `ptq1-adapter-lifecycle` / `ptq1-adapter-lifecycle-row4` | One/four workers: three one-token streams at 1.3, zero, then 1.3 with captured assistant history; invalid-scale connection close precedes the last stream. User messages are `Hi`. |
+| `pq2-adapter-lifecycle-row4` | Four workers: 1.3 with four-token cap, zero with two-token cap, invalid-scale close, then 1.3 with captured assistant history and two-token cap. |
+| `ptq1-adapter-boundaries-row4` | Four `Hi` one-token streams at 1.3, negative zero, 2.0, then 1.3; invalid-scale close and oversized-context rejection precede the final stream. Final bytes, digest, finish reason and one-token usage must reproduce the initial response. |
+| `ptq1-adapter-service-row4` / `pq2-adapter-service-row4` | Four workers: three `Hi` one-token streams at 1.3, negative zero and 2.0; invalid-scale and context rejections; interrupt a scale-1.3 request with a 4,096-token reservation after its first visible prefix. Verify cleanup, then use a fresh authenticated owner/new credentials for an exact initial-response replay and cleanup. |
+| `ptq1-adapter-service-rollback-row4` | Complete PTQ1 service sequence, then a third fresh owner explicitly selects original PQ2, adapter 1.3 and four workers, naturally completes the fixed tree-name request within 32 tokens and cleans up. Verify the original file's complete CNG length/SHA-256 after cleanup. |
+| `pq2-adapter-speed` | Fixed-order one/four-worker fresh-owner PQ2 pair, adapter 1.3, seed 42, same public counting prompt, thinking off, eight-token caps. |
+| `ptq1-pq2-complete-response` / `ptq1-pq2-complete-response-row4` | One/four workers respectively: fresh original-PQ2 owner followed by current-weight PTQ1, adapter 1.3, seed 42 and production sampling. Same tree-name prompt, thinking off, 32-token ceiling; both must stop naturally. |
+
+Captured-history profiles replay the exact initial visible assistant UTF-8 text,
+bound to its digest, source-message identity, terminal reason and usage. Missing
+output or identity keeps the gate pending; fixture text cannot substitute.
+Negative-zero requests preserve scale bits through serialization. Request hashes
+are not server acknowledgments of scale or numerical adapter-effect evidence.
+
+Service profiles retain the interrupted prefix only after a complete SSE record,
+including its blank-line delimiter. Already terminal SSE cannot qualify interruption.
+The first owner must report three completed and three failed operations; the fresh
+owner must reproduce the initial cap-one response with one completed operation and
+no failures. Same-owner prefix equality is informational because sampler draws
+advance; the fresh owner resets the seed.
+
+The combined rollback profile withholds a 75-second PQ2 tail from the PTQ1
+sequence. It rejects before starting at 135 seconds or less; the third startup
+needs more than 75 seconds. Rollback request/startup work ends 45 seconds before
+the final deadline, preserving 30 seconds for cleanup and 15 for full-file
+verification. Hashing checks cancellation between bounded reads and holds file/
+ancestor guards through the final receipt. `serviceIntegration` and
+`originalPq2Rollback` remain separate partial verdicts; complete success also
+requires post-cleanup hashing. Transport/parse failures retain cleanup and power.
+
+| Optional default-profile workload | Contract |
+| --- | --- |
+| `bounded_history` (`BONSAI_NATIVE_EXTENDED`) | Reject 4,500 synthetic forest-note repetitions with a 4,096-token reservation; admit 128 repetitions in assistant history with a four-token cap, then complete another four-token stream in the same owner. Thinking stays off. Repetitions are not tokens. |
+| `stalled_consumer` | Reserve 4,096 tokens, thinking off; read first nonempty content, retain the connection without reading for one second, then Stop. Finish within 30 seconds with empty Job/released listener, one additional failed operation and no completed operation. Require fresh-owner content after Stop and another successful fresh-owner request after abandonment. |
+
+Skipped requested work records `status: pending` and
+`insufficient-cleanup-and-recovery-reserve` where applicable. It leaves
+`allRequestedWorkloadsPassed` and `passed` false even if `lifecyclePassed` is true.
+Short caps and reservations establish neither long-history/full-output behavior
+nor backend activity, socket saturation or cancellation latency at Stop.
+
+#### Receipts and comparison limits
+
+Save credential-free `acceptance.json` before startup and after each completed
+step, cleanup and recovery phase with `passed: false`; set it true only after
+complete success. Missing, skipped, failed or cancelled work stays pending and
+fails after owned cleanup. Preserve partial observations before the next request.
+`requestBudgetExpired: true`, `startup-budget-expired` and `startup-failed` retain
+distinct failures. Incomplete startup phases cannot establish readiness or cleanup.
+
+Successful streams require complete HTTP framing, a supported terminal reason
+and `[DONE]`. Adapter streams require positive reported completion usage within
+their cap; `length` must report exactly the cap. Missing/zero/excessive/inconsistent
+usage remains pending even with visible text. Bytes and SSE events are not tokens.
+Configured workers remain distinct from the effective graph budget independently
+verified at readiness, which observes neither executing threads nor parallel work.
+
+`startupProgress` brackets policy/admission, model/adapter verification,
+credentials/runtime preparation, process creation, authenticated readiness,
+native identity and frontend binding. Missing completion leaves a phase unfinished;
+panic or outer termination can prevent the final receipt copy. Readiness combines
+several internal stages and cannot locate a kernel hotspot. Observer overhead is
+included; synchronous verification is not preemptible.
+
+For the speed pair, `requestTokensPerSecond` is reported completion usage divided
+by monotonic connection-to-framed-response-and-close time, including prefill,
+generation and transport but excluding startup and parsing. Its ratio needs two
+`length` completions at eight tokens, identical visible output and verified cleanup.
+It is application request throughput, not decode TPS or TTFT.
+
+Complete-response pairs require natural stops, positive usage and both cleanups;
+`length` is truncated. Retain exact text/digests, identities, sampler/template,
+startup/request times and original-PQ2 rollback observations before the next arm.
+Latency/resource ratios require identical bytes and usage, eligible matched power
+and matching released worker-readiness identities. Compare each positive,
+consistent native accounting domain separately: lifetime Job commit, lifetime
+root residency, sampled serving private commit and sampled serving residency.
+Never add domains; sampled system available memory is context, not model usage.
+Missing telemetry leaves resource comparison pending without discarding answers.
+
+All cases retain aggregate and per-owner power endpoints under the rules above.
+They qualify only their selected sequence. Complete-state/logit parity, loaded-zero
+identity, authoring basis, edited/generated histories, full context/output,
+repeated benefit, quality, comfort, isolation and promotion need independent gates.
+The [promotion evaluator](native-rust-engine.md#default-runtime-promotion) keeps
+those verdicts separate.
+
+Diagnostics collect only `backend.stdout`/`backend.stderr` from at most eight
+immediate protected sessions, at most 64 KiB/log with strict UTF-8. Validate both
+keys, redact across every retained log and recheck before publication; invalid keys
+suppress logs. Upload only the two fixed sanitized logs and
+`startup-diagnostics.json` after regular-file/reparse/credential checks. Unsafe
+directories remain untouched and suppress that artifact. Base acceptance receipts
+remain separate. `host.json` stores fixed startup stage/error/exit markers without
+raw exceptions, arguments or keys; the harness exit is recorded separately.
+
+Model-free `native_` acceptance regressions in
+[`tools/bonsai/tests`](../tools/bonsai/tests/) own usage/framing, profile selection,
+deadline/reserve admission, partial receipts, worker identities, response/resource
+comparisons, startup attribution and Stop/recovery controls. Select exact named
+cases under [focused local checks](#focused-local-checks); these fixtures supply
+no actual-model verdict.
 
 ### Bounded source request attribution
 
@@ -789,14 +475,8 @@ unsafe operations stay small, documented and behind safe owners. Prefer scoped
 allowances still require their specific reason. Existing all-target Clippy,
 rustdoc and owning tests enforce the policy across supported feature profiles.
 
-Historical compiler and storage screens used earlier source, compilers and
-dependency pins. The first combined
-[hosted run](https://github.com/symbiogenesis/SwiftBonsai2Runner/actions/runs/41384479280)
-and subsequent focused corrections bind source `d2a2962`; they do not qualify
-the current pin. [PLAN.md](../PLAN.md#runtime-and-correctness) requires
-settled-source hosted acceptance on the current compiler, including owning
-speech fixtures and native linking. Completed local check details remain in Git
-history; no model or performance qualification transfers from them.
+Settled-source hosted acceptance must use the current compiler and include owning
+speech fixtures and production linking; see [PLAN.md](../PLAN.md#runtime-and-correctness).
 
 [Compiler probes](https://github.com/symbiogenesis/prism-inference/blob/main/tools/rust-trial/README.md)
 retain stable as an isolated control. Release overflow checks stay enabled and
