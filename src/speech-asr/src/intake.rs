@@ -13,6 +13,8 @@ use std::{
     io::{self, BufReader, Read, Seek, SeekFrom},
 };
 
+#[path = "intake_decoder.rs"]
+mod decoder;
 #[path = "intake_model.rs"]
 mod model;
 
@@ -317,6 +319,17 @@ fn read_index(source: &mut (impl Read + Seek), length: u64) -> io::Result<Index>
         remaining: MAX_METADATA,
     };
     reader.index()
+}
+
+pub(super) fn decoder(
+    source: &mut (impl Read + Seek),
+    length: u64,
+    precision: crate::decoder::CachePrecision,
+    cancel: &mut impl FnMut() -> bool,
+) -> io::Result<crate::decoder::Model> {
+    let index = read_index(source, length)?;
+    model::validate(&index)?;
+    decoder::load(index, source, precision, cancel)
 }
 
 pub(super) fn tokenizer(

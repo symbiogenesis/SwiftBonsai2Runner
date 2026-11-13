@@ -1,0 +1,47 @@
+{
+  "schemaVersion": 1,
+  "provider": "rust-independent-scalar-decoder",
+  "scope": "complete-single-stream-causal-block-stack-tied-head-prefill-and-session-state",
+  "arithmeticIdentity": "rust-scalar-decoder-f32-v1-explicit-f16-or-f32-kv",
+  "nativeSource": {
+    "package": "transcribe-cpp-sys", "version": "0.4.1",
+    "repository": "https://github.com/handy-computer/transcribe.cpp",
+    "commit": "4d7c1ccefd39e5a9ea36cca5f8fefc6dcc14b99b", "license": "MIT",
+    "files": [
+      {"path": "src/causal_lm/causal_lm.cpp", "sha256": "83a670876158089cd4c714d36e2ee181ec7c0fa0fbe402ae60fb4c447b817b84"},
+      {"path": "src/arch/qwen3_asr/decoder.cpp", "sha256": "634348f721933f34b3a46a51f06ed88706db84aed66a6ec849f8eded45623540"},
+      {"path": "src/arch/qwen3_asr/decoder.h", "sha256": "32694e5b3d4f6699229b1b71c9501e6e89212d4e0b522a9f591785ed5a1f394e"}
+    ]
+  },
+  "controls": {
+    "provider": "hand-calculated-signed-dots-binary16-boundaries-uniform-gqa-and-complete-state-controls",
+    "freshNativeExecution": false, "modelInputs": false,
+    "testFilter": "rust_asr_decoder_",
+    "nativeQuantizedMatmulParity": false, "nativeFlashAttentionParity": false
+  },
+  "semantics": {
+    "projections": "f32-f16-or-packed-q8_0-with-f32-activations-and-separate-scalar-accumulation",
+    "normalization": "pre-attention-pre-ffn-and-per-head-qk-rmsnorm",
+    "rotary": "neox-temporal-position-mrope-reduction",
+    "attention": "causal-gqa-softmax-over-complete-committed-kv-plus-one-provisional-row",
+    "ffn": "silu-gate-times-up-then-down-plus-residual",
+    "output": "final-rmsnorm-and-tied-embedding-head",
+    "publication": "all-layers-and-logits-finite-before-any-layer-append",
+    "failedStep": "preserve-previous-position-and-every-kv-bit-including-unwind",
+    "failedPrefill": "reset-every-layer-and-position-including-unwind",
+    "nativeDefaultKv": "f16-not-f32"
+  },
+  "limits": {
+    "maximumContext": 8192, "maximumLayers": 128, "maximumHidden": 8192,
+    "maximumQueryHeads": 128, "maximumHeadWidth": 256,
+    "maximumIntermediate": 65536, "maximumVocabulary": 262144,
+    "maximumSelectedWeightBytes": 8589934592
+  },
+  "pending": [
+    "CNN/transformer encoder and complete frontend-to-decoder integration",
+    "complete pinned-model independent numerical and transcript observations",
+    "optimized quantized arithmetic and complete native/F32/F16 state comparison at declared tolerance",
+    "owning-crate hosted build/link, cancellation, quality, microphone and resource acceptance",
+    "native engine dependency retirement only after all owning gates pass"
+  ]
+}

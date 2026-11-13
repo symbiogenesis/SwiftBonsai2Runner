@@ -98,8 +98,20 @@ hand-calculated miniature merge schedules; `rust-tokenizer.json` binds their
 source and scope. Native serving still owns tokenization and inference. Complete
 pinned-vocabulary observations and owning-crate acceptance remain necessary.
 
-Complete CNN/transformer encoder, causal decoder,
-KV/session reset, independent numerical observations and actual-model comparisons
+`decoder.rs` implements a complete independent scalar causal decoder: token/audio
+prefill, GQA, per-head Q/K RMSNorm, temporal NeoX RoPE, SwiGLU, tied output logits
+and isolated session state. Its GGUF loader reads F32/F16/Q8_0 decoder projections
+and F32 normalization vectors from the admitted tensor ranges. F16 and F32 cache
+policies are explicit; the native engine defaults to F16. No cache append becomes
+visible until every layer and the logits succeed. Step failure/unwind preserves
+all committed KV bits, while failed prefill resets the entire attempted prompt.
+The `rust_asr_decoder_` controls cover signed matrix answers, real wire ranges,
+binary16 rounding/overflow, uniform grouped attention, complete cache/reset and
+cancellation/unwind. `rust-decoder.json` identifies this scalar arithmetic
+separately from native activation requantization and flash attention.
+
+Complete CNN/transformer encoder, end-to-end Rust inference integration,
+independent numerical observations and actual-model comparisons
 remain necessary before replacing the engine or removing native dependencies.
 Standalone source-module checks do not establish owning-crate native build/link,
 transcript/state parity, microphone integration, quality, listening or resources.
