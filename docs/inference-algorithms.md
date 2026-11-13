@@ -55,6 +55,40 @@ defines ownership. Allocator rounding/process peaks require separate measurement
 does not establish process-memory or throughput gains. Moving arenas/general placement search need
 actual-workload evidence.
 
+## Cache, batch and transfer planning
+
+The pinned [sglang-rs runtime scope](https://github.com/imReese/sglang-rs/blob/f9b5bade089e64032c07f5e751bd00a3af2b3847/README.md),
+[architecture](https://github.com/imReese/sglang-rs/blob/f9b5bade089e64032c07f5e751bd00a3af2b3847/docs/architecture.md)
+and [roadmap](https://github.com/imReese/sglang-rs/blob/f9b5bade089e64032c07f5e751bd00a3af2b3847/docs/runtime-roadmap.md)
+are design references for Prism's existing prefix, prefill and accelerator work.
+Source and license review precede reuse. Adopting its server, CUDA dependencies,
+NexusKV, broad API routes or distributed serving is outside this scope. Swift
+retains packed artifacts, its adapter/numerical contracts, one active generation
+and the native Rust UI/broker containment boundary. Proposals supply no device
+or performance qualification.
+
+Reusable prefixes require checked finite page geometry, token-to-slot mappings,
+immutable complete pages and private mutable tails. Publication waits for complete,
+committed KV and recurrent/convolution checkpoints. Allocation failure, aborted
+prefill or stale execution/model/adapter identity leaves no reusable partial entry.
+Prepared batches identify tokens, positions, lengths, cache slots and uncached
+token counts; context/output reservations and bounded chunk scratch remain required.
+
+One logical cache owner separates scheduling and transfer plans from device
+execution inside the contained inference worker. Typed plans distinguish submitted,
+in-flight, completed and failed work, with bounded queues and waits. Consumers wait
+for valid contents; publication waits for successful completion. Cancellation
+revokes publication immediately, while buffer reuse or release waits for terminal
+device completion or verified worker teardown. An abort request is not a fence.
+
+Reusable device-visible pools remain conditional on the qualified API's registration
+or staging needs. Their cost includes cold initialization, locked memory, copies,
+synchronization and cleanup. Phase receipts identify cached/uncached tokens, unique
+live pages, allocation/copy bytes, queue bounds and transfer/completion timing.
+Invalid geometry, exhaustion, partial pages, late/failed completion and stale
+publication require fault coverage. Whole-request parity, resources and measured
+benefit remain the acceptance boundary under the existing [validation policy](validation.md).
+
 ## Packed lookup kernels
 
 ### Exact ternary tables for decode
