@@ -6,7 +6,9 @@ come from `handy-computer/transcribe.cpp` commit
 `4d7c1ccefd39e5a9ea36cca5f8fefc6dcc14b99b`.
 
 Before `Recognizer::load`, the service must verify and retain the Q8_0 file in
-`model.lock.json`. The library maps it, verifies architecture `qwen3_asr`, variant
+`model.lock.json`. Rust first checks the bounded GGUF metadata, tokenizer tables,
+complete required tensor catalog and aligned, nonoverlapping file ranges while
+holding a read-only file guard. The native library then maps it, verifies architecture `qwen3_asr`, variant
 `qwen3-asr-1.7b` and audio capabilities, then reuses one four-thread session with
 an 8,192-token decoder context. It accepts up to thirty seconds of normalized
 mono 16 kHz audio, detects language automatically and returns complete text.
@@ -55,10 +57,36 @@ hand-calculated integer geometry, UTF-8 byte bounds and incomplete/cancelled
 output rejection. They need no speech engine or model execution and are not
 captured native inference. `rust-protocol.json` binds their scope to the exact
 reviewed upstream source bytes; `LICENSE.transcribe` retains MIT attribution.
-The GGUF/tokenizer intake, numerical frontend/encoder/decoder, complete session
-reset and actual-model comparisons remain necessary before replacing the native
-engine or removing its compiler, provisioning and dependency paths. Retirement
-also requires the complete source-bound external engine/GGML file inventory and
-immutable independent frontend, encoder, decoder and tokenizer controls with
-complete input/output identities. The two source hashes here bind only these
-protocol helpers and do not stand in for that full inventory or model evidence.
+
+`intake.rs` adds native-independent GGUF v3 metadata/tensor admission and checks
+tokenizer table types, special IDs and Qwen tensor geometry before native loading.
+Its 64 MiB charged metadata budget, bounded counts/strings, checked arithmetic,
+alignment and range checks reject malformed inputs before model allocation.
+`rust-intake.json` binds the reviewed native source and ten independent wire/
+miniature-catalog controls. The explicitly ignored `rust_asr_intake_pinned_model_index`
+case additionally admits the cached 2,185,030,624-byte model's metadata and tensor
+index; it does not read every weight, authenticate the file or execute inference.
+The caller still owns complete SHA-256 verification and lifetime guards.
+
+`frontend.rs` implements the 16 kHz/128-bin log-mel subset with periodic Hann,
+400-point mixed-radix FFT, reflect padding, Slaney filters and per-utterance
+normalization. Checkpoint window/filterbank tensors override generated tables.
+Cancellation and invalid input publish no partial features. Seven mathematical
+`rust_asr_frontend_` controls cover independent DFT answers, reflection, tables,
+layout, normalization and cancellation; `rust-frontend.json` binds source identities.
+This frontend is preparation for the Rust engine; native serving still computes
+its own frontend and performs inference.
+
+The [native package inventory](native-sources.json) records 1,718 immutable package
+file identities, including GGML, build inputs and notices. Its
+[Rust verifier](../../tools/ci/README.md#native-source-inventory) binds the original
+archive checksum and Cargo lock. Selected compiled/preprocessed/generated-source
+closure remains separate. A failed local Cargo-lock control exposed the use of a
+TOML value parser for a document; the document-parser correction compiles under
+strict Release Clippy, with runtime recheck and actual package verification pending.
+
+Complete Rust tokenizer encoding/decoding, CNN/transformer encoder, causal decoder,
+KV/session reset, independent numerical observations and actual-model comparisons
+remain necessary before replacing the engine or removing native dependencies.
+Standalone source-module checks do not establish owning-crate native build/link,
+transcript/state parity, microphone integration, quality, listening or resources.

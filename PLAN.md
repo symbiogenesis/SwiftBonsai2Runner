@@ -266,10 +266,11 @@ under [AGENTS.md](AGENTS.md).
   Q8 tensor/solver mapping and exact package/catalog/driver admission, then
   qualify correlated completions, buffer lifetime, cancellation and teardown.
   Fixed F32/guarded-Q2 controls do not qualify TTS prefill or shared KV state.
-- [ ] **S2 — Replace ASR's native engine in Rust.** Retain pinned Qwen3-ASR 1.7B
-  controls; implement verified GGUF/tokenizer intake, log-mel frontend,
-  CNN/transformer encoder, causal decoder and complete KV/session reset.
-  Preserve independent numerical/tokenizer observations and qualify
+- [ ] **S2 — Finish replacing ASR's native engine in Rust.** Retain pinned
+  Qwen3-ASR 1.7B controls; implement tokenizer encoding/decoding, CNN/transformer
+  encoder, causal decoder and complete KV/session reset, then integrate the Rust
+  GGUF intake and log-mel frontend. Qualify owning-crate build/link and preserve
+  independent frontend/numerical/tokenizer observations. Qualify
   transcript/state, microphone-to-Swift submission, quality, cancellation,
   lifecycle and resources before removing native dependencies. Protocol-only
   controls do not qualify inference.
@@ -280,7 +281,9 @@ under [AGENTS.md](AGENTS.md).
   provider before its 40 active C++ files can be removed; retain every approved
   green ID, all 22,817 ordered backend geometries and separate performance work.
   Retain required replay data and qualify owning hosted builds without a project
-  C++ toolchain.
+  C++ toolchain. Complete selected compiled/preprocessed/generated-source closure
+  beyond ASR's registry-package inventory; recheck its corrected Cargo-lock parser
+  and run actual package verification in owning CI.
 - [ ] Replace the [MSVC startup/panic runtime boundary](docs/cpp-retirement.md#msvc-startup-and-panic-runtime)
   with a qualified Rust provider while preserving preparation-peer recovery,
   worker draining and scoped cleanup. Static CRT linkage alone does not retire
