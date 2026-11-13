@@ -1,5 +1,6 @@
 //! Exact-source, selection and bounded lexical retrieval controls.
 use super::*;
+use std::fmt::Write as _;
 
 #[test]
 fn source_revision_hashes_original_utf8_bytes_and_requires_version_labels()
@@ -170,14 +171,15 @@ fn packet_renders_only_explicit_selection_and_rejects_duplicate_or_invalid_indic
 
 #[test]
 fn result_count_and_complete_packet_bounds_include_provenance() -> Result<(), &'static str> {
-    let text = (0..20)
-        .map(|index| format!("Garden {index}.\n\n"))
-        .collect::<String>();
+    let text = (0..20).fold(String::new(), |mut text, index| {
+        let _ = write!(text, "Garden {index}.\n\n");
+        text
+    });
     let packet = Source::new("Source", "1", &text)?.search("garden")?;
     assert_eq!(packet.excerpts.len(), MAX_EXCERPTS);
     assert_eq!(packet.excerpts[7].text, "Garden 7.\n");
     let full = format!("garden {}", "x".repeat(1493));
-    let text = (0..8).map(|_| format!("{full}\n\n")).collect::<String>();
+    let text = format!("{full}\n\n").repeat(8);
     let packet = Source::new("Source", "1", &text)?.search("garden")?;
     assert_eq!(packet.excerpts.len(), MAX_EXCERPTS);
     assert!(packet.render(&(0..8).collect::<Vec<_>>()).is_err());
