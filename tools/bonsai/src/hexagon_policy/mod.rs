@@ -359,6 +359,29 @@ fn compute_kind(case: &str) -> Result<&'static str> {
     }
 }
 
+fn dispatch_build(
+    json: &str,
+    revision: &str,
+    source_digest: &str,
+    manifest_digest: &str,
+    lock_digest: &str,
+) -> Result<Value> {
+    let value = json::parse(json)?;
+    build(
+        &value,
+        revision,
+        manifest_digest,
+        lock_digest,
+        "hexagon-dispatch-fixture.exe",
+    )?;
+    require(
+        is_lower_hex(source_digest, 64),
+        "Invalid dispatch source identity.",
+    )?;
+    Record(&value).equal("SourceSha256", source_digest)?;
+    Ok(json!({"Valid":true}))
+}
+
 /// Validate bounded native evidence or return a fixed model-free plan.
 ///
 /// # Errors
@@ -393,22 +416,13 @@ pub fn run(request: Value) -> Result<Value> {
             source_sha256,
             manifest_sha256,
             lock_sha256,
-        } => {
-            let value = json::parse(&json)?;
-            build(
-                &value,
-                &expected_runner_revision,
-                &manifest_sha256,
-                &lock_sha256,
-                "hexagon-dispatch-fixture.exe",
-            )?;
-            require(
-                is_lower_hex(&source_sha256, 64),
-                "Invalid dispatch source identity.",
-            )?;
-            Record(&value).equal("SourceSha256", &source_sha256)?;
-            Ok(json!({"Valid":true}))
-        }
+        } => dispatch_build(
+            &json,
+            &expected_runner_revision,
+            &source_sha256,
+            &manifest_sha256,
+            &lock_sha256,
+        ),
         Request::SessionBuild {
             json,
             expected_runner_revision,
