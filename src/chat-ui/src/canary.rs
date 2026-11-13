@@ -14,7 +14,7 @@ use serde::Deserialize;
 use std::{
     borrow::Cow,
     collections::HashSet,
-    io::{Read, Write},
+    io::{IoSlice, Read, Write},
     net::{Ipv4Addr, SocketAddr, SocketAddrV4, TcpStream},
     path::PathBuf,
     sync::atomic::{AtomicBool, AtomicU64, Ordering},
@@ -285,17 +285,24 @@ impl Client {
         let length = request_length(body).ok_or(Failure::Message(
             "The Qwen3-ASR request exceeded its size limit.",
         ))?;
+        // One header and at most four multipart slices fit on the stack. Windows
+        // gathers these borrowed slices in WSASend, without a second PCM copy.
+        let mut buffers = [IoSlice::new(&[]); 5];
+        let Some(buffers) = buffers.get_mut(..body.len() + 1) else {
+            return Err(Failure::Message(
+                "The Qwen3-ASR request exceeded its size limit.",
+            ));
+        };
         let address = SocketAddr::V4(SocketAddrV4::new(Ipv4Addr::LOCALHOST, self.port));
         let timeout = IO_POLL.min(call.until.saturating_duration_since(Instant::now()));
         let mut stream = TcpStream::connect_timeout(&address, timeout)
             .map_err(|_| Failure::Message("Could not connect to the local Qwen3-ASR companion."))?;
         call.check()?;
         stream
-            .set_read_timeout(Some(IO_POLL))
+            .set_nodelay(true)
+            .and_then(|()| stream.set_read_timeout(Some(IO_POLL)))
             .and_then(|()| stream.set_write_timeout(Some(IO_POLL)))
-            .map_err(|_| {
-                Failure::Message("Could not configure the Qwen3-ASR connection timeout.")
-            })?;
+            .map_err(|_| Failure::Message("Could not configure the Qwen3-ASR connection."))?;
         let media =
             content_type.map_or_else(String::new, |media| format!("Content-Type: {media}\r\n"));
         let head = format!(
@@ -304,10 +311,11 @@ impl Client {
             self.key.as_hex(),
             length
         );
-        write_all(&mut stream, head.as_bytes(), call)?;
-        for part in body {
-            write_all(&mut stream, part, call)?;
+        buffers[0] = IoSlice::new(head.as_bytes());
+        for (buffer, part) in buffers[1..].iter_mut().zip(body) {
+            *buffer = IoSlice::new(part);
         }
+        write_all_vectored(&mut stream, buffers, call)?;
         Ok(stream)
     }
 }
@@ -571,10 +579,15 @@ fn request_length(parts: &[&[u8]]) -> Option<usize> {
     })
 }
 
-fn write_all(stream: &mut impl Write, mut bytes: &[u8], call: &Call<'_>) -> Result<()> {
-    while !bytes.is_empty() {
+fn write_all_vectored(
+    stream: &mut impl Write,
+    mut buffers: &mut [IoSlice<'_>],
+    call: &Call<'_>,
+) -> Result<()> {
+    IoSlice::advance_slices(&mut buffers, 0);
+    while !buffers.is_empty() {
         call.check()?;
-        let result = stream.write(bytes);
+        let result = stream.write_vectored(buffers);
         call.check()?;
         match result {
             Ok(0) => {
@@ -582,7 +595,7 @@ fn write_all(stream: &mut impl Write, mut bytes: &[u8], call: &Call<'_>) -> Resu
                     "The Qwen3-ASR connection closed during upload.",
                 ));
             }
-            Ok(count) => bytes = &bytes[count..],
+            Ok(count) => IoSlice::advance_slices(&mut buffers, count),
             Err(error) if retry_poll(&error) => {}
             Err(_) => return Err(Failure::Message("The Qwen3-ASR upload was interrupted.")),
         }
@@ -782,11 +795,11 @@ mod tests {
     use super::{
         Call, Client, Config, Failure, MAX_HEAD, MAX_REQUEST, MAX_RESPONSE, MAX_WAVE_RESPONSE,
         MODEL, Media, boundary, multipart, normalize_wav, request_length, response_body,
-        response_length, validate_wav, write_all,
+        response_length, validate_wav, write_all_vectored,
     };
     use std::{
         fs,
-        io::{self, Read, Write},
+        io::{self, IoSlice, Read, Write},
         net::{TcpListener, TcpStream},
         sync::{
             Arc,
@@ -924,6 +937,23 @@ mod tests {
         );
         assert!(fs::read_dir(&evidence)?.next().is_none());
         fs::remove_dir(evidence)?;
+        Ok(())
+    }
+
+    #[test]
+    fn upload_slice_admission_rejects_before_opening_connection() -> io::Result<()> {
+        let listener = TcpListener::bind((std::net::Ipv4Addr::LOCALHOST, 0))?;
+        listener.set_nonblocking(true)?;
+        let (_credentials, client) = client(listener.local_addr()?.port())?;
+        let current = AtomicU64::new(1);
+        let call = Call::new(1, &current, Duration::from_secs(5));
+        assert!(matches!(
+            client.connection_parts("POST", "/v1/audio/transcriptions", None, &[&[][..]; 5], &call),
+            Err(Failure::Message(message)) if message.contains("size limit")
+        ));
+        assert!(
+            matches!(listener.accept(), Err(error) if error.kind() == io::ErrorKind::WouldBlock)
+        );
         Ok(())
     }
 
@@ -1157,10 +1187,8 @@ mod tests {
             let parts = body.parts();
             assert!(std::ptr::eq(parts[2].as_ptr(), body.wav.data.as_ptr()));
             let mut written = PartialWriter(Vec::new());
-            for part in parts {
-                write_all(&mut written, part, &call)
-                    .map_err(|_| io::Error::other("Multipart upload failed"))?;
-            }
+            write_all_vectored(&mut written, &mut parts.map(IoSlice::new), &call)
+                .map_err(|_| io::Error::other("Multipart upload failed"))?;
             let mut expected = format!(
                 "--{marker}\r\nContent-Disposition: form-data; name=\"model\"\r\n\r\n{MODEL}\r\n--{marker}\r\nContent-Disposition: form-data; name=\"file\"; filename=\"clip.wav\"\r\nContent-Type: audio/wav\r\n\r\n"
             )
@@ -1186,11 +1214,113 @@ mod tests {
         current.store(2, Ordering::Release);
         let mut written = PartialWriter(Vec::new());
         assert_eq!(
-            write_all(&mut written, b"late PCM", &call),
+            write_all_vectored(&mut written, &mut [IoSlice::new(b"late PCM")], &call),
             Err(Failure::Cancelled)
         );
         assert_eq!(written.0, b"");
         Ok(())
+    }
+
+    struct GatherWriter<'a> {
+        steps: std::vec::IntoIter<io::Result<usize>>,
+        bytes: Vec<u8>,
+        calls: usize,
+        cancel: Option<&'a AtomicU64>,
+    }
+
+    impl Write for GatherWriter<'_> {
+        fn write(&mut self, _bytes: &[u8]) -> io::Result<usize> {
+            Err(io::Error::other("The upload must use gathered writes"))
+        }
+
+        fn write_vectored(&mut self, buffers: &[IoSlice<'_>]) -> io::Result<usize> {
+            self.calls += 1;
+            let count = self
+                .steps
+                .next()
+                .unwrap_or_else(|| Ok(buffers.iter().map(|buffer| buffer.len()).sum()))?;
+            let mut remaining = count;
+            for buffer in buffers {
+                let copied = remaining.min(buffer.len());
+                self.bytes.extend_from_slice(&buffer[..copied]);
+                remaining -= copied;
+            }
+            assert_eq!(remaining, 0);
+            if let Some(current) = self.cancel.take() {
+                current.store(2, Ordering::Release);
+            }
+            Ok(count)
+        }
+
+        fn flush(&mut self) -> io::Result<()> {
+            Ok(())
+        }
+    }
+
+    #[test]
+    fn vectored_upload_gathers_parts_and_preserves_progress_across_retryable_errors()
+    -> Result<(), Failure> {
+        let parts: [&[u8]; 5] = [b"head", b"", b"PCM", b"", b"tail"];
+        let current = AtomicU64::new(1);
+        let call = Call::new(1, &current, Duration::from_secs(10));
+        for (steps, calls) in [
+            (vec![], 1),
+            (
+                vec![
+                    Err(io::Error::from(io::ErrorKind::Interrupted)),
+                    Ok(3),
+                    Err(io::Error::from(io::ErrorKind::WouldBlock)),
+                    Err(io::Error::from(io::ErrorKind::TimedOut)),
+                    Ok(4),
+                ],
+                6,
+            ),
+        ] {
+            let mut writer = GatherWriter {
+                steps: steps.into_iter(),
+                bytes: Vec::new(),
+                calls: 0,
+                cancel: None,
+            };
+            write_all_vectored(&mut writer, &mut parts.map(IoSlice::new), &call)?;
+            assert_eq!(writer.bytes, b"headPCMtail");
+            assert_eq!(writer.calls, calls);
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn vectored_upload_stops_on_short_write_cancellation_and_terminal_failures() {
+        let current = AtomicU64::new(1);
+        let call = Call::new(1, &current, Duration::from_secs(10));
+        let parts: [&[u8]; 3] = [b"head", b"PCM", b"tail"];
+        let mut writer = GatherWriter {
+            steps: vec![Ok(2)].into_iter(),
+            bytes: Vec::new(),
+            calls: 0,
+            cancel: Some(&current),
+        };
+        assert_eq!(
+            write_all_vectored(&mut writer, &mut parts.map(IoSlice::new), &call),
+            Err(Failure::Cancelled)
+        );
+        assert_eq!(writer.calls, 1);
+        assert_eq!(writer.bytes, b"he");
+        current.store(1, Ordering::Release);
+        for failure in [Ok(0), Err(io::Error::from(io::ErrorKind::BrokenPipe))] {
+            let mut writer = GatherWriter {
+                steps: vec![Ok(2), failure].into_iter(),
+                bytes: Vec::new(),
+                calls: 0,
+                cancel: None,
+            };
+            assert!(matches!(
+                write_all_vectored(&mut writer, &mut parts.map(IoSlice::new), &call),
+                Err(Failure::Message(_))
+            ));
+            assert_eq!(writer.calls, 2);
+            assert_eq!(writer.bytes, b"he");
+        }
     }
 
     #[test]
