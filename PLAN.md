@@ -363,6 +363,11 @@ under [AGENTS.md](AGENTS.md).
 - [ ] Close selected-profile packed-attention, scalar/NEON, exact quantized
   checkpoint, prefix/adapter/cancellation and discovery-inventory gates. Charge
   scales, rotations, scratch and retained copies; preserve FP32 GDN/conv state.
+- [ ] Qualify Prism's explicit `rsq4vf` fitted-value scale candidate against
+  unchanged `rsq4`: bounded native encoding/whole-request cost and held-out
+  quality under K1's source, power and budget controls. Its guarded rotated
+  reconstruction improvement and unchanged record size do not qualify answer
+  quality or a default change. See the [candidate contract](docs/quantized-kv.md#fitted-value-scale-candidate).
 - [ ] Only for material recurrent-state traffic/storage, compare FP16 recurrence
   with FP32, then at most one DAMP-inspired split; qualify trajectory error,
   convolution, rounding/RNG, restore and total benefit before extra factors.

@@ -96,6 +96,31 @@ anisotropy corrections and precision changes to recurrent state are excluded
 until separately justified. An unbiased inner-product estimator alone does not
 establish unbiased softmax, negligible quality loss or faster inference.
 
+## Fitted-value scale candidate
+
+New local Prism source adds explicit `rsq4vf` (`Rotated4FittedValues`) for
+investigating reconstruction accuracy without increasing record size. Version-1
+K4 keys remain unchanged; V4 values use codec version 2's guarded fitted scale.
+After the existing normalization, rotation and code selection, the fitter proposes
+`s = s_norm * dot(y,c) / dot(c,c)`. Codes remain fixed. It accepts a positive finite
+binary32 scale only when actual binary32 reconstruction products strictly reduce
+the measured binary64 squared error in the normalized rotated basis, rescaled
+by `s_norm`. Equal error or unusable candidates retain the original scale.
+
+Both records still occupy 132 bytes per head. Packed readers and attention
+operations remain unchanged; encoding adds two bounded 256-coordinate scans and
+a division per nonzero value head. Current-token values use the same fitter.
+The separate profile/codec identities preserve checkpoint and readiness isolation.
+For identical incoming projections, keys and attention probabilities remain
+unchanged. Future states can diverge through changed values.
+
+The guard precedes the rounded inverse transform and guarantees neither lower
+original-space/attention error nor better answers. Native encoding cost,
+complete-request cost and held-out model quality remain pending under K1.
+The candidate keeps the ordinary graph state ceiling and is not selected by
+Runner's trusted launch policy or its published runtime pin. The sibling Prism
+`docs/quantized-kv.md` specifies its complete numerical and selection contract.
+
 ## Snapdragon execution and state
 
 X1 and X2 share a runtime-detected 128-bit NEON execution path with an explicit
