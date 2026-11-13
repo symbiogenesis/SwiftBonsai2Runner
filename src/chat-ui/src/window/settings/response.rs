@@ -152,7 +152,7 @@ fn reply_preferences(ui: &mut egui::Ui, output_budget: &mut usize, editable: boo
         });
     });
     ui.add_space(8.0);
-    ui.label(RichText::new("8,192-token context. The output cap includes thinking. A smaller cap leaves more room for your conversation.").small().weak());
+    ui.label(RichText::new("The output cap includes thinking. A smaller cap leaves more room for your conversation. Open Context for the capacity selected for this model.").small().weak());
     before != *output_budget
 }
 
