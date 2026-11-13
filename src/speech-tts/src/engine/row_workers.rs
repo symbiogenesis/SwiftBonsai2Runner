@@ -62,7 +62,7 @@ impl Drop for OwnedTeam {
     }
 }
 
-pub(crate) fn run<F>(out: &mut [f32], worker_count: usize, compute_slice: &F)
+pub(super) fn run<F>(out: &mut [f32], worker_count: usize, compute_slice: &F)
 where
     F: Fn(usize, &mut [f32]) + Sync,
 {
@@ -71,6 +71,10 @@ where
 
 // Frame/channel kernels must keep their indivisible output groups together.
 // Reuse the projection team instead of creating another pool or per-call threads.
+#[expect(
+    clippy::redundant_pub_crate,
+    reason = "Share aligned jobs with the sibling codec without exposing the worker module outside this crate."
+)]
 pub(crate) fn run_aligned<F>(
     out: &mut [f32],
     worker_count: usize,

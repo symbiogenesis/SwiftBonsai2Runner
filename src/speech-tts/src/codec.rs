@@ -225,10 +225,6 @@ fn matvec_4rows_simd<S: Simd>(
     reason = "fearless_simd dispatch! requires inline(always) to inherit target_feature attributes."
 )]
 #[inline(always)]
-#[expect(
-    clippy::too_many_arguments,
-    reason = "Clip the original scatter kernel to one disjoint output-time window without changing its weight layout."
-)]
 fn trans_conv1d_scatter_frame_simd<S: Simd>(
     simd: S,
     in_row: &[f32],
@@ -1489,10 +1485,6 @@ mod tests {
     }
 
     #[test]
-    #[expect(
-        clippy::too_many_lines,
-        reason = "Keep independent scatter replay and the paired convolution/context controls in one fixed codec workload."
-    )]
     fn parallel_codec_frames_preserve_bits_context_and_scatter_order() -> std::io::Result<()> {
         // Odd widths exercise SIMD tails; enough fixed work selects workers.
         let conv = CausalConv1d {

@@ -8,7 +8,7 @@
     reason = "Keep the serving types private to this crate."
 )]
 
-use std::{io, mem::size_of};
+use std::io;
 
 use crate::{
     engine::{
@@ -804,8 +804,6 @@ fn invalid(message: &'static str) -> io::Error {
 
 #[cfg(test)]
 mod tests {
-    use std::mem::size_of;
-
     use super::{
         Geometry, MAX_PREFILL_CACHE_BYTES, MAX_PREFILL_ROWS, PrefillCache, Prompt, REFERENCE_TEXT,
         Reference, Specials, Talker, align_icl, embedding_row,
