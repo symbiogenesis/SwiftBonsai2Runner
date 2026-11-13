@@ -619,6 +619,29 @@ fn publish_repair(file: &File, partial: &Path, path: &Path) -> crate::Result<()>
     })
 }
 
+// Call only while holding the destination's download lock and after verifying
+// its final bytes. A leftover partial then has no resume or recovery purpose.
+fn remove_redundant_download(path: &Path) -> crate::Result<()> {
+    repair_checkpoint()?;
+    validate_external_path(path).map_err(|error| error.to_string())?;
+    match fs::symlink_metadata(path) {
+        Ok(metadata) if metadata.is_file() && !is_redirect(&metadata) => {}
+        Ok(_) => {
+            return Err(
+                "Refusing to clean a download cache entry that is not an ordinary file.".into(),
+            );
+        }
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => return Ok(()),
+        Err(error) => return Err(error.to_string()),
+    }
+    fs::remove_file(path).map_err(|error| {
+        format!(
+            "The artifact is verified, but its obsolete download cache at {} could not be removed. Close other apps using it and retry: {error}",
+            path.display()
+        )
+    })
+}
+
 fn receive_repair_with(
     uri: &str,
     path: &Path,
@@ -652,13 +675,13 @@ fn receive_repair_observed_with(
     let filename = path.file_name().ok_or("Artifact has no filename.")?;
     let lock = path.with_file_name(format!("{}.download.lock", filename.to_string_lossy()));
     let _guard = crate::startup_cache::lock_file(&lock)?;
+    let partial = path.with_file_name(format!("{}.partial", filename.to_string_lossy()));
     observe(RepairActivity::VerifyingExisting)?;
     let original = match cached_artifact(path, bytes, sha256)? {
-        CachedArtifact::Verified => return Ok(()),
+        CachedArtifact::Verified => return remove_redundant_download(&partial),
         CachedArtifact::Invalid(file) => Some(file),
         CachedArtifact::Missing => None,
     };
-    let partial = path.with_file_name(format!("{}.partial", filename.to_string_lossy()));
     validate_external_path(&partial).map_err(|error| error.to_string())?;
     let completed =
         verified_repair_partial(uri, &partial, bytes, sha256, working, transfer, observe)?;
@@ -750,9 +773,6 @@ fn receive_with(
     download_uri(uri)?;
     validate_external_path(path).map_err(|error| error.to_string())?;
     validate_external_path(working).map_err(|error| error.to_string())?;
-    if path.exists() {
-        return verify(path, bytes, sha256);
-    }
     fs::create_dir_all(path.parent().ok_or("Artifact has no parent directory.")?)
         .map_err(|error| error.to_string())?;
     fs::create_dir_all(working).map_err(|error| error.to_string())?;
@@ -763,15 +783,16 @@ fn receive_with(
             .to_string_lossy()
     ));
     let _guard = crate::startup_cache::lock_file(&lock)?;
-    if path.exists() {
-        return verify(path, bytes, sha256);
-    }
     let partial = path.with_file_name(format!(
         "{}.partial",
         path.file_name()
             .ok_or("Artifact has no filename.")?
             .to_string_lossy()
     ));
+    if path.exists() {
+        verify(path, bytes, sha256)?;
+        return remove_redundant_download(&partial);
+    }
     validate_external_path(&partial).map_err(|error| error.to_string())?;
     let mut offset = match fs::symlink_metadata(&partial) {
         Ok(metadata) if metadata.is_file() && !is_redirect(&metadata) => metadata.len(),
@@ -828,8 +849,10 @@ fn receive_with(
         Err(error) => return Err(format!("Cannot publish verified artifact: {error}")),
     }
     drop(completed);
-    // Retaining an extra hard-link alias is safe if another reader keeps it open.
-    let _ = fs::remove_file(&partial);
+    remove_redundant_download(&partial)?;
+    if let Some(quarantined) = quarantined {
+        remove_redundant_download(&quarantined)?;
+    }
     Ok(())
 }
 
@@ -1431,7 +1454,91 @@ mod tests {
     }
 
     #[test]
-    fn corrupt_completed_partial_is_preserved_and_fresh_retry_publishes() -> crate::Result<()> {
+    fn download_cache_cleanup_discards_partial_only_after_verified_success() -> crate::Result<()> {
+        for repair in [false, true] {
+            let (working, path, partial, hash) = recovery_fixture()?;
+            fs::write(&path, b"wrong").map_err(|error| error.to_string())?;
+            if !repair {
+                assert!(
+                    receive_with(
+                        "https://example.invalid/artifact",
+                        &path,
+                        5,
+                        &hash,
+                        &working,
+                        |_, _, _, _, _| Err("Existing corruption must be reported.".into()),
+                    )
+                    .is_err()
+                );
+                assert_eq!(
+                    fs::read(&partial).map_err(|error| error.to_string())?,
+                    b"wrong"
+                );
+            }
+            fs::write(&path, b"right").map_err(|error| error.to_string())?;
+            let transfer = |_: &str, _: &Path, _: u64, _: u64, _: &Path| {
+                Err("Verified cache hits must not download.".into())
+            };
+            let lock = working.join("artifact.bin.download.lock");
+            let guard = crate::startup_cache::lock_file(&lock)?;
+            assert!(
+                receive_with(
+                    "https://example.invalid/artifact",
+                    &path,
+                    5,
+                    &hash,
+                    &working,
+                    transfer
+                )
+                .is_err()
+            );
+            assert!(partial.is_file());
+            drop(guard);
+            if repair {
+                receive_repair_with(
+                    "https://example.invalid/artifact",
+                    &path,
+                    5,
+                    &hash,
+                    &working,
+                    transfer,
+                )?;
+            } else {
+                receive_with(
+                    "https://example.invalid/artifact",
+                    &path,
+                    5,
+                    &hash,
+                    &working,
+                    transfer,
+                )?;
+            }
+            assert!(!partial.exists());
+            verify(&path, 5, &hash)?;
+            assert!(lock.is_file());
+            drop(crate::startup_cache::lock_file(&lock)?);
+            // A directory at the reserved name is never recursively deleted.
+            fs::create_dir(&partial).map_err(|error| error.to_string())?;
+            assert!(
+                receive_with(
+                    "https://example.invalid/artifact",
+                    &path,
+                    5,
+                    &hash,
+                    &working,
+                    transfer
+                )
+                .is_err()
+            );
+            assert!(partial.is_dir());
+            fs::remove_dir_all(working).map_err(|error| error.to_string())?;
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn download_cache_cleanup_removes_quarantine_after_fresh_retry_publishes() -> crate::Result<()>
+    {
         let (working, path, partial, hash) = recovery_fixture()?;
         let mut transfers = 0;
         receive_with(
@@ -1451,13 +1558,8 @@ mod tests {
         assert_eq!(transfers, 1);
         verify(&path, 5, &hash)?;
         assert!(!partial.exists());
-        let evidence = quarantine_files(&working)?;
-        assert_eq!(evidence.len(), 1);
-        assert_eq!(
-            fs::read(evidence.first().ok_or("Missing quarantined download.")?)
-                .map_err(|error| error.to_string())?,
-            b"wrong"
-        );
+        assert!(quarantine_files(&working)?.is_empty());
+        fs::remove_dir_all(working).map_err(|error| error.to_string())?;
         Ok(())
     }
 
@@ -1512,6 +1614,7 @@ mod tests {
         assert_eq!(transfers, 1);
         assert_eq!(fs::read(path).map_err(|error| error.to_string())?, b"final");
         assert_eq!(quarantine_files(&working)?, evidence);
+        fs::remove_dir_all(working).map_err(|error| error.to_string())?;
         Ok(())
     }
 
@@ -1568,7 +1671,7 @@ mod tests {
             &hash,
             &working,
         )?;
-        assert!(!working.join("artifact.bin.download.lock").exists());
+        assert!(working.join("artifact.bin.download.lock").is_file());
         fs::write(&path, b"jello").map_err(|error| error.to_string())?;
         verify_length(&path, 5)?;
         assert!(verify(&path, 5, &hash).is_err());
@@ -1604,6 +1707,7 @@ mod tests {
             fs::read(&partial).map_err(|error| error.to_string())?,
             b"too long"
         );
+        fs::remove_dir_all(working).map_err(|error| error.to_string())?;
         Ok(())
     }
 
