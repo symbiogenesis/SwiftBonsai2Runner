@@ -345,22 +345,42 @@ Serving capacity is separate from the fixed 8K qualification workloads.
 
 The pure planner in `bonsai-cpu-policy::context` retains the existing 4 GiB
 Windows reserve and non-context allowance from the 11.5 GiB/8K reference budget.
-It charges 137,344 bytes per token: two 65,536-byte FP16 KV copies for live and
-rollback state, 6,144 bytes for the publisher's 64-token/24-head score scratch,
-and 128 bytes for context metadata. Native serial prefill uses a smaller score
-workspace but retains this shared conservative allowance, even with K4/V4. The
-non-context allowance remains 11 GiB, the reference
+Publisher sizing charges 137,344 bytes per token: two 65,536-byte FP16 KV copies
+for live and rollback state, 6,144 bytes for the publisher's 64-token/24-head
+score scratch, and 128 bytes for context metadata. The prepared native profile
+instead charges the immutable selected cache and sequential score scratch:
+
+| Sizing profile | One KV copy, bytes/token | Process growth, bytes/token | State ceiling, tokens |
+| --- | ---: | ---: | ---: |
+| Publisher FP16 | 65,536 | 137,344 | 62,720 |
+| Native FP16 recovery | 65,536 | 131,296 | 62,720 |
+| Native K4/V4 | 16,896 | 34,016 | 241,664 |
+
+Native process growth retains two complete caches, 96 bytes per token for
+24 F32 score rows and 128 bytes for metadata. K4/V4 records include their
+four-byte scales; no FP16 history mirror is assumed. The metadata allowance
+covers the 64-token cache page tables and headers, token histories and tails;
+256-token selection alignment spans complete cache pages. Codec/codebook storage,
+prepared rows and fixed checkpoint overhead stay in the fixed allowance and the
+runtime's minimum 1 GiB state/checkpoint allowance. A divergent request can retain
+the previous cache, so immutable page sharing does not reduce the two-cache charge.
+Explicit tiled prefill and speculation retain separate additive reservations.
+The non-context allowance remains 11 GiB, the reference
 Job budget minus its original 512 MiB KV charge; it includes weights, adapters,
 recurrent state, transforms and runtime headroom. These are conservative source
-allowances, not measured peaks. Cache quantization or PTQ1 alone does not increase
-the selected capacity or shrink that allowance.
+allowances, not measured peaks. The native cache-aware sizing is prepared for
+unreleased Prism 0.1.26; it does not change the installed release or establish measured
+memory savings. PTQ1 receives no reduction in the fixed allowance.
 
 Capacity rounds down to 256-token pages and must accommodate the 4,096-token
 reply cap plus the 64-token template reserve. It never exceeds Swift's declared
 262,144-token model context or the runtime's 4 GiB live-state bound after charging
 156,893,184 recurrent bytes plus single-copy native KV, score and metadata
-charges. The resulting shared ceiling
-is 62,720 tokens. Less available RAM selects a smaller window and more can
+charges. FP16's resulting state ceiling is 62,720 tokens; K4/V4's is 241,664.
+At 20 GiB available before launch, publisher sizing selects 37,120 tokens and
+the prepared native K4/V4 profile selects 149,760. These are calculated admission
+bounds, not measured usable capacities or long-range quality results.
+Less available RAM selects a smaller window and more can
 select a larger one, while insufficient space for a usable window rejects launch.
 The larger charge for rollback and batch scratch can require more available RAM
 than the historical 15.5 GiB admission floor.
@@ -376,7 +396,9 @@ native **Prism 0.1.25** release still implements a fixed 8,192-token context and
 keeps its existing admission/Job policy. Native memory selection remains gated
 until a genuine source-bound release implements the paired `--context-tokens`
 and `--memory-limit-bytes` child interface and Runner reviews that exact release
-identity. Local Prism source changes do not modify installed release bytes;
+identity. The release gate must also bind the reviewed cache-aware accounting;
+an older FP16-only memory protocol cannot receive the smaller K4/V4 allowance.
+Local Prism source changes do not modify installed release bytes;
 startup reports this limit explicitly. No version-only guess or fabricated
 release pin enables the new protocol.
 
@@ -387,6 +409,10 @@ prompt and reserves the requested reply plus 64 tokens. It never trims history,
 changes reply settings or replays a request. Larger windows and changing-memory
 startup need independent source-bound application/resource qualification; the
 historical 8K captures establish no larger-context result.
+The existing 1 MiB serialized chat-request bound also remains effective. A token
+capacity alone does not guarantee that every Unicode or JSON-escaped history fits
+the transport; larger-profile acceptance must check representative complete
+requests against both token and byte limits.
 
 ## Native CPU status
 
