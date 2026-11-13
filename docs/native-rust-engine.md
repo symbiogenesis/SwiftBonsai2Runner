@@ -284,7 +284,7 @@ benchmarks, selection changes, reviewer authentication or network provenance che
 The version-2 policy binds the selected `nativeRowWorkers` (one by default, or explicit four)
 and `servingStatePolicy: reset-every-request`. Evidence for a different worker count
 or experimental state reuse cannot qualify this policy. Regenerate pending manifests
-after a policy identity change; retained historical reports remain unchanged.
+after a policy identity change.
 PTQ1 `file-score` requests must select the same `weightRepresentation`; PQ2 evidence,
 changed packing receipts and changed original-PQ2 rollback identities are rejected.
 The scored report retains the policy digest, profile, exact identities, gate counts

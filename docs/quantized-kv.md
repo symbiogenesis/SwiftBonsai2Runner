@@ -1,20 +1,12 @@
 # Native Snapdragon quantized KV
 
-Runner's reviewed Prism 0.1.27 pin uses **TurboQuant-inspired K4/V4 (`rsq4`)**
-as the owner-selected development default for ordinary Swift
-sessions on Snapdragon X1 Elite and X2 Elite Extreme. It accepts approximate
-answers without requiring perfect reconstruction, identical tokens, FP16 logits
-or a completed comparison packet. Actual-model quality, memory and device
-qualification remain pending; the paired packet below is required for measured
-quality/memory claims. Device profiles and larger memory-selected windows retain
-their independent qualification gates.
-
-Explicit `f16` selection starts a comparison/recovery session; requests and failed
-compressed sessions cannot silently choose FP16. The historical 0.1.23 comparison
-control retains FP16. Every selection requires exact verified runtime bytes.
-Qualify X1 and X2 separately for device-specific benefit claims;
-[PLAN.md](../PLAN.md#bounded-calibration-and-optional-precision) owns remaining work.
-
+The [runtime lock](../config/prism-inference.lock.json) selects TurboQuant-inspired
+**K4/V4 (`rsq4`)** for development on Snapdragon X1/X2. It is approximate;
+actual-model quality, memory and device qualification remain pending under the
+paired packet below. Larger windows and each device family need separate gates.
+Explicit `f16` starts a comparison/recovery session. Requests and failed compressed
+sessions cannot silently change precision. [PLAN.md](../PLAN.md#bounded-calibration-and-optional-precision)
+owns remaining work.
 ## Source selection and current checks
 
 The safe codec API is `kv_quant::Quantizer::{new, scalar}`. Graph construction
@@ -32,8 +24,7 @@ Client request bodies cannot select precision. Non-FP16 readiness reports
 `kv_cache` and the actual `startup_graph_identity`; the startup label remains
 accurate when a later request changes the adapter scale. Runner's trusted launch
 policy selects the cache from the exact reviewed runtime source and checks the
-matching cache and startup graph identity; older releases retain their FP16
-contract. Application use requires a published, verified Prism bundle with that
+matching cache and startup graph identity. Application use requires a published, verified Prism bundle with that
 source identity. Trusted launch parsing accepts `--kv-cache f16|rsq4|rsq4k3v`
 without exposing precision in client request bodies. The current 0.1.27 pin admits
 `f16` and `rsq4`; `rsq4k3v` remains rejected until a separately reviewed, source-bound

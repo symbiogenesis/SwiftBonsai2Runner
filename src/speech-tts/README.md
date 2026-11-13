@@ -1,52 +1,36 @@
 # Rust Qwen VoiceDesign inference
 
-The serving path loads pinned Qwen3-TTS 1.7B VoiceDesign/Base GGUF artifacts and
-runs Talker, CodePredictor, codec and speaker inference in Rust on CPU. The app
-prepares models in its native window. [ASR](../speech-asr/README.md) has a separate
-build boundary.
+The service runs Qwen3-TTS 1.7B VoiceDesign/Base Talker, CodePredictor, codec and
+speaker inference in Rust on CPU. The app prepares models in its native window.
+[ASR](../speech-asr/README.md) has a separate build boundary.
 
-`model.lock.json` pins ordinary Q8_0 talkers and codec; `model-q4.lock.json`
-selects Q4_K_M talkers with the same codec. The calling service must verify and
-retain every selected file before loading. `weights.rs` reads bounded GGUF
-metadata/tensor descriptions, validates dimensions and retains compressed
-projection weights. Text embeddings dequantize individual rows instead of
-expanding the complete vocabulary into floating-point storage.
-Packed projections validate their bytes once at construction; dense tensors
-validate decoded values. Metadata parsing reuses bounded scratch for discarded
-tokenizer strings instead of allocating each spelling separately.
+`model.lock.json` pins Q8_0 talkers and codec; `model-q4.lock.json` selects Q4_K_M
+talkers with the same codec. Callers verify and retain every file before loading.
+The bounded GGUF reader validates geometry and packed weights, retains compressed
+projections and dequantizes embedding rows on demand.
 
-Only plain text and a plain-language voice description are exposed. Design
-weights must identify `voice_design`, and reusable-speaker weights must identify
-`base`. Presets, user reference recordings and arbitrary engine options remain
-outside the public interface. Output is finite mono 24 kHz PCM within the existing
-120-second bound. Missing EOS, token-ceiling and invalid output fail speech;
-partial playback does not establish success.
-
-`Synthesizer::load` selects two fewer threads than the available CPU count, with
-a minimum of one. `load_with_threads` and companion `--threads` accept 1–256
-workers. The library opens no devices or listeners. Keep it in its separately
-supervised process so admission, cancellation, deadlines and shutdown retain
-their ownership rules. The [HTTP contract](../../tools/qwen-tts/README.md#http-contract)
-owns authentication, schemas, WAV/PCM framing and completion; the
-[speech operation guide](../../docs/development-guide.md#speech-setup-and-operation)
-owns app setup, controls, service lifetime and resource limits.
+Inputs are plain text and a voice description. Design/Base weights must identify
+`voice_design`/`base`; presets, reference recordings and arbitrary engine options
+are unsupported. Output is finite mono 24 kHz PCM, at most 120 seconds. Missing
+EOS, exhausted token limits or invalid samples fail speech, even after playback.
+The library opens no devices/listeners; its separately supervised process owns
+admission, cancellation, deadlines and shutdown. See the
+[HTTP contract](../../tools/qwen-tts/README.md#http-contract),
+[app controls](../../docs/development-guide.md#speech-setup-and-operation) and
+[resource bounds](../../docs/streaming-resources.md#native-speech-generation-and-streaming).
 
 ## Voice conditioning
 
-The first request for a profile designs a fixed reference phrase with seed 42,
-independent of the message being read. Design weights are released before the
-separately pinned Base talker loads. Rust extracts a speaker embedding and RVQ
-codes from retained reference audio. Those values and its fixed transcript
-condition subsequent paragraphs/messages using that profile. Changing the
-profile replaces its reference; restarting regenerates it from the same phrase,
-seed and description. Conversation IDs and line breaks never choose it.
+The first request designs a fixed reference phrase with seed 42, independently
+of the message. Design weights are released before Base loads; Rust retains
+reference samples, speaker embedding, RVQ codes and transcript across the handoff.
+These condition subsequent utterances for that profile. A changed description
+replaces the reference; restart regenerates it from the same phrase/seed.
+Conversation IDs and line breaks do not choose voices.
 
-This follows Qwen's
-[Voice Design then Clone workflow](https://github.com/QwenLM/Qwen3-TTS#voice-design-then-clone).
-Only one talker model is resident at a time. Reference failure stops speech
-instead of independently designing a voice per segment. Rust owns reference
-samples and embeddings through model handoff and releases them on failed loading
-or extraction.
+This follows Qwen's [Voice Design then Clone workflow](https://github.com/QwenLM/Qwen3-TTS#voice-design-then-clone).
+Only one talker is resident. Reference/loading/extraction failure releases owned
+state and stops speech instead of redesigning each segment's voice.
 
 The production Design-to-Base handoff uses the same ownership routine as the
 independent drop-order control. It releases Design before Base weight intake and
@@ -57,42 +41,37 @@ reference before retry. Successful turns may reuse the exact reference prefix.
 
 ## CPU execution
 
-Packed float/half projections process four output rows together while retaining
-each row's original accumulation order. Codec convolutions and ConvNeXt frames
-share the projection worker team and honor the selected thread count. Independent
-output ranges run concurrently; streaming history and overlap carry retain their
-sequential ownership. The serial path remains available with `--threads 1`.
-Short, expensive convolutions split output channels across the same team when
-there are too few audio frames to occupy it. Four-row SIMD groups and each
-output's accumulation order remain unchanged.
+`Synthesizer::load` reserves two logical CPUs, with at least one worker.
+`load_with_threads` and companion `--threads` accept 1–256. A bounded reusable
+thread pool belongs to the inference thread. Projections and codec convolutions/
+ConvNeXt frames share that team; short convolutions may split output channels.
+Independent ranges run concurrently, preserving accumulation order and sequential
+streaming history/overlap ownership. `--threads 1` retains serial execution.
 
-Base synthesis retains one bounded, exact reference-prefix snapshot between
-successful utterances. Reuse requires identical input-row bits; changed rows,
-voice replacement, cancellation or synthesis failure discard the snapshot.
-The cache does not retain generated continuation state or change sampling.
-See the [resource contract](../../docs/streaming-resources.md#native-speech-generation-and-streaming)
-for its storage bounds. Pinned-model qualification remains in [PLAN.md](../../PLAN.md).
+F32/F16, Q8_0, Q4_K and Q6_K projections decode directly during multiplication,
+without whole-weight expansion or activation requantization. Four-row groups
+retain per-row rounding/accumulation; SIMD dispatch stays outside block loops.
+
+Base retains one bounded exact reference-prefix snapshot between successful
+utterances. Reuse requires identical input-row bits; changed rows, voice
+replacement, cancellation or synthesis failure discard it. It retains no generated
+continuation state and changes no sampling. The resource contract owns its bounds.
 
 ## Native ABI and failure handling
 
-Rust errors retain only fixed synthesis-stage labels and I/O categories;
-request text, voice descriptions and raw model diagnostics are excluded.
-Speech failure leaves text chat available. Readiness confirms initial model
-loading; a profile lazily initializes its voice reference and Base model.
-
-Cancellation checks bracket prompt projection, decoder layers/codebooks and
-frame delivery. The supervisor owns process teardown for work already executing.
+Rust errors expose only fixed synthesis-stage labels and I/O categories, excluding
+request text, descriptions and raw model diagnostics. Speech failure leaves chat
+available. Readiness covers initial loading; voice-reference/Base setup is lazy.
+Cancellation checks bracket prompt projection, layers/codebooks and frame delivery;
+the supervisor tears down work already executing.
 
 ## Build boundary
 
-TTS builds through Cargo with the pinned Rust compiler and ordinary Windows
-linking tools, without a native speech library or CMake toolchain.
-
-The Rust ports derive from reviewed `qwentts.cpp` revision
-`5916bf7c79dbb4e66fc059cdc507a79a23a28bb4` and its model layout. Retain MIT
-attribution in `LICENSE.qwen-core` and applicable GGML attribution in `LICENSE.ggml`.
-Qwen model files retain their Apache-2.0 notices. Attribution does not imply that
-those C++ libraries are linked.
+Cargo uses the pinned Rust compiler and ordinary Windows linking tools, without
+a native speech library or CMake toolchain. The port derives from reviewed
+`qwentts.cpp` revision `5916bf7c79dbb4e66fc059cdc507a79a23a28bb4` and its model layout.
+Retain MIT attribution in `LICENSE.qwen-core`, applicable GGML terms in
+`LICENSE.ggml` and model Apache-2.0 notices.
 
 ## Optional Hexagon runtime
 
@@ -108,67 +87,38 @@ Fixed F32/guarded-Q2 controls do not qualify Q8 prefill, shared KV coherence or
 complete Talker/CodePredictor/codec state. These requirements and NPU/GPU serving,
 ternary talkers and 48 kHz artifacts remain in [PLAN.md](../../PLAN.md).
 
-## Rust parameter and CPU thread helpers
-
-`rust_talker.rs` loads Talker/CodePredictor geometry, projections, normalization
-weights and special tokens. The two-layer text projection uses SiLU. Prompts
-retain automatic-language role, codec-prefix and text-EOS ordering. Base aligns
-reference transcript and sixteen-codebook streams, retaining unconsumed text as
-generation overlays.
-
-`engine.rs` supplies GQA with per-head Q/K normalization, half-split RoPE, SwiGLU,
-owned KV and acoustic prediction. Explicit worker counts reach projections;
-compatibility methods retain one-worker behavior. Model-free controls check ICL
-alignment, embedding bounds, worker consistency and cancellation between
-codebooks/layers. They establish neither model parity nor usable speech on a
-fresh machine.
-
-Projection row workers reuse a bounded Rust thread pool on the inference thread
-owned by the inference thread. Codec encoder/decoder
-transformer projections also use the selected worker count. Packed F32/F16,
-Q8_0, Q4_K and Q6_K kernels decode directly during multiplication, with SIMD
-dispatch outside the block loop and no complete floating-point weight expansion.
-They preserve the existing block accumulation and rounding order without
-requantizing activations. Packed-decoder and worker/state controls are separate from actual-model acceptance.
-
 ## Rust sampler port
 
-`philox.rs` retains Philox4x32-10 draws, signed seed/subsequence bit patterns and
-the reference's separate floating-point rounding. `sampling.rs` retains reserved
-token suppression, the trailing 72-token repetition window, greedy selection,
-top-k/top-p and stochastic sampling. Independent fixtures retain captured ARM64
-tie ordering and exceptional-float cases.
+`philox.rs` preserves Philox4x32-10 draws, signed seed/subsequence bits and separate
+floating rounding. `sampling.rs` preserves reserved-token suppression, a trailing
+72-token repetition window, greedy/top-k/top-p selection and stochastic sampling.
+Each frame draws one semantic and fifteen acoustic codes. Both profiles use
+seed 42, top-k 50 and repetition penalty 1.05:
 
-Every frame uses one semantic draw followed by fifteen acoustic draws. Design
-uses temperature 0.9/top-p 1.0. Base uses semantic temperature 0.85/top-p 0.9 and
-acoustic temperature 0.6/top-p 1.0. Both retain top-k 50, seed 42 and repetition
-penalty 1.05. Reserved semantic tokens are suppressed except EOS. Exhausting
-token/context budgets without EOS returns an error.
+| Profile | Semantic temperature / top-p | Acoustic temperature / top-p |
+| --- | --- | --- |
+| Design | 0.9 / 1.0 | 0.9 / 1.0 |
+| Base | 0.85 / 0.9 | 0.6 / 1.0 |
 
-Fixtures under `tests/fixtures/` retain independent scalar replay and provenance.
-Their captured bits do not qualify changed matrix arithmetic, complete codes,
-audio, memory or performance. Actual-model VoiceDesign/Base, Q8/Q4 and lifecycle
-acceptance remain in PLAN. Full suites and benchmarks remain CI-only.
+Reserved semantic tokens except EOS are suppressed. Exhausting token/context
+budgets without EOS fails. Independent scalar fixtures retain tie ordering,
+exceptional-float observations and source provenance.
 
 ## Rust speech tokenizer
 
-`tokenizer.rs` and its scanner retain the reviewed byte encoder, pretokenization,
-ranked merges and special matching. `gguf.rs` reads bounded tokenizer tables
-without a native metadata API. Rust owns tables, IDs, prompt framing and
-projections throughout serving. Prism's text-model tokenizer is not substituted.
-
-The supported subset bounds UTF-8 input to 64 KiB, spellings to 4 KiB, IDs/ranks
-and table entries to one million, special tokens to 64, retained unique spelling
-bytes to 64 MiB and merge-pair probes to 64 million per encoding. Malformed
-metadata/encoding fails without publishing partial IDs. Fixture provenance binds source identities and replay limits.
+`tokenizer.rs` preserves the reviewed byte encoder, pretokenization, ranked merges,
+special matching and prompt framing. It uses speech-specific tables rather than
+Prism's text tokenizer. Bounds are 64 KiB UTF-8 input, 4 KiB spellings, one million
+IDs/ranks/table entries, 64 special tokens, 64 MiB unique spelling bytes and
+64 million merge-pair probes per encoding. Invalid metadata/encoding publishes
+no partial IDs.
 
 ## Native waveform ownership
 
-WAV requests retain Rust-owned samples through validated PCM conversion and HTTP
-writes. Streaming delivers bounded chunks and may play samples before a later
-failure. The [resource contract](../../docs/streaming-resources.md#native-speech-generation-and-streaming)
-owns output, scratch and completion bounds.
+WAV samples remain Rust-owned through PCM conversion and HTTP writes. Streaming
+may play chunks before a later failure. The resource contract owns scratch,
+output limits and successful completion.
 
-Fresh-machine startup,
-actual speech, numerical parity, voice quality and combined resource acceptance
-remain pending until the named qualification work runs.
+Actual-model parity, first-audio/synthesis latency, Q8/Q4 listening, lifecycle,
+combined resources and clean-machine acceptance remain in [PLAN.md](../../PLAN.md).
+Model-free controls and captured fixtures do not qualify those properties.
