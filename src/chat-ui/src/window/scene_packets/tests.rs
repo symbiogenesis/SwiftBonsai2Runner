@@ -144,13 +144,21 @@ struct Fixture {
 
 fn harness(size: [f32; 2]) -> Harness<'static, Fixture> {
     let (app, commands) = fixture();
-    Harness::builder().with_size(size).build_ui_state(
-        |ui, fixture: &mut Fixture| {
-            fixture.app.handle_input_shortcuts(ui.ctx());
-            fixture.app.draw(ui);
-        },
-        Fixture { app, commands },
-    )
+    Harness::builder()
+        .with_size(size)
+        .with_context_setup(|context| {
+            crate::window::configure(context);
+            context.add_font_provider(std::sync::Arc::new(
+                egui_system_font_provider::SystemFontProvider::new(),
+            ));
+        })
+        .build_ui_state(
+            |ui, fixture: &mut Fixture| {
+                fixture.app.handle_input_shortcuts(ui.ctx());
+                fixture.app.draw(ui);
+            },
+            Fixture { app, commands },
+        )
 }
 
 #[test]
@@ -222,7 +230,7 @@ fn scene_packet_source_paste_replacement_is_transactional() {
     dialog.source.text = "Keep 🌱 this exact source.".into();
     chat.state_mut().app.scene_packets.dialog = Some(dialog);
     chat.run();
-    chat.get_by_role_and_label(egui::Role::TextInput, "Source text")
+    chat.get_by_role_and_label(egui::Role::MultilineTextInput, "Source text")
         .focus();
     chat.key_press_modifiers(egui::Modifiers::COMMAND, egui::Key::A);
     chat.event(egui::Event::Paste("x".repeat(MAX_SOURCE_BYTES + 1)));
