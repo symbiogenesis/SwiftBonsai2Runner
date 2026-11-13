@@ -50,6 +50,7 @@ class FoundationHandoffTests(unittest.TestCase):
             self.assertEqual(dependencies(self.jobs[name]), {"changes", "checked-tools"}, name)
         self.assertEqual(dependencies(self.jobs["checked-tools"]), {"changes"})
         self.assertEqual(dependencies(self.jobs["maintenance"]), {"changes"})
+        self.assertEqual(dependencies(self.jobs["speech-tts"]), {"changes"})
         expected = set(self.config["workflows"]["foundation"]) | {"changes"}
         self.assertEqual(dependencies(self.jobs["foundation"]), expected)
         self.assertEqual(set(self.jobs), expected | {"foundation"})
@@ -104,6 +105,26 @@ class FoundationHandoffTests(unittest.TestCase):
         self.assertNotIn("tools", self.config["groups"]["maintenance"].get("groups", []))
         self.assertIn("bonsai-tools", self.config["groups"]["maintenance"]["exclude_packages"])
         self.assertIn("tools", self.config["groups"]["rust_lanes"]["groups"])
+
+    def test_speech_lanes_keep_independent_selection_and_required_results(self):
+        for job, lane in (("speech", "asr"), ("speech-tts", "tts")):
+            block = self.jobs[job]
+            self.assertIn(f"contains(fromJSON(needs.changes.outputs.speech_lanes), '{lane}')", block)
+            self.assertIn(f"lane: {lane}", block)
+            self.assertIn(f"packages: '[\"bonsai-speech-{lane}\"]'", block)
+            self.assertEqual(self.config["workflows"]["foundation"][job], f"speech_{lane}")
+        self.assertIn("uses: $/.github/actions/use-bonsai-tools", self.jobs["speech"])
+        self.assertNotIn("bonsai-tools", self.jobs["speech-tts"])
+        self.assertNotIn("strategy:", self.jobs["speech"])
+
+    def test_only_asr_needs_native_compiler_preparation(self):
+        action = (ROOT / ".github/actions/check-rust/action.yml").read_text(encoding="utf-8")
+        self.assertIn("if ($env:RUST_LANE -ceq 'asr')", action)
+        self.assertIn("if: steps.packages.outputs.has-packages == 'true' && inputs.lane == 'asr'", action)
+        self.assertIn("--full-tests --build", action)
+        release = (ROOT / ".github/workflows/release.yml").read_text(encoding="utf-8")
+        self.assertRegex(release, r"uses: \$/\.github/actions/bonsai-tools\n\s+if: matrix.lane == 'asr'\n")
+        self.assertIn("--all-targets", (ROOT / "tools/ci/src/checks/mod.rs").read_text(encoding="utf-8"))
 
 
 if __name__ == "__main__":

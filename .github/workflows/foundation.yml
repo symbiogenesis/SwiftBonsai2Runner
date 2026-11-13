@@ -157,15 +157,11 @@ jobs:
           if-no-files-found: error
           compression-level: 1
   speech:
-    name: speech / ${{ matrix.lane }}
-    if: needs.changes.outputs.speech == 'true'
+    name: speech / asr
+    if: needs.changes.outputs.speech == 'true' && contains(fromJSON(needs.changes.outputs.speech_lanes), 'asr')
     needs: [changes, checked-tools]
     runs-on: windows-11-arm
     timeout-minutes: 40
-    strategy:
-      fail-fast: false
-      matrix:
-        lane: ${{ fromJSON(needs.changes.outputs.speech_lanes) }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -174,13 +170,29 @@ jobs:
         uses: $/.github/actions/use-bonsai-tools
       - uses: $/.github/actions/check-rust
         with:
-          lane: ${{ matrix.lane }}
-          packages: ${{ matrix.lane == 'asr' && '["bonsai-speech-asr"]' || '["bonsai-speech-tts"]' }}
+          lane: asr
+          packages: '["bonsai-speech-asr"]'
+          affected: ${{ needs.changes.outputs.packages }}
+  speech-tts:
+    # TTS is entirely Rust and can start while the maintenance CLI is checked.
+    name: speech / tts
+    if: needs.changes.outputs.speech == 'true' && contains(fromJSON(needs.changes.outputs.speech_lanes), 'tts')
+    needs: changes
+    runs-on: windows-11-arm
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: $/.github/actions/check-rust
+        with:
+          lane: tts
+          packages: '["bonsai-speech-tts"]'
           affected: ${{ needs.changes.outputs.packages }}
   # Preserve the required check name; only the planner may authorize skips.
   foundation:
     if: always() && github.ref == 'refs/heads/main'
-    needs: [changes, broker, maintenance, checked-tools, speech, foundation-tests, release-integration]
+    needs: [changes, broker, maintenance, checked-tools, speech, speech-tts, foundation-tests, release-integration]
     runs-on: ubuntu-24.04-arm
     timeout-minutes: 10
     steps:

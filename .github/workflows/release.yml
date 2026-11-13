@@ -95,7 +95,7 @@ jobs:
         with:
           persist-credentials: false
       - uses: $/.github/actions/bonsai-tools
-        if: matrix.lane == 'asr' || matrix.lane == 'tts'
+        if: matrix.lane == 'asr'
         with:
           github-release: 'true'
       - uses: $/.github/actions/check-rust

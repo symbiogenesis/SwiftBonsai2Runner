@@ -57,7 +57,7 @@ runs:
         "CARGO_HOME=$cargoHome" >> $env:GITHUB_ENV
         "CARGO_TARGET_DIR=$target" >> $env:GITHUB_ENV
         $hostKey = "$env:ImageOS-$env:ImageVersion-$([Environment]::OSVersion.Version)"
-        if ($env:RUST_LANE -cin @('asr', 'tts')) {
+        if ($env:RUST_LANE -ceq 'asr') {
           if (-not $env:BONSAI_TOOLS_PATH) { throw 'Native speech cache selection requires the checked maintenance CLI.' }
           $nativeHost = & $env:BONSAI_TOOLS_PATH speech-build --json '{"operation":"host"}' | ConvertFrom-Json -AsHashtable
           if ($nativeHost.SchemaVersion -ne 1 -or $nativeHost.Kind -cne 'runner-native-speech-host' -or
@@ -86,7 +86,7 @@ runs:
           broker-v5-${{ inputs.lane }}-${{ runner.os }}-${{ runner.arch }}-${{ env.BROKER_CACHE_HOST }}-nightly-2026-11-12-${{ hashFiles('Cargo.toml', 'Cargo.lock', '**/Cargo.toml', 'rust-toolchain.toml') }}-
           broker-v5-${{ inputs.lane }}-${{ runner.os }}-${{ runner.arch }}-${{ env.BROKER_CACHE_HOST }}-nightly-2026-11-12-
     - name: Prepare reusable native speech compiler outputs
-      if: steps.packages.outputs.has-packages == 'true' && (inputs.lane == 'asr' || inputs.lane == 'tts')
+      if: steps.packages.outputs.has-packages == 'true' && inputs.lane == 'asr'
       uses: $/.github/actions/native-speech
       with:
         lane: ${{ inputs.lane }}

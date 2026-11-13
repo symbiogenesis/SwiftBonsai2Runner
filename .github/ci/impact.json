@@ -179,7 +179,8 @@
   "workflows": {
     "foundation": {
       "broker": "broker_checks",
-      "speech": "speech",
+      "speech": "speech_asr",
+      "speech-tts": "speech_tts",
       "maintenance": "maintenance",
       "checked-tools": "tools",
       "foundation-tests": "integration",
