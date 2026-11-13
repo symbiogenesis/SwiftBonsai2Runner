@@ -1,7 +1,7 @@
 //! Versioned workspace recovery. Never restores an in-flight request.
 use super::{
-    Conversation, Duration, Instant, MAX_DIAGNOSTIC_CHARS, OUTPUT_TOKENS, RichText,
-    State, Transcript, VOICE_LIMIT, client, egui, io, workspace::ConversationSnapshot,
+    Conversation, Duration, Instant, MAX_DIAGNOSTIC_CHARS, OUTPUT_TOKENS, RichText, State,
+    Transcript, VOICE_LIMIT, client, egui, io, workspace::ConversationSnapshot,
 };
 
 #[derive(serde::Deserialize)]
@@ -408,13 +408,19 @@ mod tests {
     }
 
     #[test]
-    fn long_draft_recovery_rejects_an_extra_character_without_replacing_the_workspace() -> io::Result<()> {
+    fn long_draft_recovery_rejects_an_extra_character_without_replacing_the_workspace()
+    -> io::Result<()> {
         let mut original = state();
         original.input = "Keep this draft".into();
         let accepted = original.workspace_bytes()?;
-        let mut saved: serde_json::Value = serde_json::from_slice(&accepted).map_err(io::Error::other)?;
+        let mut saved: serde_json::Value =
+            serde_json::from_slice(&accepted).map_err(io::Error::other)?;
         saved["active"]["input"] = serde_json::json!("x".repeat(super::super::INPUT_LIMIT + 1));
-        assert!(original.restore_workspace(&serde_json::to_vec(&saved).map_err(io::Error::other)?).is_err());
+        assert!(
+            original
+                .restore_workspace(&serde_json::to_vec(&saved).map_err(io::Error::other)?)
+                .is_err()
+        );
         assert_eq!(original.workspace_bytes()?, accepted);
         Ok(())
     }

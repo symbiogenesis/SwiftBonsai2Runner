@@ -1986,7 +1986,10 @@ impl State {
                                     .scope(|ui| {
                                         let id = ui.make_persistent_id("composer");
                                         let mut buffer = draft_buffer::Buffer::new(
-                                            &mut self.input, ui.ctx(), id, INPUT_LIMIT,
+                                            &mut self.input,
+                                            ui.ctx(),
+                                            id,
+                                            INPUT_LIMIT,
                                         );
                                         let mut output = egui::TextEdit::multiline(&mut buffer)
                                             .font(egui::FontId::proportional(

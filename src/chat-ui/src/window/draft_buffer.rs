@@ -1,6 +1,10 @@
 //! Atomic native editor transactions: a rejected insertion never replaces a selection.
 use super::egui;
-use egui::{TextBuffer, text::CharIndex, text_edit::{TextEditOutput, TextEditState}};
+use egui::{
+    TextBuffer,
+    text::CharIndex,
+    text_edit::{TextEditOutput, TextEditState},
+};
 use std::{any::TypeId, ops::Range};
 
 type TextEditUndoer = egui::util::undoer::Undoer<(egui::text::CCursorRange, String)>;
@@ -9,8 +13,7 @@ type TextEditUndoer = egui::util::undoer::Undoer<(egui::text::CCursorRange, Stri
 // undo points to 32 MiB of UTF-8 payload, plus current, flux and transaction copies.
 const MAX_UNDO_POINTS: usize = 8;
 
-pub(super) const LIMIT_MESSAGE: &str =
-    "This edit exceeds the 1,048,576-character draft limit. Your draft was kept. Paste a smaller passage.";
+pub(super) const LIMIT_MESSAGE: &str = "This edit exceeds the 1,048,576-character draft limit. Your draft was kept. Paste a smaller passage.";
 
 /// A TextEdit may delete the selection before inserting pasted or IME text.
 /// Retain its pre-edit bytes on mutation and snapshot undo state only on frames
@@ -26,26 +29,41 @@ pub(super) struct Buffer<'a> {
 }
 
 impl<'a> Buffer<'a> {
-    pub(super) fn new(text: &'a mut String, ctx: &egui::Context, id: egui::Id, limit: usize) -> Self {
+    pub(super) fn new(
+        text: &'a mut String,
+        ctx: &egui::Context,
+        id: egui::Id,
+        limit: usize,
+    ) -> Self {
         let previous = TextEditState::load(ctx, id).unwrap_or_else(|| {
             let mut state = TextEditState::default();
-            state.set_undoer(TextEditUndoer::with_settings(egui::util::undoer::Settings {
-                max_undos: MAX_UNDO_POINTS,
-                ..Default::default()
-            }));
+            state.set_undoer(TextEditUndoer::with_settings(
+                egui::util::undoer::Settings {
+                    max_undos: MAX_UNDO_POINTS,
+                    ..Default::default()
+                },
+            ));
             state.clone().store(ctx, id);
             state
         });
         // Undo/redo holds egui's undo mutex while calling TextBuffer methods.
         // Snapshot before TextEdit handles events; never lock it in a mutation.
         // Pointer motion and idle frames require no history copy.
-        let undoer = ctx.input(|input| {
-            input.events.iter().any(|event| matches!(event,
-                egui::Event::Text(_) | egui::Event::Paste(_) | egui::Event::Cut
-                | egui::Event::Key { pressed: true, .. } | egui::Event::Ime(_)
-                | egui::Event::AccessKitActionRequest(_)
-            ))
-        }).then(|| previous.undoer());
+        let undoer = ctx
+            .input(|input| {
+                input.events.iter().any(|event| {
+                    matches!(
+                        event,
+                        egui::Event::Text(_)
+                            | egui::Event::Paste(_)
+                            | egui::Event::Cut
+                            | egui::Event::Key { pressed: true, .. }
+                            | egui::Event::Ime(_)
+                            | egui::Event::AccessKitActionRequest(_)
+                    )
+                })
+            })
+            .then(|| previous.undoer());
         Self {
             text,
             limit,
@@ -72,7 +90,10 @@ impl<'a> Buffer<'a> {
             }
             output.cursor_range = self.previous.cursor.char_range();
             output.state = self.previous;
-            output.state.clone().store(&output.response.response.ctx, output.response.response.id);
+            output
+                .state
+                .clone()
+                .store(&output.response.response.ctx, output.response.response.id);
             output.response.response.ctx.request_repaint();
         }
         self.rejected
@@ -85,12 +106,18 @@ pub(super) fn fits(text: &str) -> bool {
 }
 
 impl TextBuffer for Buffer<'_> {
-    fn is_mutable(&self) -> bool { true }
+    fn is_mutable(&self) -> bool {
+        true
+    }
 
-    fn as_str(&self) -> &str { self.text }
+    fn as_str(&self) -> &str {
+        self.text
+    }
 
     fn insert_text(&mut self, text: &str, index: CharIndex) -> usize {
-        if self.rejected { return 0; }
+        if self.rejected {
+            return 0;
+        }
         let remaining = self.limit.saturating_sub(self.text.chars().count());
         // The byte guard avoids scanning an arbitrarily large clipboard payload.
         let count = if text.len() > remaining.saturating_mul(4) {
@@ -116,7 +143,9 @@ impl TextBuffer for Buffer<'_> {
         }
     }
 
-    fn type_id(&self) -> TypeId { TypeId::of::<Buffer<'static>>() }
+    fn type_id(&self) -> TypeId {
+        TypeId::of::<Buffer<'static>>()
+    }
 }
 
 #[cfg(test)]
@@ -127,9 +156,20 @@ mod tests {
     fn draft_buffer_keeps_complete_unicode_at_limit_and_rejects_next_character() {
         let ctx = egui::Context::default();
         let mut text = "🌱".repeat(super::super::INPUT_LIMIT - 1);
-        let mut buffer = Buffer::new(&mut text, &ctx, egui::Id::unique("draft"), super::super::INPUT_LIMIT);
-        assert_eq!(buffer.insert_text("界", CharIndex(super::super::INPUT_LIMIT - 1)), 1);
-        assert_eq!(buffer.insert_text("x", CharIndex(super::super::INPUT_LIMIT)), 0);
+        let mut buffer = Buffer::new(
+            &mut text,
+            &ctx,
+            egui::Id::unique("draft"),
+            super::super::INPUT_LIMIT,
+        );
+        assert_eq!(
+            buffer.insert_text("界", CharIndex(super::super::INPUT_LIMIT - 1)),
+            1
+        );
+        assert_eq!(
+            buffer.insert_text("x", CharIndex(super::super::INPUT_LIMIT)),
+            0
+        );
         assert!(buffer.rejected);
         assert_eq!(buffer.text.chars().count(), super::super::INPUT_LIMIT);
     }

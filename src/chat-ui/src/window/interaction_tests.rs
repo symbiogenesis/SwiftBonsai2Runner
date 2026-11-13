@@ -809,14 +809,26 @@ fn oversized_composer_paste_keeps_selection_text_and_working_undo_redo() -> io::
     let draft = "Keep café 🌱 and this exact draft.";
     chat.state_mut().app.input = draft.into();
     chat.run();
-    chat.get_by_role_and_label(egui::Role::MultilineTextInput, "Message").focus();
+    chat.get_by_role_and_label(egui::Role::MultilineTextInput, "Message")
+        .focus();
     chat.run();
     chat.key_press_modifiers(egui::Modifiers::COMMAND, egui::Key::A);
     chat.run();
-    let id = chat.state().app.composer_id.ok_or_else(|| io::Error::other("Composer editor missing"))?;
-    let mut editor = egui::TextEdit::load_state(&chat.ctx, id).ok_or_else(|| io::Error::other("Composer state missing"))?;
-    let selection = editor.cursor.char_range().ok_or_else(|| io::Error::other("Selected draft missing"))?;
-    let older = (egui::text::CCursorRange::one(egui::text::CCursor::new(0)), "Older draft".to_owned());
+    let id = chat
+        .state()
+        .app
+        .composer_id
+        .ok_or_else(|| io::Error::other("Composer editor missing"))?;
+    let mut editor = egui::TextEdit::load_state(&chat.ctx, id)
+        .ok_or_else(|| io::Error::other("Composer state missing"))?;
+    let selection = editor
+        .cursor
+        .char_range()
+        .ok_or_else(|| io::Error::other("Selected draft missing"))?;
+    let older = (
+        egui::text::CCursorRange::one(egui::text::CCursor::new(0)),
+        "Older draft".to_owned(),
+    );
     let mut undoer = editor.undoer();
     undoer.add_undo(&older);
     undoer.add_undo(&(selection, draft.to_owned()));
@@ -826,7 +838,10 @@ fn oversized_composer_paste_keeps_selection_text_and_working_undo_redo() -> io::
     chat.run();
     assert_eq!(chat.state().app.input, draft);
     assert!(chat.state().app.status.contains("draft limit"));
-    assert_eq!(egui::TextEdit::load_state(&chat.ctx, id).and_then(|state| state.cursor.char_range()), Some(selection));
+    assert_eq!(
+        egui::TextEdit::load_state(&chat.ctx, id).and_then(|state| state.cursor.char_range()),
+        Some(selection)
+    );
     assert!(chat.state().commands.try_recv().is_err());
 
     // The original valid history survives rollback, and TextBuffer callbacks
@@ -834,7 +849,10 @@ fn oversized_composer_paste_keeps_selection_text_and_working_undo_redo() -> io::
     chat.key_press_modifiers(egui::Modifiers::COMMAND, egui::Key::Z);
     chat.run();
     assert_eq!(chat.state().app.input, "Older draft");
-    chat.key_press_modifiers(egui::Modifiers::COMMAND | egui::Modifiers::SHIFT, egui::Key::Z);
+    chat.key_press_modifiers(
+        egui::Modifiers::COMMAND | egui::Modifiers::SHIFT,
+        egui::Key::Z,
+    );
     chat.run();
     assert_eq!(chat.state().app.input, draft);
     Ok(())

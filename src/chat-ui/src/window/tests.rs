@@ -1230,11 +1230,17 @@ fn long_request_rejection_and_stop_restore_the_complete_unicode_draft() {
         let draft = "界🌱\\\"\n".repeat(20_000);
         state.input.clone_from(&draft);
         state.submit();
-        assert!(matches!(commands.try_recv(), Ok(Command::Send { text, .. }) if text == draft.trim()));
+        assert!(
+            matches!(commands.try_recv(), Ok(Command::Send { text, .. }) if text == draft.trim())
+        );
         if stopping {
             state.stopping_response(draft.trim());
         } else {
-            state.reject("Serialized request exceeds the byte limit.", draft.trim(), false);
+            state.reject(
+                "Serialized request exceeds the byte limit.",
+                draft.trim(),
+                false,
+            );
         }
         assert_eq!(state.input, draft.trim());
     }
