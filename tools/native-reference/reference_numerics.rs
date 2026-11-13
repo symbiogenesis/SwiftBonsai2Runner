@@ -205,6 +205,21 @@ fn normalize(args: &[String]) -> Result<String> {
     Ok(format!("{{\"norm\":{norm}}}"))
 }
 
+fn walsh_hadamard(row: &mut [f32]) {
+    for block in row.as_chunks_mut::<1024>().0 {
+        for span in [1, 2, 4, 8, 16, 32, 64, 128, 256, 512] {
+            for group in block.chunks_exact_mut(span * 2) {
+                let (left, right) = group.split_at_mut(span);
+                for (a, b) in left.iter_mut().zip(right) {
+                    let first = *a;
+                    *a = first + *b;
+                    *b = first - *b;
+                }
+            }
+        }
+    }
+}
+
 fn reconstruct(args: &[String]) -> Result<String> {
     require(args.len() == 12, "reconstruct controls differ")?;
     let rows: usize = args[6].parse()?;
@@ -281,18 +296,7 @@ fn reconstruct(args: &[String]) -> Result<String> {
                 half(to_half(f32::from(q) * scale)) + half(bias_bits),
             ));
         }
-        for block in row.as_chunks_mut::<1024>().0 {
-            for span in [1, 2, 4, 8, 16, 32, 64, 128, 256, 512] {
-                for group in block.chunks_exact_mut(span * 2) {
-                    let (left, right) = group.split_at_mut(span);
-                    for (a, b) in left.iter_mut().zip(right) {
-                        let first = *a;
-                        *a = first + *b;
-                        *b = first - *b;
-                    }
-                }
-            }
-        }
+        walsh_hadamard(&mut row);
         for column in 0..width {
             let transformed = (row[column] * (1.0 / 32.0)) * signs[column];
             let bits = to_half(transformed);
