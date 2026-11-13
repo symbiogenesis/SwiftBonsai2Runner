@@ -36,7 +36,7 @@ implemented behavior from actual-model, device, quality and isolation acceptance
 | Guide | Contents |
 | --- | --- |
 | [Swift memory and PTQ1](swift-memory.md) | Artifacts, census, budgets, lossless packing/allocation, numerical evidence, decision screen and approximation boundaries |
-| [Native Snapdragon quantized KV](quantized-kv.md) | Experimental rotated 3/4-bit cache contract, X1/X2 boundaries, storage estimates and conditional default promotion |
+| [Native Snapdragon quantized KV](quantized-kv.md) | K4/V4 development default, optional K4/V3, X1/X2 boundaries, storage estimates and pending measured qualification |
 | [Swift LoRA](swift-lora.md) | Artifact, basis, cost, storage overlay and paired device/human qualification |
 | [Adapter authoring intake](adapter-authoring-intake.md) | Authenticated authoring inputs, schema-2 intake bounds and provenance limits |
 | [Public adapter reference](adapter-public-reference.md) | One declared public-pack reconstruction and independent scalar comparison |
@@ -55,10 +55,11 @@ implemented behavior from actual-model, device, quality and isolation acceptance
 | --- | --- |
 | [Hardware discovery and profiles](hardware-capabilities.md) | Implemented inventory, evidence identities, selection eligibility, phase placement and fallback |
 | [CPU kernels and X2 screen](cpu-kernels.md) | Packed arithmetic, ISA dispatch, thread-screen controls and device evidence |
+| [Native CPU bundle comparison](cpu-bundle-comparison.md) | Fixed 0.1.23 versus registry 0.1.25, hosted preparation, owner workload and comparison limits |
 | [Prefill, snapshots and FFN delivery](performance-deliver.md) | Source contracts, conservative resource charges and qualification limits |
 | [Paired values, bounded parsing and resident packets](performance-close.md) | Source behavior and remaining qualification boundaries |
-| [KV sharing, terminal ingestion and resident FFN](performance-finish.md) | Source changes and qualification limits before release and repin |
-| [Paired prefill, BPE reuse and tiled projections](performance-resolve.md) | Request-local reuse, native-Q2 token tiles and pending release/qualification |
+| [KV sharing, terminal ingestion and resident FFN](performance-finish.md) | Source changes consumed by the development pin and remaining qualification limits |
+| [Paired prefill, BPE reuse and tiled projections](performance-resolve.md) | Request-local reuse, native-Q2 token tiles and remaining qualification limits |
 | [Adreno and OpenCL](adreno.md) | Vulkan/compute access, placement, native OpenCL query, X2 observations and source audit |
 | [Hexagon](hexagon.md) | Signed deployment, packed execution/state, memory and failure contracts |
 | [Hexagon sources and evidence](hexagon-source-audit.md) | Pinned packages, prototype placement, X2 access, signed Q2 arithmetic and SDK/public wire provenance |

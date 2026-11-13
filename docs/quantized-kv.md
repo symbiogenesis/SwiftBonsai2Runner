@@ -49,14 +49,15 @@ work; current cache selection relies on reviewed source and live readiness.
 
 The sibling Prism checkout owns `src/kv_quant.rs`,
 `src/graph/quantized_kv.rs` and its `docs/quantized-kv.md` runtime contract.
-These local source changes are separate from Runner's active release pin.
-At local Prism `a4659c0`, 30 focused Release controls pass: 12 codec, four
+Runner's 0.1.25 pin consumes the reviewed codec implementation. The following
+earlier checks retain their original source identity rather than qualifying that
+release: at local Prism `a4659c0`, 30 focused Release controls passed: 12 codec, four
 packed-cache graph, four NEON-helper, six tiny hybrid-graph, one CLI policy and
 three private-service checks. The ten affected storage/graph controls passed
 again after the final allocation correction. Strict Release all-target Clippy
-passes for the runtime, server and NEON helper on native ARM64 and Windows x64,
+passed for the runtime, server and NEON helper on native ARM64 and Windows x64,
 with `parallel-rows` and pinned nightly-2026-11-09. Formatting and changed Markdown
-checks pass. No full-model quality, long-context, performance, complete CI or
+checks passed. No full-model quality, long-context, performance, complete CI or
 per-device promotion verdict follows from those focused controls. The bounded
 validation and power observations are recorded in Prism's integration commit.
 

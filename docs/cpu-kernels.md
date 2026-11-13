@@ -506,7 +506,7 @@ finite-checked, and BF16 activations, rounded F32 products and the original F64
 sum/final F32 rounding are unchanged. No decoded row is materialized. Across
 48 recurrent layers' two 5,120-by-48 matrices this avoids a nominal 90 MiB of
 F32 scratch writes and matching rereads per token; compiler behavior and actual
-traffic/latency remain unmeasured. In the pinned 0.1.23 eligible NEON build,
+traffic/latency remain unmeasured. In the historical 0.1.23 eligible NEON build,
 BF16 uses direct eight/four-row helpers through the existing row-worker pool;
 the unsupported-build path retains direct scalar row consumption. This does
 not require a decoded F32 row or change the conservative memory admission.

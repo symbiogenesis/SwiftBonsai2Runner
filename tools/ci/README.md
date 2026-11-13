@@ -51,7 +51,7 @@ The retained workflows own current checks or open gates in [PLAN.md](../../PLAN.
 | Runtime application and numerical acceptance | `native-runtime-acceptance`, `native-ptq1-numerics` |
 | Independent packing and pending public-pack reconstruction | `ptq1-packing-qualification`, `ptq1-public-authoring-reference` |
 | Native accelerator and containment controls | `hexagon-qualification`, `sandbox-qualification` |
-| Pending paired performance and dependency gates | `tts-evaluation`, `x2-cpu-evaluation`, `json-candidate` |
+| Pending paired performance and dependency gates | `cpu-bundle-comparison`, `tts-evaluation`, `x2-cpu-evaluation`, `json-candidate` |
 
 Standalone chat, speech and runtime-parity candidate pipelines duplicated the
 production checks and builds now owned by Foundation, release and native-runtime
@@ -64,6 +64,12 @@ planner. Hexagon qualification also owns its independent hosted Windows
 ABI control. The completed row-worker experiment against frozen source is retired;
 its CLI recipes and retained evidence remain available. These changes close no
 current-runtime qualification gate.
+
+The [native CPU bundle comparison](../../docs/cpu-bundle-comparison.md) prepares
+the fixed 0.1.23 control and registry 0.1.25 candidate on hosted ARM64. Its default
+is preparation only; explicit device selection requires the owner's predeclared
+ten-minute aggregate workload. The X2 thread screen compares publisher thread
+counts and cannot substitute for that runtime-bundle comparison.
 
 Completed one-shot publisher startup, SDK inventory, public QAIC, adapter direction
 and retained numerical audit pipelines are also retired. Their source recipes,

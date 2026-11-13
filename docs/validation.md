@@ -101,8 +101,9 @@ toolchain and compiler identities before model use; failed hosted analyzer/build
 logs remain independently retained. This is a source prerequisite, and closes no
 device or promotion gate.
 
-Before those production checks, hosted preparation parses all nine actual
-PowerShell workflow blocks and the launcher with the native parser, exercises
+Before those production checks, hosted preparation parses all eleven actual
+PowerShell blocks in the workflow and shared regression action, plus the launcher,
+with the native parser, exercises
 typed receipt/output negative fixtures and executes two exact Rust guard controls.
 The workflow-contract receipt binds those results to the revision and normalized
 source-file hashes. Publication and owner intake both require that complete
@@ -640,10 +641,14 @@ intervening changes. New automatic pushes supersede older Foundation push runs; 
 groups remain independent. Planner/gate regressions run first; the tested cached Linux planner
 executable is handed to aggregation, avoiding a second compiler install/build or Cargo metadata.
 
-Maintenance owns affected Windows Job tests and produces a CLI plus feature-gated
-Rust completion probe. Consumers verify revision, both digests and ARM64 identities;
-lifecycle fixtures retain production headless mitigations. Script/released-runtime
-lanes start after maintenance without waiting for independent broker/UI/speech.
+The `maintenance` lane owns affected checks for the six supporting maintenance
+crates, including Windows Job tests. The independent `checked-tools` lane owns
+the maintenance CLI's checks and publishes the CLI plus feature-gated Rust
+completion probe. Consumers verify revision, both digests and ARM64 identities;
+lifecycle fixtures retain production headless mitigations. Speech and native
+integration lanes depend on `checked-tools` without waiting for independent
+maintenance, broker or UI checks. The aggregate gate still requires every
+selected lane.
 The PowerShell/C# bootstrap, script tests, analyzer job and .NET SDK pin were
 retired with their Rust replacements.
 

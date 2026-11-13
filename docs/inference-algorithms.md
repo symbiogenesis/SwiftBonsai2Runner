@@ -16,7 +16,7 @@ comparisons. Sequential scheduling alone provides no matrix-matrix reuse.
 | --- | --- |
 | Prompt ingestion | `Decoder::ingest`/Qwen35 skip output-only work for intermediate uncached prompt tokens; final tokens and prefix hits retain logits, with computed-state checks, cancellation and rollback |
 | Activation preparation | Compatible sibling projections share scoped transforms/quantization only when input, basis/permutation, width and quantizer match |
-| KV storage | Full-attention state retains exact binary16 bits in `Vec<u16>` and widens on reads; GDN/convolution stays FP32 and budgets charge actual mixed-state capacities |
+| KV storage | Explicit FP16 state retains exact binary16 bits in `Vec<u16>` and widens on reads. The [K4/V4 development default](quantized-kv.md) retains its packed approximate representation instead; GDN/convolution stays FP32 and budgets charge actual selected-state capacities. |
 | Packed decode | NEON PQ2/PTQ1 and odd-group PQ2 preserve scalar quantizers, scale order and generic PQ2's fourth symbol |
 | Prefill | Bounded 1–256-token blocks retain sequential arithmetic and whole-request rollback; block scheduling alone gives no tiled matmul reuse |
 | Checkpoints | Sealed immutable KV pages may be shared; mutable tails and complete convolution/GDN state remain independently owned, with conservative snapshot budgets |
