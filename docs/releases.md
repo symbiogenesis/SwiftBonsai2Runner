@@ -80,8 +80,8 @@ data directory until explicitly deleted. Developer
 The owner handles pushes and release dispatch under [AGENTS.md](../AGENTS.md).
 After source review, publish local `main` and dispatch `release.yml` with
 `prerelease=true`. An omitted `tag` uses `workspace.package.version` from
-`Cargo.toml`; an explicit tag must match it. The publication body is the README
-from that source revision. No per-version notes are required.
+`Cargo.toml`; an explicit tag must match it. The publication body links to the
+README at that immutable source revision. No per-version notes are required.
 
 Windows Release runs startup and tooling checks before building five application
 lanes on hosted Windows ARM64. It verifies source-bound receipts and notices,
@@ -99,8 +99,8 @@ To recover interrupted publication, rerun the failed job from the same run:
 gh run rerun RUN_ID --failed --repo symbiogenesis/SwiftBonsai2Runner
 ```
 
-Recovery reuses retained packaging assets and requires matching source, README
-body, title, prerelease setting and asset identities. It uploads missing assets,
+Recovery reuses retained packaging assets and requires matching source, description,
+title, prerelease setting and asset identities. It uploads missing assets,
 verifies existing ones and resolves ambiguous responses through readback. A
 completed publication is verified without writes, even if `main` has advanced.
 Draft mutation still requires the original current `main`. Unknown assets,

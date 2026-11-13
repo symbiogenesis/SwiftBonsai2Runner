@@ -14,7 +14,7 @@ foreach ($directory in @($fixture, $assetDirectory)) { [void][IO.Directory]::Cre
 $tag = 'v0.3.0'; $source = 'a' * 40; $repository = 'symbiogenesis/SwiftBonsai2Runner'
 $names = @(Get-PortableReleaseAssetNames '0.3.0')
 $notesPath = Join-Path $fixture 'README.md'
-$notes = "# Application fixture`n`nReviewed description with Unicode 雪.`n"
+$notes = 'See the [application guide](https://github.com/symbiogenesis/SwiftBonsai2Runner/blob/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/README.md) for features, setup and qualification status.'
 $oldTemp = $env:RUNNER_TEMP
 $env:RUNNER_TEMP = $fixture
 $passed = 0
@@ -118,7 +118,7 @@ function Invoke-PublicationScenario {
 }
 
 try {
-    [IO.File]::WriteAllText($notesPath, $notes, [Text.UTF8Encoding]::new($false))
+    [IO.File]::WriteAllText($notesPath, "# Application fixture`n`nReviewed description with Unicode 雪.`n", [Text.UTF8Encoding]::new($false))
     $executable = Join-Path $assetDirectory $names[0]
     [IO.File]::WriteAllText($executable, 'Inert portable fixture; never execute.', [Text.UTF8Encoding]::new($false))
     $files = [ordered]@{ maintenance = 'bonsai-tools.exe'; core = 'bonsai-broker.exe'; ui = 'bonsai-chat.exe'

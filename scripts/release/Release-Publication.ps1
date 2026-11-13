@@ -97,7 +97,10 @@ function Publish-PortableRelease {
         $assets[$name] = @{ Path = $path; Bytes = (Get-Item -LiteralPath $path).Length
             Sha256 = (Get-FileHash -LiteralPath $path -Algorithm SHA256).Hash.ToLowerInvariant() }
     }
-    $notes = [IO.File]::ReadAllText((Join-Path $RepositoryRoot 'README.md'))
+    if (-not (Test-Path -LiteralPath (Join-Path $RepositoryRoot 'README.md') -PathType Leaf)) {
+        throw 'Reviewed README must be committed before publication.'
+    }
+    $notes = "See the [application guide](https://github.com/$Repository/blob/$SourceRevision/README.md) for features, setup and qualification status."
     $policy = @{ Repository = $Repository; Tag = $Tag; SourceRevision = $SourceRevision; Notes = $notes; Prerelease = $Prerelease; Assets = $assets }
     $release = Find-PortableRemoteRelease $Repository $Tag
     if ($null -ne $release -and $release.draft -is [bool] -and -not $release.draft) {
