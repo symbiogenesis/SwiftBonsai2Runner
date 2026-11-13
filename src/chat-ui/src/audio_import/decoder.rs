@@ -18,17 +18,17 @@ use std::{
 use windows::{
     Win32::Media::MediaFoundation::{
         IMFAttributes, IMFMediaBuffer, IMFMediaEvent, IMFMediaType, IMFSample, IMFSourceReader,
-        IMFSourceReaderCallback, IMFSourceReaderCallback_Impl, MFAudioFormat_PCM,
-        MFCreateAttributes, MFCreateMediaType, MFCreateSourceReaderFromURL, MFMediaType_Audio,
-        MFSTARTUP_FULL, MFShutdown, MFStartup, MF_MT_AUDIO_AVG_BYTES_PER_SECOND,
+        IMFSourceReaderCallback, IMFSourceReaderCallback_Impl, MF_MT_AUDIO_AVG_BYTES_PER_SECOND,
         MF_MT_AUDIO_BITS_PER_SAMPLE, MF_MT_AUDIO_BLOCK_ALIGNMENT, MF_MT_AUDIO_NUM_CHANNELS,
         MF_MT_AUDIO_SAMPLES_PER_SECOND, MF_MT_MAJOR_TYPE, MF_MT_SUBTYPE, MF_PD_DURATION,
         MF_SOURCE_READER_ASYNC_CALLBACK, MF_SOURCE_READERF_ALLEFFECTSREMOVED,
         MF_SOURCE_READERF_CURRENTMEDIATYPECHANGED, MF_SOURCE_READERF_ENDOFSTREAM,
         MF_SOURCE_READERF_ERROR, MF_SOURCE_READERF_NATIVEMEDIATYPECHANGED,
-        MF_SOURCE_READERF_NEWSTREAM, MF_SOURCE_READERF_STREAMTICK, MF_VERSION,
+        MF_SOURCE_READERF_NEWSTREAM, MF_SOURCE_READERF_STREAMTICK, MF_VERSION, MFAudioFormat_PCM,
+        MFCreateAttributes, MFCreateMediaType, MFCreateSourceReaderFromURL, MFMediaType_Audio,
+        MFSTARTUP_FULL, MFShutdown, MFStartup,
     },
-    core::{HRESULT, PCWSTR, Ref, implement},
+    core::{HRESULT, PCWSTR, Ref},
 };
 
 use super::{
@@ -81,13 +81,27 @@ impl Drop for Activity<'_> {
     }
 }
 
-#[implement(IMFSourceReaderCallback)]
-struct Callback {
-    state: Arc<CallbackState>,
-    frames: SyncSender<Result<Frame, &'static str>>,
-}
+#[allow(
+    trivial_casts,
+    clippy::ref_as_ptr,
+    clippy::inline_always,
+    reason = "windows-implement 0.60.2 generates COM pointer casts and inline adapters; isolate its expansion from the handwritten decoder."
+)]
+mod callback {
+    use super::{Arc, CallbackState, Frame, IMFSourceReaderCallback, SyncSender};
 
-#[expect(non_snake_case, reason = "The COM callback trait uses SDK method names.")]
+    #[windows::core::implement(IMFSourceReaderCallback)]
+    pub(super) struct Callback {
+        pub(super) state: Arc<CallbackState>,
+        pub(super) frames: SyncSender<Result<Frame, &'static str>>,
+    }
+}
+use callback::{Callback, Callback_Impl};
+
+#[allow(
+    non_snake_case,
+    reason = "The COM callback trait uses SDK method names."
+)]
 impl IMFSourceReaderCallback_Impl for Callback_Impl {
     fn OnReadSample(
         &self,
@@ -355,7 +369,8 @@ impl PcmBuffer {
         next: &mut impl FnMut() -> Result<Frame, &'static str>,
     ) -> Result<(Vec<u8>, bool), &'static str> {
         let mut pcm = Vec::new();
-        pcm.try_reserve_exact(capacity).map_err(|_| MEMORY_FAILURE)?;
+        pcm.try_reserve_exact(capacity)
+            .map_err(|_| MEMORY_FAILURE)?;
         loop {
             check(shared, deadline)?;
             let available = self.pending.len() - self.offset;
@@ -451,7 +466,8 @@ fn configure(reader: &IMFSourceReader) -> Result<(), &'static str> {
         unsafe { format.SetUINT32(key, value) }.map_err(|_| CODEC_FAILURE)?;
     }
     // SAFETY: No sample request exists during this one-time format negotiation.
-    unsafe { reader.SetCurrentMediaType(AUDIO_STREAM, None, &format) }.map_err(|_| CODEC_FAILURE)?;
+    unsafe { reader.SetCurrentMediaType(AUDIO_STREAM, None, &format) }
+        .map_err(|_| CODEC_FAILURE)?;
     // SAFETY: Returns the owned negotiated output type of the selected stream.
     let actual = unsafe { reader.GetCurrentMediaType(AUDIO_STREAM) }.map_err(|_| CODEC_FAILURE)?;
     validate_format(&actual)
@@ -483,8 +499,8 @@ fn validate_format(format: &IMFMediaType) -> Result<(), &'static str> {
 #[cfg(test)]
 mod tests {
     use super::{
-        CANCELLED, CODEC_FAILURE, DECODE_TIMEOUT, Decoder, FORMAT_CHANGED, Frame,
-        HRESULT, MAX_SAMPLES, MF_SOURCE_READERF_ENDOFSTREAM, MF_SOURCE_READERF_STREAMTICK, PcmBuffer,
+        CANCELLED, CODEC_FAILURE, DECODE_TIMEOUT, Decoder, FORMAT_CHANGED, Frame, HRESULT,
+        MAX_SAMPLES, MF_SOURCE_READERF_ENDOFSTREAM, MF_SOURCE_READERF_STREAMTICK, PcmBuffer,
         Shared, callback_frame,
     };
     use crate::audio_import::Apartment;
@@ -522,7 +538,10 @@ mod tests {
             .ok_or_else(|| io::Error::other("Invalid decoder WAV fixture"))?
             .to_vec();
         wave.extend_from_slice(&original);
-        let mut file = fs::OpenOptions::new().create_new(true).write(true).open(&path)?;
+        let mut file = fs::OpenOptions::new()
+            .create_new(true)
+            .write(true)
+            .open(&path)?;
         let fixture = WaveFixture(path);
         file.write_all(&wave)?;
         drop(file);
@@ -535,7 +554,7 @@ mod tests {
             let (pcm, eof) = decoder
                 .read(request_samples, &shared, deadline)
                 .map_err(io::Error::other)?;
-            assert!(!pcm.is_empty());
+            assert_ne!(pcm, Vec::<u8>::new());
             assert!(pcm.len() <= request_samples * 2);
             received.extend_from_slice(&pcm);
             requests += 1;
@@ -570,7 +589,12 @@ mod tests {
         let mut source = || Err("The source must not be read.");
         shared.cancelled.store(true, Ordering::Release);
         assert_eq!(
-            buffered.read(32, &shared, Instant::now() + Duration::from_secs(1), &mut source),
+            buffered.read(
+                32,
+                &shared,
+                Instant::now() + Duration::from_secs(1),
+                &mut source
+            ),
             Err(CANCELLED)
         );
         shared.cancelled.store(false, Ordering::Release);
@@ -584,11 +608,10 @@ mod tests {
     fn sequential_decoder_eof_payload_is_preserved_and_gaps_fail_visibly() -> io::Result<()> {
         let shared = Shared::default();
         let mut buffered = PcmBuffer::default();
-        let mut frames = [Frame {
+        let mut frames = std::iter::once(Frame {
             pcm: vec![1, 2, 3, 4, 5, 6],
             eof: true,
-        }]
-        .into_iter();
+        });
         let mut source = || frames.next().ok_or("Unexpected additional decoder read.");
         let deadline = Instant::now() + Duration::from_secs(1);
         assert_eq!(
@@ -607,7 +630,11 @@ mod tests {
         .map_err(io::Error::other)?;
         assert!(eof.eof && eof.pcm.is_empty());
         assert!(matches!(
-            callback_frame(HRESULT(0), MF_SOURCE_READERF_STREAMTICK.0.unsigned_abs(), None),
+            callback_frame(
+                HRESULT(0),
+                MF_SOURCE_READERF_STREAMTICK.0.unsigned_abs(),
+                None
+            ),
             Err(FORMAT_CHANGED)
         ));
         assert!(matches!(

@@ -607,11 +607,16 @@ has focus. Supported extensions are MP3, WAV, M4A, AAC, FLAC and WMA, subject to
 the installed Windows media decoders. Import and conversion run off the UI thread,
 keep audio in memory and require no microphone permission. Select one file at a
 time. File size and total duration have no fixed cap; available physical memory
-and commit govern buffer and transcript allocation. The worker streams one
-mono 16 kHz PCM16 WAV segment at a time, fitting the recognizer's 30-second
+and commit govern buffer and transcript allocation. One native asynchronous decoder
+reads forward through the file, without repeated seeking or transcoder setup.
+The worker streams one mono 16 kHz PCM16 WAV segment at a time, fitting the recognizer's 30-second
 request contract. It prefers a quiet pause in the final five seconds of a segment,
 carrying all audio after the cut into the next request. Without a clear pause it
 uses the full segment; the final segment keeps the complete remaining audio.
+Actual decoder EOF determines completion, rather than the file's duration tags.
+Sample waits are cancellable; native file opening and resource release remain
+synchronous Windows operations. Decoder errors or unsupported timeline/format
+changes stop import and preserve any completed transcript.
 This energy heuristic does not guarantee a speech boundary or improved accuracy.
 Import uses the same
 Qwen3-ASR 1.7B transcription path as microphone input. Transcripts replace the

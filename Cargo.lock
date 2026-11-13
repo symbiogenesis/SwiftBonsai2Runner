@@ -531,6 +531,7 @@ dependencies = [
  "serde_json",
  "wgpu",
  "windows",
+ "windows-core",
  "windows-future",
  "windows-sys 0.61.2",
 ]

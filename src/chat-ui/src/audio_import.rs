@@ -23,22 +23,9 @@ use std::{
     thread::{self, JoinHandle},
     time::{Duration, Instant},
 };
-use windows::{
-    Foundation::TimeSpan,
-    Media::{
-        MediaProperties::{AudioEncodingProperties, AudioEncodingQuality, MediaEncodingProfile},
-        Transcoding::MediaTranscoder,
-    },
-    Storage::{
-        StorageFile,
-        Streams::{DataReader, InMemoryRandomAccessStream},
-    },
-    Win32::System::WinRT::{
-        RO_INIT_MULTITHREADED, RO_INIT_SINGLETHREADED, RoInitialize, RoUninitialize,
-    },
-    core::{HSTRING, Interface},
+use windows::Win32::System::WinRT::{
+    RO_INIT_MULTITHREADED, RO_INIT_SINGLETHREADED, RoInitialize, RoUninitialize,
 };
-use windows_future::{AsyncStatus, IAsyncInfo};
 use windows_sys::Win32::{
     Foundation::{HWND, LPARAM, LRESULT, WPARAM},
     System::{
@@ -60,17 +47,18 @@ use windows_sys::Win32::{
     },
 };
 
+mod decoder;
 mod segments;
+use decoder::Decoder;
 use segments::{
-    CHUNK_TOO_LONG, CODEC_FAILURE, MAX_SAMPLES, MEMORY_FAILURE, TICKS_PER_SECOND,
-    chunk_range, pause_segment, sample_duration,
+    CHUNK_TOO_LONG, CODEC_FAILURE, MAX_SAMPLES, MEMORY_FAILURE, TICKS_PER_SECOND, pause_segment,
+    sample_duration,
 };
 
 const CANCELLED: &str = "Audio import cancelled.";
 const MAX_CONVERTED_BYTES: u64 = 16_000 * 2 * 30 + 65_536;
-// At peak, the destination stream, DataReader, readback Vec and canonical WAV
-// can coexist with the retained PCM allocation. Segment framing stays below
-// this peak too. The decoder streams its source rather than loading the file.
+// Budget the callback sample/copy, one retained decoder frame, readback PCM,
+// pause suffix and canonical WAV. No complete-file audio allocation is made.
 const CHUNK_WORKING_BYTES: u64 = 5 * MAX_CONVERTED_BYTES;
 const CONVERSION_LIMIT: Duration = Duration::from_secs(45);
 const POLL: Duration = Duration::from_millis(10);
@@ -448,35 +436,6 @@ impl Drop for Apartment {
         unsafe { RoUninitialize() };
     }
 }
-fn wait(
-    operation: &impl Interface,
-    shared: &Shared,
-    deadline: Instant,
-) -> Result<(), &'static str> {
-    let info: IAsyncInfo = operation.cast().map_err(|_| CODEC_FAILURE)?;
-    loop {
-        if shared.cancelled.load(Ordering::Acquire) || Instant::now() >= deadline {
-            let _cancelled = info.Cancel();
-            return Err(if shared.cancelled.load(Ordering::Acquire) {
-                CANCELLED
-            } else {
-                "Windows did not finish decoding the next audio segment. Try converting the recording to WAV. Your draft was kept."
-            });
-        }
-        match info.Status().map_err(|_| CODEC_FAILURE)? {
-            AsyncStatus::Started => thread::sleep(POLL),
-            AsyncStatus::Completed => return Ok(()),
-            _ => return Err(CODEC_FAILURE),
-        }
-    }
-}
-macro_rules! complete {
-    ($operation:expr, $shared:expr, $deadline:expr) => {{
-        let operation = $operation.map_err(|_| CODEC_FAILURE)?;
-        wait(&operation, $shared, $deadline)?;
-        operation.GetResults().map_err(|_| CODEC_FAILURE)?
-    }};
-}
 fn convert(
     path: &Path,
     shared: &Shared,
@@ -484,75 +443,64 @@ fn convert(
     next: &Receiver<()>,
 ) -> Result<(), &'static str> {
     let _apartment = Apartment::initialize(false)?;
-    let deadline = Instant::now() + CONVERSION_LIMIT;
-    let path = HSTRING::from(path.as_os_str());
-    let file = complete!(StorageFile::GetFileFromPathAsync(&path), shared, deadline);
-    let properties = file.Properties().map_err(|_| CODEC_FAILURE)?;
-    let music = complete!(properties.GetMusicPropertiesAsync(), shared, deadline);
-    let total = music.Duration().map_err(|_| CODEC_FAILURE)?.Duration;
-    if total <= 0 {
-        return Err(
-            "Windows could not determine this recording's duration. Try converting it to WAV. Your draft was kept.",
-        );
-    }
-    let source = complete!(file.OpenReadAsync(), shared, deadline);
-    let result = decode_chunks(&source, shared, sender, next, total);
-    let _closed_source = source.Close();
-    result
+    check_memory(CHUNK_WORKING_BYTES)?;
+    let mut decoder = Decoder::open(path, shared, Instant::now() + CONVERSION_LIMIT)?;
+    let total = decoder.total();
+    decode_chunks(
+        &mut |capacity| decoder.read(capacity, shared, Instant::now() + CONVERSION_LIMIT),
+        shared,
+        sender,
+        next,
+        total,
+    )
 }
 
 fn decode_chunks(
-    source: &windows::Storage::Streams::IRandomAccessStreamWithContentType,
+    read: &mut impl FnMut(usize) -> Result<(Vec<u8>, bool), &'static str>,
     shared: &Shared,
     sender: &SyncSender<ImportResult>,
     next: &Receiver<()>,
-    total: i64,
+    total: Duration,
 ) -> Result<(), &'static str> {
-    let mut offset = 0;
     let mut pending = Vec::new();
     let mut emitted_samples = 0_u64;
-    while let Some((start, end)) = chunk_range(offset, total, pending.len() / 2) {
+    loop {
         if shared.cancelled.load(Ordering::Acquire) {
             return Err(CANCELLED);
         }
         check_memory(CHUNK_WORKING_BYTES)?;
-        // Every segment seeks the same retained source; neither compressed nor
-        // decoded audio for the complete recording is copied into memory.
-        source.Seek(0).map_err(|_| CODEC_FAILURE)?;
-        let destination = InMemoryRandomAccessStream::new().map_err(|_| CODEC_FAILURE)?;
-        let converted = transcode(
-            source,
-            &destination,
-            shared,
-            Instant::now() + CONVERSION_LIMIT,
-            start,
-            end,
-        );
-        let _closed_destination = destination.Close();
-        // Keep the decoded suffix after a pause. The next decode fills only
-        // the remaining request capacity, so samples are never reread or lost
-        // when choosing a boundary inside the normalized PCM.
-        let wav = pause_segment(&mut pending, &converted?, end == total)?;
+        let capacity = MAX_SAMPLES
+            .checked_sub(pending.len() / 2)
+            .filter(|capacity| *capacity > 0)
+            .ok_or(CHUNK_TOO_LONG)?;
+        // One persistent reader advances only forward. Its bounded lookahead
+        // identifies exact-boundary EOF without seeking or trusting duration.
+        let (pcm, last) = read(capacity)?;
+        if shared.cancelled.load(Ordering::Acquire) {
+            return Err(CANCELLED);
+        }
+        let wav = pause_segment(&mut pending, &pcm, last)?;
         let samples = u64::try_from((wav.len() - 44) / 2).map_err(|_| CHUNK_TOO_LONG)?;
         let next_sample = emitted_samples.checked_add(samples).ok_or(CHUNK_TOO_LONG)?;
+        let end = sample_duration(next_sample)?;
         let chunk = Chunk {
             wav,
             start: sample_duration(emitted_samples)?,
-            end: sample_duration(next_sample)?,
-            total: media_duration(total)?,
-            last: end == total,
+            end,
+            // Metadata is guidance only; decoded EOF and sample counts own
+            // completion, including recordings with inaccurate duration tags.
+            total: if last { end } else { total.max(end) },
+            last,
         };
         if shared.cancelled.load(Ordering::Acquire) {
             return Err(CANCELLED);
         }
-        if sender.send(Ok(Some(chunk))).is_err() || end == total {
+        if sender.send(Ok(Some(chunk))).is_err() || last {
             return Ok(());
         }
         await_advance(shared, next)?;
-        offset = end;
         emitted_samples = next_sample;
     }
-    Ok(())
 }
 
 fn await_advance(shared: &Shared, next: &Receiver<()>) -> Result<(), &'static str> {
@@ -593,132 +541,16 @@ fn check_memory(required: u64) -> Result<(), &'static str> {
     )
 }
 
-fn transcode(
-    source: &windows::Storage::Streams::IRandomAccessStreamWithContentType,
-    destination: &InMemoryRandomAccessStream,
-    shared: &Shared,
-    deadline: Instant,
-    start: i64,
-    end: i64,
-) -> Result<Vec<u8>, &'static str> {
-    let profile =
-        MediaEncodingProfile::CreateWav(AudioEncodingQuality::Low).map_err(|_| CODEC_FAILURE)?;
-    profile
-        .SetAudio(&AudioEncodingProperties::CreatePcm(16_000, 1, 16).map_err(|_| CODEC_FAILURE)?)
-        .map_err(|_| CODEC_FAILURE)?;
-    let transcoder = MediaTranscoder::new().map_err(|_| CODEC_FAILURE)?;
-    transcoder
-        .SetAlwaysReencode(true)
-        .map_err(|_| CODEC_FAILURE)?;
-    transcoder
-        .SetTrimStartTime(TimeSpan { Duration: start })
-        .map_err(|_| CODEC_FAILURE)?;
-    transcoder
-        .SetTrimStopTime(TimeSpan { Duration: end })
-        .map_err(|_| CODEC_FAILURE)?;
-    let prepared = complete!(
-        transcoder.PrepareStreamTranscodeAsync(source, destination, &profile),
-        shared,
-        deadline
-    );
-    if !prepared.CanTranscode().map_err(|_| CODEC_FAILURE)? {
-        return Err(CODEC_FAILURE);
-    }
-    complete!(prepared.TranscodeAsync(), shared, deadline);
-    let size = destination.Size().map_err(|_| CODEC_FAILURE)?;
-    if !(44..=MAX_CONVERTED_BYTES).contains(&size) {
-        return Err(CHUNK_TOO_LONG);
-    }
-    check_memory(2 * size)?;
-    let size = u32::try_from(size).map_err(|_| CHUNK_TOO_LONG)?;
-    let reader =
-        DataReader::CreateDataReader(&destination.GetInputStreamAt(0).map_err(|_| CODEC_FAILURE)?)
-            .map_err(|_| CODEC_FAILURE)?;
-    let loaded = complete!(reader.LoadAsync(size), shared, deadline);
-    if loaded != size {
-        return Err(CODEC_FAILURE);
-    }
-    let size = usize::try_from(size).map_err(|_| CODEC_FAILURE)?;
-    let mut wave = Vec::new();
-    wave.try_reserve_exact(size).map_err(|_| MEMORY_FAILURE)?;
-    wave.resize(size, 0);
-    reader.ReadBytes(&mut wave).map_err(|_| CODEC_FAILURE)?;
-    normalize_wave(&wave)
-}
-fn normalize_wave(wave: &[u8]) -> Result<Vec<u8>, &'static str> {
-    if wave.get(..4) != Some(b"RIFF") || wave.get(8..12) != Some(b"WAVE") {
-        return Err(CODEC_FAILURE);
-    }
-    let declared = usize::try_from(u32::from_le_bytes(
-        wave.get(4..8)
-            .ok_or(CODEC_FAILURE)?
-            .try_into()
-            .map_err(|_| CODEC_FAILURE)?,
-    ))
-    .map_err(|_| CODEC_FAILURE)?;
-    if declared.checked_add(8) != Some(wave.len()) {
-        return Err(CODEC_FAILURE);
-    }
-    let mut offset = 12_usize;
-    let mut format = false;
-    let mut data = None;
-    while let Some(header) = wave.get(offset..offset.saturating_add(8)) {
-        let length = usize::try_from(u32::from_le_bytes(
-            header[4..8].try_into().map_err(|_| CODEC_FAILURE)?,
-        ))
-        .map_err(|_| CODEC_FAILURE)?;
-        offset += 8;
-        let end = offset.checked_add(length).ok_or(CODEC_FAILURE)?;
-        let payload = wave.get(offset..end).ok_or(CODEC_FAILURE)?;
-        match &header[..4] {
-            b"fmt " => {
-                if format || payload.len() < 16 {
-                    return Err(CODEC_FAILURE);
-                }
-                let expected = [1, 0, 1, 0, 128, 62, 0, 0, 0, 125, 0, 0, 2, 0, 16, 0];
-                if payload[..16] != expected {
-                    return Err(CODEC_FAILURE);
-                }
-                format = true;
-            }
-            b"data" => {
-                if data.replace(payload).is_some() {
-                    return Err(CODEC_FAILURE);
-                }
-            }
-            _ => {}
-        }
-        offset = end.checked_add(length % 2).ok_or(CODEC_FAILURE)?;
-    }
-    if offset != wave.len() {
-        return Err(CODEC_FAILURE);
-    }
-    let data = data.ok_or(CODEC_FAILURE)?;
-    if !format || data.is_empty() || !data.len().is_multiple_of(2) {
-        return Err(CODEC_FAILURE);
-    }
-    let samples = data.len() / 2;
-    if samples > MAX_SAMPLES {
-        return Err(CHUNK_TOO_LONG);
-    }
-    let header = bonsai_audio::mono_pcm16_header(16_000, samples).ok_or(CODEC_FAILURE)?;
-    let mut result = Vec::new();
-    result
-        .try_reserve_exact(data.len() + 44)
-        .map_err(|_| MEMORY_FAILURE)?;
-    result.extend_from_slice(&header);
-    result.extend_from_slice(data);
-    Ok(result)
-}
 #[cfg(test)]
 mod tests {
     use super::{
-        CHUNK_TOO_LONG, CHUNK_WORKING_BYTES, Chunk, ImportResult, MAX_SAMPLES, MEMORY_FAILURE,
-        Session, admit_memory, media_duration, normalize_wave, supported_path,
+        CANCELLED, CHUNK_WORKING_BYTES, Chunk, ImportResult, MAX_SAMPLES, MEMORY_FAILURE, Ordering,
+        Session, Shared, admit_memory, decode_chunks, media_duration, supported_path,
     };
     use std::{
         io,
         path::Path,
+        sync::mpsc,
         thread,
         time::{Duration, Instant},
     };
@@ -739,35 +571,108 @@ mod tests {
         }
     }
     #[test]
-    fn normalized_wave_accepts_metadata_and_preserves_samples() {
-        let mut wave = bonsai_audio::mono_pcm16_header(16_000, 2)
-            .unwrap_or([0; 44])
-            .to_vec();
-        wave.extend_from_slice(&[0, 128, 255, 127]);
-        wave.extend_from_slice(b"JUNK\x02\0\0\0xx");
-        let length = u32::try_from(wave.len() - 8).unwrap_or(0);
-        wave[4..8].copy_from_slice(&length.to_le_bytes());
-        let normalized = normalize_wave(&wave).unwrap_or_default();
+    fn decoder_duration_keeps_subsecond_metadata_precision() {
         assert_eq!(
-            bonsai_audio::mono_pcm16_data(&normalized, 16_000, 480_000),
-            Some(&[0, 128, 255, 127][..])
+            media_duration(432_000_000_017),
+            Ok(Duration::new(43_200, 1_700))
         );
-    }
-    #[test]
-    fn overlength_empty_and_non_pcm_wave_fail_without_truncation() {
-        let mut wave = bonsai_audio::mono_pcm16_header(16_000, MAX_SAMPLES + 1)
-            .unwrap_or([0; 44])
-            .to_vec();
-        wave.resize(44 + (MAX_SAMPLES + 1) * 2, 0);
-        assert_eq!(normalize_wave(&wave), Err(CHUNK_TOO_LONG));
-        assert!(normalize_wave(&[]).is_err());
-        wave[20] = 3;
-        assert!(normalize_wave(&wave).is_err());
     }
 
     #[test]
-    fn decoder_duration_keeps_subsecond_metadata_precision() {
-        assert_eq!(media_duration(432_000_000_017), Ok(Duration::new(43_200, 1_700)));
+    fn sequential_stream_keeps_pause_suffix_and_eof_tail_past_duration_metadata() -> io::Result<()>
+    {
+        let mut original = 12_345_i16.to_le_bytes().repeat(MAX_SAMPLES * 2 + 17);
+        original[16_000 * 27 * 2..16_000 * 28 * 2].fill(0);
+        let shared = Shared::default();
+        let (sender, chunks) = mpsc::sync_channel(4);
+        let (advance, next) = mpsc::sync_channel(4);
+        for _ in 0..3 {
+            advance.send(()).map_err(io::Error::other)?;
+        }
+        let mut offset = 0;
+        let mut capacities = Vec::new();
+        decode_chunks(
+            &mut |capacity| {
+                capacities.push(capacity);
+                let end = (offset + capacity * 2).min(original.len());
+                let pcm = original[offset..end].to_vec();
+                offset = end;
+                Ok((pcm, end == original.len()))
+            },
+            &shared,
+            &sender,
+            &next,
+            Duration::from_secs(1),
+        )
+        .map_err(io::Error::other)?;
+        let mut emitted = Vec::new();
+        let mut previous_end = Duration::ZERO;
+        let mut last = false;
+        for result in chunks.try_iter() {
+            let chunk = result
+                .map_err(io::Error::other)?
+                .ok_or_else(|| io::Error::other("Missing stream chunk"))?;
+            assert!(!last);
+            assert_eq!(chunk.start, previous_end);
+            assert!(chunk.total >= chunk.end);
+            let data = bonsai_audio::mono_pcm16_data(&chunk.wav, 16_000, 480_000)
+                .ok_or_else(|| io::Error::other("Invalid stream PCM"))?;
+            emitted.extend_from_slice(data);
+            previous_end = chunk.end;
+            last = chunk.last;
+        }
+        assert_eq!(capacities[0], MAX_SAMPLES);
+        assert!(capacities[1] < MAX_SAMPLES);
+        assert_eq!(emitted, original);
+        assert_eq!(previous_end, Duration::new(60, 1_062_500));
+        assert!(last);
+        Ok(())
+    }
+
+    #[test]
+    fn sequential_stream_discards_pcm_when_cancelled_during_read() {
+        let shared = Shared::default();
+        let (sender, chunks) = mpsc::sync_channel(1);
+        let (_advance, next) = mpsc::sync_channel(1);
+        let result = decode_chunks(
+            &mut |_| {
+                shared.cancelled.store(true, Ordering::Release);
+                Ok((vec![1, 2], true))
+            },
+            &shared,
+            &sender,
+            &next,
+            Duration::from_secs(1),
+        );
+        assert_eq!(result, Err(CANCELLED));
+        assert!(chunks.try_recv().is_err());
+    }
+
+    #[test]
+    fn sequential_stream_failure_retains_completed_chunk_without_finishing() -> io::Result<()> {
+        let shared = Shared::default();
+        let (sender, chunks) = mpsc::sync_channel(2);
+        let (advance, next) = mpsc::sync_channel(1);
+        advance.send(()).map_err(io::Error::other)?;
+        let mut reads = 0;
+        let result = decode_chunks(
+            &mut |_| {
+                reads += 1;
+                if reads == 1 {
+                    Ok((vec![1, 2], false))
+                } else {
+                    Err("decoder failed")
+                }
+            },
+            &shared,
+            &sender,
+            &next,
+            Duration::from_secs(1),
+        );
+        assert_eq!(result, Err("decoder failed"));
+        assert!(matches!(chunks.try_recv(), Ok(Ok(Some(chunk))) if !chunk.last));
+        assert!(chunks.try_recv().is_err());
+        Ok(())
     }
 
     #[test]

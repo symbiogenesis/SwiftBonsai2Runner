@@ -512,6 +512,11 @@ service identities, recorder teardown and resource admission. Earlier Canary
 fixture recognition does not qualify Qwen3-ASR; source checks establish neither
 actual audio behavior nor accuracy or performance. Keep the independent native
 Rust ASR replacement and C++ retirement gates below.
+Qualify the ASR source-build CPU selection against its ARMv8-A control: independent
+Windows-observed DOTPROD/I8MM support, unknown-feature fallback, cache separation,
+complete transcript parity and end-to-end latency for microphone and file input.
+Portable ASR candidates retain ARMv8-A. Model-free policy/compiler checks do not
+establish an actual-model speedup; retain matched per-arm power observations.
 The bounded local source check stopped on a Markdown line length and six uses
 of an obsolete egui test API, before running regressions. Those source issues
 were corrected without retrying the closed trial; final all-target analysis and
@@ -530,8 +535,17 @@ Swift is ready. Cover unavailable Swift without deferred send, Escape, switching
 closing, late results, ASR/TTS exclusion and owned-worker cleanup. Verify visible
 progress/Cancel and persistent actionable rejection messages survive microphone
 cleanup, full/partial transcript view/copy, and complete oversized transcripts
-without composer truncation or automatic submission. Qualify Windows duration
-metadata and segment trimming/seeking on long compressed recordings. Preserve
+without composer truncation or automatic submission. Qualify the persistent
+asynchronous Media Foundation reader on long compressed recordings: one source
+open, forward-only sample reads, mono/stereo rate conversion, bounded callback
+and frame storage, exact-boundary EOF lookahead and complete final-tail coverage.
+Duration metadata guides progress only and must not truncate decoded audio.
+Cover sample-read cancellation/deadlines, flush/callback cleanup and restart-only
+admission after unconfirmed cleanup, synchronous
+open/release limits, malformed or oversized samples, decoder errors, timeline gaps
+and output-format changes. Compare total import cost and early versus late
+segments before claiming a speedup; source changes alone establish no performance
+gain. Preserve
 pause-aware PCM cuts within the 30-second request bound, exact suffix
 carry-forward and final-tail coverage without dropped or repeated samples. Qualify
 speech crossing decoder windows, pauses near the end, continuous speech, silence,
@@ -539,9 +553,23 @@ quiet/noisy recordings and cancellation with a retained suffix. Compare boundary
 word recognition against the fixed-cut reference before claiming an accuracy gain.
 Source checks cannot qualify native picker/clipboard behavior, real audio conversion, transcript
 accuracy or actual-model submission; owner-managed acceptance remains pending.
-Run the new `segmentation::tests::pause_boundary_*` selector controls and
+Run the new `segmentation::tests::pause_boundary_*` selector controls,
 `audio_import::segments::tests::pause_segments_*` conservation/tail controls,
-capacity ranges and native all-target analysis on the settled pause-aware source.
+`audio_import::decoder::tests::sequential_decoder_*` native framing/EOF controls,
+`audio_import::tests::sequential_stream_*` progress/cancellation/failure controls
+and native all-target analysis on the settled source.
+The sequential-decoder source check used one fixed five-minute allowance and
+stopped after 67.60 seconds: Rust formatting, whitespace and all three changed
+Markdown files passed before final corrections. Strict offline locked Release
+all-target Clippy stopped on 16 findings, including generated COM adapter lints,
+assertion/iterator fixtures and six preexisting speech/startup/UI findings; audio
+regressions did not run. The changed decoder/fixture findings were corrected
+without retrying the closed pass. Final all-target analysis and focused native
+regressions remain pending in owner-managed CI. Both power endpoints reported
+battery operation with saver on; charge fell from 19% to 18%. Temporary step logs
+were removed, no decoder fixtures or model processes were started, and the
+temporary Cargo build cache remains available. These endpoints establish neither
+uninterrupted power stability nor a performance comparison.
 The local five-minute check allowance stopped during Visual Studio environment
 setup with access denied, before formatting, Markdown, compilation or regressions
 ran; the failed pass was not retried. Setup and cleanup took 0.05 seconds, with

@@ -315,17 +315,28 @@ reasoning/private drafts.
 The composer's native plus button selects one audio file; Ctrl+V in the focused
 composer accepts files copied from Explorer. A cancellable owned worker reads and
 normalizes MP3/WAV and Windows-supported M4A/AAC/FLAC/WMA to in-memory mono 16 kHz
-PCM16 WAV in sequential segments. File size and recording duration have no fixed
+PCM16 WAV through one persistent asynchronous Media Foundation source reader.
+The reader advances sequentially, without reopening, seeking or recreating a
+transcoder for each ASR request. File size and recording duration have no fixed
 admission cap: available physical RAM and commit govern decoder buffers and
 transcript growth. Each segment fits the recognizer's 30-second request contract;
 an allocation-free PCM energy scan prefers a quiet 100 ms window in its final
 five seconds. A pause needs RMS at most 256 PCM units and at most one quarter of
 the loudest searched window's RMS. Without a qualifying pause, or when the final
 window is equally quiet, the segment stays whole. The cut retains the exact PCM
-suffix, and the next decode fills only the remaining request capacity; final input flushes every
-remaining sample. Progress ranges follow emitted samples. The heuristic neither
+suffix, and the next decode fills only the remaining request capacity. One bounded
+decoder frame of lookahead identifies actual end of stream, including an exact
+request boundary; duration metadata never truncates decoding. Final input flushes
+every remaining sample. Progress ranges follow emitted samples. The heuristic neither
 changes samples nor establishes transcription accuracy. Memory admission includes
-the retained PCM allocation, and backpressure keeps one decoded segment in flight.
+the retained PCM allocation and bounded decoder frame, and backpressure keeps one
+decoded segment in flight. Callback waits poll cancellation and share one deadline
+per segment. Unsupported output-format changes, timeline gaps and decoder failures
+stop import explicitly. Native source creation and release remain synchronous OS
+calls; asynchronous sample waits do not make those calls preemptible.
+Reader teardown waits at most two seconds for Flush and callback quiescence.
+Unconfirmed cleanup retains one Media Foundation startup reference for process
+safety, reports failure and closes further file-import admission until restart.
 File input requires no
 microphone permission. A dedicated composer notice shows progress, Cancel and
 persistent actionable failures, independent of microphone cleanup notifications.
