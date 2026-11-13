@@ -626,6 +626,63 @@ mod tests {
     }
 
     #[test]
+    fn packed_projection_computes_without_expanding_or_accepting_partial_rows() -> io::Result<()> {
+        for kind in [0, 1, 8, 12, 14] {
+            let (width, size) = packed_layout(kind)?;
+            let mut bytes = vec![0; size];
+            match kind {
+                0 => bytes.copy_from_slice(&1.0_f32.to_le_bytes()),
+                1 => bytes.copy_from_slice(&0x3c00_u16.to_le_bytes()),
+                8 => {
+                    bytes[..2].copy_from_slice(&0x3c00_u16.to_le_bytes());
+                    bytes[2..].fill(1);
+                }
+                12 => {
+                    bytes[..2].copy_from_slice(&0x3c00_u16.to_le_bytes());
+                    bytes[4..8].fill(1);
+                    bytes[12..16].fill(1);
+                    bytes[16..].fill(0x11);
+                }
+                14 => {
+                    bytes[..128].fill(0x11);
+                    bytes[128..192].fill(0b10_10_10_10);
+                    bytes[192..208].fill(1);
+                    bytes[208..].copy_from_slice(&0x3c00_u16.to_le_bytes());
+                }
+                _ => return Err(invalid()),
+            }
+            let projection = LinearProjection::new(
+                "fixture",
+                width,
+                1,
+                WeightQuantization::Packed {
+                    ggml_type: kind,
+                    bytes: bytes.clone(),
+                },
+                Some(vec![2.0]),
+            )?;
+            assert_eq!(projection.row(0)?, vec![1.0; width]);
+            let expected = f32::from(u16::try_from(width).map_err(|_| invalid())?) + 2.0;
+            assert_eq!(projection.forward_vec(&vec![1.0; width], None)?, [expected]);
+            bytes.pop();
+            assert!(
+                LinearProjection::new(
+                    "truncated",
+                    width,
+                    1,
+                    WeightQuantization::Packed {
+                        ggml_type: kind,
+                        bytes
+                    },
+                    None
+                )
+                .is_err()
+            );
+        }
+        Ok(())
+    }
+
+    #[test]
     fn packed_half_and_q8_keep_signed_zero_subnormals_and_signed_quants() -> io::Result<()> {
         assert_eq!(
             half(&0x8000_u16.to_le_bytes()).to_bits(),
