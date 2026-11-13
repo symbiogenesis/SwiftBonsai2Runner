@@ -534,6 +534,7 @@ dependencies = [
  "windows-core",
  "windows-future",
  "windows-sys 0.61.2",
+ "winresource",
 ]
 
 [[package]]
@@ -605,6 +606,7 @@ dependencies = [
  "serde",
  "serde_json",
  "sha2",
+ "winresource",
  "zip",
 ]
 

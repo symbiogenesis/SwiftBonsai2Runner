@@ -84,6 +84,10 @@ checks. Use GUI-subsystem `bonsai-launcher.exe` as `toolPath`, stored as
 `bin/bonsai-tools.exe`, to launch without a terminal. The console build remains
 available for source tooling.
 
+The Windows launcher embeds the two-leaf application icon at build time. Bundling
+preserves those launcher bytes, so the portable executable carries the same icon
+without modifying its verified prefix after packaging.
+
 ```powershell
 ./scripts/release/Build-WindowsExecutable.ps1 -PackageDirectory C:\BonsaiPackages\0.2.0 -ManifestSha256 REPLACE_WITH_THE_REVIEWED_64_HEX_DIGEST -OutputPath C:\BonsaiPackages\SwiftBonsai2Runner.exe
 ```
