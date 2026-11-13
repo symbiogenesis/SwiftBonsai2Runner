@@ -892,6 +892,11 @@ mod tests {
     }
     #[test]
     fn hexagon_cached_build_target_keeps_source_and_evidence_separate() -> Result<()> {
+        // This contract only inspects paths. Hosted TEMP can use an 8.3 alias;
+        // keep the valid cases alias-free while testing alias rejection below.
+        #[cfg(windows)]
+        let root = PathBuf::from(r"C:\bonsai-hexagon-target-contract");
+        #[cfg(not(windows))]
         let root = std::env::temp_dir().join("bonsai-hexagon-target-contract");
         let output = root.join("evidence");
         let repo = root.join("runner");
