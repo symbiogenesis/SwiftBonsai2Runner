@@ -444,6 +444,11 @@ under [AGENTS.md](AGENTS.md).
 - [ ] Qualify CPU/prefill changes already consumed by the comparison baseline
   without requiring another repin; release newer candidates with exact source locks.
 - [ ] Qualify [scan-owned values and joined prompt projections](docs/cpu-kernels.md#scan-owned-packed-values-and-joined-prompt-projections).
+- [ ] Publish and qualify [joined BF16 recurrent projections and four-bit KV lookup](docs/cpu-kernels.md#joined-bf16-recurrent-projections-and-four-bit-kv-lookup):
+  native/x64 strict Release analysis, exact arithmetic/failure and disabled-feature
+  controls, production linking, ARM64 codegen/resources, complete-model
+  state/logit/adapter/cancellation parity and matched CPU-only request benefit.
+  Publish the changed helper before its dependent runtime; retain 0.1.27 rollback.
 - [ ] Publish and qualify [ordered packed-KV code selection](docs/cpu-kernels.md#ordered-packed-kv-code-selection):
   exhaustive-search record identity, rounded first-code ties, atomic rejection,
   native/portable and feature-disabled controls, complete-model state/adapters/

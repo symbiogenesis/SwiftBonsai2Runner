@@ -66,6 +66,40 @@ publication before dependent runtime bundles and reviewed Runner locks.
 
 ## CPU preparation candidates
 
+### Joined BF16 recurrent projections and four-bit KV lookup
+
+Local Prism commits `0d28f12` (BF16) and `24aaaa6` (KV lookup) target ordinary
+CPU ingestion and decode on X1 without changing weight or cache precision:
+
+- Compatible BF16 sibling projections share one joined row-pool submission and
+  their existing rounded activation buffer. The graph consumes this for the
+  recurrent alpha/beta pair, including the standard adapter path. Swift's 48
+  recurrent layers omit 48 worker-pool joins per token with multiple row workers.
+  Each matrix keeps its original row partitions and exact 8/4/1-row arithmetic.
+  Geometry and output growth precede submission, sibling/chunk failure order is
+  retained after joining, and every grouped output is cleared on failure.
+  Single-worker, incompatible and external-executor paths keep their controls;
+  no weight copy, additional worker pool or memory-admission increase is added.
+- Native four-bit packed-KV consumption loads the sixteen-centroid codebook as
+  four byte-table vectors. Each four-coordinate tile extracts its four nibbles
+  from two packed bytes and uses baseline NEON table lookup to recover the exact
+  binary32 centroid bytes, replacing scalar code extraction and centroid gathers.
+  Key dots retain their binary64 lane products, sums and reduction; values retain
+  separate binary32 multiply/add and finite-result checks. Three-bit and portable
+  consumption retain their existing paths. Runtime NEON detection, record bytes,
+  failure publication and public helper APIs remain unchanged.
+
+These are source candidates without a measured X1 speedup. Require final-source
+native/x64 strict Release analysis, named arithmetic and failure controls,
+feature-disabled fallback, production linking and ARM64 codegen/stack review.
+In particular, inspect table-register residency and lookup/setup costs rather
+than inferring machine savings from source counts. Complete-model logits/state,
+adapter and cancellation parity and matched CPU-only complete-request benefit
+remain separate gates under [cross-generation promotion](#cross-generation-cpu-promotion).
+The changed NEON helper must be published before a dependent runtime release;
+application delivery needs a source-bound bundle and reviewed Runner repin.
+The published 0.1.27 runtime remains the rollback and current application pin.
+
 ### Provisional GDN and prepared current-token KV
 
 - Graph-owned eight-row GDN writes directly to an unpublished recurrent delta.
