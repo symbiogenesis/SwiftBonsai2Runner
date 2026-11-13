@@ -241,7 +241,7 @@ factors with checked forward reconstruction.
 
 The [hybrid-state catalog](research-register.md#hybrid-recurrence-prefix-caching-and-speculative-decoding)
 owns KVBuffer/TreeWY sources and applicability. [KVBuffer v2](https://arxiv.org/html/2605.19049v2)
-Its main decoding gains use large batches; its low-request-rate Qwen3.5-4B
+reports its main decoding gains at large batches; its low-request-rate Qwen3.5-4B
 result includes no throughput gain, and FP32 comparisons have nonzero state or
 output differences. Neither technique is implemented in the selected runtime:
 
