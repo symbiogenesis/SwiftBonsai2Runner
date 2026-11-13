@@ -64,6 +64,28 @@ fn biased_projection(
     Ok(layer)
 }
 
+// GGUF omits trailing unit dimensions. A mono [K, IC, 1] convolution
+// therefore has the same ordered layout as the stored [K, IC] tensor; no
+// other axis may disappear or move, even if the element counts agree.
+fn convolution_weight(
+    weights: &mut Weights,
+    name: &str,
+    expected: [usize; 3],
+) -> io::Result<Vec<f32>> {
+    fn canonical(shape: &[usize]) -> &[usize] {
+        let end = shape
+            .iter()
+            .rposition(|&dimension| dimension != 1)
+            .map_or(1, |index| index + 1);
+        &shape[..end]
+    }
+    let actual = weights.tensor_shape(name)?.to_vec();
+    if canonical(&actual) != canonical(&expected) {
+        return Err(invalid());
+    }
+    weights.tensor_f32(name, &actual)
+}
+
 #[expect(
     clippy::too_many_arguments,
     reason = "Explicit convolution geometry is validated before loading weights."
@@ -86,7 +108,7 @@ fn conv(
         dilation,
         stride,
         pad_mode,
-        weight: weights.tensor_f32(&format!("{name}.weight"), &[kernel, input, output])?,
+        weight: convolution_weight(weights, &format!("{name}.weight"), [kernel, input, output])?,
         bias: if bias {
             Some(weights.tensor_f32(&format!("{name}.bias"), &[output])?)
         } else {
@@ -109,7 +131,7 @@ fn trans_conv(
         kernel,
         stride,
         // GGUF stores the PyTorch [IC, OC, K] array without a permutation.
-        weight: weights.tensor_f32(&format!("{name}.weight"), &[kernel, output, input])?,
+        weight: convolution_weight(weights, &format!("{name}.weight"), [kernel, output, input])?,
         bias: Some(weights.tensor_f32(&format!("{name}.bias"), &[output])?),
     })
 }
@@ -1046,7 +1068,7 @@ fn tdnn(
         in_c: input,
         kernel,
         dilation,
-        weight: weights.tensor_f32(&format!("{name}.weight"), &[kernel, input, output])?,
+        weight: convolution_weight(weights, &format!("{name}.weight"), [kernel, input, output])?,
         bias: weights.tensor_f32(&format!("{name}.bias"), &[output])?,
     })
 }
@@ -1114,6 +1136,109 @@ impl Speaker {
 #[cfg(test)]
 mod tests {
     use super::{KvState, causal_attention, codebook_major_to_frames, gelu_erf, normalize};
+
+    struct ConvFixture(std::path::PathBuf);
+
+    impl Drop for ConvFixture {
+        fn drop(&mut self) {
+            let _ = std::fs::remove_file(&self.0);
+        }
+    }
+
+    fn mono_convolution_fixture(shape: &[u64]) -> std::io::Result<ConvFixture> {
+        use std::io::Write as _;
+        let mut bytes = b"GGUF".to_vec();
+        bytes.extend(3_u32.to_le_bytes());
+        bytes.extend(2_u64.to_le_bytes());
+        bytes.extend(0_u64.to_le_bytes());
+        for (name, dimensions, offset) in [
+            ("tok_dec.dec.6.conv.weight", shape, 0_u64),
+            ("tok_dec.dec.6.conv.bias", &[1_u64][..], 7 * 96 * 4),
+        ] {
+            bytes.extend(
+                u64::try_from(name.len())
+                    .map_err(std::io::Error::other)?
+                    .to_le_bytes(),
+            );
+            bytes.extend(name.bytes());
+            bytes.extend(
+                u32::try_from(dimensions.len())
+                    .map_err(std::io::Error::other)?
+                    .to_le_bytes(),
+            );
+            for dimension in dimensions {
+                bytes.extend(dimension.to_le_bytes());
+            }
+            bytes.extend(0_u32.to_le_bytes()); // Independent ordinary F32 fixture.
+            bytes.extend(offset.to_le_bytes());
+        }
+        bytes.resize(bytes.len().div_ceil(32) * 32, 0);
+        for value in 0_u16..7 * 96 {
+            bytes.extend(f32::from(value).to_le_bytes());
+        }
+        bytes.extend(0.25_f32.to_le_bytes());
+        let nonce = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map_err(std::io::Error::other)?
+            .as_nanos();
+        let path = std::env::temp_dir().join(format!(
+            "Bonsai-MonoConv-{}-{nonce}.gguf",
+            std::process::id()
+        ));
+        let fixture = ConvFixture(path);
+        std::fs::OpenOptions::new()
+            .write(true)
+            .create_new(true)
+            .open(&fixture.0)?
+            .write_all(&bytes)?;
+        Ok(fixture)
+    }
+
+    #[test]
+    fn pinned_mono_convolution_accepts_omitted_trailing_unit_axes_without_reshaping()
+    -> std::io::Result<()> {
+        use crate::{codec::PadMode, weights::Weights};
+        for shape in [&[7, 96][..], &[7, 96, 1], &[7, 96, 1, 1]] {
+            let fixture = mono_convolution_fixture(shape)?;
+            let mut weights = Weights::open(&fixture.0)?;
+            let layer = super::conv(
+                &mut weights,
+                "tok_dec.dec.6.conv",
+                96,
+                1,
+                7,
+                1,
+                1,
+                true,
+                PadMode::Constant,
+            )?;
+            assert_eq!((layer.kernel, layer.in_c, layer.out_c), (7, 96, 1));
+            assert_eq!(
+                layer.weight,
+                (0_u16..7 * 96).map(f32::from).collect::<Vec<_>>()
+            );
+            assert_eq!(layer.bias, Some(vec![0.25]));
+        }
+        for shape in [&[7, 1, 96][..], &[3, 224], &[7, 48, 2]] {
+            let fixture = mono_convolution_fixture(shape)?;
+            let mut weights = Weights::open(&fixture.0)?;
+            assert!(
+                super::conv(
+                    &mut weights,
+                    "tok_dec.dec.6.conv",
+                    96,
+                    1,
+                    7,
+                    1,
+                    1,
+                    true,
+                    PadMode::Constant
+                )
+                .is_err()
+            );
+        }
+        Ok(())
+    }
 
     #[test]
     fn codec_attention_retains_only_the_causal_window_with_independent_heads() -> std::io::Result<()>
