@@ -575,8 +575,13 @@ fn deserialize_content<'de, D: Deserializer<'de>>(
         ) -> Result<Self::Value, A::Error> {
             let mut content = String::new();
             let mut count = 0;
-            while let Some(Object(part)) = sequence.next_element::<Object<TextPart<'de>>>()? {
-                if count == MAX_CONTENT_PARTS || part.kind != "text" {
+            while let Some(Object(part)) =
+                sequence.next_element_seed(BoundedElement::<Object<TextPart<'de>>> {
+                    within_limit: count < MAX_CONTENT_PARTS,
+                    marker: PhantomData,
+                })?
+            {
+                if part.kind != "text" {
                     return Err(de::Error::custom("unsupported content part"));
                 }
                 content.push_str(&part.text);
@@ -657,6 +662,25 @@ impl<'de, T: Deserialize<'de>> Deserialize<'de> for Object<T> {
     }
 }
 
+// SeqAccess probes the sequence end before invoking this seed. Exact-limit
+// arrays therefore finish normally, while an excess element is rejected before
+// its fields, escaped strings or nested containers can be deserialized.
+struct BoundedElement<T> {
+    within_limit: bool,
+    marker: PhantomData<T>,
+}
+
+impl<'de, T: Deserialize<'de>> de::DeserializeSeed<'de> for BoundedElement<T> {
+    type Value = T;
+
+    fn deserialize<D: Deserializer<'de>>(self, deserializer: D) -> Result<T, D::Error> {
+        if !self.within_limit {
+            return Err(de::Error::custom("array element limit exceeded"));
+        }
+        T::deserialize(deserializer)
+    }
+}
+
 fn deserialize_messages<'de, D: Deserializer<'de>>(
     deserializer: D,
 ) -> Result<Vec<Message<'de>>, D::Error> {
@@ -674,12 +698,12 @@ fn deserialize_messages<'de, D: Deserializer<'de>>(
             mut sequence: A,
         ) -> Result<Self::Value, A::Error> {
             let mut messages = Vec::new();
-            while let Some(Object(message)) = sequence.next_element::<Object<Message<'de>>>()? {
-                // Stop on the first excess message instead of allocating and
-                // parsing every remaining message in an oversized history.
-                if messages.len() == MAX_MESSAGES {
-                    return Err(de::Error::custom("too many messages"));
-                }
+            while let Some(Object(message)) =
+                sequence.next_element_seed(BoundedElement::<Object<Message<'de>>> {
+                    within_limit: messages.len() < MAX_MESSAGES,
+                    marker: PhantomData,
+                })?
+            {
                 messages.push(message);
             }
             Ok(messages)
@@ -817,7 +841,9 @@ mod abliteration_tests;
 
 #[cfg(test)]
 mod tests {
-    use super::{ClientChat, Cow, Message, Object, Role, valid_history};
+    use super::{
+        ClientChat, Cow, MAX_CONTENT_PARTS, MAX_MESSAGES, Message, Object, Role, valid_history,
+    };
     use std::assert_matches;
 
     #[test]
@@ -851,6 +877,70 @@ mod tests {
                 );
             }
         }
+    }
+
+    #[test]
+    fn message_limit_rejects_excess_before_deserializing_fields() -> Result<(), serde_json::Error> {
+        let message = r#"{"role":"user","content":"kept"}"#;
+        let messages = vec![message; MAX_MESSAGES].join(",");
+        let prefix = format!("{{\"messages\":[{messages}");
+        let body = format!("{prefix}]}}");
+        let Object(chat): Object<ClientChat<'_>> = serde_json::from_str(&body)?;
+        assert_eq!(chat.messages.len(), MAX_MESSAGES);
+        assert!(
+            chat.messages
+                .iter()
+                .all(|message| message.content == "kept")
+        );
+        let large = format!(
+            r#"{{"role":"user","content":"{}"}}"#,
+            r"\u0061".repeat(8192)
+        );
+        for excess in [
+            "null",
+            "[]",
+            r#"{"content":"\u"#,
+            r#"{"unknown":[[["#,
+            &large,
+        ] {
+            let body = format!("{prefix},{excess}]}}");
+            let result = serde_json::from_str::<Object<ClientChat<'_>>>(&body);
+            assert!(
+                matches!(result, Err(error) if error.to_string().contains("array element limit exceeded"))
+            );
+        }
+        let within_limit = format!("{{\"messages\":[{message},null]}}");
+        let result = serde_json::from_str::<Object<ClientChat<'_>>>(&within_limit);
+        assert!(
+            matches!(result, Err(error) if !error.to_string().contains("array element limit exceeded"))
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn content_part_limit_rejects_excess_before_deserializing_fields()
+    -> Result<(), serde_json::Error> {
+        let part = r#"{"type":"text","text":"x"}"#;
+        let parts = vec![part; MAX_CONTENT_PARTS].join(",");
+        let prefix = format!("{{\"messages\":[{{\"role\":\"user\",\"content\":[{parts}");
+        let body = format!("{prefix}]}}]}}");
+        let Object(chat): Object<ClientChat<'_>> = serde_json::from_str(&body)?;
+        assert_eq!(chat.messages[0].content, "x".repeat(MAX_CONTENT_PARTS));
+        let large = format!(r#"{{"type":"text","text":"{}"}}"#, r"\u0078".repeat(8192));
+        for excess in ["null", "[]", r#"{"text":"\u"#, r#"{"unknown":[[["#, &large] {
+            let body = format!("{prefix},{excess}]}}]}}");
+            let result = serde_json::from_str::<Object<ClientChat<'_>>>(&body);
+            assert!(
+                matches!(result, Err(error) if error.to_string().contains("array element limit exceeded"))
+            );
+        }
+        let within_limit =
+            format!("{{\"messages\":[{{\"role\":\"user\",\"content\":[{part},null]}}]}}");
+        let result = serde_json::from_str::<Object<ClientChat<'_>>>(&within_limit);
+        assert!(
+            matches!(result, Err(error) if !error.to_string().contains("array element limit exceeded"))
+        );
+        Ok(())
     }
 
     #[test]
