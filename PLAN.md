@@ -1654,10 +1654,14 @@ not close pending hosted integration or full-model acceptance.
   disjoint allocation lifetimes.
 - Qualify Qwen loading and service control independently when its 18 GiB allowance plus
   4 GiB reserve is admissible.
-- Add source-referenced scene packets and author-approved context. Manuscripts and
-  edited project bible stay authoritative; start with manual excerpts or lexical
-  retrieval, embeddings only for demonstrated need. Summaries require source versions
-  and author approval; vision, image critique or generation needs a matching model and
+- Qualify the native source-excerpt workflow with representative manuscripts and
+  scene-planning queries: source/version changes, relevant passage selection,
+  exact citations, draft preservation and author review before Send. The bounded
+  lexical scene-packet builder inserts only selected excerpts into the draft;
+  manuscripts and the edited project bible stay authoritative. Retrieval quality
+  and complete scene-packet usefulness remain separate acceptance gates. Add
+  embeddings only for demonstrated need. Summaries require source versions and
+  author approval; vision, image critique or generation needs a matching model and
   shared-memory budget.
 - Defer [Apple's learned retrieval](https://machinelearning.apple.com/research/faster-retrieval)
   until corpus retrieval demonstrates a need for embeddings and vector search becomes
@@ -1805,6 +1809,11 @@ conditional ladder reaches the artifact's declared 262,144-token ceiling
   equivalent usable headroom is demonstrated, the step-3 K4/V4 example could rise
   from 149,760 to 234,752 tokens. Measure the latency tradeoff; treat this as an
   alternative to the cumulative ladder, without double-counting arenas or PTQ1.
+  The explicit Prism CPU placement candidate skips accelerator initialization;
+  deliver it through a genuine source-bound release, then carry the selection
+  through Runner setup, launch, readiness and Retry. Keep the 11 GiB fixed charge
+  until selected-device measurements establish distinct usable headroom. Source
+  omission alone supplies no memory or performance qualification.
 - **Bounded unique-page accounting, Prism:** inspect append-only reuse before
   reducing rollback charges. Sealed cache pages already share immutable ownership
   and mutable tails are copied. Assign zero universal new gain to adding paging
@@ -1818,9 +1827,12 @@ conditional ladder reaches the artifact's declared 262,144-token ceiling
   reply from 4,096 to 1,024 admits 3,072 additional prompt tokens within the same
   total context. Keep exact broker admission and the user's selected output limit.
 - **Source-grounded retrieval and optional summaries, Runner:** extend useful
-  history through the existing scene-packet work, source versions and author
-  approval. These select or summarize information rather than enlarge the physical
-  context; assign zero physical-capacity credit in the cumulative table.
+  history through the native lexical scene-packet builder, source versions and
+  author-reviewed exact excerpts. Qualify representative passage relevance and
+  complete scene-packet usefulness before adding more retrieval machinery.
+  Optional summaries retain their separate source/version and approval gates.
+  These select or summarize information rather than enlarge the physical context;
+  assign zero physical-capacity credit in the cumulative table.
 
 ## Bounded calibration and optional precision
 
