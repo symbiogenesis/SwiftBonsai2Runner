@@ -104,6 +104,16 @@ alignment, embedding bounds, worker consistency and cancellation between
 codebooks/layers. They establish neither model parity nor usable speech on a
 fresh machine.
 
+Projection row workers reuse a bounded Rust thread pool on the inference thread
+instead of creating OS threads for every projection. Codec encoder/decoder
+transformer projections also use the selected worker count. Packed F32/F16,
+Q8_0, Q4_K and Q6_K kernels decode directly during multiplication, with SIMD
+dispatch outside the block loop and no complete floating-point weight expansion.
+They preserve the existing block accumulation and rounding order without
+requantizing activations. Independent packed-decoder controls and worker/state
+checks cover this source change; end-to-end first audio, steady synthesis,
+Q8/Q4 listening and peak-memory qualification remain pending.
+
 ## Rust sampler port
 
 `philox.rs` retains Philox4x32-10 draws, signed seed/subsequence bit patterns and
