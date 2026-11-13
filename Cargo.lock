@@ -590,6 +590,7 @@ dependencies = [
  "bonsai-audio",
  "bonsai-speech-service",
  "fearless_simd 1.2.0",
+ "libm",
  "serde_json",
  "sha2",
 ]

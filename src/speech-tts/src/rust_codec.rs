@@ -479,18 +479,10 @@ fn causal_attention(
     Ok(output)
 }
 
-// Polynomial erf approximation. Mimi uses erf GELU; the DAC's ConvNeXt
-// uses the separate tanh GELU. Actual-model numerical parity remains required.
+// Mimi uses erf GELU; the DAC's ConvNeXt uses the separate tanh GELU.
+// libm executes this operation in Rust without a system math DLL boundary.
 fn gelu_erf(value: f32) -> f32 {
-    let x = value * std::f32::consts::FRAC_1_SQRT_2;
-    let t = 1.0 / 0.327_591_1_f32.mul_add(x.abs(), 1.0);
-    let polynomial = 1.061_405_4_f32
-        .mul_add(t, -1.453_152_1)
-        .mul_add(t, 1.421_413_8)
-        .mul_add(t, -0.284_496_72)
-        .mul_add(t, 0.254_829_6);
-    let erf = x.signum() * (polynomial * t).mul_add(-(-x * x).exp(), 1.0);
-    0.5 * value * (1.0 + erf)
+    0.5 * value * (1.0 + libm::erff(value * std::f32::consts::FRAC_1_SQRT_2))
 }
 
 struct Upsample {
@@ -760,6 +752,16 @@ impl Codec {
         reason = "Keep the complete pinned decoder tensor mapping together; each subgraph validates its own fixed geometry."
     )]
     pub(crate) fn load(weights: &mut Weights) -> io::Result<Self> {
+        for (key, expected) in [
+            ("input_sample_rate", SAMPLE_RATE),
+            ("output_sample_rate", SAMPLE_RATE),
+            ("decode_upsample_rate", 1920),
+            ("encode_downsample_rate", 1920),
+        ] {
+            if weights.u32(&format!("qwen3-tts-tokenizer.{key}"))? != expected {
+                return Err(invalid());
+            }
+        }
         let key = "qwen3-tts-tokenizer.decoder";
         let size = dimension(weights, &format!("{key}.codebook_size"))?;
         let width = dimension(weights, &format!("{key}.codebook_dim_internal"))?;
@@ -1001,6 +1003,15 @@ impl Codec {
     }
 
     pub(crate) fn prime_reference(&mut self, codes: &[[i32; 16]]) -> io::Result<()> {
+        if codes.is_empty()
+            || codes.len() > (24_000 * 30) / TOKENIZER_HOP_24K
+            || codes
+                .iter()
+                .flatten()
+                .any(|&code| !(0..2048).contains(&code))
+        {
+            return Err(invalid());
+        }
         if let Some((reference, state)) = &self.primed
             && reference == codes
         {
@@ -1109,11 +1120,11 @@ mod tests {
     {
         let mut state = KvState::default();
         let query = [0.0; 4];
-        for (value, expected) in [(2.0, 2.0), (4.0, 3.0), (8.0, 6.0)] {
+        for (value, expected) in [(2.0_f32, 2.0_f32), (4.0, 3.0), (8.0, 6.0)] {
             let result = causal_attention(
                 &query,
                 &[0.0; 4],
-                &[value, value + 1.0, value * 10.0, value * 10.0 + 1.0],
+                &[value, value + 1.0, value * 10.0, value.mul_add(10.0, 1.0)],
                 2,
                 2,
                 2,
@@ -1126,7 +1137,7 @@ mod tests {
                     expected,
                     expected + 1.0,
                     expected * 10.0,
-                    expected * 10.0 + 1.0
+                    expected.mul_add(10.0, 1.0)
                 ]
             );
         }
