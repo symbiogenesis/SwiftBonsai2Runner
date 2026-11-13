@@ -1573,7 +1573,7 @@ mod tests {
         assert_eq!(transfers, 1);
         verify(&path, 5, &hash)?;
         assert!(!partial.exists());
-        assert!(quarantine_files(&working)?.is_empty());
+        assert_eq!(quarantine_files(&working)?, Vec::<PathBuf>::new());
         fs::remove_dir_all(working).map_err(|error| error.to_string())?;
         Ok(())
     }
