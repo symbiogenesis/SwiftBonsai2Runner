@@ -35,8 +35,9 @@ After [setup](docs/development-guide.md#native-chat-app), launch with
 (or `-PublisherEngine` with the script) to use the original publisher C++ engine.
 
 The [Windows release guide](docs/releases.md) covers the portable executable and
-prepared v0.2.2 experimental release, pending the owner's source push and release
-workflow run. [Build locally](docs/development-guide.md#build-a-single-executable)
+the prepared [v0.3.0 experimental release](docs/releases/v0.3.0.md). Publication
+requires the release workflow to finish.
+[Build locally](docs/development-guide.md#build-a-single-executable)
 to create the same single-file distribution containing all five application tools.
 
 > [!NOTE]
@@ -55,6 +56,9 @@ to create the same single-file distribution containing all five application tool
 - **Portable updates:** Download and verify the newer Windows ARM64 executable,
   close Swift, then replace your copy. Keep the same data directory to preserve
   model downloads and conversations; see [Windows releases](docs/releases.md).
+- **Reviewed source excerpts:** Use **Sources** in the composer to search pasted
+  text locally, select exact passages and review them in your draft before sending.
+  Each excerpt records its source title, version, line range and complete-source hash.
 - **Thinking and Extra effort:** **Thinking** is off by default; enable it under
   **Settings → Response** for reasoning before answers. **Extra effort** plans,
   drafts and revises a reply. Each conversation remembers its choice.

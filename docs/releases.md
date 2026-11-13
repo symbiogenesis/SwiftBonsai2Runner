@@ -1,19 +1,19 @@
 # Windows releases
 
 Swift Bonsai 2 Runner ships as a **portable Windows ARM64 executable** for
-Snapdragon X and X2 laptops. [v0.2.2](releases/v0.2.2.md) is published as an
-[experimental prerelease](https://github.com/symbiogenesis/SwiftBonsai2Runner/releases/tag/v0.2.2).
-The published [v0.2.1 release](https://github.com/symbiogenesis/SwiftBonsai2Runner/releases/tag/v0.2.1)
+Snapdragon X and X2 laptops. [v0.3.0](releases/v0.3.0.md) is the experimental
+release target; check [GitHub releases](https://github.com/symbiogenesis/SwiftBonsai2Runner/releases)
+for completed publication. The published [v0.2.2 prerelease](https://github.com/symbiogenesis/SwiftBonsai2Runner/releases/tag/v0.2.2)
 remains available.
 
 ## Download and open
 
 Download from [GitHub releases](https://github.com/symbiogenesis/SwiftBonsai2Runner/releases).
-The v0.2.2 release has three assets:
+The v0.3.0 release publishes three assets:
 
 | Asset | Purpose |
 | --- | --- |
-| `SwiftBonsai2Runner-0.2.2-windows-arm64.exe` | All five application executables and their notices. |
+| `SwiftBonsai2Runner-0.3.0-windows-arm64.exe` | All five application executables and their notices. |
 | `SHA256SUMS.txt` | Checksums for the executable and release manifest. |
 | `release-manifest.json` | Version, source revision, build identities and executable digest. |
 
@@ -21,8 +21,8 @@ Check the executable's SHA-256 against the checksum from the same release before
 opening it:
 
 ```powershell
-Get-FileHash .\SwiftBonsai2Runner-0.2.2-windows-arm64.exe -Algorithm SHA256
-.\SwiftBonsai2Runner-0.2.2-windows-arm64.exe
+Get-FileHash .\SwiftBonsai2Runner-0.3.0-windows-arm64.exe -Algorithm SHA256
+.\SwiftBonsai2Runner-0.3.0-windows-arm64.exe
 ```
 
 **Deploy only the `.exe`.** Package metadata and project/dependency notices are
@@ -52,7 +52,7 @@ not install that redistributable.
 
 Swift weights (about **6.71 GiB**), adapter, inference runtime and speech models
 are separate locked downloads with their own [license terms](licensing.md).
-Artifact checks and memory admission still apply. In v0.2.2, opening the executable
+Artifact checks and memory admission still apply. Opening the executable
 prepares the compiled Swift model, adapter and selected runtime automatically.
 No checkout, external lockfile or provisioning command is needed for the default
 model. Speech preparation follows separately; text chat can work before it finishes.
@@ -108,7 +108,7 @@ switch engine or representation. See the
 
 ## Update and remove
 
-v0.2.2 checks GitHub at startup and every six
+The portable application checks GitHub at startup and every six
 hours, then downloads newer Windows ARM64 releases, including experimental
 prereleases. **Settings > Application** also offers a manual check. Discovery
 selects the highest numeric version in the bounded catalog, excluding drafts and
@@ -153,8 +153,8 @@ gh workflow run release.yml --repo symbiogenesis/SwiftBonsai2Runner --ref main -
 ```
 
 Leave `tag` blank to use `workspace.package.version` from `Cargo.toml`.
-Explicit `0.2.2` or `v0.2.2` must match that version; both select `v0.2.2` and
-`docs/releases/v0.2.2.md`. Mismatches report requested, workspace and expected
+Explicit `0.3.0` or `v0.3.0` must match that version; both select `v0.3.0` and
+`docs/releases/v0.3.0.md`. Mismatches report requested, workspace and expected
 identities. For the next release, increment the workspace version and commit
 matching notes first. `prerelease` defaults to `true`.
 
@@ -179,7 +179,7 @@ The owner can inspect the run and release with:
 
 ```powershell
 gh run list --repo symbiogenesis/SwiftBonsai2Runner --workflow release.yml --limit 5
-gh release view v0.2.2 --repo symbiogenesis/SwiftBonsai2Runner
+gh release view v0.3.0 --repo symbiogenesis/SwiftBonsai2Runner
 ```
 
 Hosted packaging checks do not qualify clean-machine startup, actual-model
