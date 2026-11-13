@@ -36,6 +36,12 @@ jobs:
         with:
           persist-credentials: false
           fetch-depth: 0
+      - name: Check workflow startup and tooling policy before the build fan-out
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $PSNativeCommandUseErrorActionPreference = $true
+          pwsh -NoLogo -NoProfile -File tools/ci/check_workflow_startup.ps1
+          pwsh -NoLogo -NoProfile -File tools/ci/check_owned_languages.ps1
       - name: Check PowerShell 7.6+ release syntax, argument preservation and failure handling
         run: |
           Write-Host "Release script baseline: PowerShell 7.6 or newer; running $($PSVersionTable.PSVersion)."

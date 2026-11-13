@@ -112,7 +112,10 @@ For local builds of the same format, use the
 ## Publish a release
 
 Release scripts require PowerShell 7.6 or newer. Before building, the workflow
-checks syntax, argument preservation, UTF-8 output, native failures and unsafe paths.
+checks workflow lock coverage and tooling policy, then syntax, argument preservation,
+UTF-8 output, native failures and unsafe paths. These inexpensive checks finish
+before the five build lanes start. Failed Rust commands print their phase, log
+location and bounded output directly in the run; complete logs remain in artifacts.
 
 `AGENTS.md` reserves pushes and routine release operations for the owner.
 After reviewing local `main`, the owner publishes source and requests the release:
