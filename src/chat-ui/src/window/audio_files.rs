@@ -506,7 +506,7 @@ impl State {
                         ui.add(
                             egui::TextEdit::multiline(&mut self.audio_file_transcript.as_str())
                                 .id_salt("audio-transcript-text")
-                                .frame(false)
+                                .frame(egui::Frame::NONE)
                                 .font(egui::FontId::proportional(super::appearance::text_size(
                                     ui.ctx(),
                                 )))

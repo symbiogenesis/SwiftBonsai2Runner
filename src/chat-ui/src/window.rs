@@ -2066,8 +2066,7 @@ impl State {
                 };
                 if self.help.is_none()
                     && (self.audio_file_notice.is_none()
-                        || (!self.audio_file_active
-                            && (self.dictation_requested || self.speaking)))
+                        || (!self.audio_file_active && (self.dictation_requested || self.speaking)))
                     && (self.speech_notice || self.dictation_requested || self.speaking)
                 {
                     audio_files::notice_frame(ui)
@@ -2224,12 +2223,16 @@ impl State {
                     ui.add_space(12.0);
                     ui.separator();
                     ui.add_space(4.0);
-                    ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                        if ui.add(audio_files::action_button("Close")).clicked() {
-                            self.help = None;
-                            self.speech_notice = false;
-                        }
-                    });
+                    ui.allocate_ui_with_layout(
+                        egui::vec2(ui.available_width(), 36.0),
+                        egui::Layout::right_to_left(egui::Align::Center),
+                        |ui| {
+                            if ui.add(audio_files::action_button("Close")).clicked() {
+                                self.help = None;
+                                self.speech_notice = false;
+                            }
+                        },
+                    );
                 });
             if !open {
                 self.help = None;

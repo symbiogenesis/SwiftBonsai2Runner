@@ -1226,7 +1226,7 @@ fn real_text_selection_does_not_leak_when_conversation_message_ids_repeat() {
 
 #[test]
 fn audio_file_plus_is_accessible_and_remains_inside_the_composer() {
-    for size in [[1180.0, 860.0], [620.0, 640.0]] {
+    for size in [[1180.0, 860.0], [620.0, 640.0], [480.0, 480.0]] {
         let mut chat = harness(size, false);
         let add = chat.get_by_role_and_label(egui::Role::Button, "Add audio file");
         let microphone = chat.get_by_role_and_label(egui::Role::Button, "Microphone");
@@ -1236,6 +1236,13 @@ fn audio_file_plus_is_accessible_and_remains_inside_the_composer() {
         add.click();
         chat.run();
         assert!(chat.get_by_label("Audio file setup").rect().is_positive());
+        let bounds = egui::Rect::from_min_size(egui::Pos2::ZERO, size.into());
+        assert!(
+            bounds.contains_rect(
+                chat.get_by_role_and_label(egui::Role::Button, "Close")
+                    .rect()
+            )
+        );
         assert!(chat.state().app.microphone.is_none());
         assert!(chat.state().commands.try_recv().is_err());
     }
@@ -1243,7 +1250,7 @@ fn audio_file_plus_is_accessible_and_remains_inside_the_composer() {
 
 #[test]
 fn audio_file_progress_cancel_and_rejection_are_visible_in_wide_and_narrow_windows() {
-    for size in [[1180.0, 860.0], [620.0, 640.0]] {
+    for size in [[1180.0, 860.0], [620.0, 640.0], [480.0, 480.0]] {
         let mut chat = harness(size, false);
         let app = &mut chat.state_mut().app;
         app.audio_file_notice = Some("Transcribing audio: 30–60 of 3600 seconds.".to_owned());
@@ -1251,6 +1258,12 @@ fn audio_file_progress_cancel_and_rejection_are_visible_in_wide_and_narrow_windo
         app.dictation_requested = true;
         app.dictation_finishing = true;
         app.microphone_generation = Some(7);
+        app.audio_file_progress = Some(speech::FileProgress {
+            start: Duration::from_secs(30),
+            end: Duration::from_secs(60),
+            total: Duration::from_secs(3600),
+        });
+        app.audio_file_transcript = "First segment.".into();
         app.input = "Keep draft".to_owned();
         // The active transcription spinner deliberately keeps requesting frames.
         chat.run_steps(2);
