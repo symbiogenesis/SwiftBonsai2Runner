@@ -62,11 +62,21 @@ repository, issue, release and Actions inspection or management. Use it within
 the owner's authorized scope and the push, pull-request and CI rules below.
 
 Before committing workflow, composite-action or `actions.lock` changes, run
-`python -B tools/ci/check_workflow_startup.py` and its focused regression command
+`pwsh -NoLogo -NoProfile -File tools/ci/check_workflow_startup.ps1` and its focused regression command
 in [the action-pin maintenance guide](tools/ci/README.md#action-dependency-pins).
 Generate lockfiles with `gh actions-lock --no-narrow` so literal inline SHA
 references retain matching dependency keys. A startup rejection prevents CI's
 own verifier from running, so do not rely on that job as the first check.
+
+# Tooling languages
+
+Use Rust or PowerShell 7.6 or later for repository tooling and CI. Do not add
+owned Python files, Python runtime setup, inline Python or Python subprocesses.
+Use `tools/ci/check_owned_languages.ps1` to check the boundary. Historical
+provenance records and external source citations remain evidence, not executable
+dependencies. Keep large numerical operations in Rust and orchestration in
+PowerShell; owner-device qualification must consume source-bound native helpers
+without compiling them inside its allowance.
 
 # Runner repository workflow
 

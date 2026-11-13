@@ -15,6 +15,7 @@ in sync with detailed tasks and preserve their acceptance obligations.
 
 | ID / next state | Owning repository | Prerequisite | Next action and acceptance gate |
 | --- | --- | --- | --- |
+| L1 / implementation, owner | Runner | Owner-directed Rust / PowerShell 7.6 tooling migration | Replace every owned Python implementation and CI invocation, including imported CPU comparison tooling, with Rust or PowerShell 7.6. Preserve independent numerical/replay and fail-closed policy gates, bind native helper artifacts to source, update commands and prevent Python reintroduction. Deliver each logical change as a local commit; owner-operated hosted checks retain acceptance. |
 | C1 / owner | Runner | Reviewed local CI corrections and startup preflight | Publish through the owner and qualify Source checks and Foundation on that source; see [publication prerequisites](#publication-and-qualification-prerequisites). |
 | A1 / qualification | Runner with pinned Prism | C1 and an exact-source acceptance package | Qualify Rust/PQ2 DX12 startup, readiness, Stop/Retry, recovery and explicit publisher rollback under [actual-model acceptance](#actual-model-acceptance). |
 | R1 / qualification | Runner with Prism | Source-bound 0.1.27 development bundle and atomic runtime/source pins | Qualify the new active release after Runner 0.3.0 publication. This is a development upgrade, not a performance promotion. Keep the fixed 0.1.23 CPU comparison baseline, registry 0.1.25 comparison candidate and all historical evidence identities unchanged. |
