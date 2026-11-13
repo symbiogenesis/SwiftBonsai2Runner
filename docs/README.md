@@ -6,7 +6,7 @@ executable and open it; setup and retry happen inside the app. The
 separate contributor commands. [PLAN.md](../PLAN.md) is the single backlog; these guides own current
 behavior, technical contracts and retained evidence.
 
-The app uses a native Rust UI, pinned Prism 0.1.26 on Windows ARM64, CPU inference
+The app uses a native Rust UI, pinned Prism 0.1.27 on Windows ARM64, CPU inference
 with experimental X2 resident Hexagon acceleration, and a strict local HTTP/JSON/SSE
 subset. Implementation does not establish model, device, quality or isolation
 acceptance; experimental runtimes, formats and accelerators need separate qualification.
@@ -80,7 +80,3 @@ Routine check results belong in commits or delivery messages. Preserve required
 raw bytes and integrity records; leave completed review diaries, temporary drivers
 and duplicate payloads in Git history. Historical summaries identify their original
 revision and replay limits; they cannot qualify current source.
-
-The pre-cleanup evidence tree is at `7b37b29826b377386c1ddfe933cd4e75d6a97856`.
-Read historical local commits with `git show <revision>:<path>`; GitHub links work
-after the owner publishes them.

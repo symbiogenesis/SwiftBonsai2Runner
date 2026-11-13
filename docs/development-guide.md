@@ -39,8 +39,8 @@ actual-model and broker-only/same-user isolation limits still apply.
 
 ## Implementation delivery
 
-Use [PLAN's execution map](../PLAN.md#execution-map) for task state, prerequisites
-and acceptance requirements. Before assigning work, identify its next action:
+Use the [PLAN checklist](../PLAN.md) for outstanding work, prerequisites and
+acceptance requirements. Before assigning work, identify its next action:
 implementation, integration, qualification, owner/external dependency or
 conditional work. Prefer existing candidates and qualification helpers.
 
@@ -52,14 +52,11 @@ digests, runtime archive/file locks, model/representation, adapter/scale and
 selected device/driver/kernel. A version number alone is insufficient. Continue
 implementation in separate worktrees; review changed dependencies before reusing evidence.
 
-The active 0.1.27 source retains efficiencies awaiting qualification.
-The [historical 0.1.25 registry delivery](evidence/prism-0125-publish-20261112/summary.json)
-retains its original helper identities. The 0.1.26 registry package instead selects
-`bonsai-neon-dot 0.1.3`; 0.1.27 retains those published helper versions. The
-source-bound binary release retains its own exact source and archive identities.
-Newer local CPU candidates need separate
-source review, and binary repins require genuine source-bound published bundles.
-Follow the [runtime lock update](#prepare-a-runtime-lock-update) and
+Runtime repins require genuine source-bound published bundles and synchronized
+binary/exact-source locks. New local CPU candidates need separate source review;
+fixed comparison inputs retain their own identities under the
+[CPU comparison contract](cpu-bundle-comparison.md). Follow the
+[runtime lock update](#prepare-a-runtime-lock-update) and
 [CPU verification contract](cpu-kernels.md).
 
 Use one integrator and at most three workers with disjoint files and explicit
