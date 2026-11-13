@@ -73,7 +73,7 @@ fn capabilities(tool: &Path, working: &Path) -> crate::Result<Value> {
         serde_json::from_str(&result.stdout).map_err(|error| error.to_string())?
     };
     if version["Name"] != "bonsai-tools"
-        || version["Version"] != "0.1.0"
+        || version["Version"] != env!("CARGO_PKG_VERSION")
         || version["ProtocolVersion"] != 5
         || version["StartupProtocolVersion"] != 1
         || version["BootstrapProtocolVersion"] != 1
