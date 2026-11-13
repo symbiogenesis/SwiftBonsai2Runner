@@ -95,10 +95,27 @@ fn host_cache_directory(
     host_key: &str,
     asr_architecture: &str,
 ) -> PathBuf {
+    host_cache_in(
+        &data.join("build"),
+        repo,
+        channel,
+        host_key,
+        asr_architecture,
+    )
+}
+
+fn host_cache_in(
+    target_root: &Path,
+    repo: &Path,
+    channel: &str,
+    host_key: &str,
+    asr_architecture: &str,
+) -> PathBuf {
     // A changed receipt alone cannot invalidate Cargo's already compiled native
     // objects. Partition the complete target directory, keeping its label short
     // enough for the MSVC archive paths on ordinary Windows user profiles.
-    data.join("build/native-speech")
+    target_root
+        .join("native-speech")
         .join(crate::source_build::cache_key(
             repo,
             &format!("{channel}\n{host_key}\nasr={asr_architecture}"),
@@ -488,19 +505,76 @@ pub(crate) fn build_with_environment(
     asr_target: AsrBuildTarget,
     build_environment: &BTreeMap<String, String>,
 ) -> crate::Result<Value> {
+    build_configured(
+        repo,
+        data,
+        working,
+        model,
+        force,
+        &BuildOptions {
+            asr_target,
+            environment: build_environment,
+            target_directory: None,
+            include_sources: false,
+        },
+    )
+}
+
+struct BuildOptions<'a> {
+    asr_target: AsrBuildTarget,
+    environment: &'a BTreeMap<String, String>,
+    target_directory: Option<&'a Path>,
+    include_sources: bool,
+}
+
+/// Builds package inputs, optionally returning checked notice sources.
+pub(crate) fn build_for_package(
+    repo: &Path,
+    data: &Path,
+    working: &Path,
+    model: &str,
+    force: bool,
+    target_directory: Option<&Path>,
+    include_sources: bool,
+) -> crate::Result<Value> {
+    build_configured(
+        repo,
+        data,
+        working,
+        model,
+        force,
+        &BuildOptions {
+            asr_target: AsrBuildTarget::Host,
+            environment: &BTreeMap::new(),
+            target_directory,
+            include_sources,
+        },
+    )
+}
+
+fn build_configured(
+    repo: &Path,
+    data: &Path,
+    working: &Path,
+    model: &str,
+    force: bool,
+    options: &BuildOptions<'_>,
+) -> crate::Result<Value> {
     require_host()?;
     external(data)?;
     external(working)?;
     let channel = crate::source_build::channel(repo)?;
     let native_host = host()?;
+    let asr_target = options.asr_target;
     let asr_architecture = host_asr_architecture(asr_target);
-    let target_directory = host_cache_directory(
-        data,
-        repo,
-        &channel,
-        text(&native_host, "HostCacheKey")?,
-        asr_architecture,
-    );
+    let host_key = text(&native_host, "HostCacheKey")?;
+    let target_directory = if let Some(target) = options.target_directory {
+        external(target)?;
+        host_cache_in(target, repo, &channel, host_key, asr_architecture)
+    } else {
+        host_cache_directory(data, repo, &channel, host_key, asr_architecture)
+    };
+    let build_environment = options.environment;
     let mut identity = format!(
         "{}\n{}\n{native_host}\nasr-target={asr_target:?}\nasr={asr_architecture}",
         crate::speech_build::build_plan()?,
@@ -521,13 +595,15 @@ pub(crate) fn build_with_environment(
         identity,
         force,
     };
+    let mut prepared_sources = None;
     let outputs = crate::source_build::cached_build_with_timeout(
         &spec,
         || {
-            let mut overlay: BTreeMap<String, String> = serde_json::from_value(
-                environment_for(data, working, asr_architecture)?["Environment"].clone(),
-            )
-            .map_err(|error| error.to_string())?;
+            let native = environment_for(data, working, asr_architecture)?;
+            prepared_sources = Some(PathBuf::from(text(&native, "SourceDirectory")?));
+            let mut overlay: BTreeMap<String, String> =
+                serde_json::from_value(native["Environment"].clone())
+                    .map_err(|error| error.to_string())?;
             overlay.extend(build_environment.clone());
             Ok(overlay)
         },
@@ -537,10 +613,18 @@ pub(crate) fn build_with_environment(
             1200
         }),
     )?;
-    Ok(
-        json!({"AsrPath": outputs.get("bonsai-speech-asr"), "TtsPath": outputs.get("bonsai-speech-tts"),
-            "NativeBuildHost": native_host, "AsrCpuArchitecture": asr_architecture}),
-    )
+    let mut result = json!({"AsrPath": outputs.get("bonsai-speech-asr"), "TtsPath": outputs.get("bonsai-speech-tts"),
+        "NativeBuildHost": native_host, "AsrCpuArchitecture": asr_architecture});
+    if options.include_sources {
+        // A cache hit skipped compiler preparation. Verify source bytes for
+        // notices without provisioning LLVM or discovering Visual Studio.
+        let source = prepared_sources.map_or_else(
+            || stage_sources(data, working, &crate::speech_build::build_plan()?),
+            Ok,
+        )?;
+        result["SourceDirectory"] = json!(source);
+    }
+    Ok(result)
 }
 
 /// Provisions selected speech models, deferring cached hashes only for launch use.
@@ -848,6 +932,13 @@ mod tests {
         let channel = "nightly-2026-11-12-aarch64-pc-windows-msvc";
         let architecture = "armv8-a+dotprod+i8mm";
         let directory = host_cache_directory(data, repo, channel, key, architecture);
+        let target = Path::new("C:/restored cargo cache");
+        let overridden = host_cache_in(target, repo, channel, key, architecture);
+        assert_eq!(
+            overridden.parent(),
+            Some(target.join("native-speech").as_path())
+        );
+        assert_eq!(directory.file_name(), overridden.file_name());
         assert_eq!(
             directory
                 .file_name()
@@ -879,10 +970,18 @@ mod tests {
                 directory,
                 host_cache_directory(data, repo, channel, changed_key, architecture)
             );
+            assert_ne!(
+                overridden,
+                host_cache_in(target, repo, channel, changed_key, architecture)
+            );
         }
         assert_ne!(
             directory,
             host_cache_directory(data, repo, channel, key, "armv8-a")
+        );
+        assert_ne!(
+            overridden,
+            host_cache_in(target, repo, channel, key, "armv8-a")
         );
         assert!(
             crate::speech_build::run(json!({"operation": "host", "processorName": "injected"}))

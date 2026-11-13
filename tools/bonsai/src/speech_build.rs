@@ -56,6 +56,11 @@ enum Request {
         model: String,
         #[serde(default)]
         force_build: bool,
+        // A cache root; native objects remain partitioned by compiler and host.
+        #[serde(default)]
+        target_directory: Option<PathBuf>,
+        #[serde(default)]
+        include_sources: bool,
     },
     #[serde(rename = "models", rename_all = "camelCase")]
     Models {
@@ -106,12 +111,16 @@ pub fn run(request: Value) -> crate::Result<Value> {
             working_directory,
             model,
             force_build,
-        } => crate::native_startup::build(
+            target_directory,
+            include_sources,
+        } => crate::native_startup::build_for_package(
             &repository_root,
             &data_directory,
             &working_directory,
             &model,
             force_build,
+            target_directory.as_deref(),
+            include_sources,
         ),
         Request::Models {
             data_directory,
@@ -683,7 +692,8 @@ fn inventory(
 
 #[cfg(test)]
 mod tests {
-    use super::{SourceSpec, build_plan, stage_source, stage_sources, validate_name};
+    use super::{Request, SourceSpec, build_plan, stage_source, stage_sources, validate_name};
+    use serde_json::json;
     use sha2::{Digest as _, Sha256};
     use std::{
         error::Error,
@@ -695,6 +705,32 @@ mod tests {
     use zip::{ZipWriter, write::SimpleFileOptions};
 
     type TestResult<T = ()> = Result<T, Box<dyn Error>>;
+
+    #[test]
+    fn build_cache_and_notice_source_options_are_explicit() -> TestResult {
+        let mut request = json!({"operation": "build", "repositoryRoot": "source",
+            "workingDirectory": "work", "dataDirectory": "data"});
+        let parsed: Request = serde_json::from_value(request.clone())?;
+        assert!(matches!(
+            parsed,
+            Request::Build {
+                target_directory: None,
+                include_sources: false,
+                force_build: false,
+                ..
+            }
+        ));
+        let target = PathBuf::from("cache with spaces & fixtures");
+        request["targetDirectory"] = json!(target);
+        request["includeSources"] = json!(true);
+        let parsed: Request = serde_json::from_value(request.clone())?;
+        assert!(matches!(parsed, Request::Build {
+            target_directory: Some(path), include_sources: true, ..
+        } if path == target));
+        request["includeSources"] = json!("true");
+        assert!(serde_json::from_value::<Request>(request).is_err());
+        Ok(())
+    }
 
     fn scratch(name: &str) -> TestResult<PathBuf> {
         let nonce = SystemTime::now().duration_since(UNIX_EPOCH)?.as_nanos();

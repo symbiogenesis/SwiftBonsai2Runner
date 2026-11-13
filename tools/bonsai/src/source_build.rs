@@ -256,6 +256,8 @@ enum Request {
         data_directory: PathBuf,
         packages: Vec<String>,
         #[serde(default)]
+        target_directory: Option<PathBuf>,
+        #[serde(default)]
         force_build: bool,
     },
 }
@@ -301,6 +303,7 @@ pub fn run(request: Value) -> crate::Result<Value> {
             working_directory,
             data_directory,
             packages,
+            target_directory,
             force_build,
         } => {
             if packages
@@ -310,9 +313,11 @@ pub fn run(request: Value) -> crate::Result<Value> {
                 return Err("Unsupported native chat package.".into());
             }
             let channel = channel(&repository_root)?;
-            let target_directory = data_directory
-                .join("build/chat")
-                .join(cache_key(&repository_root, &channel));
+            let target_directory = target_directory.unwrap_or_else(|| {
+                data_directory
+                    .join("build/chat")
+                    .join(cache_key(&repository_root, &channel))
+            });
             let spec = BuildSpec {
                 repository_root,
                 working_directory,
@@ -335,6 +340,28 @@ pub fn run(request: Value) -> crate::Result<Value> {
 mod tests {
     use super::*;
     use std::cell::Cell;
+
+    #[test]
+    fn chat_target_override_is_optional_and_preserves_literal_paths() -> crate::Result<()> {
+        let mut request = json!({"operation": "chat", "repositoryRoot": "source",
+            "workingDirectory": "work", "dataDirectory": "data", "packages": ["bonsai-chat"]});
+        let parsed: Request =
+            serde_json::from_value(request.clone()).map_err(|error| error.to_string())?;
+        assert!(matches!(
+            parsed,
+            Request::Chat {
+                target_directory: None,
+                ..
+            }
+        ));
+        let target = PathBuf::from("target cache & fixtures");
+        request["targetDirectory"] = json!(target);
+        let parsed: Request = serde_json::from_value(request).map_err(|error| error.to_string())?;
+        assert!(
+            matches!(parsed, Request::Chat { target_directory: Some(path), .. } if path == target)
+        );
+        Ok(())
+    }
 
     #[test]
     fn cache_labels_leave_room_for_windows_linker_artifacts() {
