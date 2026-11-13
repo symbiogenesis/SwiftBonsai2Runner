@@ -338,7 +338,8 @@ leave the gate pending if setup, work and cleanup cannot fit the owner budget.
 ## Memory-selected serving context
 
 Native Prism 0.1.26 and publisher Swift serving select context once per model
-launch from available physical memory. Retry takes a new observation; an active model keeps its context
+launch from available physical memory. Retry takes a new observation; an active
+model keeps its context
 so counting, generation, readiness and the native UI use the same capacity.
 The reviewed native pin activates the paired context/memory protocol and
 selected-cache accounting. Serving capacity is separate from historical fixed-8K
@@ -413,7 +414,8 @@ The K4/V4 default and explicit FP16 recovery remain separate selections.
 The capacity-first alternative is available as trusted `--placement cpu` (JSON
 `Placement: "cpu"`, PowerShell `-Placement cpu`). It survives source, installed
 and deferred setup and model Retry. Its exact-source release gate selects the
-reviewed 0.1.26 runtime, which skips accelerator initialization and reports both `placement: "cpu"` and
+reviewed 0.1.26 runtime, which skips accelerator initialization and reports both
+`placement: "cpu"` and
 `projection_backend: "cpu"` at readiness. Omission or explicit `auto` keeps the
 existing automatic placement. Explicit placement is native-only, and requests
 cannot change it. The fixed 11 GiB allowance, two-cache charge and host/startup
@@ -430,7 +432,8 @@ combination independently; publication does not transfer historical model eviden
 
 For memory-sized serving, closing memory-heavy applications before a fresh launch
 or Retry can leave more RAM for the selected context. This cannot enlarge an
-already running model. Historical fixed-8K releases keep their original capacity. Keep completed work before
+already running model. Historical fixed-8K releases keep their original capacity.
+Keep completed work before
 restarting; the planner retains the same host and startup reserves.
 
 The broker publishes the actual capacity to its owned UI. Until it is known,

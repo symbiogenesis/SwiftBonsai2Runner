@@ -180,7 +180,8 @@ and the remaining hosted and clean-machine acceptance gates.
 The [portable package workflow](chat-packages.md) installs reviewed prebuilt app
 files without a checkout/compiler. Source launch requires native Windows ARM64,
 the pinned Rust toolchain, a built maintenance executable, internet access for setup and
-sufficient available RAM for the selected native context and launch budget. Serviced Windows 11 must admit PSEC 1.1 and
+sufficient available RAM for the selected native context and launch budget.
+Serviced Windows 11 must admit PSEC 1.1 and
 container-hosted loopback; failed containment never falls back to caller authority.
 
 Build the maintenance executable outside Git once, then launch. The native setup
@@ -798,7 +799,8 @@ a separate exact-source review of K4/V3 with the complete
 A publisher startup diagnostic of `process=exited-0xC0000142` means Windows failed
 runtime initialization. **Retry model** repeats the selected runtime; it does not
 switch to Rust. Close the window and relaunch with `--native-engine` after provisioning
-with Rust `provision` operation `inference`. Retain the same data directory, model and adapter options;
+with Rust `provision` operation `inference`. Retain the same data directory,
+model and adapter options;
 `--native-engine` alone keeps original PQ2 and the approved adapter selected.
 
 Use `bonsai-tools chat --native-engine --use-original-pq2` to select the pinned
