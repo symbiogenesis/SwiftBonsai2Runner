@@ -284,7 +284,7 @@ impl Synthesizer {
             threads,
         } = self;
         voices.get_or_create(profile, || {
-            let talker = match design.take() {
+            let mut talker = match design.take() {
                 Some(talker) => talker,
                 None => load_talker(model_path, "voice_design", *threads)
                     .map_err(|error| SynthesisStage::DesignModel.failure(error))?,

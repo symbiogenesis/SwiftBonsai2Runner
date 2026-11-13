@@ -8,7 +8,7 @@
     reason = "Keep the serving types private to this crate."
 )]
 
-use std::io;
+use std::{io, mem::size_of};
 
 use crate::{
     engine::{
@@ -25,6 +25,10 @@ const VOICE_SEED: i64 = 42;
 const MAX_NEW_TOKENS: usize = 1500;
 const MAX_CONTEXT: usize = 4096;
 const MAX_REFERENCE_FRAMES: usize = 375;
+// A retained snapshot and its restored request copy together consume at most
+// 16 MiB. Ordinary request KV growth remains subject to the existing budget.
+const MAX_PREFILL_ROWS: usize = 64;
+const MAX_PREFILL_CACHE_BYTES: usize = 8 * 1024 * 1024;
 
 pub(crate) struct Reference {
     pub(crate) speaker: Vec<f32>,
@@ -177,11 +181,148 @@ pub(crate) struct Talker {
     tts_eos: Vec<f32>,
     threads: usize,
     base: bool,
+    prefill_cache: Option<PrefillCache>,
 }
 
 struct Prompt {
     rows: Vec<Vec<f32>>,
     trailing: Vec<Vec<f32>>,
+    cacheable_rows: usize,
+}
+
+struct PrefillCache {
+    rows: Vec<Vec<f32>>,
+    layers: Vec<LayerKvCache>,
+    hidden: Vec<f32>,
+}
+
+fn copy_f32(values: &[f32]) -> Option<Vec<f32>> {
+    let mut copy = Vec::new();
+    copy.try_reserve_exact(values.len()).ok()?;
+    copy.extend_from_slice(values);
+    Some(copy)
+}
+
+fn copy_layers(layers: &[LayerKvCache]) -> Option<Vec<LayerKvCache>> {
+    let mut copy = Vec::new();
+    copy.try_reserve_exact(layers.len()).ok()?;
+    for layer in layers {
+        copy.push(LayerKvCache {
+            k: copy_f32(&layer.k)?,
+            v: copy_f32(&layer.v)?,
+            seq_len: layer.seq_len,
+        });
+    }
+    Some(copy)
+}
+
+impl PrefillCache {
+    fn row_limit(hidden: usize, kv_width: usize, layers: usize) -> Option<usize> {
+        let hidden_bytes = hidden.checked_mul(size_of::<f32>())?;
+        let fixed = size_of::<Self>()
+            .checked_add(layers.checked_mul(size_of::<LayerKvCache>())?)?
+            .checked_add(hidden_bytes)?;
+        let per_row = kv_width
+            .checked_mul(layers)?
+            .checked_mul(2)?
+            .checked_mul(size_of::<f32>())?
+            .checked_add(hidden_bytes)?
+            .checked_add(size_of::<Vec<f32>>())?;
+        Some(
+            MAX_PREFILL_CACHE_BYTES
+                .checked_sub(fixed)?
+                .checked_div(per_row)?
+                .min(MAX_PREFILL_ROWS),
+        )
+    }
+
+    fn bytes(rows: &[Vec<f32>], layers: &[LayerKvCache], hidden: &[f32]) -> Option<usize> {
+        let mut bytes = size_of::<Self>()
+            .checked_add(rows.len().checked_mul(size_of::<Vec<f32>>())?)?
+            .checked_add(layers.len().checked_mul(size_of::<LayerKvCache>())?)?
+            .checked_add(hidden.len().checked_mul(size_of::<f32>())?)?;
+        for row in rows {
+            bytes = bytes.checked_add(row.len().checked_mul(size_of::<f32>())?)?;
+        }
+        for layer in layers {
+            bytes = bytes.checked_add(
+                layer
+                    .k
+                    .len()
+                    .checked_add(layer.v.len())?
+                    .checked_mul(size_of::<f32>())?,
+            )?;
+        }
+        Some(bytes)
+    }
+
+    fn capture(rows: &[Vec<f32>], layers: &[LayerKvCache], hidden: &[f32]) -> Option<Self> {
+        if rows.is_empty()
+            || rows.len() > MAX_PREFILL_ROWS
+            || Self::bytes(rows, layers, hidden)? > MAX_PREFILL_CACHE_BYTES
+        {
+            return None;
+        }
+        let mut copied_rows = Vec::new();
+        copied_rows.try_reserve_exact(rows.len()).ok()?;
+        for row in rows {
+            copied_rows.push(copy_f32(row)?);
+        }
+        let snapshot = Self {
+            rows: copied_rows,
+            layers: copy_layers(layers)?,
+            hidden: copy_f32(hidden)?,
+        };
+        (snapshot.allocated_bytes()? <= MAX_PREFILL_CACHE_BYTES).then_some(snapshot)
+    }
+
+    fn allocated_bytes(&self) -> Option<usize> {
+        let mut bytes = size_of::<Self>()
+            .checked_add(self.rows.capacity().checked_mul(size_of::<Vec<f32>>())?)?
+            .checked_add(
+                self.layers
+                    .capacity()
+                    .checked_mul(size_of::<LayerKvCache>())?,
+            )?
+            .checked_add(self.hidden.capacity().checked_mul(size_of::<f32>())?)?;
+        for row in &self.rows {
+            bytes = bytes.checked_add(row.capacity().checked_mul(size_of::<f32>())?)?;
+        }
+        for layer in &self.layers {
+            bytes = bytes.checked_add(
+                layer
+                    .k
+                    .capacity()
+                    .checked_add(layer.v.capacity())?
+                    .checked_mul(size_of::<f32>())?,
+            )?;
+        }
+        Some(bytes)
+    }
+
+    fn matches(&self, rows: &[Vec<f32>], layer_count: usize) -> bool {
+        self.layers.len() == layer_count
+            && self.rows.len() == rows.len()
+            && self.rows.iter().zip(rows).all(|(cached, row)| {
+                cached.len() == row.len()
+                    && cached
+                        .iter()
+                        .zip(row)
+                        .all(|(a, b)| a.to_bits() == b.to_bits())
+            })
+    }
+
+    fn restore(&self) -> Option<(Vec<LayerKvCache>, Vec<f32>)> {
+        let restored = Self {
+            rows: Vec::new(),
+            layers: copy_layers(&self.layers)?,
+            hidden: copy_f32(&self.hidden)?,
+        };
+        if restored.allocated_bytes()? > MAX_PREFILL_CACHE_BYTES {
+            return None;
+        }
+        Some((restored.layers, restored.hidden))
+    }
 }
 
 impl Talker {
@@ -295,6 +436,7 @@ impl Talker {
             tts_eos: Vec::new(),
             threads,
             base,
+            prefill_cache: None,
         };
         result.tts_pad = result.project_text(result.specials.text_pad)?;
         result.tts_bos = result.project_text(result.specials.text_bos)?;
@@ -394,10 +536,12 @@ impl Talker {
         rows.push(prefix);
 
         let body = &ids[3..ids.len() - 5];
+        let mut cacheable_rows = 0;
         let trailing = if let Some(reference) = reference {
             let reference_ids = self.framed_ids(REFERENCE_TEXT)?;
+            let reference_body = &reference_ids[3..reference_ids.len() - 5];
             let mut text_rows = Vec::new();
-            for &id in reference_ids[3..reference_ids.len() - 5].iter().chain(body) {
+            for &id in reference_body.iter().chain(body) {
                 cancel()?;
                 text_rows.push(self.project_text(id)?);
             }
@@ -408,6 +552,8 @@ impl Talker {
                 codec_rows.push(self.sum_codes(frame)?);
             }
             let aligned = align_icl(text_rows, codec_rows, &self.tts_pad)?;
+            cacheable_rows =
+                (rows.len() + reference_body.len().min(aligned.rows.len())).min(MAX_PREFILL_ROWS);
             rows.extend(aligned.rows);
             aligned.trailing
         } else {
@@ -428,7 +574,11 @@ impl Talker {
         if rows.len() >= MAX_CONTEXT {
             return Err(invalid("Speech prompt exceeds its context budget."));
         }
-        Ok(Prompt { rows, trailing })
+        Ok(Prompt {
+            rows,
+            trailing,
+            cacheable_rows,
+        })
     }
 
     fn forward(
@@ -456,20 +606,80 @@ impl Talker {
     }
 
     pub(crate) fn generate(
-        &self,
+        &mut self,
         text: &str,
         instruct: Option<&str>,
         reference: Option<&Reference>,
         sink: &mut dyn FnMut([i32; TOTAL_CODE_GROUPS]) -> io::Result<()>,
         cancel: &mut dyn FnMut() -> io::Result<()>,
     ) -> io::Result<()> {
+        // Take the snapshot before prompt construction: every failure, including
+        // cancelled projection or sink output, discards all reusable KV state.
+        let mut prefill_cache = self.prefill_cache.take();
+        let result =
+            self.generate_inner(text, instruct, reference, sink, cancel, &mut prefill_cache);
+        if result.is_ok() {
+            self.prefill_cache = prefill_cache;
+        }
+        result
+    }
+
+    fn prefill(
+        &self,
+        prompt: &Prompt,
+        snapshot: &mut Option<PrefillCache>,
+        cancel: &mut dyn FnMut() -> io::Result<()>,
+    ) -> io::Result<(Vec<LayerKvCache>, Vec<f32>)> {
+        cancel()?;
+        let prefix = prompt
+            .cacheable_rows
+            .min(MAX_PREFILL_ROWS)
+            .min(
+                self.geometry
+                    .kv_heads
+                    .checked_mul(self.geometry.head_dim)
+                    .and_then(|width| {
+                        PrefillCache::row_limit(self.geometry.hidden, width, self.layers.len())
+                    })
+                    .unwrap_or(0),
+            )
+            .min(prompt.rows.len());
+        let restored = snapshot
+            .as_ref()
+            .filter(|cache| cache.matches(&prompt.rows[..prefix], self.layers.len()))
+            .and_then(PrefillCache::restore);
+        let reused = restored.is_some();
+        if !reused {
+            *snapshot = None;
+        }
+        let (mut caches, mut hidden) = restored
+            .unwrap_or_else(|| (vec![LayerKvCache::default(); self.layers.len()], Vec::new()));
+        for (position, row) in prompt
+            .rows
+            .iter()
+            .enumerate()
+            .skip(if reused { prefix } else { 0 })
+        {
+            hidden = self.forward(row, &mut caches, cancel)?;
+            if !reused && prefix != 0 && position + 1 == prefix {
+                *snapshot = PrefillCache::capture(&prompt.rows[..prefix], &caches, &hidden);
+            }
+        }
+        Ok((caches, hidden))
+    }
+
+    fn generate_inner(
+        &self,
+        text: &str,
+        instruct: Option<&str>,
+        reference: Option<&Reference>,
+        sink: &mut dyn FnMut([i32; TOTAL_CODE_GROUPS]) -> io::Result<()>,
+        cancel: &mut dyn FnMut() -> io::Result<()>,
+        prefill_cache: &mut Option<PrefillCache>,
+    ) -> io::Result<()> {
         cancel()?;
         let prompt = self.prompt(text, instruct, reference, cancel)?;
-        let mut caches = vec![LayerKvCache::default(); self.layers.len()];
-        let mut hidden = Vec::new();
-        for row in &prompt.rows {
-            hidden = self.forward(row, &mut caches, cancel)?;
-        }
+        let (mut caches, mut hidden) = self.prefill(&prompt, prefill_cache, cancel)?;
         let mut history = Vec::with_capacity(MAX_NEW_TOKENS);
         // The sampler marks vocabulary entries while applying repetition
         // penalties after the first frame; its workspace is caller-owned.
@@ -561,6 +771,7 @@ fn align_icl(mut text: Vec<Vec<f32>>, codec: Vec<Vec<f32>>, pad: &[f32]) -> io::
     Ok(Prompt {
         rows: text,
         trailing,
+        cacheable_rows: 0,
     })
 }
 
@@ -593,9 +804,14 @@ fn invalid(message: &'static str) -> io::Error {
 
 #[cfg(test)]
 mod tests {
-    use super::{Geometry, REFERENCE_TEXT, Reference, Specials, Talker, align_icl, embedding_row};
+    use std::mem::size_of;
+
+    use super::{
+        Geometry, MAX_PREFILL_CACHE_BYTES, MAX_PREFILL_ROWS, PrefillCache, Prompt, REFERENCE_TEXT,
+        Reference, Specials, Talker, align_icl, embedding_row,
+    };
     use crate::{
-        engine::{CodePredictorModel, LinearProjection, WeightQuantization},
+        engine::{CodePredictorModel, LinearProjection, QwenDecoderLayer, WeightQuantization},
         tokenizer::Tokenizer,
     };
 
@@ -677,6 +893,7 @@ mod tests {
             tts_eos: vec![300.0],
             threads: 1,
             base,
+            prefill_cache: None,
         })
     }
 
@@ -690,6 +907,191 @@ mod tests {
                 row[0]
             );
         }
+    }
+
+    fn tiny_layer() -> std::io::Result<QwenDecoderLayer> {
+        let projection = |name, input, output, values| {
+            LinearProjection::new(name, input, output, WeightQuantization::F32(values), None)
+        };
+        Ok(QwenDecoderLayer {
+            attn_norm_w: vec![1.0],
+            q_proj: projection("fixture.q", 1, 2, vec![0.3, -0.7])?,
+            k_proj: projection("fixture.k", 1, 2, vec![-0.8, 0.4])?,
+            v_proj: projection("fixture.v", 1, 2, vec![0.2, 0.6])?,
+            o_proj: projection("fixture.o", 2, 1, vec![-0.5, 0.9])?,
+            q_norm_w: vec![1.0, 0.7],
+            k_norm_w: vec![0.9, 1.2],
+            ffn_norm_w: vec![1.1],
+            gate_proj: projection("fixture.gate", 1, 2, vec![0.3, -0.9])?,
+            up_proj: projection("fixture.up", 1, 2, vec![-0.4, 0.2])?,
+            down_proj: projection("fixture.down", 2, 1, vec![0.7, -0.1])?,
+        })
+    }
+
+    #[test]
+    fn prefix_prefill_reuses_real_decoder_state_with_bit_exact_suffixes() -> std::io::Result<()> {
+        let mut talker = prompt_fixture(true)?;
+        talker.layers = vec![tiny_layer()?];
+        let mut prompt = Prompt {
+            rows: vec![vec![0.25], vec![-0.6], vec![0.125]],
+            trailing: Vec::new(),
+            cacheable_rows: 2,
+        };
+        let mut snapshot = None;
+        let mut cold_calls = 0;
+        let cold = talker.prefill(&prompt, &mut snapshot, &mut || {
+            cold_calls += 1;
+            Ok(())
+        })?;
+        let mut warm_calls = 0;
+        let warm = talker.prefill(&prompt, &mut snapshot, &mut || {
+            warm_calls += 1;
+            Ok(())
+        })?;
+        assert_eq!((cold_calls, warm_calls), (4, 2));
+        let bits = |values: &[f32]| {
+            values
+                .iter()
+                .map(|value| value.to_bits())
+                .collect::<Vec<_>>()
+        };
+        let assert_state =
+            |a: &(Vec<crate::engine::LayerKvCache>, Vec<f32>),
+             b: &(Vec<crate::engine::LayerKvCache>, Vec<f32>)| {
+                assert_eq!(bits(&a.1), bits(&b.1));
+                assert_eq!(a.0.len(), b.0.len());
+                for (a, b) in a.0.iter().zip(&b.0) {
+                    assert_eq!(a.seq_len, b.seq_len);
+                    assert_eq!(bits(&a.k), bits(&b.k));
+                    assert_eq!(bits(&a.v), bits(&b.v));
+                }
+            };
+        assert_state(&cold, &warm);
+        prompt.rows[2][0] = -0.375;
+        let edited_suffix = talker.prefill(&prompt, &mut snapshot, &mut || Ok(()))?;
+        let edited_cold = talker.prefill(&prompt, &mut None, &mut || Ok(()))?;
+        assert_state(&edited_suffix, &edited_cold);
+        prompt.rows[0][0] = 0.5;
+        let mut changed_calls = 0;
+        let edited_prefix = talker.prefill(&prompt, &mut snapshot, &mut || {
+            changed_calls += 1;
+            Ok(())
+        })?;
+        assert_eq!(changed_calls, cold_calls);
+        assert_state(
+            &edited_prefix,
+            &talker.prefill(&prompt, &mut None, &mut || Ok(()))?,
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn prefix_snapshot_checks_bitwise_identity_row_and_byte_caps() {
+        assert_eq!(PrefillCache::row_limit(2048, 8 * 128, 28), Some(35));
+        assert_eq!(PrefillCache::row_limit(2048, usize::MAX, 28), None);
+        let rows = [vec![0.0]];
+        let snapshot = PrefillCache::capture(&rows, &[], &[1.0]);
+        assert!(
+            snapshot
+                .as_ref()
+                .is_some_and(|cache| cache.matches(&rows, 0))
+        );
+        assert!(
+            snapshot
+                .as_ref()
+                .is_some_and(|cache| !cache.matches(&[vec![-0.0]], 0))
+        );
+        assert!(PrefillCache::capture(&vec![vec![0.0]; MAX_PREFILL_ROWS + 1], &[], &[]).is_none());
+        assert!(PrefillCache::capture(&[], &[], &[]).is_none());
+        let oversized = vec![0.0; MAX_PREFILL_CACHE_BYTES / size_of::<f32>()];
+        assert!(PrefillCache::capture(&rows, &[], &oversized).is_none());
+    }
+
+    #[test]
+    fn prefix_snapshot_discards_on_cancelled_prompt_layer_and_output() -> std::io::Result<()> {
+        let mut talker = prompt_fixture(true)?;
+        talker.geometry.vocab = 1026;
+        talker.codec_embedding.resize(1026, 0.0);
+        talker.layers = vec![tiny_layer()?];
+        let eos_head = |eos| {
+            let mut bias = vec![-1000.0; 1026];
+            bias[if eos { 2 } else { 0 }] = 1000.0;
+            LinearProjection::new(
+                "fixture.semantic",
+                1,
+                1026,
+                WeightQuantization::F32(vec![0.0; 1026]),
+                Some(bias),
+            )
+        };
+        talker.head = eos_head(true)?;
+        let reference = Reference {
+            speaker: vec![6000.0],
+            codes: vec![[1; 16]],
+        };
+        talker.generate("x", None, Some(&reference), &mut |_| Ok(()), &mut || Ok(()))?;
+        assert!(talker.prefill_cache.is_some());
+        let mut cancelled = || {
+            Err(std::io::Error::new(
+                std::io::ErrorKind::Interrupted,
+                "cancelled",
+            ))
+        };
+        assert!(
+            talker
+                .generate("x", None, Some(&reference), &mut |_| Ok(()), &mut cancelled)
+                .is_err()
+        );
+        assert!(talker.prefill_cache.is_none());
+        talker.generate("x", None, Some(&reference), &mut |_| Ok(()), &mut || Ok(()))?;
+        // Count prompt cancellation observations independently of layer work,
+        // then interrupt the first uncached decoder position after restore.
+        let mut prompt_checks = 0;
+        let _ = talker.prompt("x", None, Some(&reference), &mut || {
+            prompt_checks += 1;
+            Ok(())
+        })?;
+        let mut checks = 0;
+        assert!(
+            talker
+                .generate("x", None, Some(&reference), &mut |_| Ok(()), &mut || {
+                    checks += 1;
+                    if checks == prompt_checks + 3 {
+                        cancelled()
+                    } else {
+                        Ok(())
+                    }
+                })
+                .is_err()
+        );
+        assert!(talker.prefill_cache.is_none());
+        talker.generate("x", None, Some(&reference), &mut |_| Ok(()), &mut || Ok(()))?;
+        talker.head = eos_head(false)?;
+        talker.predictor.codec_embeddings = vec![vec![0.0; 2]; 15];
+        talker.predictor.lm_heads = (0..15)
+            .map(|_| {
+                LinearProjection::new(
+                    "fixture.acoustic",
+                    1,
+                    2,
+                    WeightQuantization::F32(vec![0.0; 2]),
+                    Some(vec![1000.0, -1000.0]),
+                )
+            })
+            .collect::<std::io::Result<_>>()?;
+        assert!(
+            talker
+                .generate(
+                    "x",
+                    None,
+                    Some(&reference),
+                    &mut |_| { Err(std::io::Error::other("sink failed")) },
+                    &mut || Ok(())
+                )
+                .is_err()
+        );
+        assert!(talker.prefill_cache.is_none());
+        Ok(())
     }
 
     #[test]
