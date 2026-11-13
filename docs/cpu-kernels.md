@@ -441,6 +441,32 @@ genuine source-bound bundle and reviewed Runner repin. Source presence does not
 establish selection by Runner's ordinary serving path;
 verify the exact release lock and consumer before execution.
 
+### Ordered packed-KV code selection
+
+Local Prism source `57de5193ce5aaad20eecfe6ce6c646b88ca7cabc` reduces
+repeated distance calculations during packed K/V encoding. Automatic encoding
+brackets the nearest entries in the existing ordered 8/16-entry codebook,
+compares the original rounded binary32 distances, and recovers the earliest
+entry when several distances round to the same minimum. It uses no midpoint
+approximation, new codebook, persistent scratch or additional allocation.
+Explicit `Quantizer::scalar` encoding retains the exhaustive search as an
+independent control.
+
+The consumer is current-token `PackedCache::prepare` for K4/V4, fitted K4/V4
+and K4/V3 caches. FP16 caches do not consume it. Native, portable and
+feature-disabled automatic encoding share the same search; no optional ISA
+or helper publication is added. Focused controls compare exhaustive selection
+at centroid/midpoint boundaries, neighboring binary32 values, extreme rounded
+ties and deterministic finite bit patterns, then compare complete packed
+records across scale extremes and fitted-scale selection.
+
+This is a source candidate, not a measured X1 speedup or a Runner repin.
+Strict native/fallback compilation, exact codec and failure controls do not
+replace complete-model state/logit/adapter/cancellation acceptance, codegen,
+resources or matched CPU-only complete-request benefit. Publication requires
+a genuine source-bound runtime bundle and reviewed Runner locks under the
+[cross-generation promotion gates](#cross-generation-cpu-promotion).
+
 ## Execution and dispatch
 
 The default `experimental-neon` feature uses [`fearless_simd` 1.1.0][fearless]'s safe core API under
