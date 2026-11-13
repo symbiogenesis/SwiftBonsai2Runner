@@ -491,77 +491,78 @@ impl Updates {
         let operation = task.operation;
         self.task.take();
         match result {
-            Ok(result) => {
-                match result.status.as_str() {
-                    "available" => {
-                        if self.select_candidate(result) {
-                            self.start(Operation::Download);
-                        }
-                    }
-                    "current" => {
-                        self.version = None;
-                        self.release_identity = None;
-                        self.downloaded = false;
-                        self.status = "You are using the latest published version.".into();
-                    }
-                    "no-release" => {
-                        self.version = None;
-                        self.release_identity = None;
-                        self.downloaded = false;
-                        self.status = "No published releases yet.".into();
-                    }
-                    "downloaded" => {
-                        self.release_identity = result.release_identity;
-                        self.downloaded = true;
-                        self.status = "Update verified and ready to install.".into();
-                    }
-                    "queued" => {
-                        if operation != Operation::Install
-                            || !self.confirmed
-                            || !self.verified_download()
-                        {
-                            self.confirmed = false;
-                            self.status = "The update was not approved for this verified download. Check for updates and confirm again.".into();
-                            return Some("Application update: rejected a queued result without current confirmation and a verified download.".into());
-                        }
-                        self.queued = true;
-                        self.status = if self.installation.portable {
-                            "Closing Swift to replace the executable and reopen..."
-                        } else {
-                            "Closing Swift to open the Windows installer..."
-                        }
-                        .into();
-                    }
-                    _ => {}
+            Ok(result) => self.operation_finished(operation, result),
+            Err(error) => Some(self.operation_failed(operation, &error)),
+        }
+    }
+
+    fn operation_finished(&mut self, operation: Operation, result: Response) -> Option<String> {
+        match result.status.as_str() {
+            "available" => {
+                if self.select_candidate(result) {
+                    self.start(Operation::Download);
                 }
-                None
             }
-            Err(error) => {
-                self.cleanup_unconfirmed = error
-                    .to_string()
-                    .contains("Application update process cleanup could not be confirmed.");
-                if operation == Operation::Install {
-                    // Failed queue preparation never carries an old approval or
-                    // a potentially changed publication into another attempt.
-                    self.confirming = false;
+            "current" => {
+                self.version = None;
+                self.release_identity = None;
+                self.downloaded = false;
+                self.status = "You are using the latest published version.".into();
+            }
+            "no-release" => {
+                self.version = None;
+                self.release_identity = None;
+                self.downloaded = false;
+                self.status = "No published releases yet.".into();
+            }
+            "downloaded" => {
+                self.release_identity = result.release_identity;
+                self.downloaded = true;
+                self.status = "Update verified and ready to install.".into();
+            }
+            "queued" => {
+                if operation != Operation::Install || !self.confirmed || !self.verified_download() {
                     self.confirmed = false;
-                    self.downloaded = false;
-                    self.release_identity = None;
-                    if !self.cleanup_unconfirmed {
-                        self.next_check = Instant::now();
-                    }
+                    self.status = "The update was not approved for this verified download. Check for updates and confirm again.".into();
+                    return Some("Application update: rejected a queued result without current confirmation and a verified download.".into());
                 }
-                self.status = if self.cleanup_unconfirmed {
-                    "Update cleanup could not be confirmed. Close Swift before trying another update."
-                } else if operation == Operation::Check {
-                    "Could not check for updates. Try again or open diagnostics for details."
+                self.queued = true;
+                self.status = if self.installation.portable {
+                    "Closing Swift to replace the executable and reopen..."
                 } else {
-                    "The update did not complete. Try again or open diagnostics for details."
+                    "Closing Swift to open the Windows installer..."
                 }
                 .into();
-                Some(format!("Application update: {error}"))
+            }
+            _ => {}
+        }
+        None
+    }
+
+    fn operation_failed(&mut self, operation: Operation, error: &io::Error) -> String {
+        self.cleanup_unconfirmed = error
+            .to_string()
+            .contains("Application update process cleanup could not be confirmed.");
+        if operation == Operation::Install {
+            // Failed queue preparation never carries an old approval or
+            // a potentially changed publication into another attempt.
+            self.confirming = false;
+            self.confirmed = false;
+            self.downloaded = false;
+            self.release_identity = None;
+            if !self.cleanup_unconfirmed {
+                self.next_check = Instant::now();
             }
         }
+        self.status = if self.cleanup_unconfirmed {
+            "Update cleanup could not be confirmed. Close Swift before trying another update."
+        } else if operation == Operation::Check {
+            "Could not check for updates. Try again or open diagnostics for details."
+        } else {
+            "The update did not complete. Try again or open diagnostics for details."
+        }
+        .into();
+        format!("Application update: {error}")
     }
 
     pub(super) const fn should_close(&self) -> bool {
