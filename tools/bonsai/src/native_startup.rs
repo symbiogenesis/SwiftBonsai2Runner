@@ -343,7 +343,8 @@ fn transcribe_cmake_args(environment: &BTreeMap<String, String>, asr_architectur
 
 /// Prepares ASR compiler inputs and returns a child-only environment.
 pub(crate) fn environment(data: &Path, working: &Path) -> crate::Result<Value> {
-    environment_for(data, working, host_asr_architecture(AsrBuildTarget::Host))
+    let target = AsrBuildTarget::for_release(crate::startup_process::github_release_build());
+    environment_for(data, working, host_asr_architecture(target))
 }
 
 fn host_asr_architecture(target: AsrBuildTarget) -> &'static str {

@@ -73,6 +73,11 @@ if ($ManifestSha256 -cne ('b' * 64)) { throw 'Package digest changed.' }
             'explicit' { $parameters.TargetDirectory }
         }
         $cargo = $calls[0]
+        $targetIndex = [array]::IndexOf($cargo.arguments, '--target')
+        if ($targetIndex -lt 0 -or $cargo.arguments[$targetIndex + 1] -cne 'aarch64-pc-windows-msvc' -or
+            @($cargo.arguments | Where-Object { $_ -ceq '--target' }).Count -ne 1) {
+            throw 'Every local build must isolate application CRT flags with one explicit ARM64 target.'
+        }
         $actual = $cargo.arguments[[array]::IndexOf($cargo.arguments, '--target-dir') + 1]
         if ($actual -cne $expected -or $cargo.environment.CARGO_BUILD_FINGERPRINT -cne 'content' -or
             $cargo.environment.CARGO_UNSTABLE_CHECKSUM_FRESHNESS -cne 'true' -or

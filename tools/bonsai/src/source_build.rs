@@ -312,7 +312,7 @@ pub fn run(request: Value) -> crate::Result<Value> {
                 target_directory,
                 packages: vec!["bonsai-tools".into()],
                 channel,
-                target: None,
+                target: Some("aarch64-pc-windows-msvc".into()),
                 identity: "maintenance".into(),
                 force: force_build,
             };
@@ -468,6 +468,13 @@ mod tests {
             Some(std::ffi::OsStr::new("build"))
         );
         assert!(arguments.contains(&"--locked".into()));
+        assert_eq!(
+            arguments
+                .array_windows::<2>()
+                .filter(|pair| pair[0] == "--target" && pair[1] == "aarch64-pc-windows-msvc")
+                .count(),
+            1
+        );
         for path in outputs(spec)?.values() {
             fs::create_dir_all(path.parent().ok_or("Missing output parent.")?)
                 .map_err(|error| error.to_string())?;

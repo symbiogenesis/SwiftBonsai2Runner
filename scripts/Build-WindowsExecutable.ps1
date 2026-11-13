@@ -59,12 +59,9 @@ $scratch = Join-Path (Resolve-ReleasePath ([IO.Path]::GetTempPath())) ('SwiftBon
 try {
     $target = if ($TargetDirectory) { $TargetDirectory } else { Join-Path $DataDirectory 'build/maintenance' }
     $arguments = @("+$channel", 'build', '--locked', '--release', '--manifest-path', $manifestPath,
-        '--package', 'bonsai-tools', '--bin', 'bonsai-tools', '--bin', 'bonsai-launcher', '--target-dir', $target)
-    $binaryDirectory = Join-Path $target 'release'
-    if ($TargetDirectory) {
-        $arguments += @('--target', 'aarch64-pc-windows-msvc')
-        $binaryDirectory = Join-Path $target 'aarch64-pc-windows-msvc/release'
-    }
+        '--package', 'bonsai-tools', '--bin', 'bonsai-tools', '--bin', 'bonsai-launcher',
+        '--target', 'aarch64-pc-windows-msvc', '--target-dir', $target)
+    $binaryDirectory = Join-Path $target 'aarch64-pc-windows-msvc/release'
     Write-Host 'Building the console maintenance tool and windowless launcher with the repository compiler pin.'
     $null = Invoke-ReleaseCommand 'cargo' $arguments -TimeoutSeconds 600 -Environment @{
         CARGO_BUILD_FINGERPRINT = 'content'; CARGO_UNSTABLE_CHECKSUM_FRESHNESS = 'true'

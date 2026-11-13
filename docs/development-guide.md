@@ -210,12 +210,15 @@ worker prepares Swift and its pinned adapter. Rebuild after maintenance-source c
 ```powershell
 $repo = $PWD.Path
 $target = Join-Path $env:LOCALAPPDATA 'SwiftBonsai2/build/maintenance'
-cargo build --locked --release --manifest-path (Join-Path $repo 'Cargo.toml') --package bonsai-tools --bin bonsai-tools --target-dir $target
-$env:BONSAI_TOOLS_PATH = Join-Path $target 'release/bonsai-tools.exe'
+cargo --config 'target.aarch64-pc-windows-msvc.rustflags=["-C","target-feature=+crt-static"]' build --locked --release --target aarch64-pc-windows-msvc --manifest-path (Join-Path $repo 'Cargo.toml') --package bonsai-tools --bin bonsai-tools --target-dir $target
+$env:BONSAI_TOOLS_PATH = Join-Path $target 'aarch64-pc-windows-msvc/release/bonsai-tools.exe'
 $env:PATH = (Split-Path $env:BONSAI_TOOLS_PATH) + [IO.Path]::PathSeparator + $env:PATH
 $data = Join-Path $env:LOCALAPPDATA 'SwiftBonsai2'
 bonsai-tools chat --data-directory $data
 ```
+
+The explicit target keeps application static-CRT flags out of host build scripts
+and procedural macros, including when the host is also Windows ARM64.
 
 The optional convenience launcher uses the same prebuilt executable:
 

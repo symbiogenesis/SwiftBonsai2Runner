@@ -60,11 +60,16 @@ fn github_release_context(value: impl Fn(&str) -> String) -> bool {
 // Only build/preparation callers opt in. HTTP, model and teardown deadlines keep
 // their ordinary bounds, even when running inside the release workflow.
 pub(crate) fn build_timeout(ordinary: Duration) -> Duration {
-    if github_release_context(|name| std::env::var(name).unwrap_or_default()) {
+    if github_release_build() {
         Duration::ZERO
     } else {
         ordinary
     }
+}
+
+/// Identify only the explicit hosted Windows ARM64 release build context.
+pub(crate) fn github_release_build() -> bool {
+    github_release_context(|name| std::env::var(name).unwrap_or_default())
 }
 
 pub(crate) fn resolve(executable: &OsStr) -> crate::Result<PathBuf> {

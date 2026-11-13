@@ -36,8 +36,16 @@ $ErrorActionPreference = 'Stop'
 $PSNativeCommandUseErrorActionPreference = $false
 
 if (-not $ToolPath -and $env:LOCALAPPDATA) {
-    $cachedTool = Join-Path $env:LOCALAPPDATA 'SwiftBonsai2/build/maintenance/release/bonsai-tools.exe'
-    if (Test-Path -LiteralPath $cachedTool -PathType Leaf) { $ToolPath = $cachedTool }
+    foreach ($relative in @(
+        'SwiftBonsai2/build/maintenance/aarch64-pc-windows-msvc/release/bonsai-tools.exe',
+        'SwiftBonsai2/build/maintenance/release/bonsai-tools.exe'
+    )) {
+        $cachedTool = Join-Path $env:LOCALAPPDATA $relative
+        if (Test-Path -LiteralPath $cachedTool -PathType Leaf) {
+            $ToolPath = $cachedTool
+            break
+        }
+    }
 }
 if (-not $ToolPath) {
     $command = Get-Command bonsai-tools.exe -CommandType Application -ErrorAction SilentlyContinue | Select-Object -First 1
@@ -52,7 +60,7 @@ if (-not $ToolPath -or -not (Test-Path -LiteralPath $ToolPath -PathType Leaf)) {
         $manifest = (Join-Path (Split-Path $PSScriptRoot -Parent) 'Cargo.toml').Replace("'", "''")
         $target = (Join-Path $env:LOCALAPPDATA 'SwiftBonsai2/build/maintenance').Replace("'", "''")
         $message += "`nTo prepare the default tool, run this command from the repository root:`n" +
-            "cargo build --locked --release --manifest-path '$manifest' --package bonsai-tools --bin bonsai-tools --target-dir '$target'"
+            "cargo --config 'target.aarch64-pc-windows-msvc.rustflags=[`"-C`",`"target-feature=+crt-static`"]' build --locked --release --target aarch64-pc-windows-msvc --manifest-path '$manifest' --package bonsai-tools --bin bonsai-tools --target-dir '$target'"
     }
     $message += "`nSee docs/development-guide.md#native-chat-app for setup instructions."
     throw $message

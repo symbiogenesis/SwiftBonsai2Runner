@@ -10,6 +10,11 @@ pub(crate) enum AsrBuildTarget {
 }
 
 impl AsrBuildTarget {
+    /// Release distributions retain the portable floor; source builds stay host-bound.
+    pub(crate) const fn for_release(release: bool) -> Self {
+        if release { Self::Portable } else { Self::Host }
+    }
+
     /// Select only optional DOTPROD and I8MM instructions observed by the OS.
     /// Missing observations preserve the baseline; neither feature implies the other.
     pub(crate) const fn architecture(self, observed: Option<(bool, bool)>) -> &'static str {
@@ -43,6 +48,10 @@ mod tests {
             (Some((true, true)), "armv8-a+dotprod+i8mm"),
         ] {
             assert_eq!(AsrBuildTarget::Host.architecture(observed), expected);
+            assert_eq!(
+                AsrBuildTarget::for_release(false).architecture(observed),
+                expected
+            );
         }
     }
 
@@ -56,6 +65,10 @@ mod tests {
             Some((true, true)),
         ] {
             assert_eq!(AsrBuildTarget::Portable.architecture(observed), "armv8-a");
+            assert_eq!(
+                AsrBuildTarget::for_release(true).architecture(observed),
+                "armv8-a"
+            );
         }
     }
 
