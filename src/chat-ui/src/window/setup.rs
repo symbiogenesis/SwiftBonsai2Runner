@@ -58,6 +58,10 @@ impl State {
 
     fn can_retry_setup(&self) -> bool {
         self.setup_stopped_for_update()
+            && !self
+                .updates
+                .as_ref()
+                .is_some_and(super::updates::Updates::installing)
     }
 
     pub(super) fn retry_setup(&mut self) {
@@ -81,8 +85,14 @@ impl State {
         );
     }
 
-    fn retry_speech_setup(&mut self) {
-        if self.startup.is_some() || self.startup_request.is_some() {
+    pub(super) fn retry_speech_setup(&mut self) {
+        if self.startup.is_some()
+            || self.startup_request.is_some()
+            || self
+                .updates
+                .as_ref()
+                .is_some_and(super::updates::Updates::installing)
+        {
             return;
         }
         let Some(error) = self.setup.speech_error.as_deref() else {
@@ -158,6 +168,11 @@ impl State {
                 .show(ui, |ui| {
                     ui.label("Speech setup could not finish. You can continue using text chat.");
                     let retry = self.startup.is_none()
+                        && self.startup_request.is_none()
+                        && !self
+                            .updates
+                            .as_ref()
+                            .is_some_and(super::updates::Updates::installing)
                         && self
                             .setup
                             .speech_error
