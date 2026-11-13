@@ -594,68 +594,170 @@ impl Updates {
     }
 
     pub(super) fn controls(&mut self, ui: &mut egui::Ui, can_install: bool) -> bool {
-        ui.heading("Application updates");
-        ui.label(format!("Application version {}", env!("CARGO_PKG_VERSION")));
-        ui.label(&self.status);
-        ui.label(egui::RichText::new("Checks GitHub automatically at startup and every six hours, including published prereleases.").small().weak());
-        if self.installation.portable {
-            ui.label("New releases download automatically. Replacing the executable requires your confirmation.");
-        }
+        update_header(ui);
+        status_frame(ui, |ui| {
+            ui.horizontal_top(|ui| {
+                if self.task.is_some() || self.installing() {
+                    ui.spinner();
+                }
+                ui.add(egui::Label::new(egui::RichText::new(&self.status).strong()).wrap());
+            });
+            if self.installation.portable {
+                ui.add_space(4.0);
+                ui.label(
+                    egui::RichText::new(
+                        "New releases download automatically. You choose when to install.",
+                    )
+                    .small()
+                    .weak(),
+                );
+            }
+        });
+        ui.add_space(10.0);
         let idle = self.task.is_none() && !self.installing() && !self.cleanup_unconfirmed;
-        if ui
-            .add_enabled(idle, egui::Button::new("Check for updates"))
-            .clicked()
-        {
-            self.start(Operation::Check);
-        }
-        if self.version.is_some()
-            && !self.downloaded
-            && ui
-                .add_enabled(idle, egui::Button::new("Download update"))
-                .clicked()
-        {
-            self.start(Operation::Download);
-        }
-        if self.downloaded {
-            if ui
-                .add_enabled(
-                    idle && can_install && self.verified_download(),
-                    egui::Button::new("Install update and close"),
-                )
-                .clicked()
+        ui.horizontal_wrapped(|ui| {
+            ui.spacing_mut().item_spacing = egui::vec2(8.0, 8.0);
+            if self.downloaded
+                && !self.confirming
+                && ui
+                    .add_enabled(
+                        idle && can_install && self.verified_download(),
+                        update_button(ui, "Install update and close", true),
+                    )
+                    .clicked()
             {
                 self.confirming = true;
             }
-            if !can_install && !self.installing() {
-                ui.label(egui::RichText::new("Finish the response and wait for model preparation or shutdown before installing.").small().weak());
+            if self.version.is_some()
+                && !self.downloaded
+                && ui
+                    .add_enabled(idle, update_button(ui, "Download update", true))
+                    .clicked()
+            {
+                self.start(Operation::Download);
             }
+            if ui
+                .add_enabled(
+                    idle,
+                    update_button(ui, "Check for updates", self.version.is_none()),
+                )
+                .clicked()
+            {
+                self.start(Operation::Check);
+            }
+        });
+        if self.downloaded && !can_install && !self.installing() {
+            ui.add_space(4.0);
+            ui.label(egui::RichText::new("Finish the response and wait for model preparation or shutdown before installing.").small().weak());
         }
         let mut install = false;
         if self.confirming {
-            ui.label(if self.installation.portable {
-                "Swift will close, replace this executable and reopen with the same options and data directory. Unsaved conversations follow your saving setting."
-            } else { "The app will close. Unsaved conversations follow your saving setting. Windows may ask for administrator approval. Reopen Swift after installation." });
-            ui.horizontal(|ui| {
-                if ui
-                    .add_enabled(
-                        can_install && idle && self.verified_download(),
-                        egui::Button::new("Close and install"),
-                    )
-                    .clicked()
-                {
-                    self.confirming = false;
-                    self.confirmed = true;
-                    install = true;
-                }
-                if ui.button("Cancel update").clicked() {
-                    self.confirming = false;
-                    self.confirmed = false;
-                }
+            ui.add_space(10.0);
+            status_frame(ui, |ui| {
+                ui.label(egui::RichText::new("Ready to close and install?").strong());
+                ui.add_space(4.0);
+                ui.label(if self.installation.portable {
+                    "Swift will close, replace this executable and reopen with the same options and data directory. Unsaved conversations follow your saving setting."
+                } else { "The app will close. Unsaved conversations follow your saving setting. Windows may ask for administrator approval. Reopen Swift after installation." });
+                ui.add_space(8.0);
+                ui.horizontal_wrapped(|ui| {
+                    ui.spacing_mut().item_spacing = egui::vec2(8.0, 8.0);
+                    if ui
+                        .add_enabled(
+                            can_install && idle && self.verified_download(),
+                            update_button(ui, "Close and install", true),
+                        )
+                        .clicked()
+                    {
+                        self.confirming = false;
+                        self.confirmed = true;
+                        install = true;
+                    }
+                    if ui.add(update_button(ui, "Cancel update", false)).clicked() {
+                        self.confirming = false;
+                        self.confirmed = false;
+                    }
+                });
             });
         }
-        ui.add_space(16.0);
+        ui.add_space(10.0);
+        ui.label(
+            egui::RichText::new(
+                "Checks GitHub at startup and every six hours. Published prereleases are included.",
+            )
+            .small()
+            .weak(),
+        );
         install
     }
+}
+
+fn update_header(ui: &mut egui::Ui) {
+    ui.horizontal_wrapped(|ui| {
+        ui.spacing_mut().item_spacing = egui::vec2(8.0, 6.0);
+        ui.label(
+            egui::RichText::new("Application updates")
+                .strong()
+                .size(16.0),
+        );
+        egui::Frame::new()
+            .fill(ui.visuals().extreme_bg_color)
+            .corner_radius(6)
+            .inner_margin(egui::Margin::symmetric(8, 4))
+            .show(ui, |ui| {
+                ui.label(
+                    egui::RichText::new(format!("v{}", env!("CARGO_PKG_VERSION")))
+                        .small()
+                        .monospace(),
+                )
+                .on_hover_text("Application version");
+            });
+    });
+    ui.add_space(10.0);
+}
+
+fn status_frame(ui: &mut egui::Ui, contents: impl FnOnce(&mut egui::Ui)) {
+    egui::Frame::new()
+        .fill(ui.visuals().faint_bg_color)
+        .corner_radius(8)
+        .inner_margin(12)
+        .show(ui, |ui| {
+            ui.set_width(ui.available_width());
+            ui.style_mut().wrap_mode = Some(egui::TextWrapMode::Wrap);
+            contents(ui);
+        });
+}
+
+fn update_button<'a>(ui: &egui::Ui, label: &'a str, primary: bool) -> egui::Button<'a> {
+    let button = egui::Button::new(egui::RichText::new(label).color(if primary {
+        ui.visuals().selection.stroke.color
+    } else {
+        ui.visuals().text_color()
+    }))
+    .min_size(egui::vec2(0.0, 34.0))
+    .corner_radius(8);
+    if primary {
+        button.fill(ui.visuals().selection.bg_fill)
+    } else {
+        button
+    }
+}
+
+/// Presents manual update guidance when no installed-app updater is attached.
+pub(super) fn manual_controls(ui: &mut egui::Ui) {
+    update_header(ui);
+    status_frame(ui, |ui| {
+        ui.label(egui::RichText::new("Manual updates").strong());
+        ui.add_space(4.0);
+        ui.label("Download the latest Windows ARM64 release from GitHub.");
+    });
+    ui.add_space(10.0);
+    ui.hyperlink_to(
+        "Open GitHub releases",
+        "https://github.com/symbiogenesis/SwiftBonsai2Runner/releases",
+    );
+    ui.add_space(10.0);
+    ui.label(egui::RichText::new("Close Swift, verify the new executable against its published SHA-256, then replace your copy. Keep the same data directory to preserve models and conversations.").small().weak());
 }
 
 #[cfg(test)]

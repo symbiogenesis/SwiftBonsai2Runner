@@ -1651,17 +1651,7 @@ impl State {
         let can_install = self.can_install_update();
         let setup_stopped = self.setup_stopped_for_update();
         let Some(updates) = &mut self.updates else {
-            ui.heading("Application updates");
-            ui.label("Portable releases update by replacing the application executable.");
-            ui.label(
-                "Close Swift, verify the new Windows ARM64 .exe against its published SHA-256, then replace your copy.",
-            );
-            ui.label("Keep the same data directory to preserve models and conversations.");
-            ui.hyperlink_to(
-                "Open GitHub releases",
-                "https://github.com/symbiogenesis/SwiftBonsai2Runner/releases",
-            );
-            ui.add_space(16.0);
+            updates::manual_controls(ui);
             return;
         };
         let requested = updates.controls(ui, can_install);
