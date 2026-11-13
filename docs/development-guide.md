@@ -593,16 +593,23 @@ Import uses the same
 Qwen3-ASR 1.7B transcription path as microphone input. Transcripts replace the
 composer selection or insert at its cursor and count as ordinary text prompts:
 the app sends once when Swift is ready, or leaves a draft for explicit Send otherwise.
+If transcription finishes while its viewer is open, the result stays in the draft
+for explicit Send. Later readiness or closing the viewer never sends that draft.
 A transcript that exceeds the chat prompt size stays complete in the separate
 transcript view; it never truncates the recording or modifies the existing draft.
-The composer shows a spinner, processed audio range, total duration and **Cancel
-transcription**. Rejections and failures remain visible with a reason and next
-step, even after microphone cleanup. **View transcript** and **Copy transcript**
-also retain completed segments after a failure or cancellation. These transcripts
-stay in session memory until **Dismiss audio status** or another import; copy them
-to keep them after closing the app.
-Escape, conversation changes and closing cancel import/transcription and discard
-late results. Unsupported, empty or failed audio leaves the existing draft intact.
+The composer's audio card shows the current segment range, estimated total duration
+and **Cancel transcription**. A bar shows completed audio only while the duration
+estimate supports it; it does not predict remaining processing time. Rejections and
+failures remain visible with a reason and next step, even after microphone cleanup.
+**View transcript** opens a centered modal with read-only selectable scrolling text
+and copy feedback; background shortcuts are blocked, and Escape closes the viewer.
+**Copy transcript** also retains completed segments after failure or cancellation.
+Transcripts stay in session memory until **Dismiss audio status** or a new import's
+first segment is accepted. Cancelling the picker or failing a new import preserves
+the previous transcript; copy it to keep it after closing the app.
+Outside the viewer, Escape cancels import/transcription; conversation changes and
+closing also cancel it and discard late results. Unsupported, empty or failed audio
+leaves the existing draft intact.
 
 Each completed response's lower-right **speaker button** reads it independently,
 including while a newer response generates. The active button becomes **Stop**;

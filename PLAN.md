@@ -552,7 +552,14 @@ Swift is ready. Cover unavailable Swift without deferred send, Escape, switching
 closing, late results, ASR/TTS exclusion and owned-worker cleanup. Verify visible
 progress/Cancel and persistent actionable rejection messages survive microphone
 cleanup, full/partial transcript view/copy, and complete oversized transcripts
-without composer truncation or automatic submission. Qualify the persistent
+without composer truncation or automatic submission. Qualify the audio card and
+transcript modal at minimum window size, display scaling and high contrast:
+segment ranges and estimated totals, completed-audio bars without a false wall-time
+estimate, read-only selection/copy feedback, blocked background shortcuts and Escape
+viewer dismissal. Cover completion while viewing without background submission,
+explicit Send afterward, and preservation of the previous transcript after picker
+cancellation or failed replacement before its first accepted segment.
+Qualify the persistent
 asynchronous Media Foundation reader on long compressed recordings: one source
 open, forward-only sample reads, mono/stereo rate conversion, bounded callback
 and frame storage, exact-boundary EOF lookahead and complete final-tail coverage.

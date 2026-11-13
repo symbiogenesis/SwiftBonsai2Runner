@@ -336,12 +336,19 @@ calls; asynchronous sample waits do not make those calls preemptible.
 Reader teardown waits at most two seconds for Flush and callback quiescence.
 Unconfirmed cleanup retains one Media Foundation startup reference for process
 safety, reports failure and closes further file-import admission until restart.
-File input needs no microphone permission. A separate composer notice shows
-progress, Cancel and persistent failures. Imports use authenticated Qwen3-ASR and
-the ordinary prompt path, preserving draft selection/cursor insertion, cancellation,
-conversation ownership and no deferred automatic send. Full/partial transcripts
-stay viewable and copyable for the session until dismissed or replaced. Oversized
-transcripts remain complete in that view, preserve the draft and send no message.
+File input needs no microphone permission. A native composer card shows Cancel,
+persistent actionable failures and the current segment range against an estimated
+total duration. Its completed-audio bar appears only when the duration estimate
+supports it; this is no wall-time estimate. Imports use authenticated Qwen3-ASR
+and the ordinary prompt path, inserting at the draft selection/cursor and sending
+once if Swift is ready. Otherwise the draft waits for explicit Send, including
+completion while the transcript viewer is open; readiness never sends it later.
+The centered native transcript modal has read-only selectable scrolling text,
+copy feedback and background shortcut blocking. Escape closes the viewer.
+Full/partial transcripts stay viewable and copyable until dismissed or a new
+import's first segment is accepted; cancelling the picker or failing a new import
+preserves the previous transcript. Oversized transcripts remain complete in that
+view, preserve the draft and send no message.
 File decoding adds no public route or model capability.
 
 [Speech operation](development-guide.md#speech-setup-and-operation) defines
