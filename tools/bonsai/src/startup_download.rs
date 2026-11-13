@@ -1073,18 +1073,26 @@ mod tests {
             fs::read(&path).map_err(|error| error.to_string())?,
             b"right"
         );
-        assert_eq!(
-            fs::read(&partial).map_err(|error| error.to_string())?,
-            b"wrong"
-        );
+        assert!(!partial.exists());
+        fs::remove_dir_all(working).map_err(|error| error.to_string())?;
         Ok(())
     }
 
     #[test]
     fn setup_repair_keeps_invalid_original_until_verified_replacement() -> crate::Result<()> {
-        for previous in [b"bad".as_slice(), b"wrong"] {
+        for (width, previous) in (0..12)
+            .flat_map(|width| [b"bad".as_slice(), b"wrong"].map(|previous| (width, previous)))
+        {
             let (working, path, partial, hash) = recovery_fixture()?;
             fs::remove_file(&partial).map_err(|error| error.to_string())?;
+            let path =
+                path.with_file_name(format!("model-\u{6a21}\u{578b}-{}.bin", "x".repeat(width)));
+            let partial = path.with_file_name(format!(
+                "{}.partial",
+                path.file_name()
+                    .ok_or("Missing test filename.")?
+                    .to_string_lossy()
+            ));
             fs::write(&path, previous).map_err(|error| error.to_string())?;
             let mut transfers = 0;
             receive_repair_with(
@@ -1107,6 +1115,13 @@ mod tests {
             verify(&path, 5, &hash)?;
             assert!(!partial.exists());
             assert_eq!(quarantine_files(&working)?, Vec::<PathBuf>::new());
+            assert_eq!(
+                fs::read_dir(&working)
+                    .map_err(|error| error.to_string())?
+                    .count(),
+                2
+            );
+            fs::remove_dir_all(working).map_err(|error| error.to_string())?;
         }
         Ok(())
     }
