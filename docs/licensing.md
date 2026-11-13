@@ -144,6 +144,7 @@ copyright/license/notice material, including Unicode notices. Mark modified
 Apache-licensed files. Include separate upstream notices/licenses when shipping
 models/adapters. Review separately any additional build tools redistributed with a release.
 
-Assemble a complete installer notice bundle from the exact packages, runtime
-archive and artifacts shipped; repeat the
-review when pins, enabled features or bundled assets change.
+Assemble complete distribution notices from the exact packages, runtime
+archives and artifacts shipped; repeat the review when pins, enabled features
+or bundled assets change. The current portable executable embeds these notices;
+models and inference runtimes retain their separate distribution terms.

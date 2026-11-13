@@ -95,10 +95,13 @@ never silently changes the selected engine or representation. See the
 
 ## Update and remove
 
-Portable releases check GitHub at startup and every six hours, including published
-experimental prereleases, and automatically download a newer Windows ARM64
-executable. Settings > Application also provides a manual check. Discovery chooses
-the highest numeric version across the bounded release catalog; drafts and older
+Current source and the prepared v0.2.1 release check GitHub at startup and every
+six hours, including published experimental prereleases, and automatically
+download a newer Windows ARM64 executable. The published v0.2.0 executable has
+no automatic discovery; use the manual update steps below to replace it.
+
+For current builds, Settings > Application also provides a manual check. Discovery
+chooses the highest numeric version across the bounded release catalog; drafts and older
 versions are excluded. An incomplete catalog or invalid newest release is an error,
 never a reason to fall back to an older download.
 

@@ -42,10 +42,11 @@ and their package manifest and notices in a native Rust launcher. Opening the
 bundle verifies its embedded inventory, extracts it into the per-user package
 cache and uses the existing verified package launch. Broker, UI and speech remain
 separate owned processes with the same containment and teardown contracts. Model,
-adapter and inference-runtime provisioning remain separate. Current releases
-distribute this portable executable; their update path automatically downloads
-verified releases and requires confirmation before replacement, preserving the
-user data directory.
+adapter and inference-runtime provisioning remain separate. The current
+single-executable update path automatically downloads verified releases and
+requires confirmation before replacement, preserving the user data directory.
+It is prepared for v0.2.1; the published v0.2.0 executable requires manual
+replacement as described in the [release guide](releases.md#update-and-remove).
 
 Swift launches default to native Rust Prism 0.1.25, original PQ2, four CPU row
 workers and the standard adapter at scale 1.3. `--native-engine` remains accepted;

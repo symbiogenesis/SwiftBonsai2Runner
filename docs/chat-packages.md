@@ -7,9 +7,12 @@ verification; those sidecars do not need deployment beside the application.
 The checked-directory mechanism below remains a separate installation and
 rollback option.
 
-Portable releases update by verified manual executable replacement after closing
-Swift. Keep the same user data directory to preserve downloads and conversations.
-No automatic release discovery or installer handoff runs for portable packages.
+Checked-directory packages use the explicit install/rollback commands below;
+they do not discover releases or replace the running application automatically.
+Single-executable bundles built from current source use the separate
+[portable update path](releases.md#update-and-remove): verified automatic download,
+then confirmed executable replacement and restart. Published v0.2.0 bundles
+require manual replacement. Keep the same user data directory in either case.
 
 The native `bonsai-tools chat-package` command assembles reviewed Windows ARM64
 application files, installs versioned directories, activates updates atomically
@@ -177,14 +180,17 @@ cannot supply executable paths or request source builds. The legacy `launch`
 operation also remains available for callers that bind `expectedDirectory`,
 `expectedId` and `expectedManifestSha256` before handoff.
 
-Provision Swift model/runtime and the optional adapter first using the
-[setup commands](development-guide.md#native-chat-app). `NoSpeechModels: true`
-keeps launch text-only; `NoTts: true` skips output speech. `NoAbliterateLora`,
-`UseRepackedPtq1`, `NativeEngine`, `NativeRowWorkers`, `TtsQuantization`,
-`TtsThreads`, `FrontendPort`, `BackendPort`, `CanaryPort` and `TtsPort` remain
-explicit settings with the native launcher's existing validation. Native Rust
-owns the per-user launch guard, model provisioning, credentials, Jobs and retry
-policy. No microphone activates at installation or launch.
+Provision Swift model/runtime and the adapter before launch using the
+[setup commands](releases.md#prerequisites-and-model-setup), which need no checkout.
+The adapter is enabled by default; opt out explicitly with `NoAbliterateLora: true`.
+`NoSpeechModels: true` skips automatic speech preparation; `NoTts: true` skips
+output speech. `NoAbliterateLora`,
+`UseRepackedPtq1`, `NativeEngine`, `NativeRowWorkers`, `PromptReuse`, `KvCache`,
+`GraphicsBackend`, `TtsQuantization`, `TtsThreads`, `FrontendPort`, `BackendPort`,
+`CanaryPort` and `TtsPort` remain explicit settings with the native launcher's
+existing validation. Native Rust owns the per-user launch guard, runtime/speech
+preparation, credentials, Jobs and retry policy; Swift model and adapter
+provisioning remain explicit. No microphone activates at installation or launch.
 
 For current launcher builds, omitted `NativeEngine` selects the Rust development
 default with four row workers. `NativeEngine: false` explicitly selects publisher
