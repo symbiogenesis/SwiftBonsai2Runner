@@ -168,6 +168,13 @@ pub struct Q8Block {
 pub enum WeightQuantization {
     /// Unquantized row-major `F32` weights `[out_dim * in_dim]`.
     F32(Vec<f32>),
+    /// Original GGML `F32/F16/Q8_0/Q4_K/Q6_K` blocks, decoded one row at a time.
+    Packed {
+        /// GGML tensor type (0, 1, 8, 12 or 14).
+        ggml_type: u32,
+        /// Original little-endian tensor bytes without whole-model expansion.
+        bytes: Vec<u8>,
+    },
     /// 32-element block-quantized `Q8_0` weights.
     Q8_0 {
         /// Quantized 32-weight blocks.
@@ -729,6 +736,21 @@ impl LinearProjection {
                 "Invalid LinearProjection dimensions.",
             ));
         }
+        if let WeightQuantization::Packed { ggml_type, bytes } = &weight {
+            let (block, size) = crate::weights::packed_layout(*ggml_type)?;
+            if !in_dim.is_multiple_of(block)
+                || (in_dim / block)
+                    .checked_mul(out_dim)
+                    .and_then(|count| count.checked_mul(size))
+                    != Some(bytes.len())
+            {
+                return Err(io::Error::new(
+                    io::ErrorKind::InvalidData,
+                    "Invalid packed projection size.",
+                ));
+            }
+            crate::weights::validate_packed(*ggml_type, bytes)?;
+        }
         Ok(Self {
             name,
             in_dim,
@@ -736,6 +758,61 @@ impl LinearProjection {
             weight,
             bias,
         })
+    }
+
+    /// Decode one embedding row without expanding the complete matrix.
+    ///
+    /// # Errors
+    /// Rejects an out-of-range row, malformed weights or a transformed ternary
+    /// projection, which cannot represent an ordinary embedding lookup.
+    pub fn row(&self, index: usize) -> io::Result<Vec<f32>> {
+        if index >= self.out_dim {
+            return Err(io::Error::new(
+                io::ErrorKind::InvalidInput,
+                "Embedding row is out of range.",
+            ));
+        }
+        let invalid = || io::Error::new(io::ErrorKind::InvalidData, "Invalid embedding weights.");
+        let offset = index.checked_mul(self.in_dim).ok_or_else(invalid)?;
+        let end = offset.checked_add(self.in_dim).ok_or_else(invalid)?;
+        match &self.weight {
+            WeightQuantization::F32(values) => values
+                .get(offset..end)
+                .map(<[f32]>::to_vec)
+                .ok_or_else(invalid),
+            WeightQuantization::Packed { ggml_type, bytes } => {
+                let (block, size) = crate::weights::packed_layout(*ggml_type)?;
+                if !self.in_dim.is_multiple_of(block) {
+                    return Err(invalid());
+                }
+                let start = (offset / block).checked_mul(size).ok_or_else(invalid)?;
+                let stop = (end / block).checked_mul(size).ok_or_else(invalid)?;
+                let row = bytes.get(start..stop).ok_or_else(invalid)?;
+                let mut output = vec![0.0; self.in_dim];
+                for (source, destination) in
+                    row.chunks_exact(size).zip(output.chunks_exact_mut(block))
+                {
+                    crate::weights::decode_block(*ggml_type, source, destination);
+                }
+                Ok(output)
+            }
+            WeightQuantization::Q8_0 { blocks } => {
+                if !self.in_dim.is_multiple_of(32) {
+                    return Err(invalid());
+                }
+                let row = blocks.get(offset / 32..end / 32).ok_or_else(invalid)?;
+                Ok(row
+                    .iter()
+                    .flat_map(|block| {
+                        block
+                            .quants
+                            .iter()
+                            .map(move |value| block.scale * f32::from(*value))
+                    })
+                    .collect())
+            }
+            WeightQuantization::PQ2_0 { .. } | WeightQuantization::PTQ1_0 { .. } => Err(invalid()),
+        }
     }
 
     /// Return the input-side `(signs, hadamard_block)` signature when this projection uses
@@ -753,7 +830,9 @@ impl LinearProjection {
                 signs,
                 ..
             } => Some((signs.as_slice(), *hadamard_block)),
-            WeightQuantization::F32(_) | WeightQuantization::Q8_0 { .. } => None,
+            WeightQuantization::F32(_)
+            | WeightQuantization::Q8_0 { .. }
+            | WeightQuantization::Packed { .. } => None,
         }
     }
 
@@ -804,6 +883,40 @@ impl LinearProjection {
         let level = Level::new();
 
         match &self.weight {
+            WeightQuantization::Packed { ggml_type, bytes } => {
+                let (block, size) = crate::weights::packed_layout(*ggml_type)?;
+                let row_bytes = (self.in_dim / block).checked_mul(size).ok_or_else(|| {
+                    io::Error::new(
+                        io::ErrorKind::InvalidData,
+                        "Invalid packed projection size.",
+                    )
+                })?;
+                if !self.in_dim.is_multiple_of(block)
+                    || row_bytes.checked_mul(self.out_dim) != Some(bytes.len())
+                {
+                    return Err(io::Error::new(
+                        io::ErrorKind::InvalidData,
+                        "Invalid packed projection size.",
+                    ));
+                }
+                let compute_slice = |row_offset: usize, destination: &mut [f32]| {
+                    let mut decoded = [0.0_f32; 256];
+                    for (local, value) in destination.iter_mut().enumerate() {
+                        let offset = (row_offset + local) * row_bytes;
+                        let row = &bytes[offset..offset + row_bytes];
+                        for (source, input) in row.chunks_exact(size).zip(input.chunks_exact(block))
+                        {
+                            crate::weights::decode_block(*ggml_type, source, &mut decoded[..block]);
+                            *value += if block == 1 {
+                                decoded[0] * input[0]
+                            } else {
+                                dispatch!(level, simd => f32_dot_simd(simd, &decoded[..block], input))
+                            };
+                        }
+                    }
+                };
+                run_row_chunks(&mut out, worker_count, compute_slice);
+            }
             WeightQuantization::F32(w) => {
                 if w.len() != self.out_dim * self.in_dim {
                     return Err(io::Error::new(
