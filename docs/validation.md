@@ -645,7 +645,7 @@ contains application packages, not upstream runtime catalogs.
 | Group | Coverage |
 | --- | --- |
 | Broker, UI, speech, maintenance | Affected packages/consumers with independent caches |
-| Native integration | Released GGUF/Python integration and admission-only checks; Rust maintenance tests own provisioning, plans, supervision and package lifecycle/tamper/path checks |
+| Native integration | Released GGUF integration, native reference/PE fixtures and admission-only checks; Rust maintenance tests own provisioning, plans, supervision and package lifecycle/tamper/path checks |
 | Released runtime | Archive/install/profile/adapter/admission policy, GGUF wrappers, help switching and actual pinned Rust inference provisioning with `includeCapabilities: true` |
 
 For example, a broker edit selects broker checks; shared Windows-boundary edits also select

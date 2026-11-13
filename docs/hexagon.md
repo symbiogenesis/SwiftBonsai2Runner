@@ -128,7 +128,7 @@ and raw timings; the next table compares the principal device timings.
 | [Scoped flush / four-layer native Q2](evidence/npu-4layer-25proj-native-q2-20261105/summary.json), [decision](evidence/npu-4layer-25proj-native-q2-20261105/decision.json), Prism `e2349af` | Resident cache hits flush only the page-aligned active prefix (<=92 KiB), retaining full allocation size in `bufs[0].size`. Limits became 480 MiB resident weights, 256 KiB metadata and 26 projections. Thirteen- and 25-projection placements passed bounded logit comparisons, exact top-1 and 5/5 top-5 overlap. | Battery, saver off, 76% charge at workload/arm endpoints; 37.13 s within 300 s. |
 
 The [static tiling and plane-reduction audit](evidence/hexagon-k-tiling-and-reduction-audit.json)
-replays with `python -B tools/hexagon/verify_k_tiling_and_reduction_audit.py`.
+replays with `pwsh -NoProfile -File tools/hexagon/verify_k_tiling_and_reduction_audit.ps1`.
 Pinned v0.10.0 HTP source rules out bitwise `PinnedSwift` parity from multi-block
 `K>128` tiling: `HMX_STORE_AFTER_F16` truncates output to FP16, and per-128-block
 `PQ2_0` scales cannot be factored out. `HTP_OP_SUM_ROWS` reduces `ne[0]=17408`,

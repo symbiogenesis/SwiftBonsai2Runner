@@ -71,6 +71,13 @@ artifact identities retain their original names. Vendored sources are excluded.
 Each `test_*.ps1` fixture script accepts `-Case NAME` for a focused local check;
 their complete selections remain hosted CI work.
 
+Same-run checked-tool bundles use receipt schema 3, with `NumericSha256` for
+`bonsai-reference-numerics.exe` alongside the CLI and completion probe. Exact-input
+executable caches use schema 4. Native qualification verifies and holds the
+helper bytes; it never compiles a replacement during a device trial. Foundation
+runs the migrated reference, retained-audit, row and PE fixtures before publishing
+checked tools. CPU policy fixtures run in its portable source-control step.
+
 ## Workflow scope
 
 The retained workflows own current checks or open gates in [PLAN.md](../../PLAN.md):
@@ -266,6 +273,12 @@ linter and downloaded tool adds code and maintainers to the trust boundary.
 Update the tool's release version and reviewed checksum together; do not fetch a
 fresh checksum at runtime or install an unpinned extension. No extra YAML parser
 or security linter is required for this lockfile check.
+
+For native Windows ARM64 maintenance, the same official v0.4.1 release supplies
+[`windows-arm64.exe`](https://github.com/github/gh-actions-lock/releases/download/v0.4.1/windows-arm64.exe),
+SHA-256 `6e769101eb05342b1e29585f39aa14b8a0be8cac8fe8cb9fd0b21177abe7294f`.
+Verify those bytes before execution. The native extension executable accepts
+`--no-narrow` and `--verify` directly when no global `gh` extension is installed.
 
 When changing an action, use a disposable worktree and the same verified tool:
 

@@ -12,12 +12,15 @@ authenticate the author's original checkpoint bytes or conversion invocation.
 The [source-only reassessment](evidence/ptq1-public-authoring-route.json) retains
 the inspected immutable inputs and limits. Earlier reports remain historical.
 
-`tools/native-reference/public_pack_reference.py` implements exactly one declared
-recipe, `public-mlx-f16-inverse1024-f16-f32-dot-v1`, before seeing payload results:
+`tools/native-reference/public_pack_reference.ps1` and the dependency-free Rust
+`bonsai-reference-numerics` helper implement exactly one declared recipe,
+`public-mlx-f16-inverse1024-f16-rust-scalar-f32-dot-v2`, before seeing payload results.
+Schema-2 packets distinguish this implementation from historical NumPy/BLAS v1
+results; their arithmetic identities and qualification do not transfer.
 
 1. Verify the complete immutable 8,595,477,990-byte public MLX safetensors file's
-   SHA-256 before reading its bounded header or mapping it, then rehash the same
-   read-only file handle before mapping. Require distinct tensor names, exact
+   SHA-256 before reading its bounded header, then rehash a read-only handle held
+   throughout numerical reconstruction. Require distinct tensor names, exact
    nonoverlapping extents, canonical 48 locations, U32 weights `[5120,384]`, F16
    scales/biases `[5120,48]`, binary signs `[6144]` and declared grouped layout.
 2. Decode little-endian two-bit lanes with group128 affine arithmetic. Require
@@ -37,40 +40,43 @@ recipe, `public-mlx-f16-inverse1024-f16-f32-dot-v1`, before seeing payload resul
    assumptions; the public exporter does not identify the original serialization,
    MLX version or BLAS build. No alternative precision or channel permutation runs.
 4. Verify the approved adapter and selected public direction against repository
-   locks. Normalize that F32 direction and check all 129 B factors separately.
+   locks. Normalize that F32 direction using a sequential F64 sum/square root
+   rounded once to F32, and check all 129 B factors separately.
    Compute F32 `r @ W`, as in the publisher's
    [A/B export](https://github.com/Continuum-AI-Corp/OrcaBonsai-27B-Uncensored/blob/703028bb7fba03496e796b144839b161cf0f5409/scripts/export_gguf_lora.py#L254-L269),
-   with pinned CPython 3.14.0/NumPy 2.5.3 and one BLAS thread. Compare every one of
+   with a sequential F32 multiply/add reduction without FMA in the pinned Rust
+   helper. Compare every one of
    all 48 A vectors under the unchanged `1e-5 + 1e-5 * abs(reference)` bound. Finish
    all numeric comparisons and retain disagreements; never search variants or
    enlarge a tolerance after observing results.
 
 The [hosted workflow](../.github/workflows/ptq1-public-authoring-reference.yml)
 runs only on GitHub-hosted `windows-11-arm`, main, with no owner runner label.
-Relevant source pushes and default `run_reconstruction: false` dispatches install
-one hash-pinned ARM64 wheel and check small independent math/parser/admission
+Relevant source pushes and default `run_reconstruction: false` dispatches build
+the Rust helper and check small independent math/parser/admission
 fixtures, retaining a separate preparation receipt. Set the dispatch boolean true
 for the one full public-input attempt. The auditor also enforces its lane and an
 absolute 40-minute deadline between bounded operations. It imports no downloaded model code,
 instantiates no model, executes no inference and writes no full checkpoint.
 Weights stay in external runner-temp storage and are excluded from uploads.
 
-Retained evidence includes exact source/input identities, wheel installation
-metadata, Python/NumPy/BLAS configuration, per-site input and candidate-F16 matrix
+Retained evidence includes exact source/input identities, PowerShell/compiler
+and helper source/executable identities, the declared normalization/reduction,
+per-site input and candidate-F16 matrix
 hashes, the bounded raw model header, actual per-site dtype/shape/absolute byte
 extents, all 48 independently produced little-endian F32 A files, shipped-factor
 hashes and complete metrics. A failure retains its stage and partial results.
 Archive and independently review the exact raw output before artifact expiration.
 
-The producer also retains `replay-source/source-manifest.json` and six selected
+The producer also retains `replay-source/source-manifest.json` and seven selected
 raw source files: the producer, format reader, independent auditor, recipe pins
-and approved adapter/direction locks. Its terminal report binds the manifest's
-SHA-256. The upload includes that finite source subtree, so later checkout line
-endings do not destroy replayability. Validation failures retain a bounded fixed
+and approved adapter/direction locks, plus the Rust numerical source. Its terminal
+report binds the manifest's SHA-256. The upload includes that finite source subtree,
+so later checkout line endings do not destroy replayability. Validation failures retain a bounded fixed
 reason; arbitrary HTTP, OS and library exception text is excluded.
 
-`tools/native-reference/audit_public_reference.py` independently replays the
-retained comparisons with the Python standard library. It verifies the complete
+`tools/native-reference/audit_public_reference.ps1` independently replays the
+retained comparisons with PowerShell 7.6. It verifies the complete
 approved adapter and direction bytes, producer scripts, selected source/run,
 raw configuration/header, exact all-48 inventory and source tensor descriptors,
 every retained A file and all 129 B factors. Its separate GGUF reader and scalar
@@ -78,7 +84,7 @@ comparison loop check every reported metric under the unchanged bounds. Valid
 losing results remain losing results. A missing complete result cannot pass.
 The hosted workflow retains this replay after a complete match or disagreement.
 
-An independent reviewer can repeat it without NumPy, a model download or another
+An independent reviewer can repeat it without a Python runtime, a model download or another
 model workload. The current trusted auditor automatically checks the retained
 source bundle as data, including its exact finite inventory, types, lengths and
 digests; it executes none of the archived producer code. Parsed retained recipe
@@ -88,7 +94,7 @@ require their original producer-identical source scripts and pins, including lin
 endings. Matching a Git revision alone does not guarantee those raw bytes:
 
 ```text
-python -B tools/native-reference/audit_public_reference.py --evidence-directory ABSOLUTE_RETAINED_DIRECTORY --adapter VERIFIED_APPROVED_ADAPTER --direction VERIFIED_PUBLIC_DIRECTION --expected-source-revision FULL_REVISION --expected-run-id RUN_ID --expected-run-attempt ATTEMPT
+pwsh -NoLogo -NoProfile -File tools/native-reference/audit_public_reference.ps1 -EvidenceDirectory ABSOLUTE_RETAINED_DIRECTORY -Adapter VERIFIED_APPROVED_ADAPTER -Direction VERIFIED_PUBLIC_DIRECTION -ExpectedSourceRevision FULL_REVISION -ExpectedRunId RUN_ID -ExpectedRunAttempt ATTEMPT
 ```
 
 Select the expected producer from separately authenticated artifact records;

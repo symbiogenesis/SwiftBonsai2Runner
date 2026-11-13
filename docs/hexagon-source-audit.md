@@ -51,7 +51,7 @@ projection and the logits head selected. This exceeded the historical
 the [current budget](evidence/hexagon-session-operation-budget.json) admits
 one evaluation with 744 submissions left. Complete prompt/output reservation,
 session duration and resource admission still apply. The [logical payload ledger](evidence/hexagon-swift-traffic-ledger.json),
-reproduced by `python -B tools/hexagon/verify_operation_traffic.py`, accounts for
+reproduced by `pwsh -NoProfile -File tools/hexagon/verify_operation_traffic.ps1`, accounts for
 the existing block-preserving layouts across those same projections:
 
 | Per-token payload | HMX binary planes | Guarded HVX limbs |

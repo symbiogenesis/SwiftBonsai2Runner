@@ -15,7 +15,7 @@ in sync with detailed tasks and preserve their acceptance obligations.
 
 | ID / next state | Owning repository | Prerequisite | Next action and acceptance gate |
 | --- | --- | --- | --- |
-| L1 / implementation, owner | Runner | Owner-directed Rust / PowerShell 7.6 tooling migration | Replace every owned Python implementation and CI invocation, including imported CPU comparison tooling, with Rust or PowerShell 7.6. Preserve independent numerical/replay and fail-closed policy gates, bind native helper artifacts to source, update commands and prevent Python reintroduction. Deliver each logical change as a local commit; owner-operated hosted checks retain acceptance. |
+| L1 / owner | Runner | Reviewed local Rust / PowerShell 7.6 migration commits | Publish through the owner and qualify Source checks/Foundation, migrated hosted fixture inventories, exact helper/cache handoffs and the separate SDK/ABI controllers. Run public reconstruction/replay only under P1 with its new schema-2 scalar-v2 arithmetic identity; historical NumPy-v1 outcomes do not qualify it. Local source checks and Python removal close no hosted or numerical acceptance gate. |
 | C1 / owner | Runner | Reviewed local CI corrections and startup preflight | Publish through the owner and qualify Source checks and Foundation on that source; see [publication prerequisites](#publication-and-qualification-prerequisites). |
 | A1 / qualification | Runner with pinned Prism | C1 and an exact-source acceptance package | Qualify Rust/PQ2 DX12 startup, readiness, Stop/Retry, recovery and explicit publisher rollback under [actual-model acceptance](#actual-model-acceptance). |
 | R1 / qualification | Runner with Prism | Source-bound 0.1.27 development bundle and atomic runtime/source pins | Qualify the new active release after Runner 0.3.0 publication. This is a development upgrade, not a performance promotion. Keep the fixed 0.1.23 CPU comparison baseline, registry 0.1.25 comparison candidate and all historical evidence identities unchanged. |
@@ -789,7 +789,7 @@ stale. Run the one declared public reconstruction with its exact retained replay
 source, and qualify response identities through failed/cancelled service reads.
 The new source's thirteen focused local regressions, workflow parsing, guard build,
 self-check and guard-library analyzer passed within one closed owner allowance;
-full application analyzers/linking, the NumPy producer control, hosted execution,
+full application analyzers/linking, the current Rust public producer control, hosted execution,
 actual models, original provenance and human acceptance remain separate pending
 gates. Earlier failed trials retain their original results and closed clocks.
 
@@ -2562,7 +2562,7 @@ execution/writeback plus `~10-15` ms of host reconstruction versus `~2-3` ms on 
 prioritize evaluating whether multi-block `K>128` weight tiling or DSP-side plane/scale reduction is
 supported by any signed Hexagon package symbol before wider admission. The
 [static K>128 tiling, plane-reduction, and 8-HVX/2MiB-VTCM solver audit](docs/evidence/hexagon-k-tiling-and-reduction-audit.json) (reproduced by
-`python -B tools/hexagon/verify_k_tiling_and_reduction_audit.py`) and
+`pwsh -NoProfile -File tools/hexagon/verify_k_tiling_and_reduction_audit.ps1`) and
 [8-HVX / 2 MiB VTCM / Burst-mode HMX controls](docs/evidence/npu-hmx-8hvx-2mib-vtcm-20261105/summary.json)
 on Prism `9f61217` and Runner `76e3b38b` resolve that `K>128` tiling and DSP-reduction gate: (1)
 `core_dot_chunk_fp16` (`hmx-mm-kernels-tiled.h:966-1040`) accumulates across all `K/32` dot tiles

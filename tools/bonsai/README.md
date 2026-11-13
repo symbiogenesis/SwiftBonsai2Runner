@@ -292,8 +292,11 @@ Rust validates current source pins, exact hosted binary inventories and the
 running maintenance executable's revision receipt, then owns memory admission,
 ABI preflights, capture supervision and atomic bounded partial receipts.
 Both workloads refuse an existing Bonsai app or model process before model work.
-Its independent Python comparator runs in an owned process under the same
-remaining allowance. Model-free plan, source, deadline and receipt regressions
+Its independent PowerShell 7.6 decoder and packaged Rust numerical helper run
+in owned processes under the same remaining allowance. The checked schema-3
+maintenance receipt digest-binds the sibling helper; qualification holds its
+verified file throughout work and never compiles it on the owner device.
+Model-free plan, source, deadline and receipt regressions
 and hosted compiler preparation run in Rust.
 An isolated loaded-zero or no-adapter pass establishes only that selected native/Rust
 one-token comparison. Cross-condition logits/state identity, nonzero application
