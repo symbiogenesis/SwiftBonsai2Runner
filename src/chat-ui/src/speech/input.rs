@@ -197,22 +197,19 @@ mod tests {
     fn warm_input_success_retains_its_original_owner_only_until_idle_expiry() -> io::Result<()> {
         let mut fixture = Fixture::new()?;
         let now = Instant::now();
+        let before_expiry = now + WARM_IDLE.saturating_sub(Duration::from_millis(1));
         let current = AtomicU64::new(41);
         fixture.input.complete(41, &current, now);
         assert!(fixture.input.generation.is_none());
         assert_eq!(fixture.input.warm_until, Some(now + WARM_IDLE));
         current.store(super::super::NO_INPUT, Ordering::Release);
-        fixture
-            .input
-            .maintain(&current, now + WARM_IDLE - Duration::from_millis(1));
+        fixture.input.maintain(&current, before_expiry);
         assert!(fixture.input.service.is_some());
         assert!(fixture.process.try_wait()?.is_none());
         // Starting another capture neither extends the lease nor binds its
         // cancellation to a request that has already completed.
         current.store(42, Ordering::Release);
-        fixture
-            .input
-            .maintain(&current, now + WARM_IDLE - Duration::from_millis(1));
+        fixture.input.maintain(&current, before_expiry);
         assert_eq!(fixture.input.warm_until, Some(now + WARM_IDLE));
         fixture.input.maintain(&current, now + WARM_IDLE);
         assert!(fixture.input.service.is_none());
