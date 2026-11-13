@@ -1,9 +1,7 @@
 # Retained evidence
 
-This directory contains inputs and records with current consumers. Completed
-work, superseded release measurements and trial diaries belong in Git history.
-See the [retention policy](../validation.md#evidence-retention) before adding or
-removing evidence.
+Keep inputs and records required by the consumers below under the
+[retention policy](../validation.md#evidence-retention).
 
 | Retained material | Current consumer |
 | --- | --- |
@@ -14,13 +12,8 @@ removing evidence.
 | Hexagon signed-package, projection-binding, FD/session and advance-control records | [Experiment lock](../../config/hexagon-experiment.lock.json), [signed-Q2 lock](../../config/hexagon-signed-q2-candidate.lock.json) and their archive manifest |
 | `hexagon-adapter-session-20261103/model-device-request.json` | Request template consumed by [model-control preparation](../../tools/hexagon/prepare_model_control.ps1) |
 
-The current raw QAIC wire/ABI selection is `hexagon-public-qaic-41171859264/`.
-The seven older QAIC/SDK directories contain provenance summaries only; their
-listed historical payloads are absent from this checkout. Those summaries cannot
-supply independent replay or close a gate that requires the missing bytes.
-
-Original observations retain their source, tool names, results and limitations.
-They do not qualify a newer runtime or authorize reopening a closed trial. The
-current raw replay selection, license notices and integrity records remain
-byte-for-byte; historical tool names inside them are provenance, not current
-dependencies.
+`hexagon-public-qaic-41171859264/` contains the raw QAIC wire/ABI replay selection.
+Other QAIC/SDK directories supply provenance referenced by the signed-Q2 lock;
+their summaries cannot replace missing payloads. Preserve required replay bytes,
+notices and integrity records. An observation qualifies only its recorded source,
+tools and workload.
