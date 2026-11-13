@@ -1,15 +1,12 @@
 # Development guide
 
-To use Swift, [download the Windows ARM64 executable](releases.md#download-and-open)
-and open it. Model, adapter, inference-engine and speech setup happen in the app,
-with progress and retry controls. No checkout or PowerShell setup is needed.
+Runner is unreleased. [Build a portable executable](#build-a-single-executable)
+or use [contributor source launch](#contributor-source-launch). Application
+controls are under [Native chat app](#native-chat-app); publication procedures
+live in the [Windows distribution guide](releases.md).
 
-Start with [Native chat app](#native-chat-app) for application controls.
-The build, source-launch, [inventory/provisioning](#inventory-and-provisioning),
-[CPU checks](#bounded-cpu-loaddecode-check) and the [development broker](#explicit-development-broker)
-sections are separate contributor workflows. Run their command examples from the
-repository root in native Windows ARM64 PowerShell 7.6+. Use
-[validation](validation.md) for language standards and focused checks.
+Run contributor examples from the repository root in native Windows ARM64
+PowerShell 7.6+. Follow [validation](validation.md) for standards and focused checks.
 
 ## Current state
 
@@ -55,7 +52,7 @@ agree producer/consumer interfaces before dependent work.
 Runtime repins require genuine published bundles, synchronized binary/source locks
 and review under [runtime lock updates](#prepare-a-runtime-lock-update).
 Use the [CPU verification contract](cpu-kernels.md) and keep fixed
-[comparison inputs](cpu-bundle-comparison.md) separate from local candidates.
+[comparison inputs](../tools/cpu-bundle/README.md) separate from local candidates.
 
 ### Speech integration interfaces
 
@@ -185,50 +182,18 @@ selection; `-PublisherEngine` selects publisher rollback, prepared from its pinn
 release. See [runtime selection](#runtime-selection). The script
 only forwards to Rust and propagates its exit code; it builds or provisions nothing.
 
-When native Rust inference is selected, the Rust preparation worker verifies the
-pinned runtime after the first native frame and repairs it when needed. Source-built
-brokers use the checkout's exact release lock; explicit prebuilt brokers use the
-maintenance executable's compiled release lock. Replacement is staged and verified;
-unrelated files, redirected paths and access failures stop repair. Swift weights
-and the selected adapter are prepared from compiled pins before broker handoff.
-No external model lockfile is required. Explicit PTQ1 is verified without fetching
-or substituting PQ2.
+After the first native frame, preparation verifies/provisions the pinned runtime
+concurrently with the broker build; failure cancels and joins the peer. Models
+and adapters use compiled locks. Explicit PTQ1 is verify-only. Speech preparation
+continues independently, with at most two artifact workers and below-normal CPU
+priority for compiler descendants. Models load on demand. Closing cancels and
+joins owned preparation/processes. The [UI contract](ui-architecture.md#launch-and-ownership)
+owns detailed startup, repair, cancellation and cleanup semantics.
 
-Text chat starts loading once its runtime and broker are ready. Speech downloads
-and builds continue in the owned background worker; controls activate after
-preparation, and failures appear in speech status without stopping text chat.
-At most two workers download/check speech artifacts; failure cancels and joins
-the peer. ASR/TTS models load on demand for transcription or read-aloud. Closing
-cancels preparation and waits for owned processes to stop.
-
-Direct developer launches of `bonsai-chat.exe` also verify the selected Rust
-executable before hashing the model or creating credentials. Use the matching
-launcher to prepare and repair its compiled runtime pin. Older or mismatched
-tools must be rebuilt from the same checkout or supplied by the same verified app
-package. Normal portable launches perform preparation in the window; model and
-setup retries repeat verification without requiring a provisioning command.
-
-During staged source startup, pinned runtime verification/provisioning and the
-broker build run concurrently. Both must finish successfully before the UI starts
-the broker; failure cancels and joins the peer. Full-file artifact verification
-uses at most 1 MiB of read scratch with sequential access hints, retaining full
-checksums and file guards. Speech preparation and its compiler descendants use
-below-normal CPU priority to reduce competition with model loading and text chat,
-including on Snapdragon X1. This CPU scheduling policy does not isolate disk I/O.
-
-If the launcher reports a missing prebuilt executable, run the maintenance build
-command it prints from the repository root, then retry. Correct or remove any
-invalid `-ToolPath` or `BONSAI_TOOLS_PATH` override first. Rebuild from the current
-checkout into `build/maintenance` after source or compiler-pin changes.
-
-The native Rust `egui`/`eframe` app follows the [UI contract](ui-architecture.md).
-The window opens before broker/speech preparation finishes, so drafting remains
-available during setup. Progress and setup errors stay visible; Pause and Retry
-setup preserve drafts and verified downloads. Retry requires confirmed process
-cleanup; unknown cleanup requires closing the app. Speech setup has a separate
-retry and never restarts a running text model. Closing stops preparation, compiler
-descendants and owned model
-workers. Artifact verification and memory admission still precede model use.
+Direct executable overrides must match the maintenance tool's checkout/package.
+Rebuild after source/compiler changes, and fix an invalid `-ToolPath` or
+`BONSAI_TOOLS_PATH` before retrying. No model/speech setup command is required for
+ordinary source or bundled launches.
 
 **Stop** tears down the owned broker/backend. **Retry model** waits for teardown,
 then repeats identity, artifact and selected-memory admission checks with a fresh instance
@@ -277,7 +242,7 @@ playback for a hidden response.
 
 Sidebar queries update Find without taking focus. Editing or closing Find leaves
 the sidebar filter intact. Iteration actions require verified message positions
-and the ordinary readiness/context checks; older recovered messages without those
+and ordinary readiness/context checks; recovered messages without verified
 positions remain copyable and searchable. A locally identified interrupted answer
 can be used as context; intermediate Extra effort drafts cannot.
 
@@ -333,9 +298,10 @@ An interrupted reply with a locally identified prompt and visible answer is mark
 **Interrupted** and retained as conversation context. Later prompts can reference it;
 its message menu supports Continue response and Branch from here. Stop, failure and
 recovery never automatically resend the original request. If no usable answer exists,
-the prompt remains available for review. Older snapshots can recover an unbound
-trailing pair when their saved incomplete state and last answer identify it;
+the prompt remains available for review. Unbound trailing pairs enter history only
+when saved completion state and the last answer identify the interruption;
 ambiguous partial replies remain visible outside history.
+
 Restore activates neither microphone nor playback.
 In **Settings > Privacy**, disable **Save conversations on this device** to delete
 the saved copy and keep the workspace open without saving. This choice survives restarts;
@@ -452,20 +418,13 @@ has focus. Supported extensions are MP3, WAV, M4A, AAC, FLAC and WMA, subject to
 the installed Windows media decoders. Import and conversion run off the UI thread,
 keep audio in memory and require no microphone permission. Select one file at a
 time. File size and total duration have no fixed cap; available physical memory
-and commit govern buffer and transcript allocation. One native asynchronous decoder
-reads forward through the file, without repeated seeking or transcoder setup.
-The worker transcribes one mono 16 kHz PCM16 WAV segment at a time, fitting the
-recognizer's 30-second request contract. While recognition runs, the same decoder
-prepares at most one following segment, with its extra buffer included in memory
-admission. This overlaps decoding with recognition between segments. It prefers
-a quiet pause in the final five seconds of a segment,
-carrying all audio after the cut into the next request. Without a clear pause it
-uses the full segment; the final segment keeps the complete remaining audio.
-Actual decoder EOF determines completion, rather than the file's duration tags.
-Sample waits are cancellable; native file opening and resource release remain
-synchronous Windows operations. Decoder errors or unsupported timeline/format
-changes stop import and preserve any completed transcript.
-This energy heuristic does not guarantee a speech boundary or improved accuracy.
+and commit govern buffer and transcript allocation. Decoding/recognition runs sequentially with at most one segment of lookahead.
+Each request fits the 30-second ASR contract and prefers a quiet pause while
+preserving every sample. Actual decoder EOF ends the import, not duration tags.
+Failure preserves completed transcription. See the
+[file-input contract](ui-architecture.md#speech-input-and-output) for segmentation,
+memory admission and decoder teardown.
+
 Import uses the same
 Qwen3-ASR 1.7B transcription path as microphone input. Transcripts replace the
 composer selection or insert at its cursor and count as ordinary text prompts:
@@ -626,8 +585,7 @@ descendants before releasing the build lock. Writes complete before source/recei
 publication; corrupt completed partials are preserved before one fresh attempt.
 Session credentials and diagnostics stay fresh. `--force-build` repeats Cargo/native
 preparation, including after external compiler/cache changes. Absolute `--chat-path`
-and `--broker-path` must select matching current builds; older apps lack deferred
-startup flags. Unique system-temp lanes retain `source-build-*.log` and `chat.log`.
+and `--broker-path` must select matching current builds. Unique system-temp lanes retain `source-build-*.log` and `chat.log`.
 
 One user-wide exclusive `%LOCALAPPDATA%/SwiftBonsai2/chat.lock` covers preparation
 through app exit, including launches from other checkouts/packages/data/ports.

@@ -54,49 +54,15 @@ manifest and notices. It verifies and extracts the inventory into the per-user c
 and uses verified package launch. Broker, UI and speech retain separate ownership,
 containment and teardown. The preparation worker provisions the compiled Swift
 weights, selected adapter and runtime before broker handoff. Portable update
-behavior is described [below](#application-updates); released-version differences
-belong in the [release guide](releases.md#update-and-remove).
+behavior is described [below](#application-updates).
 
-Swift launches default to native Rust Prism 0.1.27, original PQ2, four CPU row
-workers and the standard adapter at scale 1.3. `--native-engine` remains accepted;
-`--publisher-engine` selects the explicit publisher rollback. Engine options are
-mutually exclusive, and retry preserves the selected engine and representation.
-The UI identifies this as a development default with full-context/quality
-qualification pending. Selection neither waives admission nor establishes full
-release qualification. Supported X2 installations also select the experimental
-resident `native-q2` path under the [Hexagon policy](hexagon.md); CPU fallback for
-an absent signed package or CDSP driver does not change engine or representation.
-PTQ1 remains an explicit opt-in.
-
-The reviewed 0.1.27 development pin uses TurboQuant-inspired K4/V4 (`rsq4`).
-Runner binds the cache to reviewed runtime source and verifies
-cache/startup-graph readiness. Quality, memory, performance and actual-model
-qualification remain pending. Trusted `--kv-cache f16` selects recovery on a new
-native Swift launch; retry preserves it. Requests cannot override or automatically
-downgrade the cache. The [cache contract](quantized-kv.md) keeps admission, context
-limits and device qualification separate.
-
-Trusted launch parsing also carries the experimental `rsq4k3v` capacity selection
-through deferred setup and Retry. The current pin rejects it before model launch;
-activation requires a separate exact-source release review of K4/V3 and the paired
-context/memory accounting. Request bodies cannot select this profile.
-
-Native Prism 0.1.27, source `1429a33772089dfd3a50a96c698b9dbe0b36836a`, activates
-reviewed memory-selected context through paired context/memory child arguments.
-The broker selects context and Job/admission budgets once from available RAM,
-charges the immutable selected cache and sequential scratch, and retains the
-4 GiB host reserve and startup margin. Its scoped Swift K4/V4 state allowance
-can admit the 262,144-token model window when memory funds it; generic graphs
-and FP16 retain their existing state ceiling. Retry takes a new memory observation.
-The UI uses broker-reported capacity for guidance; history, reply reservation
-and exact admission remain unchanged. This source accounting does not qualify
-larger-context quality, measured peak memory or performance.
-
-Trusted `--placement auto|cpu` also survives preparation and Retry. The reviewed
-0.1.27 source skips accelerator initialization for CPU placement and must report
-both CPU placement and CPU projection execution at readiness. Explicit placement
-is native-only. Omission preserves automatic placement. This option retains the
-same conservative memory allowance and establishes no recovered RAM or speed.
+[Runtime selection](development-guide.md#runtime-selection) owns engine,
+representation, adapter, worker, cache and placement options. Retry preserves
+explicit choices. The broker verifies exact runtime readiness and binds
+[memory-selected context](swift-memory.md#memory-selected-serving-context)
+to immutable cache/scratch charges, process limits and a 4 GiB host reserve.
+Retry observes memory again; the UI uses broker-reported capacity for guidance.
+These development defaults do not establish model, device or promotion acceptance.
 
 The launcher checks/builds presentation first. After the first UI tick, an owned
 preparation worker verifies/provisions the selected pinned Rust runtime alongside
@@ -119,8 +85,7 @@ runtime repair stages verified files and refuses unknown or redirected entries.
 Explicit PTQ1 remains verify-only and never falls back to PQ2. Fixed bounded status
 reports and partial lengths are read by the preparation worker, outside the event
 loop. The compact setup card distinguishes a selected model found at attempt start
-from first-time model setup; this is file availability, not a historical launch
-receipt. Explicit activity reports distinguish downloads/resume, saved-file and
+from first-time setup using current file availability. Explicit activity reports distinguish downloads/resume, saved-file and
 download verification, and local runtime preparation. Byte progress appears only
 during a reported download; legacy reports retain conservative preparation text.
 Pause and Retry setup preserve drafts and launch options, use fresh attempt
@@ -151,25 +116,16 @@ establish promotion or full-model/device qualification.
 
 ### Long drafts and context guidance
 
-The native composer and message editor accept up to 1,048,576 Unicode scalar
-characters. Oversized paste or replacement is rejected as a whole, preserving
-the prior draft, selection and undo state; dictation also rejects overflow without
-partial insertion. Rejected or interrupted prompts return completely to an empty
-composer in their original conversation. A newer draft is preserved instead of
-being overwritten.
+Draft/edit transactions and serialized requests retain independent
+[storage bounds](streaming-resources.md#native-chat-and-transcript). Reject an
+oversized edit as a whole, preserving text, selection and undo. Restore rejected
+or interrupted prompts only to an empty composer in the originating conversation.
 
-The serialized request retains its 1 MiB bound, including history and JSON
-escaping, independently of the draft limit and exact token admission. Byte-limit
-feedback keeps the complete draft for editing. The 8 MiB encoded recovery budget
-also remains independent; an oversized workspace reports a saving failure.
-Large draft support does not qualify native editing responsiveness or actual-model
-64K/128K usability.
-
-Context details explain launch-time memory selection and the extra prompt room
-released by choosing a smaller reply limit. For example, 1,024 instead of 4,096
-releases 3,072 tokens. Guidance leaves those settings under user control. Closing
-memory-heavy applications before a fresh model start or Retry may increase the
-selected capacity; a running session keeps its immutable capacity and reserves.
+Context guidance is advisory; exact [broker admission](broker-policy.md#text-chat-admission)
+governs Send. It never trims history, changes reply limits or disables Send.
+Capacity stays pending until authenticated startup reports it; Retry clears stale
+capacity. Extra effort guidance covers its first pass only. A smaller reply limit
+releases prompt capacity; only a fresh launch/Retry can change selected memory capacity.
 
 ### Application updates
 
@@ -221,131 +177,69 @@ failure leaves the updated executable available for manual launch.
 Models, runtime downloads, conversations and preferences stay separate.
 Source and preview launches start no update discovery or installer work.
 
-#### Legacy MSI updater
-
-The MSI updater is internal compatibility code. Windows Release publishes no MSI.
-If restored, it must retain explicit confirmation, fresh publication and staged-byte
-verification, successful owned teardown and the dedicated successful update exit.
-A leftover queue or ordinary close cannot authorize installation. Models and user
-data remain separate from application files; installed upgrade and rollback need
-their own qualification before selecting this distribution again.
+MSI operations are an optional distribution path. They require explicit
+confirmation, fresh publication/staged-byte verification, successful teardown
+and the dedicated update exit. A leftover queue or ordinary close cannot install.
+Installed upgrade/rollback acceptance is independent of portable updates.
 
 ### Conversation and failure semantics
 
 | Component | Contract |
 | --- | --- |
-| Workspace | No conversation-count cap on creation, branching or recovery. Each conversation retains its own draft, response settings, visible transcript and exact committed history. The encrypted workspace still has an 8 MiB byte budget and per-conversation message safeguards; this is not unlimited storage. Transcript count/byte eviction (at most 512 messages) never changes model history. |
-| History search | A native search field above the conversation list filters titles and visible message bodies as you type, using Unicode case-insensitive substring matching. Reasoning and unsent drafts are excluded. Clear or Escape in the focused search restores the list before drawer dismissal or Stop. Filtering preserves the selected conversation and its draft; creating a conversation or branch clears the transient query so the new conversation appears. Rows are virtualized and unchanged-query matches are cached. The query is never saved to recovery or appearance preferences. |
-| Presentation | Only user/assistant content enters the selectable transcript. Limited native text styles preserve every source character and byte offset; never interpret output as HTML, activate model-supplied links or execute code. Setup/retry/transport/speech status use separate controls and bounded collapsible diagnostics. Rename/delete/edit use centered native modals; deletion names the target and blocks background input. Cancel/Escape preserves the conversation/draft. |
-| Message iteration | Edit and resend and Regenerate create a new conversation with the exact history prefix, preserving the original and its draft. Branch from here creates a conversation without sending; a selected user prompt becomes its draft. Continue response explicitly sends a followup to the last answer while retaining the existing draft. Actions verify saved message positions against history and respect readiness and request ownership without a conversation-count cap. An identified interrupted turn with visible answer text is included as a user/assistant pair and labelled Interrupted; the last available effort-stage answer is used, while other intermediate drafts stay outside history. |
-| Recovery | Automatic by default with a persistent explicit opt-out; user-scoped DPAPI, 8 MiB bound, atomic replacement outside Git and one writer/data directory. A saved, locally identified in-flight turn with a usable partial answer becomes conversation context on restore. Older snapshots can recover an unbound trailing pair only when their saved completion state and last answer identify the interruption; ambiguous records remain visible separately. Restore never replays a request or activates microphone or playback. [Recovery operation](development-guide.md#optional-recovery-and-preview) defines saved fields, unreadable-file preservation, saving/deletion and same-user limits. |
-| Window placement | Separate bounded geometry-only file in the data directory, independent of conversation saving. Preserve normal bounds and maximized state, never reopen minimized; native Windows restores offscreen placement onto current monitors. Preview leaves the real window settings untouched. Disk writes run on a coalescing worker joined at shutdown. |
-| Appearance and layout | Device-wide System/Light/Dark theme, 14–24-point reading text and 640–1,040-point maximum reading width. Windows high contrast overrides the palette. The sidebar resizes from 216–340 points and can be hidden; below 900 points it becomes a left-anchored modal drawer with Escape/backdrop dismissal. A manual resize remains stable after release and layout changes; content cannot override it. Default window size is 1,080×780 points with a 480×480 minimum. A separate bounded `chat-appearance.json` stores only these preferences and sidebar geometry/visibility, independently of conversation saving; writes coalesce off the event loop and flush on close. Preview never opens this store. Text-size changes invalidate transcript, reasoning and Find geometry without changing source text or history. |
-| Stop/retry | Standard and Extra effort generation have no elapsed-time cutoff. Stop freezes queued updates and wakes network and notification-pressure waits. Startup, connection and owned-teardown operations retain their deadlines. Retry waits for owned-backend teardown, creates fresh credentials/diagnostics and repeats artifact, identity and selected-memory admission checks. Preserve completed turns and newer drafts; a usable partial answer and its original prompt become conversation context, otherwise restore the interrupted prompt only to an empty composer. Never replay automatically or reduce the profile. If completion wins the Stop race, the visible answer and committed history agree. |
-| Rejections/failures | Recognized local input rejections restore the draft and retain readiness. Other disconnects require retry and identify no token/memory cause. [Broker policy](broker-policy.md#native-client-completion-and-recovery) defines accepted errors and completion. |
-| Settings | A centered native modal blocks background pointer and keyboard actions. Response opens first and names the selected conversation; Voice, Appearance, Privacy and Application label their device-wide scope. Wide, sufficiently tall layouts use side navigation; narrow or short layouts use wrapping categories. Changes take effect immediately; Done, Close or Escape dismisses Settings and returns focus to the composer without sending or stopping generation. An open selector consumes Escape first; active input retains its explicit cancellation behavior. Voice setup and diagnostics stay inside the modal. |
-| Response settings | Thinking, Extra effort, output cap and adapter scale belong to the selected conversation. They apply to the next response and every Extra effort pass; controls lock during generation. The composer's compact Thinking button opens its own native popup with only Thinking and Extra effort checkboxes and their explanations; these also appear in Settings. Reply length and adapter controls stay inside Settings behind the Advanced response controls disclosure. Popup actions retain ordinary button accessibility semantics; enabled thinking uses the native selection foreground/background pair. [Settings](development-guide.md#conversations-and-response-settings) defines defaults, bounds and execution; adapter and Extra effort quality gains remain unproven. |
-| Context guidance | A native composer control estimates the selected conversation's next draft from committed content and retained reasoning, approximate framing and optional Extra effort planning overhead. Details separate estimated input from the exact reply reservation, 64-token reserve and the broker-reported session limit. Capacity stays pending until startup reports it; Retry clears the old capacity before selecting again. Estimates can be high or low and never gate Send, trim history or change settings automatically. Plain-language warnings offer Start fresh, preserving the original draft/history; details point to advanced Settings for reply limits. Exact broker admission is unchanged. |
+| Workspace | Each conversation owns its draft, response settings, visible transcript and exact committed history. Creation/branching has no count cap; encoded recovery and per-conversation message bounds still apply. Transcript eviction never changes model history. |
+| Presentation | Selectable source-preserving text only; never activate generated links or execute code. Native heading/list/quote/code styling falls back to plain text after its span bound. Copy, selection and Find retain exact source offsets. |
+| Message iteration | Edit/Regenerate branch the verified history prefix, preserving the original draft. Branch creates without sending; Continue is explicit. Identified interrupted answers can enter history; intermediate effort drafts cannot. |
+| Recovery | User-scoped DPAPI, atomic bounded saves, one writer/data folder and persistent opt-out. Restore never replays requests or starts capture/playback. Preserve unreadable bytes until an explicit save. See [recovery operation](development-guide.md#optional-recovery-and-preview). |
+| Preferences | Window geometry, appearance/sidebar and encrypted voice profile persist independently of conversation saving. Writes coalesce off the event loop and join on close. Preview opens none of these stores; response choices remain per conversation. |
+| Appearance | System/Light/Dark, with Windows high contrast taking precedence; 14–24-point reading text and 640–1,040-point reading width. Default/minimum window: 1,080×780 / 480×480 points. Sidebar: 216–340 points; below 900 points it becomes a modal drawer. Manual width survives layout changes. |
+| Settings | Native modal with immediate changes and explicit conversation/device scope. Response opens first; narrow/short layouts wrap navigation. Done/Close/Escape restores composer focus. Open selectors consume Escape first; background Send/Find/Stop stay blocked while generation may continue. |
+| Response controls | Per-conversation settings lock during generation. The composer popup exposes Thinking/Extra effort; advanced reply/adapter controls live in Settings. [Application controls](development-guide.md#conversations-and-response-settings) own defaults and actions. |
+| Stop/retry | No generation elapsed-time cutoff. Stop freezes queued updates and wakes network/backpressure waits. Retry requires acknowledged teardown, fresh credentials/diagnostics and repeated artifact/identity/memory admission. Preserve completed turns/newer drafts; never replay or reduce the profile automatically. Completion winning the Stop race must leave transcript and history consistent. |
+| Rejections | Only the exact [broker recovery errors](broker-policy.md#native-client-completion-and-recovery) retain readiness and restore input. Other disconnects require explicit Retry and identify no token/memory cause. |
+| Alerts | One shared native panel selects among setup/model/saving/speech/audio/update failures. Each has a two-line summary and source-specific actions. Details provides a bounded scrollable modal; Copy error copies the complete message. Successful progress stays separate. |
 
-Window geometry, appearance, sidebar geometry/visibility and voice are local
-user-profile preferences, independent of the conversation-saving opt-out. The
-bounded `chat-profile.dpapi` stores the voice description with Windows user
-encryption, coalesces writes off the event loop and flushes on close. A missing
-profile adopts the legacy recovered voice; an existing profile takes precedence.
-Unreadable profile bytes stay intact until the user changes the voice preference.
-Preview opens none of these stores, and restoring preferences never starts speech
-or microphone capture. Response choices remain per conversation.
+The model states are unavailable, preparing, ready, generating, awaiting teardown,
+stopping, retryable and restarting. Send requires acknowledged readiness; Retry
+requires teardown notification and explicit action. Replace the ordered event
+channel on worker attachment. Late events cannot reopen admission in another phase.
 
-The model is unavailable, preparing, ready, generating, awaiting teardown, stopping,
-retryable or restarting. Send requires ready; Retry requires owned-teardown
-notification and explicit action. The worker must acknowledge the new attempt
-before readiness opens Send. Queued events cannot bypass these states; recognized
-rejections restore prompts only to an empty composer. One ordered event channel
-is replaced on worker attachment; phase guards add no request/attempt identifiers.
+Drafting, browsing and conversation creation remain available during preparation,
+failure and generation. Only one request runs: incoming content, reasoning, stages
+and history belong to its submitting conversation, which cannot be deleted until
+it settles. Show response returns to that owner; Stop controls it from any chat.
+Coalesce history changes and restore the selected history before the next Send,
+without replay. Teardown/unacknowledged restart blocks navigation until turn events
+settle. Late rejections restore only their still-existing originating conversation.
 
-Conversation browsing, creation, deletion and drafts remain available while the
-model prepares or is unavailable. During generation, typing, browsing and creation
-also remain available, while Send stays closed to a second request. Incoming text,
-reasoning, stages and committed history belong to the conversation that submitted
-the request, even when another conversation is visible. That conversation cannot
-be deleted until generation settles. Background progress names its conversation
-and offers Show response; Stop still controls the one active request.
-History changes during preparation or generation are coalesced locally, and the
-selected conversation's committed history is restored when the worker is ready,
-before another Send and without replaying a prompt. Teardown and the brief
-unacknowledged restart still block navigation until queued turn events settle.
-A late rejected prompt returns only to its original conversation if it still exists.
-Loading and failure status stays visible when switching conversations. Prepared
-dictation can update a draft before Swift is ready, and switching cancels capture
-and ignores late transcripts. Speech
-controls follow their separate output capability; they cannot queue playback during
-speech preparation. Once available, an explicit read action retains on-demand TTS
-model loading and authenticated readiness checks. Switching stops playback; hidden
-responses never restart streaming speech or finish another conversation's playback.
-Stop speech remains available.
+Switching conversations cancels speech/capture and invalidates late input;
+hidden responses cannot restart playback or finish another conversation's readout.
+Speech readiness is independent of text readiness and cannot queue playback while
+preparing. Explicit readout retains on-demand loading/authenticated readiness.
 
-[Find controls](development-guide.md#conversations-and-response-settings) search
-visible message bodies. The conversation has no permanent top bar or Find button.
-The sidebar toggle sits beside Settings when docked, or in a compact left
-rail when hidden or narrow. Settings stays in the sidebar footer. Find controls
-appear above the transcript only while open, reached through Ctrl+F or a filtered
-history result. Warnings, Retry and background-response notices remain conditional
-above the transcript. Narrow composers put microphone and Send/Stop on their own
-row below the audio controls. Ctrl+F is handled before the composer and sidebar text
-editors, with dialogs and popups retaining priority. Selecting a filtered sidebar
-result opens the same native Find controls with the trimmed query, matching-body
-highlights and the first match selected; reselecting the current result does too.
-Sidebar query changes also update the already-open conversation's Find and
-highlights without taking sidebar focus, even when the filtered list is empty.
-Clearing the sidebar query clears those highlights. Unchanged sidebar queries
-preserve local Find edits, dismissal and match navigation.
-Both searches use the same Unicode scalar lowercase convention. Find edits and
-dismissal leave the sidebar filter intact; title-only results report no body
-matches. [Streaming resources](streaming-resources.md#native-chat-and-transcript)
-defines incremental matching, highlight/underline-cache invalidation, context-estimate
-caching and work bounds. The compact Context: control uses a native painted circular
-meter for estimated reserved occupancy, clamped to a full ring. Hover and accessible
-description retain the approximate percentage; pending estimates show a hollow ring
-with a dash, without a stale occupancy or idle animation. Its popup shares rounded
-framing with Thinking. Both popups take keyboard priority: Escape closes them before
-Find or Stop, and Enter cannot submit the background composer.
-The generation owner's context remains updating until its turn settles; browsing
-another conversation estimates that conversation's draft. Extra effort guidance
-covers only its first pass, and message iteration can select a different prompt
-or prefix. These estimates perform no network or disk work and establish neither
-exact token occupancy nor request eligibility.
-`bonsai-chat.exe --preview` uses the same presentation with marked sample content
-and no broker, credentials, microphone or speech service; it checks layout and
-interaction only.
+Sidebar search and Find share Unicode scalar lowercase matching. Selecting a
+sidebar result opens Find at the trimmed query, including title-only results with
+no body match. Query changes update an open Find without taking focus; unchanged
+queries preserve local Find edits, dismissal and navigation. Find edits/closure
+leave the sidebar filter intact. Ctrl+F precedes text editors, while dialogs/popups
+retain keyboard priority. [Streaming resources](streaming-resources.md#native-chat-and-transcript)
+owns matching, layout invalidation and work bounds.
 
-Native egui styles cover assistant headings, list/quote prefixes and inline/fenced
-code. Markers stay visible, code is monospace and incomplete streaming fences
-remain readable. Copy, selection and Find address exact source text. This bounded
-subset falls back to plain text for excess style spans while retaining bounded
-search highlights; it is not a general Markdown/HTML renderer.
+The Context ring shows approximate reserved occupancy, clamped full; pending
+capacity uses a hollow ring/dash without stale values or animation. Its popup and
+Thinking consume Escape/Enter before Find, Stop or background Send. The active
+owner stays updating until its turn settles; browsing estimates the selected draft.
+Guidance performs no network/disk work.
 
-Message cards use one compact header for the speaker, Copy, read-aloud and
-iteration actions. Read-aloud remains keyboard accessible, including Stop during
-playback, and reserves no separate footer while speech is unavailable. Cards
-share 16-point horizontal and 12-point vertical insets with a 12-point gap;
-thinking expands beneath the answer using its measured text height. Cached text
-wrapping and Find geometry use the same content insets as presentation.
+Message headers contain speaker, Copy, read-aloud and iteration actions. Cards use
+16-point horizontal/12-point vertical insets with a 12-point gap; text wrapping and
+Find geometry use those same insets. Thinking expands to measured text height.
+Read-aloud/Stop stays keyboard accessible; unavailable speech reserves no footer.
 
-Setup, model, conversation-saving, speech, audio-import and update failures
-share one native alert panel above the transcript. A count and labelled selector
-keep every active alert reachable while showing one two-line summary and its
-actions at a time, without stacked cards or scrolling in the panel. Selection
-follows the error source when other alerts clear. **Copy error** includes the
-complete current message and confirms the copy. **Details** opens a bounded native
-modal with a scrollable preview and full-message copy; Escape closes it without
-sending, stopping generation or cancelling speech. Preview limits never truncate
-the copied error. Source-specific Retry and transcript actions retain their
-readiness and cleanup requirements. Successful progress stays outside the panel.
-Full model errors stay in session memory, including across conversation switches;
-recovery saves only bounded status text. Diagnostics retain bounded recent previews
-and offer a separate Copy diagnostics action. Fatal launcher/graphics failures
-use a fixed native Windows dialog with a scrollable preview and Copy error.
-An OS failure to create that dialog falls back to a short native error message.
+Full model errors remain in session memory across conversation switches; recovery
+saves only bounded status. Recent bounded diagnostics have a separate copy action.
+Fatal launcher/graphics errors use a native scrollable/copyable dialog, falling back
+to a short OS error message if dialog creation fails. Preview uses marked sample
+content with no broker, credentials, microphone or speech service.
 
 ## Interoperability belongs at the API boundary
 
@@ -387,18 +281,9 @@ deferred automatic send. Cancel, conversation changes and teardown invalidate
 late results. Speech output uses only visible assistant answers, excluding
 reasoning/private drafts.
 
-After complete successful microphone or file transcription, the owned ASR service
-may remain warm for at most 30 idle seconds. Reuse preserves verified model guards
-and resource monitoring, rechecks authenticated readiness and listener ownership,
-and resets native recognition state for the next request. Successful text
-submission preserves the lease; cancellation, errors, conversation changes,
-speech output, expiry and shutdown release it. Partial file progress never starts
-an idle lease. After explicit microphone permission and successful recording
-startup, model verification/loading may overlap capture on the speech worker.
-No audio is uploaded or recognized until the complete finalized WAV validates.
-Preparation remains owned by that capture generation and grants no idle lease;
-capture failure/revocation/cancellation releases it. Imported audio retains its
-complete first-segment validation before an unprepared model starts.
+ASR preparation, generation ownership and the successful-input idle lease follow
+the [speech scheduling contract](streaming-resources.md#speech-scheduling-and-playback).
+No audio upload or inference precedes complete finalized-WAV validation.
 
 The composer's native plus button selects one audio file; Ctrl+V in the focused
 composer accepts files copied from Explorer. A cancellable owned worker reads and

@@ -23,14 +23,10 @@ capability reports grant no Windows permissions. See [speech operation](developm
 
 ## Technology selection
 
-| Technology | Role |
-| --- | --- |
-| [Microsoft Execution Containers](https://github.com/microsoft/mxc/tree/v1.0.1) | Native Windows ARM64 process containment used by owned UI workers. |
-| [NVX](https://github.com/microsoft/nvx) | Possible future separate-kernel boundary for hostile Linux tools. It runs a Linux guest and cannot substitute for the pinned Windows PE workers. |
-| [LiteBox](https://github.com/microsoft/litebox) | Research only. Its [Windows userland platform](https://github.com/microsoft/litebox/blob/main/litebox_platform_windows_userland/src/lib.rs) targets x86_64 and explicitly shares writable host memory with the guest; it is not this application's security boundary. |
-| [Windows Sandbox through MXC](https://github.com/microsoft/mxc/blob/v1.0.1/docs/backends/windows-sandbox/windows-sandbox.md) | Experimental future Windows VM lane. Upstream teardown is best-effort and a hard-killed launcher can leave an orphan VM. Model sharing, transport, resource accounting and cleanup need separate qualification. |
-
-Technology selection establishes no performance benefit; evaluation is CI-only.
+[MXC ProcessContainer](https://github.com/microsoft/mxc/tree/v1.0.1) contains the
+pinned Windows ARM64 workers. Separate-kernel VM isolation is an independent
+future boundary requiring model sharing, transport, resource and teardown
+qualification; see [PLAN.md](../PLAN.md#optional-agents).
 
 ## Worker authority
 
@@ -59,9 +55,8 @@ The owned-worker policy grants:
   HTTP servers, with external ingress and egress denied by policy and no
   Internet/private-LAN capability.
 
-Host-loopback permission includes services reached through the host's own
-non-loopback interface addresses. Native tests observed this even with explicit
-all-address egress-deny rules and without the older loopback capability/sentinel.
+Host-loopback permission reaches services on the host's non-loopback addresses,
+even with all-address egress-deny rules.
 It **does not enforce broker-only communication** or deny all other local services.
 The [versioned networking contract](https://github.com/microsoft/mxc/blob/v1.0.1/docs/backends/process-container/networking.md)
 explains the coarse host-loopback grant. Retain numeric-loopback binding, bearer

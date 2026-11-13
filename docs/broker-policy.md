@@ -170,7 +170,7 @@ The complete body shares the count route's 4096-byte cap and original deadline;
 duplicate/unknown JSON fields, unknown codes, malformed/truncated framing and
 all other statuses remain failures. HTTP status alone never identifies context
 exhaustion. Generation still requires HTTP 200 and cannot take this recovery path.
-An older runtime's untyped HTTP 400 or disconnect is not reclassified.
+Untyped HTTP 400 responses and disconnects are not reclassified.
 
 An exact `ContextLimit` rejection returns HTTP 413 before generation:
 `{"error":{"code":"context_length_exceeded"}}`, `Content-Type: application/json`,

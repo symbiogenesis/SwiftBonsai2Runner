@@ -95,7 +95,7 @@ cancellation.
 
 | Boundary | Storage and work contract |
 | --- | --- |
-| Complete WAV response | The Rust engine's associated waveform type retains its owned samples through validation, PCM conversion and HTTP writes. Success, invalid output and write failure release that owner. The complete clip is validated before success headers. A reusable 32 KiB conversion buffer and 44-byte header avoid a second encoded clip allocation. Historical native-allocation copy savings do not qualify the replacement Rust engine's process peak memory. |
+| Complete WAV response | The Rust engine's associated waveform type retains its owned samples through validation, PCM conversion and HTTP writes. Success, invalid output and write failure release that owner. The complete clip is validated before success headers. A reusable 32 KiB conversion buffer and 44-byte header avoid a second encoded clip allocation. |
 | Voice bootstrap | The Rust-owned VoiceDesign waveform survives Design teardown and synchronous Base extraction, releasing on success/failure. Design/Base remain mutually exclusive. The reference must contain 1,920–720,000 float samples. Startup latency, extraction scratch and process peak memory require qualification of the Rust serving path. |
 | Streaming PCM output | Reuses a 32 KiB payload buffer with fixed HTTP-framing spare space. Each encoded chunk uses one write, avoiding a vector allocation and separate prefix/payload/suffix writes. |
 | PCM intake | Reuses a fixed 16 KiB buffer for HTTP headers, chunk framing and PCM. Parses buffered metadata without byte-sized socket reads; chunk-size lines use ten fixed bytes. A lending helper owns cursor/alignment rules and releases available even-byte prefixes immediately, retaining at most one split sample in two reader-owned bytes. Checks cancellation/deadlines even for buffered data; requires exact chunk endings, terminal framing and EOF. |
@@ -125,20 +125,9 @@ with EOF and consecutive PCM/WAV responses followed by immediate client closure.
 
 ## Evidence limits
 
-Focused regressions check byte identity, PCM clipping and rounding, bounded
-storage reuse, operation counts, pending reads, cancellation and failures. Such
-checks measure neither elapsed time nor device throughput. Avoiding a complete
-encoded-WAV vector establishes a storage lifetime, not a measured reduction in
-process peak memory. Actual-model latency, allocation/peak-memory captures, combined speech
-and chat resource use, accessibility and sustained comfort remain subject to the
-[validation policy](validation.md) and the outstanding acceptance work in
-[PLAN.md](../PLAN.md#application-and-daily-service).
-The adaptive broker forwarding path also needs hosted comparison: a short initial
-span may add a buffered copy where direct final-frame intake previously bypassed
-the reader. Full-span borrowing and small-fragment coalescing establish behavior,
-not a measured net throughput improvement.
-The Rust TTS engine's complete-model memory use still needs target-device
-qualification. These storage contracts do not qualify a lower model admission
-threshold. Swift serving uses [memory-selected admission](swift-memory.md#memory-selected-serving-context),
-retaining the 4 GiB physical reserve, memory-pressure shutdown and full
-context/output reservations.
+These contracts establish storage/work bounds and byte identity. They do not
+measure throughput, peak process/model memory or justify lower admission limits.
+Native interaction, speech/chat overlap, full-model resources, accessibility and
+sustained comfort require [validation](validation.md) and [PLAN acceptance](../PLAN.md#application-and-daily-service).
+Adaptive SSE forwarding also needs a hosted comparison of direct full spans and
+small-fragment coalescing before a throughput claim.
