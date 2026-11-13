@@ -73,6 +73,7 @@ $tests.registry={param($f) $f.Packet.registry_packages['bonsai-neon-dot'].sha256
 $tests.strict_identity_types={param($f)
     foreach ($change in @(@('schema_version','2'),@('per_arm_timeout_seconds','60'))) {$old=$f.Packet[$change[0]];$f.Packet[$change[0]]=$change[1];Reject {EvaluateFixture $f};$f.Packet[$change[0]]=$old}
     $f.Proof.schema_version='1';Reject {EvaluateFixture $f};$f.Proof.schema_version=1
+    foreach ($field in @('minimum_relative_request_improvement','maximum_owned_arm_regression')) {$old=$f.Packet[$field];$f.Packet[$field]='0.10';Reject {EvaluateFixture $f};$f.Packet[$field]=$old}
     $f.Starts[1].original_deadline_unix_milliseconds=[string]$f.Starts[1].original_deadline_unix_milliseconds;Reject {EvaluateFixture $f}
 }
 $tests.redirected_member={param($f)

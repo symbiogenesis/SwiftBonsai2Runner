@@ -48,7 +48,7 @@ try {
             nonfinite { foreach ($directory in @($serialPath,$parallelPath)) { Write-Floats (Join-Path $directory 'state-0/block-3-key-0.f32le') @([single]::NaN,1) }; Expect-Rejection $evaluate 'nonfinite' }
             signed_zero { Write-Floats (Join-Path $parallelPath 'state-0/block-3-key-0.f32le') @(1,0); Expect-Rejection $evaluate 'bits differ'; Write-Floats (Join-Path $parallelPath 'extra.f32le') @(1); Expect-Rejection $evaluate 'inventory' }
             dispatch { Mutate-Records $parallelPath { param($r) $r[2].parallel_row_operations=0 }; Expect-Rejection $evaluate 'dispatch' }
-            controls { foreach ($change in @(@(0,'model_sha256',('0'*64)),@(1,'scale_bits','00000000'),@(2,'input_token',7),@(2,'row_workers',2),@(2,'position',0.0))) { Mutate-Records $parallelPath {param($r) $r[$change[0]][$change[1]]=$change[2] }; Expect-Rejection $evaluate; [IO.File]::WriteAllText($recordsPath,$original) } }
+            controls { foreach ($change in @(@(0,'model_sha256',('0'*64)),@(1,'scale_bits','00000000'),@(1,'target_pairs','129'),@(2,'input_token',7),@(2,'row_workers',2),@(2,'position',0.0))) { Mutate-Records $parallelPath {param($r) $r[$change[0]][$change[1]]=$change[2] }; Expect-Rejection { Get-RowControls $parallelPath 4 $geometry }; [IO.File]::WriteAllText($recordsPath,$original) } }
             records {
                 $lines = [IO.File]::ReadAllLines($recordsPath)
                 foreach ($changed in @(@($lines[0],$lines[1]), @($lines[0],$lines[1],$lines[2],$lines[2]), @($lines[0],$lines[1],$lines[2],'{"event":"error"}'))) { [IO.File]::WriteAllLines($recordsPath,[string[]]$changed); Expect-Rejection $evaluate }
