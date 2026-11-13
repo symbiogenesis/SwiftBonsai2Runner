@@ -144,7 +144,7 @@ fn staged(version: &str) -> crate::Result<PathBuf> {
 }
 
 fn discover(working: &Path) -> crate::Result<(bool, Option<Candidate>)> {
-    let data = release_catalog(working)?;
+    let data = cached_release_catalog(working)?;
     policy::select(&data, env!("CARGO_PKG_VERSION"))
 }
 
@@ -180,6 +180,15 @@ fn release_catalog(working: &Path) -> crate::Result<Vec<u8>> {
     })
 }
 
+fn cached_release_catalog(working: &Path) -> crate::Result<Vec<u8>> {
+    collect_releases(|page| {
+        transfer::cached_metadata(
+            &format!("https://api.github.com/repos/{REPOSITORY}/releases?per_page=100&page={page}"),
+            working,
+        )
+    })
+}
+
 fn portable_installation() -> crate::Result<Value> {
     let (root, digest) = crate::chat_package::bundle::update_identity()?;
     let selected =
@@ -208,10 +217,30 @@ fn verified_portable_release(
     candidate: &Candidate,
     working: &Path,
 ) -> crate::Result<policy::Installer> {
-    let manifest = transfer::asset_metadata(&candidate.manifest, working)?;
-    let checksums = transfer::asset_metadata(&candidate.checksums, working)?;
+    portable_release_metadata(candidate, working, false)
+}
+
+type AssetMetadata = fn(&policy::Asset, &Path) -> crate::Result<Vec<u8>>;
+type Metadata = fn(&str, &Path) -> crate::Result<Vec<u8>>;
+
+fn metadata_functions(conditional: bool) -> (AssetMetadata, Metadata) {
+    if conditional {
+        (transfer::cached_asset_metadata, transfer::cached_metadata)
+    } else {
+        (transfer::asset_metadata, transfer::metadata)
+    }
+}
+
+fn portable_release_metadata(
+    candidate: &Candidate,
+    working: &Path,
+    conditional: bool,
+) -> crate::Result<policy::Installer> {
+    let (asset, metadata) = metadata_functions(conditional);
+    let manifest = asset(&candidate.manifest, working)?;
+    let checksums = asset(&candidate.checksums, working)?;
     let executable = policy::portable(candidate, &manifest, &checksums)?;
-    let commit = transfer::metadata(
+    let commit = metadata(
         &format!(
             "https://api.github.com/repos/{REPOSITORY}/commits/v{}",
             candidate.version
@@ -337,10 +366,19 @@ fn startup_handoff(handoff: &Path) -> crate::Result<Value> {
 }
 
 fn verified_release(candidate: &Candidate, working: &Path) -> crate::Result<policy::Installer> {
-    let manifest = transfer::asset_metadata(&candidate.manifest, working)?;
-    let checksums = transfer::asset_metadata(&candidate.checksums, working)?;
+    installer_release_metadata(candidate, working, false)
+}
+
+fn installer_release_metadata(
+    candidate: &Candidate,
+    working: &Path,
+    conditional: bool,
+) -> crate::Result<policy::Installer> {
+    let (asset, metadata) = metadata_functions(conditional);
+    let manifest = asset(&candidate.manifest, working)?;
+    let checksums = asset(&candidate.checksums, working)?;
     let installer = policy::installer(candidate, &manifest, &checksums)?;
-    let commit = transfer::metadata(
+    let commit = metadata(
         &format!(
             "https://api.github.com/repos/{REPOSITORY}/commits/v{}",
             candidate.version
@@ -353,7 +391,7 @@ fn verified_release(candidate: &Candidate, working: &Path) -> crate::Result<poli
 
 fn selected_release(version: &str, working: &Path) -> crate::Result<Candidate> {
     Version::parse(version)?.newer_than_current()?;
-    let (_, candidate) = discover(working)?;
+    let (_, candidate) = policy::select(&release_catalog(working)?, env!("CARGO_PKG_VERSION"))?;
     candidate
         .filter(|candidate| candidate.version == version)
         .ok_or_else(|| {
@@ -479,12 +517,17 @@ pub fn run(value: Value) -> crate::Result<Value> {
     }
     match serde_json::from_value(value).map_err(|error| error.to_string())? {
         Request::PortableCheck => {
-            portable_installation()?;
+            // Discovery is read-only. Admit the running bundle without hashing
+            // every extracted application executable on each timer tick. The
+            // download and installation gates still verify the full package.
+            crate::chat_package::bundle::update_identity()?;
             let working = cache_root()?;
-            let (published, candidate) =
-                policy::select_portable(&release_catalog(&working)?, env!("CARGO_PKG_VERSION"))?;
+            let (published, candidate) = policy::select_portable(
+                &cached_release_catalog(&working)?,
+                env!("CARGO_PKG_VERSION"),
+            )?;
             if let Some(candidate) = candidate {
-                let published = verified_portable_release(&candidate, &working)?;
+                let published = portable_release_metadata(&candidate, &working, true)?;
                 Ok(json!({"Status": "available", "Version": candidate.version,
                     "ReleaseIdentity": published.release_identity()?}))
             } else {
@@ -513,7 +556,7 @@ pub fn run(value: Value) -> crate::Result<Value> {
             let working = cache_root()?;
             let (published, candidate) = discover(&working)?;
             if let Some(candidate) = candidate {
-                verified_release(&candidate, &working)?;
+                installer_release_metadata(&candidate, &working, true)?;
                 Ok(
                     json!({"Status": "available", "Version": candidate.version, "ReleaseUrl": candidate.release_url}),
                 )

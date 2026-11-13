@@ -605,6 +605,7 @@ dependencies = [
  "bonsai-cpu-policy",
  "bonsai-windows-credentials",
  "bonsai-windows-process",
+ "flate2",
  "httparse",
  "serde",
  "serde_json",

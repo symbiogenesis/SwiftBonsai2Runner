@@ -17,6 +17,8 @@ use std::{
 
 use super::{MAX_METADATA, external, policy::Asset};
 
+mod http;
+
 static CURL: OnceLock<PathBuf> = OnceLock::new();
 
 struct TemporaryBody(PathBuf);
@@ -211,71 +213,28 @@ fn require_successful_http(code: u32, status: &str) -> crate::Result<()> {
 }
 
 pub(super) fn metadata(url: &str, working: &Path) -> crate::Result<Vec<u8>> {
-    #[cfg(windows)]
-    let directory = bonsai_windows_credentials::PrivateDirectory::create(working)
-        .map_err(|error| error.to_string())?;
-    #[cfg(windows)]
-    let working = directory.path();
-    let path = working.join(format!(
-        "metadata-{}.json",
-        crate::startup_process::unique()
-    ));
-    let log = path.with_extension("log");
-    external(&path)?;
-    let _body = TemporaryBody(path.clone());
-    // The public API has no authentication headers. Artifact URLs are admitted
-    // only by the offline canonical-project release policy before reaching here.
-    let arguments = [
-        "--disable".into(),
-        "--silent".into(),
-        "--show-error".into(),
-        "--location".into(),
-        "--max-redirs".into(),
-        "3".into(),
-        "--proto".into(),
-        "=https".into(),
-        "--proto-redir".into(),
-        "=https".into(),
-        "--disallow-username-in-url".into(),
-        "--connect-timeout".into(),
-        "5".into(),
-        "--max-time".into(),
-        "10".into(),
-        "--max-filesize".into(),
-        MAX_METADATA.to_string().into(),
-        "--header".into(),
-        "Accept: application/vnd.github+json".into(),
-        "--header".into(),
-        format!(
-            "User-Agent: SwiftBonsai2Runner/{}",
-            env!("CARGO_PKG_VERSION")
-        )
-        .into(),
-        "--header".into(),
-        "Accept-Encoding: identity".into(),
-        "--write-out".into(),
-        "%{http_code}".into(),
-        "--output".into(),
-        path.as_os_str().to_owned(),
-        url.into(),
-    ];
-    let curl = curl(working)?;
-    let result = crate::startup_process::run(
-        curl.as_os_str(),
-        &arguments,
-        working,
-        &BTreeMap::new(),
-        Duration::from_secs(11),
-        &log,
-    )?;
-    // An empty public release catalog is HTTP 200 with []. A 404 means the
-    // repository/catalog could not be inspected, not a successful no-update.
-    require_successful_http(result.code, &result.stdout)?;
-    read_bounded(&path, MAX_METADATA)
+    http::metadata(url, working, None, false)
+}
+
+pub(super) fn cached_metadata(url: &str, working: &Path) -> crate::Result<Vec<u8>> {
+    http::metadata(url, working, None, true)
 }
 
 pub(super) fn asset_metadata(asset: &Asset, working: &Path) -> crate::Result<Vec<u8>> {
-    let bytes = metadata(&asset.url, working)?;
+    checked_asset(
+        asset,
+        http::metadata(&asset.url, working, Some(asset), false)?,
+    )
+}
+
+pub(super) fn cached_asset_metadata(asset: &Asset, working: &Path) -> crate::Result<Vec<u8>> {
+    checked_asset(
+        asset,
+        http::metadata(&asset.url, working, Some(asset), true)?,
+    )
+}
+
+fn checked_asset(asset: &Asset, bytes: Vec<u8>) -> crate::Result<Vec<u8>> {
     if u64::try_from(bytes.len()).map_err(|error| error.to_string())? != asset.bytes
         || crate::identity::sha256(&bytes) != asset.sha256
     {

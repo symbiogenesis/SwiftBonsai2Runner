@@ -32,6 +32,7 @@ bonsai-speech-service = { path = "src/speech-service" }
 bonsai-windows-credentials = { version = "=0.1.4", path = "src/windows-credentials" }
 bonsai-windows-process = { version = "=0.1.2", path = "src/windows-process" }
 fearless_simd = "=1.2.0"
+flate2 = { version = "=1.1.11", default-features = false, features = ["zlib-rs"] }
 httparse = "=1.10.1"
 memchr = { version = "=2.8.3", default-features = false }
 serde = "=1.0.229"
