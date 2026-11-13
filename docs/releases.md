@@ -1,15 +1,15 @@
 # Windows releases
 
 Swift Bonsai 2 Runner ships as a **portable Windows ARM64 executable** for
-Snapdragon X and X2 laptops. [v0.2.2](releases/v0.2.2.md) is prepared locally;
-publication requires the owner's source push and Windows Release workflow run.
+Snapdragon X and X2 laptops. [v0.2.2](releases/v0.2.2.md) is published as an
+[experimental prerelease](https://github.com/symbiogenesis/SwiftBonsai2Runner/releases/tag/v0.2.2).
 The published [v0.2.1 release](https://github.com/symbiogenesis/SwiftBonsai2Runner/releases/tag/v0.2.1)
 remains available.
 
 ## Download and open
 
-Download from [GitHub releases](https://github.com/symbiogenesis/SwiftBonsai2Runner/releases)
-after publication. The v0.2.2 release has three assets:
+Download from [GitHub releases](https://github.com/symbiogenesis/SwiftBonsai2Runner/releases).
+The v0.2.2 release has three assets:
 
 | Asset | Purpose |
 | --- | --- |
@@ -108,8 +108,8 @@ switch engine or representation. See the
 
 ## Update and remove
 
-Current source and prepared v0.2.2 builds check GitHub at startup and every six
-hours, then download newer Windows ARM64 releases, including experimental
+v0.2.2 checks GitHub at startup and every six
+hours, then downloads newer Windows ARM64 releases, including experimental
 prereleases. **Settings > Application** also offers a manual check. Discovery
 selects the highest numeric version in the bounded catalog, excluding drafts and
 older versions. An incomplete catalog or invalid newest release fails without
@@ -179,7 +179,7 @@ The owner can inspect the run and release with:
 
 ```powershell
 gh run list --repo symbiogenesis/SwiftBonsai2Runner --workflow release.yml --limit 5
-gh release view v0.2.1 --repo symbiogenesis/SwiftBonsai2Runner
+gh release view v0.2.2 --repo symbiogenesis/SwiftBonsai2Runner
 ```
 
 Hosted packaging checks do not qualify clean-machine startup, actual-model

@@ -28,7 +28,7 @@ in sync with detailed tasks and preserve their acceptance obligations.
 | P1 / external, qualification | Prism and Runner | Original authoring inputs for provenance; hosted public-pack reconstruction for its separate gate | Run the declared reconstruction and independent replay while pursuing provenance intake independently; follow the PTQ1 critical path below. Neither blocks A1. |
 | N1 / qualification | Prism and Runner | Frozen NPU-1 packet and applicable signed/runtime prerequisites | Complete [NPU-1 through NPU-7](#promotion-sequence) for the selected explicit X2 profile. HMX/PTQ1/X1/GPU/automatic selection retain their separate later gates. |
 | Q1 / qualification | Runner and independent human reviewers | Exact complete-answer/audio captures and declared rubric | Prepare the [creative and speech](#creative-quality-adapters-and-memory) review packets in parallel with source work; retained output can support applicable review without another device capture. |
-| D1 / owner, qualification | Runner | Reviewed source, exact portable release assets and C1 | Publish v0.2.2 with automatic pinned first-run setup, repair and hardened auto-update. Close fresh/custom-data launch, interrupted/corrupt download recovery, setup/speech retries, automatic release discovery/download, confirmed replacement/restart, data preservation, isolation and rollback acceptance; deploy and retrieve the selected [durable evidence](#durable-qualification-evidence). |
+| D1 / qualification | Runner | Published v0.2.2 portable release assets; C1 retains its separate gate | Qualify v0.2.2 automatic pinned first-run setup, repair and hardened auto-update. Close fresh/custom-data launch, interrupted/corrupt download recovery, setup/speech retries, automatic release discovery/download, confirmed replacement/restart, data preservation, isolation and rollback acceptance; deploy and retrieve the selected [durable evidence](#durable-qualification-evidence). |
 | F1 / conditional | As specified in each detailed section | Its existing measured need, compatible artifact or release trigger | Retain precision research, broader profiles, optional agents, future Qwen migration and deferred Prism/dependency work in full; activation conditions and ordering remain unchanged. |
 
 After integrating reviewed commits into local `main`, freeze a qualification
@@ -90,15 +90,19 @@ same-repository composites retain workflow-commit `$/` references. Confirm
 self-hosted runner v2.338.0 or newer before its lanes. The published-source pass
 does not validate later local changes.
 
-Publish the next experimental Windows ARM64 release, **v0.2.2**, after the
-owner reviews and pushes the local portable-release commits to Runner `main`.
+Qualify the published experimental Windows ARM64 [v0.2.2 release](https://github.com/symbiogenesis/SwiftBonsai2Runner/releases/tag/v0.2.2)
+from source `6e928596a74819737af430bcc461c3e1107dfef5`.
+[Windows Release passed](https://github.com/symbiogenesis/SwiftBonsai2Runner/actions/runs/43464777841),
+including all five Rust lanes, portable packaging and model-free executable smoke
+checks. Independent downloads verified all three asset sizes and SHA-256 digests,
+the checksum inventory, manifest and exact source tag. These checks do not close
+Foundation's aggregate gate or the device acceptance below.
 The published [v0.2.1 release](https://github.com/symbiogenesis/SwiftBonsai2Runner/releases/tag/v0.2.1)
 uses source `1b80890eb5b438e98c41a6d4d89d3f92bfe68703`; its publication
 does not qualify the new setup, repair or update recovery behavior.
 The [release guide](docs/releases.md) records the owner-run publication command;
 the [release notes](docs/releases/v0.2.2.md) retain the development-default
-and qualification limits. Qualify the hosted build and exact executable,
-checksum inventory and release manifest, then verify clean-machine launch,
+and qualification limits. Verify clean-machine launch,
 terminal-free startup, automatic startup/six-hour release discovery and verified
 download, confirmed close-and-replace/restart updates, preserved model/recovery
 data and explicit rollback. Qualify published prereleases, paginated numeric
@@ -114,8 +118,9 @@ update or actual-model acceptance.
 The v0.2.2 bounded local check passed Rust formatting, changed-document Markdown,
 release policy and the broker's fixed model-failure marker control. Tools and UI
 test harnesses stopped before test execution on fixture method/accessibility API
-errors. Those fixtures are corrected locally; their setup/update tests and
-all-target Clippy remain pending owner-hosted Foundation on the corrected source.
+errors. Their corrected setup/update tests and all-target Clippy now pass in
+Windows Release on the published source; owner-hosted Foundation's aggregate
+verdict remains separate.
 Check commands stopped after 135.7 seconds and were not retried. Selected scratch
 evidence and worktrees were removed; the post-cleanup observation was 325.6 seconds
 from the original start, within the same eight-minute maximum. AC was connected
