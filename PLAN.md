@@ -267,16 +267,29 @@ under [AGENTS.md](AGENTS.md).
   underrun recovery. Measure cold load, first audible output and sustained
   readout/listening with matched power, including slow supply and chat overlap.
 - [ ] Implement the signed Rust `hexagon-native-rpc` dispatcher, immutable hybrid
-  placement/cache ownership and contained HTP0 execution. Qualify buffer lifetime,
-  completion fences, cancellation and teardown; packet serialization alone does
-  not establish dispatch.
+  placement/cache ownership and contained HTP0 execution. Establish supported
+  Q8 tensor/solver mapping and exact package/catalog/driver admission, then
+  qualify correlated completions, buffer lifetime, cancellation and teardown.
+  Fixed F32/guarded-Q2 controls do not qualify TTS prefill or shared KV state.
 - [ ] **S2 — Replace ASR's native engine in Rust.** Retain pinned Qwen3-ASR 1.7B
-  controls and qualify transcript/state, microphone-to-Swift submission, quality,
-  cancellation, lifecycle and resources before removing native dependencies.
+  controls; implement verified GGUF/tokenizer intake, log-mel frontend,
+  CNN/transformer encoder, causal decoder and complete KV/session reset.
+  Preserve independent numerical/tokenizer observations and qualify
+  transcript/state, microphone-to-Swift submission, quality, cancellation,
+  lifecycle and resources before removing native dependencies. Protocol-only
+  controls do not qualify inference.
 - [ ] Retire remaining Runner/Prism native/reference/DLL/publisher families
   [file by file](docs/cpp-retirement.md): replace source assertions, geometry IDs,
   codec/ABI, state and fallback obligations with independent controls, then remove
-  compiler/provisioning/build paths. Retain required replay data.
+  compiler/provisioning/build paths. Prism needs an independent observation
+  provider before its 40 active C++ files can be removed; retain every approved
+  green ID, all 22,817 ordered backend geometries and separate performance work.
+  Retain required replay data and qualify owning hosted builds without a project
+  C++ toolchain.
+- [ ] Replace the [MSVC startup/panic runtime boundary](docs/cpp-retirement.md#msvc-startup-and-panic-runtime)
+  with a qualified Rust provider while preserving preparation-peer recovery,
+  worker draining and scoped cleanup. Static CRT linkage alone does not retire
+  the embedded C++ exception runtime; a blanket abort profile changes recovery.
 
 ## Creative quality, adapters and memory
 
