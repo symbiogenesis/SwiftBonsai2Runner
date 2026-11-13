@@ -5,6 +5,39 @@ use super::{
 use crate::window::{controls, iteration::MessageAction};
 
 impl Message {
+    pub(super) fn retry_controls(
+        &self,
+        ui: &mut egui::Ui,
+        controls: &MessageControls<'_>,
+    ) -> Option<MessageAction> {
+        self.retry_prefix(controls.history)?;
+        let (label, help) = if controls.can_reload {
+            (
+                "Reload model",
+                "Reload the model, then select Retry response here. Your message will not be sent automatically.",
+            )
+        } else {
+            (
+                "Retry response",
+                if self.role == Role::User {
+                    "Try this message again without adding another copy to the conversation. Keeps your unsent draft."
+                } else {
+                    "Try the original prompt in a new branch. Keeps this partial response and your unsent draft."
+                },
+            )
+        };
+        ui.add_enabled(
+            controls.can_send || controls.can_reload,
+            egui::Button::new(label).min_size(egui::vec2(0.0, MESSAGE_ACTION_SIZE)),
+        )
+        .on_hover_text(help)
+        .on_disabled_hover_text(
+            "Wait for the model to finish preparing or stopping before retrying.",
+        )
+        .clicked()
+        .then_some(MessageAction::Retry(self.id))
+    }
+
     pub(super) fn header(
         &self,
         ui: &mut egui::Ui,

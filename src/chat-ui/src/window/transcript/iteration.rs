@@ -3,6 +3,22 @@ use super::{Message, Role, Transcript};
 use crate::{client, window::iteration::MessageOptions};
 
 impl Message {
+    pub(in crate::window) fn retry_prefix(&self, history: &[client::Message]) -> Option<usize> {
+        if self.role == Role::User {
+            self.retry_prefix.filter(|prefix| {
+                *prefix == history.len()
+                    && prefix.is_multiple_of(2)
+                    && self.history_index.is_none()
+                    && !self.body.trim().is_empty()
+                    && crate::window::draft_buffer::fits(&self.body)
+            })
+        } else {
+            self.committed_index(history)
+                .filter(|index| self.interrupted && *index > 0 && history[index - 1].role == "user")
+                .map(|index| index - 1)
+        }
+    }
+
     fn matches_history(&self, message: &client::Message) -> bool {
         message.role
             == match self.role {
@@ -47,6 +63,9 @@ impl Message {
 
 impl Transcript {
     pub(in crate::window) fn start_turn(&mut self, prompt: String, prefix: usize) {
+        for message in &mut self.messages {
+            message.retry_prefix = None;
+        }
         self.push(Role::User, prompt);
         if let Some(message) = self.messages.last_mut() {
             message.turn_prefix = Some(prefix);
@@ -55,6 +74,34 @@ impl Transcript {
         if let Some(message) = self.messages.last_mut() {
             message.turn_prefix = Some(prefix);
         }
+    }
+
+    pub(in crate::window) fn restart_turn(&mut self, id: u64, prefix: usize) {
+        let Some(index) = self.messages.iter().position(|message| message.id == id) else {
+            return;
+        };
+        for message in self.messages.drain(index + 1..) {
+            self.text_bytes = self.text_bytes.saturating_sub(message.text_bytes());
+        }
+        self.history_revision = self.history_revision.wrapping_add(1);
+        self.search.invalidate();
+        self.messages[index].retry_prefix = None;
+        self.messages[index].turn_prefix = Some(prefix);
+        self.push(Role::Assistant, String::new());
+        if let Some(message) = self.messages.last_mut() {
+            message.turn_prefix = Some(prefix);
+        }
+    }
+
+    pub(in crate::window) fn interrupt_turn(&mut self, prefix: usize) {
+        if let Some(prompt) = self
+            .messages
+            .iter_mut()
+            .rfind(|message| message.role == Role::User && message.turn_prefix == Some(prefix))
+        {
+            prompt.retry_prefix = Some(prefix);
+        }
+        self.clear_turn(prefix);
     }
 
     /// Adopt only a locally identified turn, never a text-matched legacy turn.

@@ -222,6 +222,10 @@ impl State {
             &saved.active.last_answer,
             saved.active.answer_complete,
         );
+        saved
+            .active
+            .transcript
+            .interrupt_turn(saved.active.committed.len());
         for conversation in &mut saved.conversations {
             if let Some(snapshot) = &mut conversation.saved {
                 adopted |= snapshot.transcript.recover_interrupted(
@@ -229,6 +233,7 @@ impl State {
                     &snapshot.last_answer,
                     snapshot.answer_complete,
                 );
+                snapshot.transcript.interrupt_turn(snapshot.committed.len());
             }
         }
         // Readiness belongs to the fresh owned broker, never to disk.
@@ -393,6 +398,46 @@ mod tests {
     use super::*;
     use crate::window::ModelLifecycle;
     use crate::window::{Role, mpsc, transcript::MAX_MESSAGES};
+
+    #[test]
+    fn retry_response_recovery_keeps_failed_turn_identity_and_requires_explicit_send()
+    -> io::Result<()> {
+        for settled in [false, true] {
+            let mut original = state();
+            original.transcript.start_turn("Original prompt".into(), 0);
+            original.transcript.append("Unfinished thinking", true);
+            if settled {
+                original.transcript.interrupt_turn(0);
+            }
+            original.input = "Newer draft".into();
+            let (commands, incoming) = mpsc::channel();
+            let (_events, events) = client::event_channel();
+            let mut restored = State::create(commands, events, None, None);
+            restored.restore_workspace(&original.workspace_bytes()?)?;
+            restored.model = ModelLifecycle::Ready;
+            restored.restore_selected_history();
+            assert!(
+                matches!(incoming.try_recv(), Ok(super::super::Command::RestoreChat(history)) if history.is_empty())
+            );
+            assert!(incoming.try_recv().is_err());
+            let prompt = restored.transcript.messages[0].id;
+            restored.message_action(super::super::iteration::MessageAction::Retry(prompt));
+            assert!(
+                matches!(incoming.try_recv(), Ok(super::super::Command::Send { text, .. }) if text == "Original prompt")
+            );
+            assert!(incoming.try_recv().is_err());
+            assert_eq!(restored.input, "Newer draft");
+            assert_eq!(restored.transcript.messages[0].id, prompt);
+            assert_eq!(restored.transcript.messages.len(), 2);
+            assert!(
+                !restored
+                    .transcript
+                    .plain_text()
+                    .contains("Unfinished thinking")
+            );
+        }
+        Ok(())
+    }
 
     #[test]
     fn long_draft_recovery_retains_every_unicode_character_at_the_limit() -> io::Result<()> {

@@ -11,9 +11,14 @@ mod message_controls;
 mod search;
 
 #[derive(Clone, Copy)]
+#[expect(
+    clippy::struct_excessive_bools,
+    reason = "Message actions and speech have independent availability gates."
+)]
 pub(super) struct MessageControls<'a> {
     pub(super) history: &'a [super::client::Message],
     pub(super) can_send: bool,
+    pub(super) can_reload: bool,
     pub(super) can_branch: bool,
     pub(super) speech_loading: Option<u64>,
     pub(super) speech_preparing: bool,
@@ -77,6 +82,9 @@ pub(super) struct Message {
     // Identifies a live turn across recovery without guessing from duplicate text.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     turn_prefix: Option<usize>,
+    // A failed prompt can be retried only against its original history prefix.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    retry_prefix: Option<usize>,
     #[serde(default, skip_serializing_if = "is_false")]
     pub(super) interrupted: bool,
     #[serde(skip)]
@@ -204,6 +212,7 @@ impl Transcript {
             body,
             history_index: None,
             turn_prefix: None,
+            retry_prefix: None,
             interrupted: false,
             body_revision: 0,
             reasoning: String::new(),
@@ -465,7 +474,15 @@ impl Transcript {
                 highlights,
                 selected,
             );
-            let height = message.height();
+            let height = message.height()
+                + if controls
+                    .as_ref()
+                    .is_some_and(|controls| message.retry_prefix(controls.history).is_some())
+                {
+                    MESSAGE_CONTENT_GAP + MESSAGE_ACTION_SIZE
+                } else {
+                    0.0
+                };
             let (rect, _) = ui.allocate_exact_size(Vec2::new(width, height), egui::Sense::hover());
             let target = self
                 .search
@@ -758,7 +775,7 @@ impl Message {
         child.spacing_mut().item_spacing = Vec2::splat(MESSAGE_CONTENT_GAP);
         child.spacing_mut().button_padding = egui::vec2(8.0, 4.0);
         child.spacing_mut().interact_size.y = MESSAGE_ACTION_SIZE;
-        let action = self.header(&mut child, controls, speaking_message, speech_enabled);
+        let mut action = self.header(&mut child, controls, speaking_message, speech_enabled);
         if let Some(cache) = &self.cache {
             if self.body.is_empty() && self.pending {
                 child.label(RichText::new("Responding…").weak().italics());
@@ -803,6 +820,11 @@ impl Message {
                     child.add(egui::Label::new(Arc::clone(reasoning)).selectable(true));
                 }
             }
+        }
+        if let Some(controls) = controls
+            && let Some(retry) = self.retry_controls(&mut child, controls)
+        {
+            action = Some(TranscriptAction::Message(retry));
         }
         (found_rect, action)
     }

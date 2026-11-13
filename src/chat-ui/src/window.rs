@@ -585,6 +585,10 @@ impl State {
     }
 
     fn submit(&mut self) {
+        self.submit_turn(None);
+    }
+
+    fn submit_turn(&mut self, retry: Option<u64>) {
         if self.preview {
             self.set_status(
                 "Preview only. Launch the app normally to chat with your local model.",
@@ -637,7 +641,11 @@ impl State {
                 .take(48)
                 .collect();
         }
-        self.transcript.start_turn(text, self.committed.len());
+        if let Some(id) = retry {
+            self.transcript.restart_turn(id, self.committed.len());
+        } else {
+            self.transcript.start_turn(text, self.committed.len());
+        }
         self.request_conversation = Some(self.active_conversation);
         self.recovery_dirty = true;
         self.input.clear();
@@ -879,7 +887,7 @@ impl State {
         }
         let adopted = retry_required && self.adopt_interrupted();
         if !retry_required {
-            self.transcript.clear_turn(self.committed.len());
+            self.transcript.interrupt_turn(self.committed.len());
         }
         if self.model.stopping() || self.model == ModelLifecycle::Restarting {
             // A rejection can queue just before Stop or behind the first
@@ -1078,7 +1086,7 @@ impl State {
             self.recovery_dirty = true;
             true
         } else {
-            self.transcript.clear_turn(self.committed.len());
+            self.transcript.interrupt_turn(self.committed.len());
             false
         }
     }
@@ -1993,6 +2001,7 @@ impl State {
         let controls = transcript::MessageControls {
             history: &self.committed,
             can_send: available && !self.preview && self.model == ModelLifecycle::Ready,
+            can_reload: available && !self.preview && self.model.retryable(),
             can_branch: available && self.model.workspace_available(),
             speech_loading: self.speaking_message.filter(|_| self.speech_loading),
             speech_preparing: self.tts_configured && !self.speech_checked,

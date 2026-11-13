@@ -60,6 +60,49 @@ fn open_actions(chat: &mut Harness<'_, Fixture>, id: u64) {
 }
 
 #[test]
+fn retry_response_button_reloads_then_retries_existing_turn_at_minimum_width() {
+    for size in [[1180.0, 860.0], [480.0, 640.0]] {
+        let mut chat = harness(size);
+        chat.state_mut().app.input = "Interrupted question".into();
+        chat.state_mut().app.submit();
+        assert!(matches!(
+            chat.state().commands.try_recv(),
+            Ok(Command::Send { .. })
+        ));
+        chat.state_mut()
+            .app
+            .model_event(Event::Stopping("Interrupted question".into()));
+        chat.state_mut().app.model_event(Event::Stopped);
+        chat.state_mut().app.input = "Keep my newer draft".into();
+        chat.run();
+        let reload = chat.get_by_role_and_label(egui::Role::Button, "Reload model");
+        let rect = reload.rect();
+        assert!(rect.left() >= 0.0 && rect.right() <= size[0]);
+        assert!(rect.height() >= 32.0);
+        reload.click();
+        chat.run();
+        assert!(matches!(
+            chat.state().commands.try_recv(),
+            Ok(Command::Retry)
+        ));
+        chat.state_mut().app.model_event(Event::Starting);
+        chat.state_mut().app.model_event(Event::Ready);
+        chat.run();
+        assert!(chat.state().commands.try_recv().is_err());
+        chat.get_by_role_and_label(egui::Role::Button, "Retry response")
+            .click();
+        chat.run();
+        assert!(
+            matches!(chat.state().commands.try_recv(), Ok(Command::Send { text, .. }) if text == "Interrupted question")
+        );
+        assert!(chat.state().commands.try_recv().is_err());
+        assert_eq!(chat.state().app.input, "Keep my newer draft");
+        assert_eq!(chat.state().app.transcript.messages.len(), 4);
+        assert_eq!(chat.state().app.conversations.len(), 1);
+    }
+}
+
+#[test]
 fn iteration_menu_edit_escape_preserves_original_draft_and_blocks_global_shortcuts() {
     for size in [[1180.0, 860.0], [620.0, 800.0]] {
         let mut chat = harness(size);

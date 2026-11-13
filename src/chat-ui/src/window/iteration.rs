@@ -5,6 +5,7 @@ const CONTINUE_PROMPT: &str = "Continue your previous response from where it sto
 
 #[derive(Clone, Copy, Debug)]
 pub(super) enum MessageAction {
+    Retry(u64),
     Edit(u64),
     Regenerate(u64),
     Branch(u64),
@@ -50,6 +51,7 @@ impl State {
 
     pub(super) fn message_action(&mut self, action: MessageAction) {
         match action {
+            MessageAction::Retry(id) => self.retry_response(id),
             MessageAction::Edit(id) if self.message_options(id).edit => {
                 let Some(index) = self.transcript.committed_index(id, &self.committed) else {
                     return;
@@ -113,6 +115,57 @@ impl State {
             }
             _ => {}
         }
+    }
+
+    fn retry_response(&mut self, id: u64) {
+        if self.preview
+            || self
+                .updates
+                .as_ref()
+                .is_some_and(super::updates::Updates::installing)
+        {
+            return;
+        }
+        let Some(message) = self
+            .transcript
+            .messages
+            .iter()
+            .find(|message| message.id == id)
+        else {
+            return;
+        };
+        let Some(prefix) = message.retry_prefix(&self.committed) else {
+            return;
+        };
+        if self.model.retryable() {
+            self.retry();
+            return;
+        }
+        if self.model != ModelLifecycle::Ready {
+            return;
+        }
+        if message.role == super::Role::Assistant {
+            self.message_action(MessageAction::Regenerate(id));
+            return;
+        }
+        let prompt = message.body.clone();
+        let draft = std::mem::replace(&mut self.input, prompt);
+        let cursor = (
+            self.composer_cursor,
+            self.pending_cursor,
+            self.focus_composer,
+        );
+        self.restore_selected_history();
+        if self.model == ModelLifecycle::Ready && prefix == self.committed.len() {
+            self.submit_turn(Some(id));
+        }
+        self.input = draft;
+        (
+            self.composer_cursor,
+            self.pending_cursor,
+            self.focus_composer,
+        ) = cursor;
+        self.recovery_dirty = true;
     }
 
     fn branch_history(&mut self, end: usize, label: &str) -> bool {
@@ -291,6 +344,93 @@ mod tests {
         state.output_budget = 1;
         state.abliteration_scale = 1.4;
         (state, incoming)
+    }
+
+    #[test]
+    fn retry_response_reuses_failed_prompt_preserves_draft_and_never_replays_on_ready() {
+        let (mut state, commands) = fixture();
+        let source = state.active_conversation;
+        state.input = "Same question".into();
+        state.submit();
+        assert!(matches!(commands.try_recv(), Ok(Command::Send { .. })));
+        let prompt = state.transcript.messages[4].id;
+        state.input = "Same question".into();
+        state.place_composer_cursor(4);
+        state.model_event(client::Event::Stopping("Same question".into()));
+        let cursor = (
+            state.composer_cursor,
+            state.pending_cursor,
+            state.focus_composer,
+        );
+        state.message_action(MessageAction::Retry(prompt));
+        assert!(commands.try_recv().is_err());
+        state.model_event(client::Event::Stopped);
+        state.message_action(MessageAction::Retry(prompt));
+        assert!(matches!(commands.try_recv(), Ok(Command::Retry)));
+        assert!(commands.try_recv().is_err());
+        state.model_event(client::Event::Starting);
+        state.model_event(client::Event::Ready);
+        assert!(commands.try_recv().is_err());
+        state.message_action(MessageAction::Retry(prompt));
+        assert!(
+            matches!(commands.try_recv(), Ok(Command::Send { text, .. }) if text == "Same question")
+        );
+        state.message_action(MessageAction::Retry(prompt));
+        assert!(commands.try_recv().is_err());
+        assert_eq!(state.active_conversation, source);
+        assert_eq!(state.transcript.messages.len(), 6);
+        assert_eq!(state.transcript.messages[4].id, prompt);
+        assert_eq!(state.committed.len(), 4);
+        assert_eq!(state.input, "Same question");
+        // Readiness and Stop may focus the composer; retry preserves the cursor.
+        assert_eq!(
+            (state.composer_cursor, state.pending_cursor),
+            (cursor.0, cursor.1)
+        );
+        state.model_event(client::Event::Rejected {
+            message: "Try again later.".into(),
+            text: "Same question".into(),
+            retry_required: false,
+        });
+        state.input = "A newer draft 🌱".into();
+        state.message_action(MessageAction::Retry(prompt));
+        assert!(matches!(commands.try_recv(), Ok(Command::Send { .. })));
+        assert_eq!(state.transcript.messages[4].id, prompt);
+        assert_eq!(state.transcript.messages.len(), 6);
+        assert_eq!(state.input, "A newer draft 🌱");
+    }
+
+    #[test]
+    fn retry_response_branches_partial_answer_from_original_prefix_and_keeps_source() {
+        let (mut state, commands) = fixture();
+        let source = state.active_conversation;
+        state.input = "Same question".into();
+        state.submit();
+        assert!(matches!(commands.try_recv(), Ok(Command::Send { .. })));
+        state.model_event(client::Event::Text("Partial answer".into()));
+        state.model_event(client::Event::Stopping("Same question".into()));
+        state.model_event(client::Event::Stopped);
+        let answer = state.transcript.messages[5].id;
+        state.input = "Keep this draft".into();
+        state.model = ModelLifecycle::Ready;
+        state.restore_selected_history();
+        assert!(
+            matches!(commands.try_recv(), Ok(Command::RestoreChat(history)) if history.len() == 6)
+        );
+        state.message_action(MessageAction::Retry(answer));
+        assert_ne!(state.active_conversation, source);
+        assert!(
+            matches!(commands.try_recv(), Ok(Command::RestoreChat(history)) if history.len() == 4 && history[3].content.as_ref() == "Second answer")
+        );
+        assert!(
+            matches!(commands.try_recv(), Ok(Command::Send { text, .. }) if text == "Same question")
+        );
+        assert!(commands.try_recv().is_err());
+        assert_eq!(state.committed.len(), 4);
+        assert!(state.conversations[0].saved.as_ref().is_some_and(|saved| {
+            saved.input == "Keep this draft"
+                && saved.committed[5].content.as_ref() == "Partial answer"
+        }));
     }
 
     #[test]
