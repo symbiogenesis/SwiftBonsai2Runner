@@ -391,6 +391,7 @@ impl State {
             let scroll = egui::ScrollArea::vertical()
                 .id_salt("audio-transcript-scroll")
                 .auto_shrink([false, false])
+                .stick_to_bottom(self.audio_file_active)
                 .max_height(viewport_height)
                 .show(ui, |ui| {
                     // Borrowed &str keeps native selection/copy without any
@@ -415,6 +416,14 @@ impl State {
             ui.add_space(10.0);
             ui.horizontal_wrapped(|ui| {
                 self.copy_audio_transcript(ui, "Copy full transcript");
+                if self.audio_file_active
+                    && ui
+                        .button("Cancel transcription")
+                        .accessible_name("Cancel transcription in viewer")
+                        .clicked()
+                {
+                    self.cancel_audio_file();
+                }
                 close = ui.button("Close transcript").clicked();
             });
         });
