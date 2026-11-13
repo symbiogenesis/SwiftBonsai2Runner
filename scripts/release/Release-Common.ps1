@@ -28,6 +28,17 @@ function Resolve-ReleasePath {
     $resolved
 }
 
+function Format-ReleaseFailureOutput([string]$Text) {
+    if ([string]::IsNullOrWhiteSpace($Text)) { return '<empty>' }
+    # Retain the first error and final context without flooding CI exceptions.
+    if ($Text.Length -le 4096) { return $Text }
+    $head = 2048
+    $tail = $Text.Length - 2048
+    if ([char]::IsHighSurrogate($Text[$head - 1])) { $head-- }
+    if ([char]::IsLowSurrogate($Text[$tail])) { $tail++ }
+    $Text.Substring(0, $head) + "`n[... output truncated ...]`n" + $Text.Substring($tail)
+}
+
 function Invoke-ReleaseCommand {
     [CmdletBinding()]
     [OutputType([string])]
@@ -51,23 +62,32 @@ function Invoke-ReleaseCommand {
     $start.UseShellExecute = $false
     $start.CreateNoWindow = $true
     $start.RedirectStandardOutput = $true
+    $start.RedirectStandardError = $true
     # Release tools emit UTF-8. ProcessStartInfo otherwise chooses the host's
     # default decoding, which can silently change Unicode paths and JSON.
     $start.StandardOutputEncoding = [Text.UTF8Encoding]::new($false)
+    $start.StandardErrorEncoding = [Text.UTF8Encoding]::new($false)
     foreach ($argument in $ArgumentList) { [void]$start.ArgumentList.Add($argument) }
     $process = [Diagnostics.Process]::new()
     $process.StartInfo = $start
     try {
         if (-not $process.Start()) { throw "Could not start release command: $FilePath" }
         $output = $process.StandardOutput.ReadToEndAsync()
+        $errorOutput = $process.StandardError.ReadToEndAsync()
         if (-not $process.WaitForExit($TimeoutSeconds * 1000)) {
             $process.Kill($true)
             [void]$process.WaitForExit(5000)
             throw "Release command exceeded its deadline: $FilePath"
         }
-        if (-not $output.Wait(5000)) { throw "Release command output did not close: $FilePath" }
-        if ($process.ExitCode -ne 0) { throw "Release command failed with exit code $($process.ExitCode): $FilePath" }
-        $output.GetAwaiter().GetResult()
+        $drained = [Threading.Tasks.Task]::WhenAll([Threading.Tasks.Task[]]@($output, $errorOutput))
+        if (-not $drained.Wait(5000)) { throw "Release command output did not close: $FilePath" }
+        $stdout = $output.GetAwaiter().GetResult()
+        $stderr = $errorOutput.GetAwaiter().GetResult()
+        if ($process.ExitCode -ne 0) {
+            throw "Release command failed with exit code $($process.ExitCode): $FilePath`nstdout: $(Format-ReleaseFailureOutput $stdout)`nstderr: $(Format-ReleaseFailureOutput $stderr)"
+        }
+        if ($stderr) { [Console]::Error.Write($stderr) }
+        $stdout
     } finally {
         $process.Dispose()
         # Remove only an empty directory; unexpected diagnostic files survive.
