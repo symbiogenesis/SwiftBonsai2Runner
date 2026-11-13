@@ -494,6 +494,24 @@ record the project implications in more detail.
 | B3: [BudgetThinker](https://aclanthology.org/2026.findings-emnlp.1465/), EMNLP Findings, October 2026 | Specialized remaining-budget tokens and supervised/RL training regulate reasoning length. | New training/control-token contract; not a setting of the selected Swift artifact. |
 | B4: [CASE](https://aclanthology.org/2026.findings-emnlp.1983/), EMNLP Findings, October 2026 | Confidence-based filtering and adaptive stopping save work relative to fixed-budget self-consistency. | Multiple-candidate baseline; not a demonstrated win over the current single completion. |
 
+### Conditional learned corpus retrieval
+
+[Apple's learned retrieval](https://machinelearning.apple.com/research/faster-retrieval)
+and its [paper](https://arxiv.org/html/2603.08001v3) are leads only after corpus
+retrieval demonstrates a need for embeddings and vector search becomes a measured
+bottleneck. For a large, stable corpus and representative queries, KeyNet maps
+query vectors before an existing index; SupportNet is a separate cluster-routing
+candidate. Neither is an active dependency, runtime integration or device trial.
+
+Applicability depends on exact corpus, chunking, encoder and learned-model
+identities, with invalidation or requalification after changes. Original-query
+candidate scoring and ordinary retrieval fallback remain required. Top-1 recovery
+does not establish passage relevance or complete scene-packet quality: evaluation
+must cover multiple useful passages and complete-task latency. Offline training,
+exact-target generation, vectors/index and auxiliary weights all count toward
+native Windows ARM64 time and shared-memory budgets. GPU/batched results supply
+no Snapdragon benefit or generation/attention shortcut.
+
 ### Withdrawn or unresolved reports
 
 | ID / source and date | Finding | Disposition |
