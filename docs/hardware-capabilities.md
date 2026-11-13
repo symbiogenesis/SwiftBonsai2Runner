@@ -44,7 +44,7 @@ execution or deployment trust; emulated-process ISA cannot qualify a native runt
 
 `bonsai-tools doctor --json '{}'` includes Rust `host-cpu`'s v1
 `runner-native-cpu-observations`. The pure `host-capabilities` command still accepts
-archived CIM facts for historical evidence; the native Doctor labels its current
+CIM facts; the native Doctor labels its current
 registry/CPU-set sources explicitly.
 
 | Observation | Contract |
@@ -68,105 +68,46 @@ no optional instruction and changes no dispatch/selection.
 Malformed, missing or oversized registry values make the whole host identity unknown. Registry
 name is an independent observation, not verified silicon SKU/firmware. Identity is separate from
 live availability/power. The [X2 screen](cpu-kernels.md#x2-cpu-thread-screen) retains
-exact identity in plans/receipts. Historical CIM/registry-name agreement does not
-become an independent comparison when both current observations use the registry.
-Unknown/changed identity, including legacy receipts
-lacking it, suppresses timing ratios. Kernel/feature changes require fresh captures; compare the
+exact identity in plans/receipts. Two registry-derived observations are not independent identity checks.
+Unknown/changed identity, including receipts lacking it, suppresses timing ratios. Kernel/feature changes require fresh captures; compare the
 whole bounded feature list, not descriptive `isa` flags. No new digest/backend permission follows.
 
 ### Native Vulkan observations
 
-`nativeGraphics: true` adds `NativeGpuObservations` from `host-gpu`. A native ARM64 child queries
-absolute system `vulkan-1.dll` with ordinary headless mitigations, 512 MiB one-process Job,
-bounded output and ten-second deadline. Failure returns `status: unknown`, `adapters: null`;
-successful zero-device enumeration is observed. `VK_*` overrides reject; custom loaders/layers/ICD
-paths are unsupported. Installed graphics code remains a trust boundary: no signature/dependency
-provenance verification is claimed.
+`nativeGraphics: true` adds `NativeGpuObservations` from `host-gpu`. The native
+ARM64 child queries absolute system `vulkan-1.dll` under ordinary headless
+mitigations in a 512 MiB one-process Job, with bounded output and a ten-second
+deadline. `VK_*` overrides reject; no weaker-policy retry is allowed. Installed
+loader/ICD code remains a trust boundary with unverified signatures/dependencies.
 
-Only an instance is created: no requested layers/extensions, logical device, submission, model,
-surface or device allocation. Caps: 16 adapters, 64 queue families each, 1,024 device extensions;
-incomplete/oversized enumeration rejects without unbounded allocation/retries. Reports retain
-names/raw vendor/device/driver IDs, packed API versions, compute queues, extensions and heaps.
-Driver encoding is vendor-specific, not an API version. CPU/virtual adapters get
-`hardware_gpu: false`, excluding inference fallback.
+Only an instance is created, without requested layers/extensions, logical device,
+submission, surface, model or device allocation. Successful empty enumeration is
+observed; failures return `status: unknown`, `adapters: null`.
 
-Eligible Vulkan 1.1/core/extension queries also retain subgroup width/operations/stages, shader
-FP16 and integer-dot features. Application API is loader API capped at 1.3; core eligibility uses
-the lower application/device version. Unqueried fields stay null. Extension presence cannot
-qualify cooperative-matrix arithmetic or Swift operations. Cooperative-matrix execution, live
-budgets, exact SoC SKU, signed-driver readiness and complete dependencies remain
-unknown/unqualified.
-Heap capacity is not free memory; shared physical storage counts once. `backend_ready` stays false;
-CPU digest/launch policy are unchanged. No performance/energy is measured. Queries follow
-[Khronos properties][properties], [properties2][properties2], [application API][application-api]
-and locked [ash 0.38.0][ash].
+| Observation | Bounds and meaning |
+| --- | --- |
+| Adapters | 16 adapters, 64 queue families each, 1,024 extensions. Incomplete/oversized enumeration rejects. Retain names, raw vendor/device/driver IDs, API versions, compute queues and heaps. Driver encoding is vendor-specific; CPU/virtual adapters have `hardware_gpu: false`. |
+| Feature queries | Application API is loader API capped at 1.3; core eligibility uses the lower application/device version. Eligible queries include subgroup width/operations/stages, FP16 and integer-dot features. Unqueried fields stay null. |
+| Failures | Fixed `failure.stage`, raw Vulkan result when supplied, and observed loader/application API versions. `query-failed-device-support-unknown` identifies no failing DLL, mitigation or root cause. Supervision/malformed reports use `worker-supervision-or-report`. Arbitrary driver text/paths are excluded. |
+| Execution policy | `required_execution_policy` describes the query contract; only the owning wrapper adds `execution_policy: headless-worker` after supervised exit. Retain bounded child JSON on failure. |
+| Module snapshots | Immediately before/after the single `vkCreateInstance` call: one fixed 256-handle [enumeration][process-modules], at most 260 UTF-16 units per [basename][module-basename], no retries/growth. Malformed, truncated, oversized or path/control-containing results make the snapshot unknown. Report the difference only when both are observed. |
+| On-disk hashes | After snapshots, prioritize the loader then new module basenames; at most sixteen files, 16 MiB each/64 MiB total, 64 KiB read buffer and 500 ms shared deadline. Unknown before-snapshot permits only the loader. Fixed 32,768-unit path queries reject truncation. Local-file guards reject redirects, deny writer/delete sharing and recheck metadata. Failed reads consume the byte budget and never emit prefix digests. |
+| Graphics count | After instance failure, one count-only [`D3DKMTEnumAdapters2`][graphics-count] call resolves the fixed export from already loaded `gdi32.dll`. No adapter handles or extra loader are requested. Retain raw `NTSTATUS`; count is defined only on success. Module/export lookup failures retain immediate Win32 error; unattempted fields stay unknown. |
 
-Completed native failures now retain a fixed `failure.stage`, raw `failure.vulkan_result`
-when supplied by Vulkan, and any already-observed loader/application API versions. The
-classification stays `query-failed-device-support-unknown`: an incompatible-driver result
-does not identify an absent API, failing DLL, mitigation or memory limit. Arbitrary driver
-error text and paths are excluded from this context. `required_execution_policy` labels the
-internal query's contract; only the owning wrapper adds `execution_policy: headless-worker`
-after its child exits under that policy. Failed queries retain their bounded child JSON;
-supervision or malformed-report failures retain `worker-supervision-or-report` without a
-guessed Vulkan result. No weaker-policy retry is performed.
+The ten-second supervisor also bounds blocking driver/filesystem calls. Module
+snapshots omit transient/failed/data-file loads; an empty difference does not
+exclude an attempted ICD. File hashes identify bytes at current paths, not earlier
+mapped images. Basenames establish neither file identity nor trust. The graphics
+count can narrow diagnosis but cannot prove a Vulkan-capable device, an attempted
+ICD or the cause of instance failure. [Windows loader source][loader-windows] is
+a diagnostic lead, not installed-byte provenance.
 
-The child also observes its own loaded-module basenames immediately before and after
-the single `vkCreateInstance` call. `instance_modules` retains both snapshots and their
-`newly_observed` difference, including when instance creation fails. Each snapshot uses
-one fixed 256-handle [module enumeration][process-modules] and at most 260 UTF-16 code units
-per [basename][module-basename], with no retries or buffer growth. Failed/oversized,
-truncated, malformed UTF-16 or path/control-containing results make that whole snapshot
-unknown; the original Vulkan failure remains intact. The pair reports `observed`,
-`partial` or `unknown`; its difference is null unless both snapshots are observed.
-
-Diagnostic JSON contains no filesystem paths and opens no unrelated process. After the
-second snapshot, `file_observations` prioritizes `vulkan-1.dll`, then newly observed
-module basenames, for at most sixteen on-disk SHA-256 observations. Unknown before
-snapshots permit only the loader. A failed module-path query stays unknown. Each native
-path query uses a fixed 32,768-unit buffer, rejecting truncation without a retry.
-
-File observations use the existing local-file opener, reject redirects and hold a
-read-only handle denying writer/delete sharing through hashing and metadata recheck.
-They read at most 16 MiB per file and 64 MiB total with a 64 KiB reusable buffer and a
-500 ms shared work deadline checked before every read. Short/long streams, errors and
-exhausted budgets retain a fixed unknown reason rather than a prefix digest; failed
-partial reads consume the total byte allowance. The owning ten-second worker deadline
-also bounds native/filesystem calls that cannot be interrupted inside a read.
-
-These hashes identify bytes read from current module paths, without binding those files
-to images mapped earlier: replacement before opening remains possible. Equal basenames
-do not establish file identity, signatures or dependencies; signature, loaded-image and
-dependency verification remain false. Modules loaded and unloaded between snapshots,
-failed DLL loads and data-file modules are not captured; an empty difference cannot
-exclude an attempted ICD or layer. No additional layer/extension, loader override,
-alternate policy or second instance attempt is introduced. Loader/ICD provenance and
-the X2 failure cause remain unqualified.
-
-After an instance-creation failure, `graphics_adapter_count` makes one independent
-count-only [`D3DKMTEnumAdapters2`][graphics-count] call in that same child, after
-the module snapshots. It acquires/releases one reference to an already loaded
-`gdi32.dll` and resolves only that fixed export, without calling `LoadLibrary`
-or selecting alternate loaders. Windows may resolve an export forwarder internally;
-this observation does not audit that resolution. A null adapter array requests no
-adapter handles. The report retains the raw
-`NTSTATUS` and reports a count only for `STATUS_SUCCESS`; Microsoft defines the
-output count as undefined on error. Failed module/export lookup retains the immediate
-Win32 `windows_error`; neither lookup failure establishes that the module or export
-is absent. The `ntstatus` and count remain unknown when the count call never runs. The
-existing ten-second Job deadline bounds this call too; there is no second Vulkan
-attempt or weaker-policy retry.
-
-The [Khronos Windows loader source][loader-windows] uses this API while discovering
-driver manifests. That moving source is a diagnostic lead, not provenance for the
-installed loader's 1.3.301 bytes. A failed protected count query narrows which
-graphics-discovery operation is unavailable; it does not identify an attempted ICD,
-prove that the loader reached this call, establish the cause of `VkResult -9`, or
-qualify worker access. A successful count does not identify a Vulkan-capable device.
-
-GPU worker access remains unqualified. A failed graphics query keeps capabilities unknown;
-diagnosing a failure never authorizes a weaker worker policy.
-
+Heap capacity is not free memory; count shared physical storage once. Cooperative
+matrix arithmetic, live budgets, exact SKU, signed-driver readiness and complete
+dependencies remain unqualified. `backend_ready` stays false and CPU digest/launch
+policy is unchanged. Failed queries leave access unknown. See Khronos
+[properties][properties], [properties2][properties2], [application API][application-api]
+and the locked [ash API][ash].
 ### Native OpenCL observations
 
 `nativeGraphics: true` adds `NativeOpenClObservations` from bounded `host-opencl`: GPU information
@@ -247,7 +188,6 @@ yet.
 ## Automatic profile selection
 
 This is the contract for a qualified profile selector, not enabled serving behavior.
-The fixed X2 development policy above does not implement these ranking or promotion gates.
 Runner owns discovery, selection,
 verification and admission. [Prism Inference][prism] owns kernels, graph/device/state execution
 and effective-placement reporting. Their versioned handshake keeps kernel eligibility rules
