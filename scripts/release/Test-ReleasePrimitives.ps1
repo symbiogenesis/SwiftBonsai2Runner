@@ -21,6 +21,7 @@ foreach ($source in $sources) {
 & (Join-Path $PSScriptRoot 'Test-ReleaseNotices.ps1')
 & (Join-Path $PSScriptRoot 'Test-ReleasePolicy.ps1')
 & (Join-Path $PSScriptRoot 'Test-PortableReleaseAssets.ps1')
+& (Join-Path $PSScriptRoot 'Test-ReleasePublication.ps1')
 & (Join-Path $PSScriptRoot 'Test-ReleaseCommandFailures.ps1')
 & (Join-Path $PSScriptRoot 'Test-ReleaseCleanup.ps1')
 & (Join-Path $PSScriptRoot 'Test-ExecutableBuild.ps1')
