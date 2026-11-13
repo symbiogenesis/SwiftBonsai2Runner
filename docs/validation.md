@@ -1,34 +1,31 @@
 # Validation
 
-Runner owns application validation: native UI, broker, process/artifact policy,
-provisioning and released-runtime integration. Algorithms/upstream conformance
-belong to [Prism](https://github.com/symbiogenesis/prism-inference/blob/main/docs/build-and-validation.md).
-**Local builds, Release analyzers and focused named tests are allowed. Complete
-suites and every benchmark run only in CI; do not recreate a full suite with local filters.**
+Runner validates its native UI, broker, process/artifact policy, provisioning and
+released-runtime integration. [Prism](https://github.com/symbiogenesis/prism-inference/blob/main/docs/build-and-validation.md)
+owns algorithm/upstream conformance. **Local builds, Release analyzers and named
+focused tests are allowed. Full suites and benchmarks are CI-only; local filters
+must not reconstruct a suite.**
 
-The owner handles Host CI and Guest CI dispatch, monitoring and verdicts; other
-CI also needs explicit owner direction. The only standing exception is the
-single bounded Foundation release-bundle operation in [AGENTS.md](../AGENTS.md).
-Documentation of a workflow is not authorization to dispatch or query it.
-Local completion records pending CI acceptance without waiting for that CI.
+The owner operates Host/Guest CI; other CI needs explicit direction. The sole
+standing exception is [AGENTS.md's bounded Foundation release-bundle operation](../AGENTS.md).
+Workflow documentation authorizes no dispatch/query. Record CI acceptance as
+pending without delaying local completion.
 
-Owner-laptop diagnostics, model qualification and benchmarks default to five minutes
-total, preferably less. A dedicated, predeclared workload may use the smallest
-justified longer allowance, up to fifteen minutes, including preparation, intake,
-loading, all comparison arms, cleanup and evidence retention. Record the fixed work,
-conservative time estimate and reason before starting; stop early on completion or
-a known no-go. Self-hosted CI has the same policy, while narrower workflow/tool
-limits remain effective until explicitly extended. Shrink the workload or retain an
-unqualified gate when it cannot fit. Do not restart clocks, retry a failed trial or
-split a long matrix into repeated runs. Historical sessions retain their original
-closed clocks. Hosted cloud CI keeps its existing limits.
+Owner-laptop diagnostics, qualification and benchmarks default to five minutes
+total, preferably less. A dedicated workload may predeclare the smallest justified
+extension, up to fifteen minutes. Before starting, record fixed work, a conservative
+estimate and the reason. Include preparation, intake, loading, every comparison arm,
+cleanup and evidence retention; stop on completion or a known no-go. This applies
+to self-hosted CI; narrower limits need explicit extension, and hosted cloud CI
+keeps its own limits. Reduce work or leave acceptance pending if it cannot fit.
+Never reset clocks, retry a failed trial or partition a matrix across repeated runs.
+Historical clocks stay closed.
 
-Every laptop trial must retain AC/battery observations before and after its
-workload, separately for each comparison arm, within that same allowance.
-Record battery saver and charge when available; unknown status stays unknown.
-Missing, changed or mismatched power conditions leave performance comparison
-ineligible. Equal endpoint observations alone do not prove continuous stability,
-and a later power query cannot establish conditions for a completed trial.
+Within that allowance, record AC/battery before and after each trial and each
+comparison arm, plus battery saver/charge when available. Keep unknowns explicit.
+Missing, changed or mismatched power makes performance comparisons ineligible.
+Equal endpoints do not prove continuous stability; later queries cannot establish
+past conditions.
 
 Native application acceptance records model-case `powerBefore`, `powerAfter` and
 `powerConditions`, with separate observations for each owner, representation or worker
@@ -67,14 +64,12 @@ and fresh restart. Uploads contain credential-free receipts and bounded sanitize
 worker logs; protected key directories are excluded. Failure rejects without an unrestricted retry.
 Ordinary Foundation/local runs never execute the ignored case.
 
-The workflow defaults to **five minutes total**. Its explicit `owner_budget_minutes`
-input selects 5, 10 or 15 minutes; 10/15 requires `budget_reason` to retain the fixed
-workload estimate and why five minutes cannot fit. The job timeout uses that same
-declared total. Its clock starts before checkout and hosted-binary intake. Each
-job captures its UTC and monotonic starts there. Budget admission charges the
-larger elapsed value, rounded up with integer arithmetic, so clock corrections
-cannot increase the remaining allowance. Both observations remain in receipts;
-the inherited owner's monotonic limit can independently shorten admission.
+The default is **five minutes total**. `owner_budget_minutes` selects 5, 10 or 15;
+10/15 requires `budget_reason` with the fixed workload estimate and why five minutes
+cannot fit. The same total sets the job timeout. UTC and monotonic clocks start
+before checkout/intake; admission charges the larger elapsed value, rounded up
+with integer arithmetic. Clock corrections cannot enlarge the allowance. Receipts
+retain both observations, and an inherited monotonic limit can shorten admission.
 Each actual-model case receives a validated aggregate soft allowance, at most **240,
 540 or 840 seconds** respectively, reduced by preceding setup, verification and
 case inventory. Startup and cleanup share this allowance. Missing, malformed or
@@ -885,36 +880,26 @@ historical answers retain their original identities and cannot qualify new sourc
 
 ## Evidence retention
 
-Retain the smallest useful selection: evidence supporting a current claim, an
-actionable failure or a required independent replay. Routine source edits and
-focused checks normally need only commands, results and limitations in the commit
-or delivery message. Do not create a dated evidence bundle just to record that an
-edit, build or review happened.
+Keep only evidence supporting a current claim, actionable failure or required
+independent replay. Routine edits and focused checks normally need commands,
+results and limits in the commit/delivery message, not a dated evidence bundle.
 
-When durable evidence is warranted, prefer one concise summary with the workload
-and source/input/tool identities, selected checks and outcomes, limitations and
-pending gates. For owner-device trials, include the predeclared work/estimate and
-allowance, elapsed time and closed-clock status, required aggregate/per-arm power
-observations and cleanup outcome. Preserve losing/no-go results and unknowns as
-carefully as successes. These facts can share one record unless a consumer requires
-a particular receipt format; do not duplicate them across summary, delivery and
-status files.
+For durable evidence, prefer one summary of workload, source/input/tool identities,
+checks, outcomes, limits and pending gates. Owner-device trials also need predeclared
+work/estimate/allowance, elapsed time, closed-clock status, aggregate/per-arm power
+and cleanup. Preserve losing/no-go results and unknowns. Avoid duplicate summary,
+delivery and status files unless a consumer requires a particular receipt format.
 
-Capture temporary output outside the repository, then review an explicit file
-selection before committing, uploading or archiving. Omit zero-byte and
-whitespace-only logs, placeholder receipts such as empty JSON objects/arrays,
-routine successful build chatter, duplicate payloads/manifests, copied repository
-source and temporary validation drivers. Record meaningful empty output, exit
-status, missing observations or skipped work in the summary instead; absence of a
-file is never a passing result. Keep an otherwise omitted file only when its exact
-bytes are required by a named gate, replay consumer or actionable diagnosis, and
-state that purpose in the summary. Retain the smallest relevant failure excerpt;
-keep a full log only when the surrounding output is needed to review the failure.
-Do not create separate inventories or receipts solely to document omitted clutter.
-Intentionally empty fixtures and schema-required files are valid when their purpose
-is explicit. Apply selection when retaining artifacts; preserve collector-required
-intermediate files and receipt formats, and treat missing/empty required terminal
-receipts as incomplete evidence.
+Capture output outside the repository and review an explicit selection before committing,
+uploading or archiving. Omit blank logs, empty placeholder receipts, successful
+build chatter, duplicate payloads/manifests, copied source and temporary validation
+drivers. Record meaningful empty output, exit status, missing observations and
+skips in the summary; a missing file never means success. Keep otherwise omitted
+bytes only for a named gate, replay consumer or actionable diagnosis, stating why.
+Use the smallest useful failure excerpt; retain full logs only when review needs
+the context. Do not inventory omitted clutter. Purposeful empty fixtures and
+schema-required files are valid. Selection must preserve collector intermediates
+and receipt formats; missing/empty required terminal receipts mean incomplete evidence.
 
 Device acceptance, sandbox, LoRA, PTQ1, X2 CPU and TTS workflows request 90-day
 artifact retention. This extends the review window; Actions artifacts remain
@@ -931,20 +916,17 @@ model weights or adapters. Run URLs and expired artifacts alone cannot reproduce
 evidence; unavailable evidence leaves the associated gate pending.
 
 The native [`evidence-archive` command](../tools/bonsai/README.md#command-boundary)
-seals an explicit reviewed file/length/SHA-256 selection with its exact identity
-records, then verifies or restores it using a separately retained manifest digest.
-It rejects missing, changed, additional or redirected entries and never overwrites
-an archive. This supplies local byte-preserving archive/retrieval mechanics;
-deployment to durable owner-managed storage and capture before artifact expiry
-remain independent requirements. Integrity is separate from execution, provenance,
-independent review and promotion.
+seals reviewed files, lengths, SHA-256s and identities; verification/restore uses
+a separately retained manifest digest. It rejects missing, changed, extra or
+redirected entries and never overwrites archives. Durable owner-managed storage
+and capture before expiry remain separate requirements. Integrity establishes
+neither execution, provenance, independent review nor promotion.
 
-Before trimming existing evidence, check documentation links, replay consumers and
-integrity manifests. Preserve required claim/replay bytes in durable storage;
-source-review history and reconstructible scratch can remain in Git history with
-an exact revision reference and explicit replay limits where needed. Never silently
-edit sealed archives, historical results or closed trial records to fit a smaller
-selection; a revised archive must be a new selection with its own integrity record.
+Before trimming evidence, check links, replay consumers and integrity manifests.
+Preserve required claim/replay bytes in durable storage. Reconstructible scratch
+and source reviews may remain in Git history with exact revisions and replay limits.
+Never silently edit sealed archives, historical results or closed trials; revised
+archives need a new selection and integrity record.
 
 ## Promotion criteria
 

@@ -1,13 +1,12 @@
 # Native Rust UI and local API contract
 
-The first-party UI must remain **entirely native Rust**: application code, state,
-events, rendering integration and network clients. Native OS APIs and audited
-Rust bindings are permitted; PowerShell may provision, build and launch it.
+The first-party UI must remain **entirely native Rust**, including state, events,
+rendering and network clients. Native OS APIs and audited Rust bindings are
+allowed; PowerShell may provision, build and launch it.
 
-Do not add a JavaScript/TypeScript frontend, HTML/CSS UI, browser shell, WebView,
-Electron or web-rendered Tauri frontend, or the inference server's browser UI.
-A replacement toolkit must preserve this boundary. Interoperability belongs at
-the HTTP API boundary.
+No JavaScript/TypeScript frontend, HTML/CSS UI, browser/WebView shell, Electron,
+web-rendered Tauri frontend or inference-server browser UI is allowed, including
+in a replacement toolkit. Interoperability belongs at the HTTP API boundary.
 
 ## Native application
 
@@ -37,16 +36,13 @@ The [development guide](development-guide.md#source-launch-caches-and-runtime-se
 owns source-launch receipts/cache rules; the [package contract](chat-packages.md#launch-without-a-checkout)
 owns verified installed launches.
 
-The single-file Windows distribution embeds the same five application executables
-and their package manifest and notices in a native Rust launcher. Opening the
-bundle verifies its embedded inventory, extracts it into the per-user package
-cache and uses the existing verified package launch. Broker, UI and speech remain
-separate owned processes with the same containment and teardown contracts. Model,
-adapter and inference-runtime provisioning remain separate. The current
-single-executable update path automatically downloads verified releases and
-requires confirmation before replacement, preserving the user data directory.
-It is prepared for v0.2.1; the published v0.2.0 executable requires manual
-replacement as described in the [release guide](releases.md#update-and-remove).
+The native Rust single-file launcher embeds five application executables, their
+manifest and notices. It verifies and extracts the inventory into the per-user cache
+and uses verified package launch. Broker, UI and speech retain separate ownership,
+containment and teardown; model, adapter and inference-runtime provisioning remain
+separate. The v0.2.1 update path downloads verified releases and requires user
+confirmation before replacement, preserving the data directory. Published v0.2.0 requires
+[manual replacement](releases.md#update-and-remove).
 
 Swift launches default to native Rust Prism 0.1.25, original PQ2, four CPU row
 workers and the standard adapter at scale 1.3. `--native-engine` remains accepted;
@@ -59,16 +55,13 @@ resident `native-q2` path under the [Hexagon policy](hexagon.md); CPU fallback f
 an absent signed package or CDSP driver does not change engine or representation.
 PTQ1 remains an explicit opt-in.
 
-The owner-selected cache default in new Swift runtime source is TurboQuant-inspired
-K4/V4 (`rsq4`), with measured quality/memory qualification pending. Runner binds
-that selection to the exact reviewed runtime source and verifies cache and startup
-graph readiness. The 0.1.25 development pin activates K4/V4; the historical
-0.1.23 control used FP16. This is an owner-selected development upgrade, with
-performance and actual-model qualification still pending.
-Trusted `--kv-cache f16` selects explicit recovery on a
-new native Swift launch; retry preserves the selected cache. Requests cannot
-override it or trigger an automatic downgrade. The [cache contract](quantized-kv.md)
-keeps process admission, context limits and device qualification separate.
+The owner-selected 0.1.25 development pin uses TurboQuant-inspired K4/V4 (`rsq4`); historical
+0.1.23 used FP16. Runner binds the cache to reviewed runtime source and verifies
+cache/startup-graph readiness. Quality, memory, performance and actual-model
+qualification remain pending. Trusted `--kv-cache f16` selects recovery on a new
+native Swift launch; retry preserves it. Requests cannot override or automatically
+downgrade the cache. The [cache contract](quantized-kv.md) keeps admission, context
+limits and device qualification separate.
 
 The launcher checks/builds presentation first. After the first UI tick, an owned
 preparation worker verifies/provisions the selected pinned Rust runtime alongside
@@ -137,11 +130,10 @@ portable release path. Its existing confirmation, publication validation and
 process-ownership controls remain required if it is used or restored later.
 Current Windows Release does not build or publish an MSI for that updater.
 
-Legacy MSI-installed applications retain their separate update path.
-A bounded background worker checks after startup and every six hours; the native Settings
-view also accepts a manual check. Source launches and preview start no update
-network requests. Update discovery sends no conversation or model data. Network,
-metadata parsing and installer downloads stay off the event loop.
+Legacy MSI installations check for updates after startup, every six hours or
+manually in Settings. A bounded worker handles network, metadata and downloads
+off the event loop, sending no conversation/model data. Source and preview
+launches make no update requests.
 
 The maintenance executable consumes the repository's Windows ARM64 release
 manifest, checksum inventory and GitHub asset identities. It accepts only a
@@ -199,14 +191,12 @@ Unreadable profile bytes stay intact until the user changes the voice preference
 Preview opens none of these stores, and restoring preferences never starts speech
 or microphone capture. Response choices remain per conversation.
 
-The model lifecycle has one explicit state: unavailable, preparing, ready,
-generating, awaiting teardown, stopping, retryable or restarting. Send requires ready;
-retry requires an owned-teardown notification and explicit user action before
-restarting. The worker must acknowledge the new attempt before readiness can
-open Send. Queued readiness/completion events cannot bypass those states,
-and recognized rejections restore their prompt only to an empty composer.
-Events come from one ordered worker channel, replaced when attaching a worker;
-these phase guards do not add independent request or attempt identifiers.
+The model is unavailable, preparing, ready, generating, awaiting teardown, stopping,
+retryable or restarting. Send requires ready; Retry requires owned-teardown
+notification and explicit action. The worker must acknowledge the new attempt
+before readiness opens Send. Queued events cannot bypass these states; recognized
+rejections restore prompts only to an empty composer. One ordered event channel
+is replaced on worker attachment; phase guards add no request/attempt identifiers.
 
 Conversation browsing, creation, deletion and drafts remain available while the
 model prepares or is unavailable. During generation, typing, browsing and creation
@@ -263,12 +253,11 @@ exact token occupancy nor request eligibility.
 and no broker, credentials, microphone or speech service; it checks layout and
 interaction only.
 
-Assistant headings, list/quote prefixes and inline or fenced code receive native
-egui text styles. Markdown markers remain visible, code uses a monospace font,
-and incomplete fences remain readable during streaming. Copy, selection and Find
-continue to address the exact original text. This is a bounded presentation subset,
-not a general Markdown or HTML renderer; additional style spans fall back to
-ordinary text while retaining bounded search highlights.
+Native egui styles cover assistant headings, list/quote prefixes and inline/fenced
+code. Markers stay visible, code is monospace and incomplete streaming fences
+remain readable. Copy, selection and Find address exact source text. This bounded
+subset falls back to plain text for excess style spans while retaining bounded
+search highlights; it is not a general Markdown/HTML renderer.
 
 Message cards use one compact header for the speaker, Copy, read-aloud and
 iteration actions. Read-aloud remains keyboard accessible, including Stop during
@@ -338,17 +327,13 @@ calls; asynchronous sample waits do not make those calls preemptible.
 Reader teardown waits at most two seconds for Flush and callback quiescence.
 Unconfirmed cleanup retains one Media Foundation startup reference for process
 safety, reports failure and closes further file-import admission until restart.
-File input requires no
-microphone permission. A dedicated composer notice shows progress, Cancel and
-persistent actionable failures, independent of microphone cleanup notifications.
-It enters the same authenticated Qwen3-ASR and
-ordinary text-prompt path, preserving draft selection/cursor insertion, cancellation,
-conversation
-ownership and no deferred automatic send. Full and partial transcripts remain
-available to view or copy until dismissed or replaced by another import; they are
-session-only. A transcript too large for the chat composer stays complete in that
-view, preserves the existing draft and sends no message. File decoding adds no public API route
-or inference-model capability.
+File input needs no microphone permission. A separate composer notice shows
+progress, Cancel and persistent failures. Imports use authenticated Qwen3-ASR and
+the ordinary prompt path, preserving draft selection/cursor insertion, cancellation,
+conversation ownership and no deferred automatic send. Full/partial transcripts
+stay viewable and copyable for the session until dismissed or replaced. Oversized
+transcripts remain complete in that view, preserve the draft and send no message.
+File decoding adds no public route or model capability.
 
 [Speech operation](development-guide.md#speech-setup-and-operation) defines
 provisioning, capture lifecycle, fixed voice conditioning, mutually exclusive

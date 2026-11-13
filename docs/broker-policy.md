@@ -1,12 +1,11 @@
 # Broker policy and development service
 
 `src/broker/` owns authenticated text-chat admission, exact context counting,
-bounded HTTP I/O and single-slot scheduling. Its explicit Windows launcher owns
-the pinned Qwen reference or Swift assessment backend. The separate first-party
-client remains [native Rust](ui-architecture.md); the broker has no browser UI.
-The separate Rust `server-plan` command only prepares policy; it cannot launch
-a service. The native application and explicit development launcher can launch,
-with daily-service security and actual-model qualification still pending.
+bounded HTTP I/O and single-slot scheduling. Its Windows launcher owns the pinned
+Qwen reference or Swift assessment backend. The client is [native Rust](ui-architecture.md);
+there is no browser UI. `server-plan` prepares policy only; the native app and
+explicit development launcher start services. Daily-service security and
+actual-model qualification remain pending.
 
 The transport follows [RFC 9110](https://www.rfc-editor.org/rfc/rfc9110.html) and
 [RFC 9112](https://www.rfc-editor.org/rfc/rfc9112.html) within the subset below.
@@ -194,16 +193,15 @@ never enter committed history. Other failures require backend teardown/retry.
 ## One-request receiver
 
 `reception::receive_chat(stream, &policy, supervisor_deadline)` owns an
-`AsyncRead + Unpin + 'static` stream. It reads strict CRLF HTTP with no leading
-blank lines into a bounded raw-head buffer, preserving duplicate headers and
-checking the raw method/target before URI normalization.
+`AsyncRead + Unpin + 'static` stream. Its bounded head buffer preserves duplicate
+headers and checks raw method/target before URI normalization. HTTP requires CRLF
+and no leading blank lines.
 
-Only after head validation does it allocate/fill the declared body. Early EOF
-or buffered surplus beyond Content-Length rejects; later surplus is left for
-close, or detected by the supervisor's read monitor. Completion does not wait
-for peer EOF. Success returns the stream plus `PendingChat` through
-`ReceivedChat::into_parts()`. Errors and cancellation drop the stream.
-One response followed by close is required; connection reuse is unsupported.
+Head validation precedes body allocation/intake. Early EOF or buffered bytes past
+Content-Length reject; later surplus is discarded on close or caught by the
+supervisor. Success returns the stream and `PendingChat` via
+`ReceivedChat::into_parts()` without waiting for EOF. Errors/cancellation drop the
+stream. Each connection supports one response, then close.
 
 ## Private backend HTTP exchange and exact counts
 
@@ -322,11 +320,11 @@ permit. Clean framed completion disarms the latch. Closing sockets does not
 acknowledge model cancellation; a stopped or freshly owned backend is required
 before recreating the service. Failures before generation do not latch it.
 
-Generic receiver/backend/response APIs create no listener, task or process.
-Their owned `'static` streams must close on Drop; lifetime bounds cannot prove
-wrapper behavior. Backend exchange needs `AsyncRead + AsyncWrite + Unpin`; all
-timed APIs need Tokio's time driver. A write-only response adapter cannot itself
-monitor read-side disconnects; the supervisor supplies that monitoring.
+Receiver/backend/response APIs create no listener, task or process. Owned
+`'static` streams must close on Drop; the lifetime bound cannot prove that.
+Backend exchange requires `AsyncRead + AsyncWrite + Unpin`; timed APIs require
+Tokio's time driver. The supervisor supplies disconnect monitoring unavailable
+to a write-only response adapter.
 
 ## Executable runner and key files
 
@@ -414,10 +412,10 @@ components. Evidence and credentials remain retained; never share either key or
 the whole directory. CPU/LoRA checks use the packaged Rust maintenance tool and
 same Windows process boundary, with their separate fixed arguments/pins.
 
-The UI requires native containment; the direct-development opt-out is explicit.
-[Sandboxing](sandboxing.md) defines file grants, private/OS-managed temp, atomic
-Job ownership and coarse host-loopback limits. Synthetic loopback/stream checks
-do not qualify broker-only/same-user bypass prevention, actual-model behavior,
-quality or performance. Use [launch commands](development-guide.md#owned-windows-development-backend)
-and [validation](validation.md); Cargo files own dependency/toolchain pins and
-main-only Foundation CI owns full suites.
+The UI requires [native containment](sandboxing.md); direct development has an
+explicit opt-out. Sandboxing defines file grants, private/OS temp, atomic Job
+ownership and coarse host-loopback limits. Synthetic stream checks do not qualify
+broker-only/same-user isolation, actual-model behavior, quality or performance.
+See [launch commands](development-guide.md#owned-windows-development-backend) and
+[validation](validation.md). Cargo owns dependency/toolchain pins; main-only
+Foundation CI owns full suites.

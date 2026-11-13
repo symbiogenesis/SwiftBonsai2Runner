@@ -1,25 +1,20 @@
 # C++ retirement contract and inventory
 
-The chosen cross-repository milestone is to remove C++ from SwiftBonsai2Runner
-and prism-inference, including tests, reference controls, generated source,
-inference dependencies and their compiler/build requirements. [PLAN.md](../PLAN.md)
-is the single backlog; this document defines inventory, replacement evidence and
-retirement conditions. It does not declare the full migration complete.
+The milestone removes C++ from SwiftBonsai2Runner and prism-inference, including
+tests, controls, generated source, downloaded/bundled libraries, DLL-backed tools
+and compiler/build dependencies. [PLAN.md](../PLAN.md) owns remaining work; this
+guide defines inventory and retirement gates, not a completion claim.
 
-The scope includes downloaded or bundled C++ inference libraries and DLL-backed
-reference tools, not only files found by an extension search. Native Rust UI and
-HTTP/JSON/SSE contracts remain unchanged. Vendor system/driver ABI boundaries need
-an explicit dependency assessment; moving C++ behind an FFI or process does not
-retire it. Existing Git history is not rewritten. Retain source identities,
-licenses/notices and legally required attribution, plus qualification evidence;
-they do not require retaining operative C++ source or compiler invocations.
+Preserve native Rust UI and HTTP/JSON/SSE contracts. Assess vendor system/driver
+ABIs explicitly; FFI or process isolation does not retire C++. Leave Git history
+intact and retain source identities, licenses/notices, required attribution and
+qualification evidence. These records need no operative C++ source or compiler calls.
 
 ## Replacement and deletion rules
 
-Each file or inseparable family needs a recorded disposition: Rust replacement,
-immutable observations, or removal of functionality through its existing
-acceptance contract. Deleting a control alone does not qualify its replacement.
-Before deletion:
+For each file or inseparable family, record Rust replacement, immutable
+observations or functionality removal under its existing acceptance contract.
+Deleting a control cannot qualify its replacement. Before deletion:
 
 1. Bind the replaced behavior to exact upstream revision, source/patch hashes,
    license, target, toolchain, inputs, configuration and expected observations.
@@ -174,10 +169,10 @@ routes in `runtime.lock.json`, `swift-assessment.lock.json`, Rust `build-tools`
 engine/headless-publisher operations, native capture tooling and candidate patches
 only after their replacement/fallback and distribution gates pass.
 
-The PTQ1 Rust collector still uses the pinned native reference DLLs. Its source
-file retirement removes a C++ driver and compiler/header-download path; it does
-not replace that inference engine or qualify new numerical results. The existing
-one-token native/Rust comparison and all broader promotion gates remain intact.
+The PTQ1 Rust collector still uses pinned native DLLs. Retiring its C++ driver
+and compiler/header downloads replaces no inference engine and qualifies no new
+numerical results. The one-token native/Rust comparison and broader promotion
+gates remain required.
 
 Prism's coupled cleanup includes its three `CMakeLists.txt` projects,
 `RustBridge.cmake`, `Apply-ReferencePatch.cmake` and production patches; native loader

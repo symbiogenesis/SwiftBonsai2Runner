@@ -1,24 +1,21 @@
 # Windows integration and worker sandboxing
 
-Runner's native UI requires Windows process containment for its owned inference,
-ASR and TTS workers. `bonsai-windows-process` composes the pinned **MXC 1.0.1**
-Process Security Environment (PSEC) with suspended process creation,
+The native UI requires containment for owned inference, ASR and TTS workers.
+`bonsai-windows-process` combines pinned **MXC 1.0.1** Process Security Environment
+(PSEC), suspended creation,
 verified Job ownership before resume, exact worker PID, resource limits and
-restricted handle inheritance. Missing capabilities or rejected policies fail
-launch without an uncontained retry. Actual-model and broker-only isolation
-remain unqualified. This page defines Runner's handle, storage, thread and audio
-contracts; separately published Prism/speech engines need independent review.
-The [UI architecture](ui-architecture.md) remains binding.
+restricted handle inheritance. Missing capabilities or rejected policies stop
+launch without an uncontained retry. Actual-model and broker-only isolation remain
+unqualified; published Prism/speech engines need separate review. This guide owns
+handle, storage, thread and audio contracts under the [UI architecture](ui-architecture.md).
 
 ## Windows consent and capabilities
 
-Microphone permission and worker containment are separate Windows mechanisms.
-The trusted native UI requests `AppCapability` microphone access after explicit
-user action. Model workers receive no microphone, playback or presentation role.
-PSEC applies the worker's filesystem, network and desktop restrictions in Windows;
-these are kernel-enforced grants, not a generic permission prompt for each file.
-A Windows Firewall prompt or rule is another independent control. A denied
-Firewall request must be distinguished from a rejected PSEC policy during diagnosis.
+After explicit action, the trusted UI requests `AppCapability` microphone access;
+model workers have no microphone, playback or presentation role. PSEC separately
+enforces filesystem, network and desktop grants in the kernel, without per-file
+prompts. Windows Firewall is independent: distinguish its denials from PSEC
+policy rejection during diagnosis.
 
 The UI stops capture on observed revocation. Deadlines/revocation are cooperative,
 not an OS-enforced recording quota while the UI/processes are suspended. Model
@@ -37,11 +34,10 @@ Technology selection establishes no performance benefit; evaluation is CI-only.
 
 ## Worker authority
 
-Treat native model, tokenizer, adapter and audio parsing as potential compromise
-entry points even when the bytes match a reviewed pin. Provisioning and compiler
-tools remain trusted maintenance operations with their existing authority; they
-are not launched under the inference policy. Independently managed external
-speech companions also retain their separately managed permissions.
+Treat model, tokenizer, adapter and audio parsing as compromise entry points,
+even for verified pins. Provisioning/compiler tools are trusted maintenance with
+their existing authority, outside inference policy. Independently managed speech
+companions retain their own permissions.
 
 The owned-worker policy grants:
 
@@ -92,12 +88,11 @@ policy, while daily-service isolation remains unqualified under the
 
 ## Native integration contract
 
-Runtime probes require PSEC 1.1 and container-hosted loopback support, then
-create and dispose a real minimal security environment.
-Version numbers or export presence alone are insufficient. The actual complete
-policy is also admitted before a worker runs. Audit/learning modes, SDK backend
-dispatch, DACL augmentation, global loopback exemptions and weaker fallback tiers
-are not used. Host Firewall restrictions may still apply independently.
+Probes require PSEC 1.1 and container-hosted loopback, then create/dispose a real
+minimal environment; versions or exports alone are insufficient. The complete
+policy must also pass admission before launch. There are no audit/learning modes,
+SDK backend dispatch, DACL augmentation, global loopback exemptions or weaker
+fallbacks. Host Firewall restrictions remain independent.
 
 The supported [Rust V1 spawn API](https://github.com/microsoft/mxc/blob/v1.0.1/docs/api-reference/rust/v1/api.md)
 cannot accept Runner's existing Job and suspended-launch contract. The audited
@@ -132,11 +127,10 @@ Future GPU drivers or GUI helpers require separate compatibility review.
 
 ## Launch and qualification
 
-The native UI selects `--require-native-sandbox` for its owned broker and always
-uses containment for owned speech. A direct development broker can instead
-explicitly select `--allow-unisolated-backend`; the two options are exclusive.
-That opt-out retains the earlier caller-authority development boundary and is
-never an automatic recovery path for failed containment.
+The UI uses `--require-native-sandbox` for its broker and requires contained speech.
+Direct development may explicitly choose the mutually exclusive
+`--allow-unisolated-backend`, retaining caller authority. Failed containment never
+selects that opt-out automatically.
 
 Focused local checks and main-only Foundation suites follow the
 [validation policy](validation.md). Record the exact SDK, policy, OS/architecture,

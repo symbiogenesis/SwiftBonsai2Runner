@@ -4,9 +4,9 @@ Run these examples from the repository root in native Windows ARM64 PowerShell
 7.6+. Use [validation](validation.md) for language standards and focused checks.
 
 Start with [Native chat app](#native-chat-app), or [portable packages](chat-packages.md)
-for a launch without a checkout. [Inventory/provisioning](#inventory-and-provisioning),
+without a checkout. [Inventory/provisioning](#inventory-and-provisioning),
 [CPU checks](#bounded-cpu-loaddecode-check) and the [development broker](#explicit-development-broker)
-are separate developer workflows, not additional app-setup steps.
+are separate developer workflows.
 
 ## Current state
 
@@ -36,55 +36,45 @@ actual-model and broker-only/same-user isolation limits still apply.
 
 ## Implementation delivery
 
-[PLAN's execution map](../PLAN.md#execution-map) selects outstanding work; this
-section defines how to deliver it. Keep task state, prerequisites and acceptance
-requirements in PLAN instead of creating a second backlog. Identify whether the
-next action is implementation, integration, qualification, an owner/external
-dependency or conditional work before assigning it. Prefer connecting existing
-candidates and preparing their named gates over rebuilding equivalent helpers.
+Use [PLAN's execution map](../PLAN.md#execution-map) for task state, prerequisites
+and acceptance requirements. Before assigning work, identify its next action:
+implementation, integration, qualification, owner/external dependency or
+conditional work. Prefer existing candidates and qualification helpers.
 
 ### Candidate and worker ownership
 
-Choose a coherent candidate and record exact source and input identities before
-qualification: Runner and Prism revisions, compiler/channel/target, executable
-digests, runtime archive and file locks, model/representation, adapter/scale and
-the selected device/driver/kernel tuple. Integrate reviewed logical changes into
-local `main` before freezing it. A version number alone does not identify a
-candidate. Keep new implementation in separate worktrees while its predecessor
-is qualified; evaluate changed dependencies explicitly before reusing evidence.
+Before qualification, integrate reviewed changes into local `main` and freeze
+an exact candidate: Runner/Prism revisions, compiler/channel/target, executable
+digests, runtime archive/file locks, model/representation, adapter/scale and
+selected device/driver/kernel. A version number alone is insufficient. Continue
+implementation in separate worktrees; review changed dependencies before reusing evidence.
 
-The active 0.1.25 bundle contains efficiencies whose remaining work is
-qualification. A binary repin requires its genuine source-bound
-published bundle. The [registry delivery](evidence/prism-0125-publish-20261112/summary.json)
-already includes every public helper, including `bonsai-neon-dot 0.1.2` for the
-detected-capability consumer. Still-newer local CPU candidates need their own
-source review. Do not make these delivery identities interchangeable or require
-a future repin for behavior already consumed by Runner. The [runtime lock update](#prepare-a-runtime-lock-update)
-and [CPU contract](cpu-kernels.md) own the exact verification steps.
+The active 0.1.25 bundle already contains efficiencies awaiting qualification.
+Its [registry delivery](evidence/prism-0125-publish-20261112/summary.json) includes
+every public helper, including `bonsai-neon-dot 0.1.2` for detected capabilities;
+consumed behavior needs no further repin. Newer local CPU candidates need separate
+source review, and binary repins require genuine source-bound published bundles.
+Follow the [runtime lock update](#prepare-a-runtime-lock-update) and
+[CPU verification contract](cpu-kernels.md).
 
-Use one integrator and at most three implementation workers. Assign disjoint
-files and explicit producer/consumer interfaces from application lifecycle and
-distribution, Prism runtime work, speech integration or qualification tooling.
-Each worker uses its own Git worktree, owns a bounded change and commits each
-logical change separately. Give shared dependency/release pins, receipt schemas,
-workflow contracts and final serving integration a single owner. Agree interface
-changes before dependent implementation and review consumer effects before
-integrating the producer. Reassign completed workers to the next unblocked task;
-independent fixture replay and human-review preparation can proceed while source
-or external provenance is pending.
+Use one integrator and at most three workers with disjoint files and explicit
+producer/consumer interfaces across application, runtime, speech or qualification
+work. Each worker uses its own Git worktree and one commit per logical change.
+Give shared pins, receipt schemas, workflow contracts and final serving integration
+one owner. Agree interfaces before dependent work; review consumer effects before
+integrating producers. Reassign finished workers to unblocked tasks, including
+independent fixture replay or human-review preparation while source/provenance is pending.
 
-The integrator reviews and integrates completed commits into each repository's
-local `main`, preserving the owner's work and the exact qualification candidate.
-Workers report commands, results, limits and remaining gates when their local
-work finishes. They never push, open routine delivery PRs, dispatch/query/poll CI
-or wait for an owner verdict to count local implementation as complete. Hosted
-and device acceptance remain pending until their owning evidence exists.
+The integrator reviews and integrates commits into each repository's local `main`, preserving
+the owner's work and qualification candidate. Workers report commands, results,
+limits and remaining gates. They never push, open routine delivery PRs or operate
+CI. Local completion does not wait for an owner verdict; hosted/device acceptance
+stays pending until supported by its own evidence.
 
 ### Speech integration interfaces
 
-Agree these boundaries before parallel work on the existing Rust candidates.
-They describe implementation contracts, not a claim that the serving path has
-already migrated from `native::Context`.
+Agree these interfaces before parallel work. They do not establish that serving
+has migrated from `native::Context`.
 
 | Work owner | Producer/consumer contract | Required ownership and acceptance |
 | --- | --- | --- |
@@ -104,15 +94,13 @@ native Rust under the [UI contract](ui-architecture.md).
 
 ### Qualification reuse and owner handoff
 
-Reuse existing deadline, power, identity, typed receipt and selected-archive
-machinery. Extend shared fixtures for complete committed state, logits,
-KV/GDN/convolution ownership, adapter identity, sampler progression and failure
-recovery, with explicit mappings to each prefix/prefill/speculation/accelerator
-path's assertions. Reuse of tooling or applicable immutable data never makes one
-path's pass qualify another. Keep independent-owner controls, per-arm power and
-all named replay inputs. The [validation contract](validation.md) and
-[native acceptance admission](../tools/ci/README.md#native-acceptance-admission)
-own the current schemas and gates.
+Reuse deadline, power, identity, typed-receipt and archive tooling. Extend shared
+fixtures for complete committed state, logits, KV/GDN/convolution ownership,
+adapter identity, sampler progression and recovery. Map assertions to each
+prefix/prefill/speculation/accelerator path; shared tooling or immutable data
+cannot transfer qualification between paths. Preserve independent-owner controls,
+per-arm power and required replay inputs under [validation](validation.md) and
+[native acceptance admission](../tools/ci/README.md#native-acceptance-admission).
 
 Deliver one concrete owner handoff for a candidate, using the ordinary delivery
 message unless a durable acceptance record is required. Include:
@@ -133,11 +121,10 @@ message unless a durable acceptance record is required. Include:
    the explicitly selected credential-free evidence with its durable destination
    and independently retained retrieval digest when archival is required.
 
-The owner performs every push and owns CI dispatch, monitoring and verdicts
-under AGENTS.md. Preparation leaves no authorization to start a device job.
-Retain losing/no-go outcomes and closed clocks; use the existing selected-receipt
-staging and `evidence-archive` operations under [evidence retention](validation.md#evidence-retention)
-instead of duplicating captures or inventing empty evidence records.
+Follow AGENTS.md for owner-only pushes and CI operations; preparation does not
+authorize a device job. Preserve losing/no-go outcomes and closed clocks. Use
+selected-receipt staging and `evidence-archive` under
+[evidence retention](validation.md#evidence-retention).
 
 ## Build a single executable
 
@@ -158,15 +145,13 @@ alternate checkout or external build cache. Cold native compiler/source setup
 and compilation can take several minutes; this build performs no model trial,
 application launch or CI operation.
 
-The executable contains the native window, broker, ASR, TTS, maintenance tool,
-package manifest and license notices. Double-clicking it verifies and extracts
-the package into the user's application cache before starting the native chat
-launcher without opening a terminal. Separate owned worker processes retain their
-existing containment and teardown rules. Model weights, adapters, the downloaded inference runtime and
-the Microsoft Visual C++ ARM64 runtime remain separately provisioned. Extraction
-and launching need no checkout, PowerShell or compiler. To update a portable
-release, verify the new executable's published SHA-256, close Swift and replace
-your copy. Keep the same data directory to preserve model downloads and local data.
+The executable embeds the native window, broker, ASR, TTS, maintenance tool,
+package manifest and notices. Double-click it to verify and extract the package into
+the user cache and open chat without a terminal, checkout, PowerShell or compiler.
+Workers retain their containment and teardown rules. Provision model weights,
+adapters, inference runtime and Microsoft Visual C++ ARM64 runtime separately.
+For a manual update, verify the new executable's published SHA-256, close Swift
+and replace your copy. Keep the same data directory to preserve models and data.
 
 To bundle an already reviewed schema-2 package without compiling or collecting
 notices again:
@@ -227,19 +212,13 @@ maintenance executable's compiled release lock. A changed existing installation
 fails verification and is retained. This step downloads only the small runtime;
 Swift weights and the adapter still require explicit provisioning.
 
-Text chat starts loading as soon as its runtime and broker are prepared. Speech
-downloads and native companion builds continue in the owned background worker;
-they do not gate model readiness or Send. Speech controls become available only
-after their separate preparation completes. A speech setup failure leaves text
-chat running and reports the failure in speech status. Speech artifact downloads
-and checks use at most two parallel workers; failure cancels and joins the peer.
-ASR and TTS model loading
-remains on demand, when transcribing or reading aloud, rather than adding their
-weight allocations to application startup. Closing the window cancels any
-remaining preparation and waits for owned processes to stop.
-Rebuild the maintenance executable as well as the native UI to enable staged
-startup. A new UI launched by older maintenance tools retains combined setup
-until those tools are rebuilt.
+Text chat starts loading once its runtime and broker are ready. Speech downloads
+and builds continue in the owned background worker; controls activate after
+preparation, and failures appear in speech status without stopping text chat.
+At most two workers download/check speech artifacts; failure cancels and joins
+the peer. ASR/TTS models load on demand for transcription or read-aloud. Closing
+cancels preparation and waits for owned processes to stop.
+Staged startup requires rebuilt maintenance tools and UI; older tools retain combined setup.
 
 Direct native-app launches also verify the selected Rust executable before hashing
 the model or creating credentials. Runtime failures name the compiled Prism version
@@ -287,37 +266,29 @@ preserving newer drafts; a closed connection alone identifies no token/memory ca
 
 ### Conversations and response settings
 
-The sidebar holds conversations with independent drafts and settings, without a
-conversation-count cap. Creation, branching and recovery share this behavior;
-the encrypted workspace's 8 MiB byte budget and per-conversation message
-safeguards still apply, so saved history is not unlimited storage.
-Drag its inner edge to resize it, or use the sidebar button beside Settings
-/ **Ctrl+Shift+B**
-to hide and reopen it. Narrow windows use a left-anchored conversation drawer;
-selecting a conversation, clicking its backdrop or pressing Escape closes it
-without stopping a response. When hidden or narrow, a compact left rail keeps the
-sidebar button available. The docked sidebar's width and visibility are saved.
-Switch while ready or generating; use **New conversation** or the row's **actions** menu to
-rename, copy or delete. Deletion names its target; **Keep conversation** or
-Escape cancels, and deleting the last chat creates an empty one. Status and
-collapsible diagnostics stay outside the user/assistant transcript.
+Conversations have independent drafts and settings with no count cap, including on
+branching and recovery. Storage still has an encrypted 8 MiB workspace budget
+and per-conversation message limits.
+Drag the sidebar's inner edge to resize it; its button beside Settings or
+**Ctrl+Shift+B** toggles visibility. Width and visibility are saved. Narrow windows
+use a left drawer that closes on selection, backdrop click or Escape without
+stopping a response. A compact left rail keeps the toggle accessible when hidden.
+Switch conversations while ready or generating. Use **New conversation** or a row's
+**actions** to rename, copy or delete. Deletion names its target; **Keep conversation**
+or Escape cancels. Deleting the last chat creates an empty one. Status and
+collapsible diagnostics remain outside the transcript.
 
-**Search conversations** above the history list filters conversation titles and
-visible message bodies as you type. Matching uses Unicode case-insensitive
-substrings and excludes reasoning and unsent drafts. Filtering preserves the
-selected conversation and its draft, even when that conversation does not match.
-Use **Clear** or press Escape while the search field is focused to restore the
-list before closing a drawer or stopping a response. Creating a conversation or
-branch clears search so the new conversation appears. The query is temporary
-and is not restored on the next launch. Large lists render only visible rows and
-reuse cached matches while the query and searchable content are unchanged.
-Editing the sidebar search also updates Find and its highlights in the already-open
-conversation immediately, without taking focus from the sidebar. Clearing the
-sidebar query clears those highlights, including when no conversations match.
-Selecting a filtered result opens Find in that conversation with the same trimmed
-phrase, highlights matching message text and jumps to the first match. This also
-works when selecting the current conversation again. A title-only result shows
-**No matches** in Find. Editing or closing Find leaves the sidebar filter intact.
+**Search conversations** filters titles and visible messages by Unicode
+case-insensitive substring, excluding reasoning and drafts. It preserves the
+selected conversation and draft even when unmatched. **Clear** or Escape in the
+focused field restores the list before drawer dismissal or Stop. New conversations
+and branches clear search; the query is not saved. Large lists render visible rows
+and cache matches until the query or searchable content changes.
+Sidebar edits immediately update Find and highlights in the open conversation without
+moving focus; clearing removes highlights even with no matching conversations.
+Selecting or reselecting a result opens Find with the trimmed query and first body
+match selected. Title-only results show **No matches**. Editing or closing Find
+leaves the sidebar filter intact.
 
 While a response generates, you can draft the next message, browse another chat
 or create a conversation. Only one response runs at a time; Enter never queues a
@@ -389,11 +360,10 @@ are blocked; active input retains its explicit cancellation behavior. A response
 already in progress continues normally. Voice setup and diagnostics expand
 inside Settings.
 
-The composer's **Thinking** button opens a separate compact popup with just two
-checkboxes: **Thinking** and **Extra effort**. Both apply to the selected conversation
-and lock while a response is running. The same choices appear in **Settings > Response**.
-Click outside or press Escape to dismiss the popup; Enter never sends the background draft.
-Reply limits and adapter controls remain in advanced Settings.
+The composer's **Thinking** popup offers **Thinking** and **Extra effort**, also
+available in **Settings > Response**. Both apply to the selected conversation and
+lock during generation. Click outside or press Escape to dismiss; Enter cannot
+send the background draft. Reply limits and adapter controls stay in advanced Settings.
 
 | Setting | Behavior |
 | --- | --- |

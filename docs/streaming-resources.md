@@ -30,20 +30,16 @@ conversion. Limits include JSON escaping and protocol framing where stated.
 | Committed history | Shares immutable content/reasoning allocations across worker, UI, queued commits, request snapshots and restored conversations; history vectors remain independent. Extra effort allocates its augmented final user task without copying preceding bodies. Shared ownership preserves recovery and HTTP JSON bytes. |
 | Composer context guidance | Caches a scalar estimate of committed content, retained reasoning and message framing with the conversation snapshot. History changes invalidate it; recovery recomputes it rather than trusting serialized estimates. A bounded draft cache keys the exact draft and response options, so unchanged frames do not rerun text estimation. These caches are skipped by recovery serialization and perform no network or disk work. Unicode-aware input estimates remain advisory; the selected reply cap and 64-token reserve stay separate from estimated input. |
 
-Extra effort retains drafts/answers through ordered lifecycle events, each bounded
-by the 4 MiB response cap. They do not bypass the incremental stream limit.
-Committed history keeps its request/response bounds. Unexpected lifecycle-capacity
-exhaustion closes the worker without blocking teardown.
+Extra effort drafts/answers use ordered lifecycle events, each within the 4 MiB
+response cap and incremental stream limit. Committed history retains its bounds.
+Lifecycle-capacity exhaustion closes the worker without blocking teardown.
 
-Context guidance uses model history rather than the visible transcript; an adopted
-interrupted prompt and its selected partial reply increase the history total, while
-other intermediate effort drafts do not.
-The active response owner shows an updating state while generation is unsettled.
-Other selected conversations retain their next-draft estimates independently.
-Extra effort estimates include planning instructions but cannot account for later
-generated working material in advance. All requests retain exact broker counting
-and admission; local estimates authorize neither a request nor automatic history
-eviction, cap reduction or replay.
+Context guidance counts model history, including adopted interrupted turns but
+excluding other intermediate effort drafts. The active response owner shows
+updating; other conversations retain independent next-draft estimates. Extra
+effort estimates include planning instructions, not later generated material.
+Exact broker counting/admission still governs every request. Estimates authorize
+no requests, automatic history eviction, cap reduction or replay.
 
 Find retains a queued scroll only while its exact message and UTF-8 range remain
 in the current results. Response replacement, message eviction and closing the
@@ -109,13 +105,12 @@ WAV/PCM schemas and wire completion rules.
 
 ## Completion and cancellation
 
-HTTP byte limits, framing, absolute deadlines and failure handling still apply.
-Clean decoded completion permits the broker's HTTP zero chunk; the client still
-requires its terminal SSE reason and `[DONE]`. Speech emits terminal framing only
-after validated complete generation. A valid prefix may already have reached the
-client when a later backend or write failure closes the response. Stop and
-shutdown remain available when presentation has stopped consuming output;
-backpressure cannot authorize a retry or replay.
+HTTP limits, framing, absolute deadlines and failure handling remain binding.
+Only clean decoded completion permits the broker's zero chunk; clients also
+require the terminal SSE reason and `[DONE]`. Speech requires validated complete
+generation before terminal framing. Later backend/write failures can close a
+response after valid prefixes arrive. Stop/shutdown remain available under
+presentation backpressure, which authorizes no retry or replay.
 
 After complete native PCM generation and validation, the speech service disarms
 and joins its cancellation watchdog before publishing the terminal zero chunk.
