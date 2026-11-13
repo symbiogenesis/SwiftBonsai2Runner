@@ -8,7 +8,7 @@ use std::{
     borrow::Cow,
     collections::{BTreeMap, BTreeSet},
     fs::{self, File, OpenOptions},
-    io::{Read as _, Seek as _, SeekFrom, Write as _},
+    io::{Read as _, Write as _},
     path::{Component, Path, PathBuf},
 };
 
@@ -80,24 +80,15 @@ pub(crate) fn digest_file(path: &Path) -> crate::Result<String> {
 pub(crate) fn assert_arm64(path: &Path) -> crate::Result<()> {
     let mut file = source_file(path)?;
     let length = file.metadata().map_err(|error| error.to_string())?.len();
-    let mut dos = [0; 64];
-    file.read_exact(&mut dos)
-        .map_err(|_| "Invalid executable DOS header.")?;
-    if dos[..2] != *b"MZ" {
-        return Err("Invalid executable DOS header.".into());
-    }
-    let offset = u64::from(u32::from_le_bytes(
-        dos[60..64].try_into().map_err(|_| "Invalid PE offset.")?,
-    ));
-    if offset < 64 || offset.checked_add(24).is_none_or(|end| end > length) {
-        return Err("Invalid executable PE offset.".into());
-    }
-    file.seek(SeekFrom::Start(offset))
-        .map_err(|error| error.to_string())?;
-    let mut pe = [0; 6];
-    file.read_exact(&mut pe)
-        .map_err(|error| error.to_string())?;
-    if pe != [b'P', b'E', 0, 0, 0x64, 0xaa] {
+    let machine = crate::pe_machine::machine(&mut file, length).map_err(|error| match error {
+        crate::pe_machine::Error::DosRead(_) | crate::pe_machine::Error::DosSignature => {
+            "Invalid executable DOS header.".into()
+        }
+        crate::pe_machine::Error::Offset => "Invalid executable PE offset.".into(),
+        crate::pe_machine::Error::Io(error) => error.to_string(),
+        crate::pe_machine::Error::PeSignature => "Expected a native ARM64 PE image.".into(),
+    })?;
+    if machine != 0xaa64 {
         return Err("Expected a native ARM64 PE image.".into());
     }
     Ok(())

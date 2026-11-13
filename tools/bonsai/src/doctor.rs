@@ -3,7 +3,7 @@
 use std::collections::BTreeMap;
 use std::ffi::OsStr;
 use std::fs::{self, OpenOptions};
-use std::io::{Read as _, Seek as _, SeekFrom, Write as _};
+use std::io::Write as _;
 use std::path::{Path, PathBuf};
 use std::time::{Duration, Instant};
 
@@ -23,25 +23,16 @@ struct Request {
 fn architecture(path: &Path) -> crate::Result<&'static str> {
     let mut file = fs::File::open(path).map_err(|error| error.to_string())?;
     let length = file.metadata().map_err(|error| error.to_string())?.len();
-    let mut header = [0; 64];
-    file.read_exact(&mut header)
-        .map_err(|error| error.to_string())?;
-    let offset = u64::from(u32::from_le_bytes([
-        header[60], header[61], header[62], header[63],
-    ]));
-    if &header[..2] != b"MZ" || offset < 64 || offset.checked_add(24).is_none_or(|end| end > length)
-    {
-        return Err("Invalid native executable header.".into());
-    }
-    file.seek(SeekFrom::Start(offset))
-        .map_err(|error| error.to_string())?;
-    let mut signature = [0; 6];
-    file.read_exact(&mut signature)
-        .map_err(|error| error.to_string())?;
-    if &signature[..4] != b"PE\0\0" {
-        return Err("Invalid PE signature.".into());
-    }
-    Ok(match u16::from_le_bytes([signature[4], signature[5]]) {
+    let machine = crate::pe_machine::machine(&mut file, length).map_err(|error| match error {
+        crate::pe_machine::Error::DosRead(error) | crate::pe_machine::Error::Io(error) => {
+            error.to_string()
+        }
+        crate::pe_machine::Error::DosSignature | crate::pe_machine::Error::Offset => {
+            "Invalid native executable header.".into()
+        }
+        crate::pe_machine::Error::PeSignature => "Invalid PE signature.".into(),
+    })?;
+    Ok(match machine {
         0xaa64 => "Arm64",
         0xa641 => "Arm64EC",
         0xa64e => "Arm64X",

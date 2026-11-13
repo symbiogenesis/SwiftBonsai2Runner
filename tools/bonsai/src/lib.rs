@@ -195,6 +195,7 @@ pub mod doctor;
 mod bounded_input;
 mod identity;
 mod native_startup;
+mod pe_machine;
 #[cfg(windows)]
 mod runtime_probe;
 mod startup_cache;
