@@ -7,26 +7,10 @@ owns algorithm/upstream conformance. **Local builds, Release analyzers and named
 focused tests are allowed. Full suites and benchmarks are CI-only; local filters
 must not reconstruct a suite.**
 
-The owner operates Host/Guest CI; other CI needs explicit direction. The sole
-standing exception is [AGENTS.md's bounded Foundation release-bundle operation](../AGENTS.md).
-Workflow documentation authorizes no dispatch/query. Record CI acceptance as
-pending without delaying local completion.
-
-Owner-laptop diagnostics, qualification and benchmarks default to five minutes
-total, preferably less. A dedicated workload may predeclare the smallest justified
-extension, up to fifteen minutes. Before starting, record fixed work, a conservative
-estimate and the reason. Include preparation, intake, loading, every comparison arm,
-cleanup and evidence retention; stop on completion or a known no-go. This applies
-to self-hosted CI; narrower limits need explicit extension, and hosted cloud CI
-keeps its own limits. Reduce work or leave acceptance pending if it cannot fit.
-Never reset clocks, retry a failed trial or partition a matrix across repeated runs.
-Historical clocks stay closed.
-
-Within that allowance, record AC/battery before and after each trial and each
-comparison arm, plus battery saver/charge when available. Keep unknowns explicit.
-Missing, changed or mismatched power makes performance comparisons ineligible.
-Equal endpoints do not prove continuous stability; later queries cannot establish
-past conditions.
+Follow [CI ownership](../AGENTS.md#ci-ownership-and-completion) and the
+[owner-device budget and power rules](../AGENTS.md#owner-device-execution-budgets).
+Workflow documentation authorizes no dispatch/query; pending CI does not delay
+local completion.
 
 Native application acceptance records model-case `powerBefore`, `powerAfter` and
 `powerConditions`, with separate observations for each owner, representation or worker
