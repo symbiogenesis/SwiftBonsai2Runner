@@ -39,6 +39,9 @@ const MAX_SEGMENT: usize = 256;
 const NO_INPUT: u64 = u64::MAX;
 
 pub(crate) enum Command {
+    PrepareInput {
+        generation: u64,
+    },
     Transcribe {
         generation: u64,
         wav: Vec<u8>,
@@ -132,6 +135,13 @@ pub(crate) struct Commands {
 }
 impl Commands {
     pub(crate) fn send(&self, command: Command) -> Result<(), mpsc::SendError<()>> {
+        // Preparation never supersedes output. A late capture-start result must
+        // not queue work after cancellation or a read-aloud request.
+        if let Command::PrepareInput { generation } = &command
+            && self.current_input.load(Ordering::Acquire) != *generation
+        {
+            return Ok(());
+        }
         if matches!(
             &command,
             Command::StopListening
@@ -360,6 +370,41 @@ fn transcription(
         }
     }
 }
+
+fn prepare_input(
+    input: Option<&mut Input>,
+    generation: u64,
+    current: &AtomicU64,
+    events: &Sender<Event>,
+) {
+    if current.load(Ordering::Acquire) != generation {
+        return;
+    }
+    let result = input.map_or(
+        Err(canary::Failure::Message(
+            "Speech input is unavailable. Open Settings > Voice to review speech setup and try again.",
+        )),
+        |input| {
+            let result = input.prepare(generation, current);
+            if result.is_err() {
+                input.clear();
+            }
+            result
+        },
+    );
+    // Success only prepares the owner. It cannot complete input, emit text or
+    // grant the idle lease reserved for a complete successful transcription.
+    if let Err(canary::Failure::Message(message)) = result
+        && current
+            .compare_exchange(generation, NO_INPUT, Ordering::AcqRel, Ordering::Acquire)
+            .is_ok()
+    {
+        let _sent = events.send(Event::InputFailed {
+            generation,
+            message,
+        });
+    }
+}
 fn render(
     output: &mut Output,
     client: Option<&Arc<tts::Client>>,
@@ -489,6 +534,19 @@ fn run(
                 ..
             })
             | Err(RecvTimeoutError::Disconnected) => break,
+            Ok(Envelope {
+                command: Command::PrepareInput { generation },
+                output_generation,
+            }) => {
+                if current_input.load(Ordering::Acquire) != generation
+                    || current_output.load(Ordering::Acquire) != output_generation
+                {
+                    continue;
+                }
+                output = None;
+                warm = None;
+                prepare_input(input.as_mut(), generation, current_input, events);
+            }
             Ok(Envelope {
                 command: Command::Transcribe { generation, wav },
                 output_generation,
@@ -973,6 +1031,28 @@ mod tests {
             .send(Command::StopListening)
             .map_err(io::Error::other)?;
         assert_eq!(current_input.load(Ordering::Acquire), super::NO_INPUT);
+        Ok(())
+    }
+
+    #[test]
+    fn recording_preparation_failure_rejects_queued_audio_and_late_starts() -> io::Result<()> {
+        let current = AtomicU64::new(7);
+        let (events, received) = mpsc::channel();
+        super::prepare_input(None, 7, &current, &events);
+        assert_eq!(current.load(Ordering::Acquire), super::NO_INPUT);
+        assert!(matches!(
+            received.try_recv().map_err(io::Error::other)?,
+            Event::InputFailed { generation: 7, .. }
+        ));
+        assert!(received.try_recv().is_err());
+        // A final clip already queued while preparation was in flight must
+        // remain cancelled instead of triggering a second startup attempt.
+        super::transcription(None, 7, &[], &current, &events);
+        assert!(received.try_recv().is_err());
+        current.store(8, Ordering::Release);
+        super::prepare_input(None, 7, &current, &events);
+        assert_eq!(current.load(Ordering::Acquire), 8);
+        assert!(received.try_recv().is_err());
         Ok(())
     }
 

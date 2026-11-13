@@ -11,6 +11,47 @@ fn state() -> (State, Receiver<Command>, client::EventSender) {
 }
 
 #[test]
+fn recording_preparation_requires_the_current_successful_capture_start() -> io::Result<()> {
+    let (mut state, requests, _events) = state();
+    let (session, commands) = speech::Session::fixture()?;
+    session.set_input_generation(Some(7));
+    state.speech = Some(session);
+    state.microphone_generation = Some(7);
+    state.dictation_requested = true;
+    for message in [
+        "Requesting permission",
+        "Initializing microphone",
+        "Starting recording",
+    ] {
+        state.microphone_event(microphone::Event::Status(message));
+        assert!(commands.try_recv().is_err());
+    }
+    state.microphone_event(microphone::Event::Recording { generation: 6 });
+    assert!(commands.try_recv().is_err());
+    state.microphone_event(microphone::Event::Recording { generation: 7 });
+    assert!(matches!(
+        commands.recv_timeout(Duration::from_secs(2)),
+        Ok(speech::Command::PrepareInput { generation: 7 })
+    ));
+    assert!(commands.try_recv().is_err());
+    assert!(requests.try_recv().is_err());
+    assert!(!state.dictation_finishing);
+    assert!(state.pending_voice_transcript.is_none());
+    state.microphone_event(microphone::Event::Failed(
+        "Microphone permission was revoked",
+    ));
+    assert!(matches!(
+        commands.recv_timeout(Duration::from_secs(2)),
+        Ok(speech::Command::StopListening)
+    ));
+    state.microphone_event(microphone::Event::Recording { generation: 7 });
+    assert!(commands.try_recv().is_err());
+    assert!(!state.dictation_requested);
+    assert!(requests.try_recv().is_err());
+    Ok(())
+}
+
+#[test]
 fn updater_install_admission_requires_idle_or_confirmed_stopped_model() {
     let (mut state, _commands, _events) = state();
     for phase in [

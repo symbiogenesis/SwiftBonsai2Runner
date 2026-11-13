@@ -1601,30 +1601,43 @@ impl State {
             return;
         };
         for event in microphone.poll() {
-            match event {
-                microphone::Event::Status(message) if self.dictation_requested => {
-                    message.clone_into(&mut self.speech_status);
-                }
-                microphone::Event::Status(_) => {}
-                microphone::Event::Failed(message) => {
-                    self.speech_notice = true;
-                    self.cancel_microphone();
-                    message.clone_into(&mut self.speech_status);
-                }
-                microphone::Event::Clip { generation, wav } => {
-                    if self.dictation_requested && self.microphone_generation == Some(generation) {
-                        self.listening = false;
-                        self.dictation_finishing = true;
-                        if self.speech_command(speech::Command::Transcribe { generation, wav }) {
-                            "Transcribing with Qwen3-ASR 1.7B… Escape cancels."
-                                .clone_into(&mut self.speech_status);
-                        }
-                    }
-                }
-            }
+            self.microphone_event(event);
         }
         if self.speech_status != previous {
             self.record(&self.speech_status.clone());
+        }
+    }
+
+    fn microphone_event(&mut self, event: microphone::Event) {
+        match event {
+            microphone::Event::Recording { generation } => {
+                if self.dictation_requested
+                    && self.microphone_generation == Some(generation)
+                    && self.speech_command(speech::Command::PrepareInput { generation })
+                {
+                    "Recording. Click the microphone to send; Escape cancels. Finishes after 25 seconds."
+                        .clone_into(&mut self.speech_status);
+                }
+            }
+            microphone::Event::Status(message) if self.dictation_requested => {
+                message.clone_into(&mut self.speech_status);
+            }
+            microphone::Event::Status(_) => {}
+            microphone::Event::Failed(message) => {
+                self.speech_notice = true;
+                self.cancel_microphone();
+                message.clone_into(&mut self.speech_status);
+            }
+            microphone::Event::Clip { generation, wav } => {
+                if self.dictation_requested && self.microphone_generation == Some(generation) {
+                    self.listening = false;
+                    self.dictation_finishing = true;
+                    if self.speech_command(speech::Command::Transcribe { generation, wav }) {
+                        "Transcribing with Qwen3-ASR 1.7B… Escape cancels."
+                            .clone_into(&mut self.speech_status);
+                    }
+                }
+            }
         }
     }
 }

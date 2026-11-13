@@ -139,6 +139,11 @@ under [AGENTS.md](AGENTS.md).
 - [ ] Qualify Qwen3-ASR microphone permission, explicit/25-second completion,
   autodetection, cancellation and exactly one ordinary Swift submission. Cover
   unavailable-model drafts, late results, ASR/TTS exclusion and recorder cleanup.
+- [ ] Qualify microphone model preparation after permission and successful
+  recording startup: loading/capture overlap, empty/invalid final clips,
+  denied/revoked permission, Stop/read-aloud/switch/close during loading,
+  generation ownership and no premature upload, transcript or idle lease.
+  Measure cold and repeated microphone completion latency with matched power.
 - [ ] Qualify the 30-second successful-input ASR lease: state reset, authenticated
   readiness/listener ownership, monitoring and cancellation/failure/expiry release.
   Compare repeated-input latency/resources with cold loading under matched power.

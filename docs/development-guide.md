@@ -656,8 +656,13 @@ speech; a hidden response never interrupts manual playback in the visible chat. 
 checkbox without replay on restore. Working drafts and reasoning are excluded.
 
 Owned speech uses separate Windows Jobs and mutual exclusion: read-aloud releases
-Qwen3-ASR before TTS loads; transcription releases TTS. Qwen3-ASR loads only after
-a captured utterance or imported audio file. After a complete successful input,
+Qwen3-ASR before TTS loads; microphone preparation/transcription releases TTS.
+Qwen3-ASR verification/loading overlaps microphone capture only after explicit
+permission and successful Windows recording startup. It never uploads audio or
+runs recognition before the finalized WAV validates; preparation grants no idle
+lease and cancellation or capture failure releases its owner. Imported files
+still validate the first completed segment before an unprepared model starts.
+After a complete successful input,
 its verified model and session stay warm for at most 30 idle seconds, avoiding
 another full-file verification and model load for the next recording or file.
 Reuse rechecks authenticated readiness and owned listener identity; each request

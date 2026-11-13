@@ -131,7 +131,7 @@ impl Client {
         call.check().and(result)
     }
 
-    /// Start only for an explicitly captured clip and retain ownership between clips.
+    /// Validate a completed clip before starting an unprepared recognition owner.
     pub(crate) fn start_service(
         &self,
         config: &Config,
@@ -142,6 +142,18 @@ impl Client {
         let call = Call::new(generation, current, READY_LIMIT);
         call.check()?;
         normalize_wav(wav, &call)?;
+        self.prepare_recording(config, generation, current)
+    }
+
+    /// Prepare only after explicit microphone permission and recording startup.
+    /// No recognition request or audio upload occurs until a complete valid WAV.
+    pub(crate) fn prepare_recording(
+        &self,
+        config: &Config,
+        generation: u64,
+        current: &AtomicU64,
+    ) -> Result<Option<Service>> {
+        Call::new(generation, current, READY_LIMIT).check()?;
         let Some(launch) = &config.launch else {
             self.ready_for(generation, current)?;
             return Ok(None);
@@ -932,6 +944,10 @@ mod tests {
             matches!(client.start_service(&config, 7, &[], &AtomicU64::new(7)),
             Err(Failure::Message(message)) if message.contains("16 kHz mono 16-bit PCM WAV"))
         );
+        assert!(matches!(
+            client.prepare_recording(&config, 7, &AtomicU64::new(8)),
+            Err(Failure::Cancelled)
+        ));
         assert!(
             matches!(listener.accept(), Err(error) if error.kind() == io::ErrorKind::WouldBlock)
         );
@@ -954,6 +970,36 @@ mod tests {
         assert!(
             matches!(listener.accept(), Err(error) if error.kind() == io::ErrorKind::WouldBlock)
         );
+        Ok(())
+    }
+
+    #[test]
+    fn recording_preparation_authenticates_without_uploading_audio() -> io::Result<()> {
+        let listener = TcpListener::bind((std::net::Ipv4Addr::LOCALHOST, 0))?;
+        let port = listener.local_addr()?.port();
+        let (credentials, client) = client(port)?;
+        let config = Config {
+            port,
+            key_file: credentials.frontend_path().to_owned(),
+            launch: None,
+        };
+        let server = thread::spawn(move || -> io::Result<()> {
+            let (mut stream, _) = listener.accept()?;
+            let request = request(&mut stream)?;
+            assert!(request.starts_with(b"GET /health HTTP/1.1\r\n"));
+            assert!(request.ends_with(b"\r\n\r\n"));
+            respond(&mut stream, br#"{"model":"Qwen/Qwen3-ASR-1.7B","ready":true,"sample_rate":16000,"max_clip_seconds":30,"input_format":"pcm_s16le_wav","channels":1}"#)?;
+            Ok(())
+        });
+        assert!(
+            client
+                .prepare_recording(&config, 7, &AtomicU64::new(7))
+                .map_err(|_| io::Error::other("Recording readiness failed"))?
+                .is_none()
+        );
+        server
+            .join()
+            .map_err(|_| io::Error::other("Readiness fixture failed"))??;
         Ok(())
     }
 

@@ -416,7 +416,12 @@ and resource monitoring, rechecks authenticated readiness and listener ownership
 and resets native recognition state for the next request. Successful text
 submission preserves the lease; cancellation, errors, conversation changes,
 speech output, expiry and shutdown release it. Partial file progress never starts
-an idle lease. Loading still requires explicit captured or imported audio.
+an idle lease. After explicit microphone permission and successful recording
+startup, model verification/loading may overlap capture on the speech worker.
+No audio is uploaded or recognized until the complete finalized WAV validates.
+Preparation remains owned by that capture generation and grants no idle lease;
+capture failure/revocation/cancellation releases it. Imported audio retains its
+complete first-segment validation before an unprepared model starts.
 
 The composer's native plus button selects one audio file; Ctrl+V in the focused
 composer accepts files copied from Explorer. A cancellable owned worker reads and

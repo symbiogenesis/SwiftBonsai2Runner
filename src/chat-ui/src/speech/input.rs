@@ -65,12 +65,21 @@ impl Input {
         }
     }
 
-    pub(super) fn transcribe(
+    /// Bind preparation to the active capture, without granting an idle lease.
+    pub(super) fn prepare(
         &mut self,
         generation: u64,
-        wav: &[u8],
         current: &AtomicU64,
-    ) -> Result<String, canary::Failure> {
+    ) -> Result<(), canary::Failure> {
+        self.activate(generation, current, None)
+    }
+
+    fn activate(
+        &mut self,
+        generation: u64,
+        current: &AtomicU64,
+        wav: Option<&[u8]>,
+    ) -> Result<(), canary::Failure> {
         let call = canary::Call::new(generation, current, Duration::from_mins(15));
         call.check()?;
         self.maintain(current, Instant::now());
@@ -89,15 +98,32 @@ impl Input {
                 }
             } else {
                 self.clear();
-                self.service = self
-                    .client
-                    .start_service(&self.config, generation, wav, current)?;
+                self.service = match wav {
+                    Some(wav) => {
+                        self.client
+                            .start_service(&self.config, generation, wav, current)?
+                    }
+                    None => self
+                        .client
+                        .prepare_recording(&self.config, generation, current)?,
+                };
             }
             self.generation = Some(generation);
         }
         if let Some(service) = &self.service {
             service.check()?;
         }
+        call.check()
+    }
+
+    pub(super) fn transcribe(
+        &mut self,
+        generation: u64,
+        wav: &[u8],
+        current: &AtomicU64,
+    ) -> Result<String, canary::Failure> {
+        let call = canary::Call::new(generation, current, Duration::from_mins(15));
+        self.activate(generation, current, Some(wav))?;
         let result = self.client.transcribe(generation, wav, current);
         if let Some(service) = &self.service {
             service.check()?;
@@ -257,6 +283,53 @@ mod tests {
             Some(fixture.process.id())
         );
         assert!(fixture.process.try_wait()?.is_none());
+        fixture.finish()
+    }
+
+    #[test]
+    fn recording_preparation_reuses_the_owner_without_completing_or_renewing_input()
+    -> io::Result<()> {
+        let mut fixture = Fixture::create(true)?;
+        let current = AtomicU64::new(41);
+        fixture.input.complete(41, &current, Instant::now());
+        current.store(42, Ordering::Release);
+        let (events, received) = std::sync::mpsc::channel();
+        super::super::prepare_input(Some(&mut fixture.input), 42, &current, &events);
+        assert!(received.try_recv().is_err());
+        assert_eq!(fixture.input.generation, Some(42));
+        assert!(fixture.input.warm_until.is_none());
+        assert!(fixture.process.try_wait()?.is_none());
+        // A duplicate start notification is idempotent, without a new owner.
+        fixture
+            .input
+            .prepare(42, &current)
+            .map_err(|_| io::Error::other("Repeated recording preparation failed"))?;
+        assert!(fixture.input.warm_until.is_none());
+        // The prepared owner still validates the complete final recording.
+        assert!(fixture.input.transcribe(42, &[], &current).is_err());
+        assert!(fixture.input.warm_until.is_none());
+        let mut wave = bonsai_audio::mono_pcm16_header(16_000, 2)
+            .ok_or_else(|| io::Error::other("Could not frame fixture PCM"))?
+            .to_vec();
+        wave.extend_from_slice(&[0, 0, 1, 0]);
+        assert_eq!(
+            fixture
+                .input
+                .transcribe(42, &wave, &current)
+                .map_err(|_| { io::Error::other("Prepared recording transcription failed") })?,
+            "fresh request"
+        );
+        assert!(fixture.input.warm_until.is_none());
+        assert_eq!(
+            bonsai_windows_process::listener_process_id(fixture.input.config.port)?,
+            Some(fixture.process.id())
+        );
+        // Cancellation during capture releases the prepared owner, even though
+        // no complete successful input granted an idle lease.
+        current.store(super::super::NO_INPUT, Ordering::Release);
+        fixture.input.maintain(&current, Instant::now());
+        assert!(fixture.input.service.is_none());
+        assert!(fixture.input.generation.is_none());
         fixture.finish()
     }
 }

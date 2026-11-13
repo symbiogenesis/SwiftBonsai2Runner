@@ -31,6 +31,7 @@ const MAX_WAV: u64 = 1024 * 1024;
 
 pub(super) enum Event {
     Status(&'static str),
+    Recording { generation: u64 },
     Clip { generation: u64, wav: Vec<u8> },
     Failed(&'static str),
 }
@@ -393,9 +394,12 @@ impl Microphone {
                     .GetResults()
                     .map_err(|_| "Windows could not start microphone recording.")?;
                 self.recording_since = Some(Instant::now());
-                Ok(Some(Event::Status(
-                    "Recording. Click the microphone to send; Escape cancels. Finishes after 25 seconds.",
-                )))
+                // This is the first point where permission and recording have
+                // both succeeded. The worker may overlap model loading with
+                // capture; it still receives no audio until finalization.
+                Ok(Some(Event::Recording {
+                    generation: self.lifecycle.generation,
+                }))
             }
             Pending::Stop(operation) => {
                 operation

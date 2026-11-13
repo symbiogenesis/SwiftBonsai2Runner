@@ -82,7 +82,10 @@ const fn bytes(command: &Command) -> usize {
 const fn is_input(command: &Command) -> bool {
     matches!(
         command,
-        Command::Transcribe { .. } | Command::TranscribeFile { .. } | Command::StopListening
+        Command::PrepareInput { .. }
+            | Command::Transcribe { .. }
+            | Command::TranscribeFile { .. }
+            | Command::StopListening
     )
 }
 
@@ -156,6 +159,21 @@ impl Sender {
                 queue.retain(|command| {
                     matches!(command, Command::StopListening | Command::Shutdown)
                 });
+            }
+            Command::PrepareInput { generation } => {
+                // At most one pending preparation. A completed clip supersedes
+                // preparation, including when capture finishes before the
+                // worker starts loading. Never discard newer output here.
+                if queue.commands.iter().any(|pending| {
+                    matches!(pending.command,
+                        Command::PrepareInput { generation: owner }
+                            | Command::Transcribe { generation: owner, .. }
+                            | Command::TranscribeFile { generation: owner, .. }
+                            if owner == *generation)
+                }) {
+                    return Ok(());
+                }
+                queue.retain(|command| !matches!(command, Command::PrepareInput { .. }));
             }
             Command::StopSpeaking => queue.retain(is_input),
             Command::StopListening => {
@@ -576,6 +594,80 @@ mod tests {
             receiver.recv_timeout(Duration::ZERO),
             Err(mpsc::RecvTimeoutError::Timeout)
         ));
+    }
+
+    #[test]
+    fn recording_preparation_is_coalesced_and_superseded_by_finish_cancel_or_output()
+    -> io::Result<()> {
+        let (commands, receiver) = fixture();
+        commands.current_input.store(7, Ordering::Release);
+        let output = commands.current_output.load(Ordering::Acquire);
+        for _ in 0..MAX_COMMANDS * 2 {
+            commands
+                .send(Command::PrepareInput { generation: 7 })
+                .map_err(io::Error::other)?;
+        }
+        assert_eq!(commands.current_output.load(Ordering::Acquire), output);
+        assert!(matches!(
+            receiver.recv().map_err(io::Error::other)?.command,
+            Command::PrepareInput { generation: 7 }
+        ));
+        assert!(matches!(
+            receiver.recv_timeout(Duration::ZERO),
+            Err(mpsc::RecvTimeoutError::Timeout)
+        ));
+        commands
+            .send(Command::PrepareInput { generation: 7 })
+            .map_err(io::Error::other)?;
+        commands
+            .send(Command::Transcribe {
+                generation: 7,
+                wav: Vec::new(),
+            })
+            .map_err(io::Error::other)?;
+        commands
+            .send(Command::PrepareInput { generation: 7 })
+            .map_err(io::Error::other)?;
+        assert!(matches!(
+            receiver.recv().map_err(io::Error::other)?.command,
+            Command::Transcribe { generation: 7, .. }
+        ));
+        assert!(matches!(
+            receiver.recv_timeout(Duration::ZERO),
+            Err(mpsc::RecvTimeoutError::Timeout)
+        ));
+        commands
+            .send(Command::PrepareInput { generation: 7 })
+            .map_err(io::Error::other)?;
+        commands
+            .send(Command::StopListening)
+            .map_err(io::Error::other)?;
+        commands
+            .send(Command::PrepareInput { generation: 7 })
+            .map_err(io::Error::other)?;
+        assert!(matches!(
+            receiver.recv().map_err(io::Error::other)?.command,
+            Command::StopListening
+        ));
+        commands.current_input.store(8, Ordering::Release);
+        commands
+            .send(Command::PrepareInput { generation: 8 })
+            .map_err(io::Error::other)?;
+        begin(&commands)?;
+        let output = commands.current_output.load(Ordering::Acquire);
+        commands
+            .send(Command::PrepareInput { generation: 8 })
+            .map_err(io::Error::other)?;
+        assert_eq!(commands.current_output.load(Ordering::Acquire), output);
+        assert!(matches!(
+            receiver.recv().map_err(io::Error::other)?.command,
+            Command::BeginStream { .. }
+        ));
+        assert!(matches!(
+            receiver.recv_timeout(Duration::ZERO),
+            Err(mpsc::RecvTimeoutError::Timeout)
+        ));
+        Ok(())
     }
 
     #[test]
