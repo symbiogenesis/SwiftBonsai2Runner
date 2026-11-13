@@ -10,6 +10,7 @@
 //! - 5-layer `CodePredictor` (`mtp_proj`, 15 residual codebooks `1..=15`) with decoupled
 //!   `subtalker_*` sampling parameters.
 //! - `PromptBuilder` and `PromptCache` with cached `icl_codec_stream` and `icl_ref_text_stream`.
+//!
 //! Execution is CPU-only. Signed Hexagon dispatch, placement and shared-cache
 //! ownership require a separately qualified implementation; no queue protocol
 //! or device execution is supplied by this module.
