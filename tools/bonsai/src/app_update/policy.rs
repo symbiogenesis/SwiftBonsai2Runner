@@ -240,6 +240,21 @@ fn checksum(bytes: &[u8], expected_name: &str) -> crate::Result<String> {
 }
 
 impl Installer {
+    pub(super) fn release_identity(&self) -> crate::Result<String> {
+        let bytes = serde_json::to_vec(self).map_err(|error| error.to_string())?;
+        Ok(crate::identity::sha256(&bytes))
+    }
+
+    pub(super) fn verify_release_identity(&self, expected: &str) -> crate::Result<()> {
+        if !crate::identity::is_lower_hex(expected, 64) || self.release_identity()? != expected {
+            return Err(
+                "The published update changed after it was downloaded. Check for updates and confirm the verified download again. No application was replaced."
+                    .into(),
+            );
+        }
+        Ok(())
+    }
+
     pub(super) fn distribution(&self) -> Distribution {
         if std::path::Path::new(&self.asset.name)
             .extension()

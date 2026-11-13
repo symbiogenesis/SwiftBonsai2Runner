@@ -204,6 +204,46 @@ fn portable_manifest_binds_source_target_smoke_and_three_way_executable_identity
 }
 
 #[test]
+fn confirmation_identity_binds_exact_source_and_executable_without_version_only_reuse()
+-> crate::Result<()> {
+    let candidate = selected_portable(&json!([portable_release("0.1.1")]))?
+        .1
+        .ok_or("Missing portable fixture.")?;
+    let published = portable(
+        &candidate,
+        &serde_json::to_vec(&portable_manifest(&candidate)).map_err(|error| error.to_string())?,
+        format!("{}  {}\n", candidate.msi.sha256, candidate.msi.name).as_bytes(),
+    )?;
+    let identity = published.release_identity()?;
+    published.verify_release_identity(&identity)?;
+    let encoded = serde_json::to_value(&published).map_err(|error| error.to_string())?;
+    for pointer in [
+        "/sourceRevision",
+        "/asset/sha256",
+        "/asset/bytes",
+        "/version",
+    ] {
+        let mut changed = encoded.clone();
+        let replacement = match pointer {
+            "/sourceRevision" => json!("d".repeat(40)),
+            "/asset/sha256" => json!("e".repeat(64)),
+            "/asset/bytes" => json!(4097),
+            _ => json!("0.1.2"),
+        };
+        *changed
+            .pointer_mut(pointer)
+            .ok_or("Missing fixture identity field.")? = replacement;
+        let changed: Installer =
+            serde_json::from_value(changed).map_err(|error| error.to_string())?;
+        assert!(changed.verify_release_identity(&identity).is_err());
+    }
+    for invalid in [String::new(), "0".repeat(64), "A".repeat(64)] {
+        assert!(published.verify_release_identity(&invalid).is_err());
+    }
+    Ok(())
+}
+
+#[test]
 fn versions_compare_numerically_and_reject_noncanonical_or_out_of_msi_bounds() -> crate::Result<()>
 {
     assert!(Version::parse("0.10.0")? > Version::parse("0.9.99")?);

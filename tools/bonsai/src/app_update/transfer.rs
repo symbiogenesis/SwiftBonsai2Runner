@@ -148,6 +148,68 @@ pub(super) fn write_new_or_identical(path: &Path, bytes: &[u8]) -> crate::Result
     write_exclusive(path, bytes)
 }
 
+/// Publishes newly verified metadata or a freshly confirmed handoff. Existing
+/// cache bytes never authenticate this replacement; the caller supplies a fresh
+/// published identity and retains its update-stage lock through this operation.
+pub(super) fn write_current(path: &Path, bytes: &[u8]) -> crate::Result<()> {
+    crate::startup_cancel::checkpoint()?;
+    external(path)?;
+    if u64::try_from(bytes.len()).map_err(|error| error.to_string())? > MAX_METADATA {
+        return Err("Update metadata exceeds its byte limit.".into());
+    }
+    let _parents = super::portable::hold_parents(path)?;
+    match fs::symlink_metadata(path) {
+        Ok(metadata) if metadata.is_file() && !bonsai_artifacts::is_redirect(&metadata) => {}
+        Ok(_) => return Err("Update metadata destination is not an ordinary file.".into()),
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => {}
+        Err(error) => return Err(error.to_string()),
+    }
+    let temporary = path.with_extension(format!("{}.partial", crate::startup_process::unique()));
+    external(&temporary)?;
+    let mut options = OpenOptions::new();
+    options.read(true).write(true).create_new(true);
+    #[cfg(windows)]
+    {
+        use std::os::windows::fs::OpenOptionsExt as _;
+        options
+            .access_mode(0xc001_0000)
+            .share_mode(0)
+            .custom_flags(0x0020_0000);
+    }
+    let mut file = options
+        .open(&temporary)
+        .map_err(|error| error.to_string())?;
+    let temporary = TemporaryBody(temporary);
+    let published = (|| {
+        file.write_all(bytes)
+            .and_then(|()| file.sync_all())
+            .map_err(|error| error.to_string())?;
+        crate::startup_cancel::checkpoint()?;
+        external(path)?;
+        #[cfg(windows)]
+        let result = bonsai_windows_process::replace_open_file(&file, path);
+        #[cfg(not(windows))]
+        let result = fs::rename(&temporary.0, path);
+        result.map_err(|error| error.to_string())
+    })();
+    // Close the exclusive file before the temporary guard cleans an unpublished
+    // file. Successful handle-based publication has already consumed its name.
+    drop(file);
+    drop(temporary);
+    published
+}
+
+fn require_successful_http(code: u32, status: &str) -> crate::Result<()> {
+    if code != 0 || status.trim() != "200" {
+        return Err(format!(
+            "GitHub update check failed (HTTP {}, tool {}). Your installed app is unchanged.",
+            status.trim(),
+            code
+        ));
+    }
+    Ok(())
+}
+
 pub(super) fn metadata(url: &str, working: &Path) -> crate::Result<Vec<u8>> {
     #[cfg(windows)]
     let directory = bonsai_windows_credentials::PrivateDirectory::create(working)
@@ -206,23 +268,9 @@ pub(super) fn metadata(url: &str, working: &Path) -> crate::Result<Vec<u8>> {
         Duration::from_secs(11),
         &log,
     )?;
-    if result.code == 0
-        && result.stdout.trim() == "404"
-        && url
-            == format!(
-                "https://api.github.com/repos/{}/releases?per_page=100&page=1",
-                super::REPOSITORY
-            )
-    {
-        return Ok(b"[]".to_vec());
-    }
-    if result.code != 0 || result.stdout.trim() != "200" {
-        return Err(format!(
-            "GitHub update check failed (HTTP {}, tool {}). Your installed app is unchanged.",
-            result.stdout.trim(),
-            result.code
-        ));
-    }
+    // An empty public release catalog is HTTP 200 with []. A 404 means the
+    // repository/catalog could not be inspected, not a successful no-update.
+    require_successful_http(result.code, &result.stdout)?;
     read_bounded(&path, MAX_METADATA)
 }
 
@@ -239,6 +287,61 @@ pub(super) fn asset_metadata(asset: &Asset, working: &Path) -> crate::Result<Vec
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn update_http_failures_never_masquerade_as_an_empty_release_catalog() -> crate::Result<()> {
+        require_successful_http(0, "200\n")?;
+        for (code, status) in [
+            (0, "404"),
+            (0, "403"),
+            (0, "429"),
+            (0, "503"),
+            (28, "200"),
+            (6, "000"),
+        ] {
+            let error = require_successful_http(code, status)
+                .err()
+                .ok_or("Accepted a failed update lookup.")?;
+            assert!(error.contains("update check failed"));
+            assert!(error.contains("installed app is unchanged"));
+        }
+        Ok(())
+    }
+
+    #[cfg(windows)]
+    #[test]
+    fn refreshed_metadata_is_atomic_and_keeps_previous_bytes_on_sharing_failure()
+    -> crate::Result<()> {
+        let root = std::env::temp_dir().join(format!(
+            "Bonsai-Update-Refresh-{}",
+            crate::startup_process::unique()
+        ));
+        external(&root)?;
+        fs::create_dir(&root).map_err(|error| error.to_string())?;
+        let path = root.join("confirmed.json");
+        write_current(&path, b"first confirmation")?;
+        let guard = bonsai_artifacts::open_locked_file(&path).map_err(|error| error.to_string())?;
+        assert!(write_current(&path, b"new confirmation").is_err());
+        assert_eq!(read_bounded(&path, MAX_METADATA)?, b"first confirmation");
+        assert_eq!(
+            fs::read_dir(&root)
+                .map_err(|error| error.to_string())?
+                .count(),
+            1
+        );
+        drop(guard);
+        write_current(&path, b"new confirmation")?;
+        assert_eq!(read_bounded(&path, MAX_METADATA)?, b"new confirmation");
+        assert_eq!(
+            fs::read_dir(&root)
+                .map_err(|error| error.to_string())?
+                .count(),
+            1
+        );
+        fs::remove_file(path)
+            .and_then(|()| fs::remove_dir(root))
+            .map_err(|error| error.to_string())
+    }
 
     #[test]
     fn staged_bytes_reject_tampering_and_metadata_bounds() -> crate::Result<()> {

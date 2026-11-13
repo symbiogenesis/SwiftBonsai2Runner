@@ -13,6 +13,136 @@ fn installer(version: &str) -> crate::Result<policy::Installer> {
     .map_err(|error| error.to_string())
 }
 
+fn portable_fixture() -> crate::Result<(PathBuf, String, policy::Installer)> {
+    let directory = std::env::temp_dir().join(format!(
+        "Bonsai-Portable-Stage-{}",
+        crate::startup_process::unique()
+    ));
+    external(&directory)?;
+    fs::create_dir(&directory).map_err(|error| error.to_string())?;
+    let version = Version::parse(env!("CARGO_PKG_VERSION"))?.next_for_test()?;
+    let mut published = installer(&version)?;
+    published.asset.name = format!("SwiftBonsai2Runner-{version}-windows-arm64.exe");
+    published.asset.url = format!(
+        "https://github.com/{REPOSITORY}/releases/download/v{version}/{}",
+        published.asset.name
+    );
+    published.validate(&version)?;
+    Ok((directory, version, published))
+}
+
+#[test]
+fn portable_stage_repairs_poisoned_receipts_only_after_verified_download() -> crate::Result<()> {
+    let (directory, version, published) = portable_fixture()?;
+    let path = directory.join(&published.asset.name);
+    let receipt = directory.join("verified-release.json");
+    fs::write(&path, b"tampered").map_err(|error| error.to_string())?;
+    fs::write(&receipt, b"damaged receipt").map_err(|error| error.to_string())?;
+    assert!(
+        stage_portable_with(&directory, &version, &published, |_| Err("offline".into())).is_err()
+    );
+    assert_eq!(
+        fs::read(&receipt).map_err(|error| error.to_string())?,
+        b"damaged receipt"
+    );
+    assert!(stage_portable_with(&directory, &version, &published, |_| Ok(())).is_err());
+    assert_eq!(
+        fs::read(&receipt).map_err(|error| error.to_string())?,
+        b"damaged receipt"
+    );
+    let identity = stage_portable_with(&directory, &version, &published, |destination| {
+        fs::write(destination, b"original").map_err(|error| error.to_string())
+    })?;
+    assert_eq!(identity, published.release_identity()?);
+    assert_eq!(
+        stage_portable_with(&directory, &version, &published, |_| Ok(()))?,
+        identity
+    );
+    drop(verify_stage(&directory, &version, &published)?);
+    assert_eq!(
+        fs::read_dir(&directory)
+            .map_err(|error| error.to_string())?
+            .count(),
+        2
+    );
+    fs::remove_file(path)
+        .and_then(|()| fs::remove_file(receipt))
+        .and_then(|()| fs::remove_dir(directory))
+        .map_err(|error| error.to_string())
+}
+
+#[test]
+fn cancelled_portable_staging_keeps_previous_receipt_and_unconfirmed_bytes() -> crate::Result<()> {
+    use std::sync::{
+        Arc,
+        atomic::{AtomicBool, Ordering},
+    };
+    let (directory, version, published) = portable_fixture()?;
+    let path = directory.join(&published.asset.name);
+    let receipt = directory.join("verified-release.json");
+    fs::write(&receipt, b"previous receipt").map_err(|error| error.to_string())?;
+    let cancelled = Arc::new(AtomicBool::new(false));
+    crate::startup_cancel::with_peer_cancellation(&cancelled, || {
+        assert!(
+            stage_portable_with(&directory, &version, &published, |destination| {
+                fs::write(destination, b"original").map_err(|error| error.to_string())?;
+                cancelled.store(true, Ordering::Release);
+                Ok(())
+            })
+            .is_err()
+        );
+    });
+    assert_eq!(
+        fs::read(&receipt).map_err(|error| error.to_string())?,
+        b"previous receipt"
+    );
+    assert_eq!(
+        fs::read(&path).map_err(|error| error.to_string())?,
+        b"original"
+    );
+    fs::remove_file(path)
+        .and_then(|()| fs::remove_file(receipt))
+        .and_then(|()| fs::remove_dir(directory))
+        .map_err(|error| error.to_string())
+}
+
+#[test]
+fn fresh_portable_confirmation_replaces_stale_queue_and_binds_changed_publication()
+-> crate::Result<()> {
+    let (directory, version, published) = portable_fixture()?;
+    let handoff = directory.join("chat-startup-fixture.update.json");
+    fs::write(&handoff, b"stale or incomplete authorization").map_err(|error| error.to_string())?;
+    let identity = published.release_identity()?;
+    write_portable_handoff(&handoff, &version, &identity, &published)?;
+    let confirmed = transfer::read_bounded(&handoff, 8192)?;
+    let queued: PortableHandoff =
+        serde_json::from_slice(&confirmed).map_err(|error| error.to_string())?;
+    queued.verify(&published)?;
+    write_portable_handoff(&handoff, &version, &identity, &published)?;
+    assert_eq!(transfer::read_bounded(&handoff, 8192)?, confirmed);
+    let mut changed = serde_json::to_value(&published).map_err(|error| error.to_string())?;
+    changed["sourceRevision"] = "b".repeat(40).into();
+    let changed: policy::Installer =
+        serde_json::from_value(changed).map_err(|error| error.to_string())?;
+    assert!(queued.verify(&changed).is_err());
+    assert!(write_portable_handoff(&handoff, &version, &identity, &changed).is_err());
+    assert_eq!(transfer::read_bounded(&handoff, 8192)?, confirmed);
+    let mut legacy = serde_json::to_value(&queued).map_err(|error| error.to_string())?;
+    legacy["schemaVersion"] = 1.into();
+    let legacy: PortableHandoff =
+        serde_json::from_value(legacy).map_err(|error| error.to_string())?;
+    assert!(legacy.verify(&published).is_err());
+    assert!(
+        serde_json::from_value::<PortableHandoff>(json!({
+            "schemaVersion": 2, "distribution": "portable-executable", "version": version
+        }))
+        .is_err()
+    );
+    fs::remove_file(handoff)
+        .and_then(|()| fs::remove_dir(directory))
+        .map_err(|error| error.to_string())
+}
+
 #[test]
 fn final_stage_requires_published_identity_and_retains_immutable_ancestry() -> crate::Result<()> {
     let root = std::env::temp_dir().join(format!(

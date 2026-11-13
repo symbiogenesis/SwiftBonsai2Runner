@@ -25,6 +25,10 @@ pub(super) struct Replacement {
     pub(super) previous_sha256: String,
     pub(super) version: String,
     pub(super) arguments: Vec<String>,
+    // Published v0.2.1 launchers do not supply this field when upgrading to a
+    // newer helper. New launchers always bind their confirmed release identity.
+    #[serde(default)]
+    pub(super) release_identity: Option<String>,
 }
 
 struct Temporary(PathBuf);
@@ -171,7 +175,7 @@ fn copy_and_replace(
     result
 }
 
-fn hold_parents(path: &Path) -> crate::Result<Vec<File>> {
+pub(super) fn hold_parents(path: &Path) -> crate::Result<Vec<File>> {
     #[cfg(windows)]
     let mut guards = Vec::new();
     #[cfg(not(windows))]
@@ -223,6 +227,9 @@ pub(super) fn replace(request: &Replacement) -> crate::Result<Value> {
     let _lock = crate::startup_cache::lock_file(&directory.join("update.lock"))?;
     let candidate = super::published_portable_release(&request.version, &directory)?;
     let published = super::verified_portable_release(&candidate, &directory)?;
+    if let Some(identity) = &request.release_identity {
+        published.verify_release_identity(identity)?;
+    }
     let source = super::verify_stage(&directory, &request.version, &published)?;
     let executable = std::env::current_exe().map_err(|error| error.to_string())?;
     let canonical_source = fs::canonicalize(source.path()).map_err(|error| error.to_string())?;
@@ -270,10 +277,20 @@ pub(super) fn replace(request: &Replacement) -> crate::Result<Value> {
         use std::os::windows::process::CommandExt as _;
         command.creation_flags(0x0800_0000);
     }
-    let process = command.spawn().map_err(|error| {
-        format!("The portable executable was updated, but restarting it failed: {error}")
+    report_restart(request, || command.spawn().map(|process| process.id()))
+}
+
+fn report_restart(
+    request: &Replacement,
+    spawn: impl FnOnce() -> io::Result<u32>,
+) -> crate::Result<Value> {
+    let process_id = spawn().map_err(|error| {
+        format!(
+            "The portable executable was updated, but restarting it failed: {error}. Open {} manually to start the updated app. Your data directory was preserved.",
+            request.target.display()
+        )
     })?;
-    Ok(json!({"Status": "updated", "Version": request.version, "ProcessId": process.id()}))
+    Ok(json!({"Status": "updated", "Version": request.version, "ProcessId": process_id}))
 }
 
 fn replace_open_file(file: &File, target: &Path) -> io::Result<()> {
@@ -291,6 +308,28 @@ fn replace_open_file(file: &File, target: &Path) -> io::Result<()> {
 #[cfg(all(test, windows))]
 mod tests {
     use super::*;
+
+    #[test]
+    fn replacement_request_keeps_published_launcher_compatibility_and_new_confirmation_identity()
+    -> crate::Result<()> {
+        let legacy = json!({
+            "target": std::env::temp_dir().join("portable.exe"),
+            "previousSha256": "a".repeat(64), "version": env!("CARGO_PKG_VERSION"),
+            "arguments": ["bundled-chat", "--no-speech-models"],
+        });
+        let request: Replacement =
+            serde_json::from_value(legacy.clone()).map_err(|error| error.to_string())?;
+        assert!(request.release_identity.is_none());
+        let mut bound = legacy;
+        bound["releaseIdentity"] = "b".repeat(64).into();
+        let request: Replacement =
+            serde_json::from_value(bound).map_err(|error| error.to_string())?;
+        assert_eq!(
+            request.release_identity.as_deref(),
+            Some("b".repeat(64).as_str())
+        );
+        Ok(())
+    }
 
     struct Fixture(PathBuf);
 
@@ -424,6 +463,156 @@ mod tests {
             .is_err()
         );
         assert_eq!(fixture.entries()?, 2);
+        Ok(())
+    }
+
+    #[test]
+    fn portable_replacement_rechecks_original_between_sharing_retries() -> crate::Result<()> {
+        let fixture = Fixture::new()?;
+        let (source, asset) = fixture.source()?;
+        let target = fixture.target()?;
+        let mut attempts = 0;
+        let error = copy_and_replace(
+            &source,
+            &asset,
+            &target,
+            &crate::identity::sha256(b"old executable"),
+            |_, destination| {
+                attempts += 1;
+                fs::write(destination, b"changed externally")?;
+                Err(io::Error::from_raw_os_error(32))
+            },
+            |_| true,
+        )
+        .err()
+        .ok_or("Overwrote an original changed between retries.")?;
+        assert!(error.contains("original portable executable changed"));
+        assert_eq!(attempts, 1);
+        assert_eq!(
+            fs::read(&target).map_err(|error| error.to_string())?,
+            b"changed externally"
+        );
+        assert_eq!(fixture.entries()?, 2);
+        Ok(())
+    }
+
+    #[test]
+    fn read_only_portable_target_is_retained_without_leftover_replacement() -> crate::Result<()> {
+        let fixture = Fixture::new()?;
+        let (source, asset) = fixture.source()?;
+        let target = fixture.target()?;
+        let permissions = fs::metadata(&target)
+            .map_err(|error| error.to_string())?
+            .permissions();
+        let mut read_only = permissions.clone();
+        read_only.set_readonly(true);
+        fs::set_permissions(&target, read_only).map_err(|error| error.to_string())?;
+        let result = copy_and_replace(
+            &source,
+            &asset,
+            &target,
+            &crate::identity::sha256(b"old executable"),
+            replace_open_file,
+            |_| false,
+        );
+        fs::set_permissions(&target, permissions).map_err(|error| error.to_string())?;
+        assert!(result.is_err());
+        assert_eq!(
+            fs::read(&target).map_err(|error| error.to_string())?,
+            b"old executable"
+        );
+        assert_eq!(fixture.entries()?, 2);
+        Ok(())
+    }
+
+    #[test]
+    fn corrupt_copy_never_reaches_publication_or_touches_user_data() -> crate::Result<()> {
+        let fixture = Fixture::new()?;
+        let (source, mut asset) = fixture.source()?;
+        let target = fixture.target()?;
+        let data = fixture.0.join("chat-recovery.dpapi");
+        fs::write(&data, b"saved conversation bytes").map_err(|error| error.to_string())?;
+        asset.sha256 = "0".repeat(64);
+        let mut published = false;
+        assert!(
+            copy_and_replace(
+                &source,
+                &asset,
+                &target,
+                &crate::identity::sha256(b"old executable"),
+                |_, _| {
+                    published = true;
+                    Ok(())
+                },
+                |_| false,
+            )
+            .is_err()
+        );
+        assert!(!published);
+        assert_eq!(
+            fs::read(&target).map_err(|error| error.to_string())?,
+            b"old executable"
+        );
+        assert_eq!(
+            fs::read(&data).map_err(|error| error.to_string())?,
+            b"saved conversation bytes"
+        );
+        assert_eq!(fixture.entries()?, 3);
+        Ok(())
+    }
+
+    #[test]
+    fn restart_failure_preserves_verified_update_and_original_launch_options() -> crate::Result<()>
+    {
+        let fixture = Fixture::new()?;
+        let (source, asset) = fixture.source()?;
+        let target = fixture.target()?;
+        let data = fixture.0.join("user-data");
+        fs::create_dir(&data).map_err(|error| error.to_string())?;
+        fs::write(data.join("model.bin"), b"existing model").map_err(|error| error.to_string())?;
+        fs::write(data.join("chat-recovery.dpapi"), b"existing conversations")
+            .map_err(|error| error.to_string())?;
+        let previous = crate::identity::sha256(b"old executable");
+        copy_and_replace(
+            &source,
+            &asset,
+            &target,
+            &previous,
+            replace_open_file,
+            |_| false,
+        )?;
+        let request = Replacement {
+            target: target.clone(),
+            previous_sha256: previous,
+            version: env!("CARGO_PKG_VERSION").into(),
+            arguments: vec![
+                "bundled-chat".into(),
+                "--data-directory".into(),
+                data.to_string_lossy().into_owned(),
+                "--no-speech-models".into(),
+            ],
+            release_identity: None,
+        };
+        let arguments = request.arguments.clone();
+        validate_restart_arguments(&request)?;
+        let error = report_restart(&request, || Err(io::Error::from_raw_os_error(5)))
+            .err()
+            .ok_or("Accepted a failed restart.")?;
+        assert!(error.contains("updated, but restarting it failed"));
+        assert!(error.contains("manually"));
+        assert_eq!(request.arguments, arguments);
+        assert_eq!(
+            fs::read(&target).map_err(|error| error.to_string())?,
+            b"new executable"
+        );
+        assert_eq!(
+            fs::read(data.join("model.bin")).map_err(|error| error.to_string())?,
+            b"existing model"
+        );
+        assert_eq!(
+            fs::read(data.join("chat-recovery.dpapi")).map_err(|error| error.to_string())?,
+            b"existing conversations"
+        );
         Ok(())
     }
 }

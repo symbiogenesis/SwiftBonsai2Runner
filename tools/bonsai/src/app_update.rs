@@ -33,6 +33,7 @@ enum Request {
     PortableInstall {
         version: String,
         handoff_path: PathBuf,
+        release_identity: String,
     },
     ReplacePortable(portable::Replacement),
     #[serde(rename_all = "camelCase")]
@@ -58,6 +59,28 @@ struct Handoff {
     schema_version: u32,
     installation_directory: PathBuf,
     version: String,
+}
+
+#[derive(Deserialize, Serialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+struct PortableHandoff {
+    schema_version: u32,
+    distribution: String,
+    version: String,
+    release_identity: String,
+}
+
+impl PortableHandoff {
+    fn verify(&self, published: &policy::Installer) -> crate::Result<()> {
+        if self.schema_version != 2
+            || self.distribution != "portable-executable"
+            || published.distribution() != policy::Distribution::Portable
+        {
+            return Err("Unsupported or changed portable update handoff.".into());
+        }
+        published.validate(&self.version)?;
+        published.verify_release_identity(&self.release_identity)
+    }
 }
 
 fn external(path: &Path) -> crate::Result<()> {
@@ -200,29 +223,50 @@ fn portable_download(version: &str) -> crate::Result<Value> {
     let _lock = crate::startup_cache::lock_file(&directory.join("update.lock"))?;
     let candidate = published_portable_release(version, &directory)?;
     let published = verified_portable_release(&candidate, &directory)?;
-    let path = directory.join(&published.asset.name);
-    crate::startup_download::receive_with_timeout(
-        &published.asset.url,
-        &path,
-        published.asset.bytes,
-        &published.asset.sha256,
-        &directory,
-        std::time::Duration::from_secs(180),
-    )?;
-    transfer::write_new_or_identical(
-        &directory.join("verified-release.json"),
-        &serde_json::to_vec(&published).map_err(|error| error.to_string())?,
-    )?;
-    Ok(json!({"Status": "downloaded", "Version": version}))
+    let identity = stage_portable_with(&directory, version, &published, |path| {
+        crate::startup_download::receive_repair_with_timeout(
+            &published.asset.url,
+            path,
+            published.asset.bytes,
+            &published.asset.sha256,
+            &directory,
+            std::time::Duration::from_secs(180),
+        )
+    })?;
+    Ok(json!({"Status": "downloaded", "Version": version, "ReleaseIdentity": identity}))
 }
 
-fn portable_queue(version: &str, handoff: &Path) -> crate::Result<Value> {
+fn stage_portable_with(
+    directory: &Path,
+    version: &str,
+    published: &policy::Installer,
+    receive: impl FnOnce(&Path) -> crate::Result<()>,
+) -> crate::Result<String> {
+    published.validate(version)?;
+    if published.distribution() != policy::Distribution::Portable {
+        return Err("Portable staging requires the selected executable release.".into());
+    }
+    crate::startup_cancel::checkpoint()?;
+    receive(&directory.join(&published.asset.name))?;
+    let _verified = verify_asset(directory, published)?;
+    // A poisoned local receipt must not make every later download fail. Fresh
+    // publication plus immutable verified bytes authenticate this replacement;
+    // an earlier confirmation remains bound to its own release fingerprint.
+    transfer::write_current(
+        &directory.join("verified-release.json"),
+        &serde_json::to_vec(published).map_err(|error| error.to_string())?,
+    )?;
+    published.release_identity()
+}
+
+fn portable_queue(version: &str, handoff: &Path, release_identity: &str) -> crate::Result<Value> {
     Version::parse(version)?.newer_than_current()?;
     let selected = portable_installation()?;
     let directory = staged(version)?;
     let _lock = crate::startup_cache::lock_file(&directory.join("update.lock"))?;
     let candidate = published_portable_release(version, &directory)?;
     let fresh = verified_portable_release(&candidate, &directory)?;
+    fresh.verify_release_identity(release_identity)?;
     let _guard = verify_stage(&directory, version, &fresh)?;
     let startup_request = startup_handoff(handoff)?;
     let executable = std::env::current_exe().map_err(|error| error.to_string())?;
@@ -237,14 +281,30 @@ fn portable_queue(version: &str, handoff: &Path) -> crate::Result<Value> {
     {
         return Err("Portable update handoff belongs to another application launch.".into());
     }
-    transfer::write_exclusive(
-        handoff,
-        &serde_json::to_vec(&json!({
-            "schemaVersion": 1, "distribution": "portable-executable", "version": version,
-        }))
-        .map_err(|error| error.to_string())?,
-    )?;
+    // This command follows a new explicit confirmation and fresh verification.
+    // A leftover file from a lost response is replaced, never accepted as prior
+    // authorization; only the UI's successful dedicated exit activates it.
+    write_portable_handoff(handoff, version, release_identity, &fresh)?;
     Ok(json!({"Status": "queued", "Version": version}))
+}
+
+fn write_portable_handoff(
+    path: &Path,
+    version: &str,
+    release_identity: &str,
+    published: &policy::Installer,
+) -> crate::Result<()> {
+    let request = PortableHandoff {
+        schema_version: 2,
+        distribution: "portable-executable".into(),
+        version: version.into(),
+        release_identity: release_identity.into(),
+    };
+    request.verify(published)?;
+    transfer::write_current(
+        path,
+        &serde_json::to_vec(&request).map_err(|error| error.to_string())?,
+    )
 }
 
 fn startup_handoff(handoff: &Path) -> crate::Result<Value> {
@@ -327,6 +387,13 @@ fn verify_stage(
                 .into(),
         );
     }
+    verify_asset(directory, &installer)
+}
+
+fn verify_asset(
+    directory: &Path,
+    installer: &policy::Installer,
+) -> crate::Result<bonsai_artifacts::VerifiedFile> {
     let path = directory.join(&installer.asset.name);
     bonsai_artifacts::VerifiedFile::verify_with(
         &path,
@@ -382,7 +449,7 @@ fn queue(root: &Path, version: &str, handoff: &Path) -> crate::Result<Value> {
         version: version.into(),
     })
     .map_err(|error| error.to_string())?;
-    transfer::write_exclusive(handoff, &payload)?;
+    transfer::write_current(handoff, &payload)?;
     Ok(json!({"Status": "queued", "Version": version}))
 }
 
@@ -402,8 +469,9 @@ pub fn run(value: Value) -> crate::Result<Value> {
             let (published, candidate) =
                 policy::select_portable(&release_catalog(&working)?, env!("CARGO_PKG_VERSION"))?;
             if let Some(candidate) = candidate {
-                verified_portable_release(&candidate, &working)?;
-                Ok(json!({"Status": "available", "Version": candidate.version}))
+                let published = verified_portable_release(&candidate, &working)?;
+                Ok(json!({"Status": "available", "Version": candidate.version,
+                    "ReleaseIdentity": published.release_identity()?}))
             } else {
                 Ok(json!({"Status": if published { "current" } else { "no-release" }}))
             }
@@ -412,7 +480,8 @@ pub fn run(value: Value) -> crate::Result<Value> {
         Request::PortableInstall {
             version,
             handoff_path,
-        } => portable_queue(&version, &handoff_path),
+            release_identity,
+        } => portable_queue(&version, &handoff_path, &release_identity),
         Request::ReplacePortable(request) => {
             let result = portable::replace(&request);
             #[cfg(windows)]
@@ -502,23 +571,15 @@ pub(crate) fn apply_after_exit(handoff: &Path) -> crate::Result<Value> {
 }
 
 fn apply_portable_after_exit(handoff: &Path, value: Value) -> crate::Result<Value> {
-    #[derive(Deserialize)]
-    #[serde(rename_all = "camelCase", deny_unknown_fields)]
-    struct Queued {
-        schema_version: u32,
-        distribution: String,
-        version: String,
-    }
-    let queued: Queued = serde_json::from_value(value).map_err(|error| error.to_string())?;
-    if queued.schema_version != 1 || queued.distribution != "portable-executable" {
-        return Err("Unsupported portable update handoff.".into());
-    }
+    let queued: PortableHandoff =
+        serde_json::from_value(value).map_err(|error| error.to_string())?;
     Version::parse(&queued.version)?.newer_than_current()?;
     portable_installation()?;
     let directory = staged(&queued.version)?;
     let stage_lock = crate::startup_cache::lock_file(&directory.join("update.lock"))?;
     let candidate = published_portable_release(&queued.version, &directory)?;
     let published = verified_portable_release(&candidate, &directory)?;
+    queued.verify(&published)?;
     let immutable = verify_stage(&directory, &queued.version, &published)?;
     let target = std::env::current_exe().map_err(|error| error.to_string())?;
     let previous_sha256 = crate::startup_cache::digest_file(&target)?;
@@ -530,7 +591,8 @@ fn apply_portable_after_exit(handoff: &Path, value: Value) -> crate::Result<Valu
         })
         .collect::<crate::Result<Vec<_>>>()?;
     let request = json!({"operation": "replace-portable", "target": target,
-        "previousSha256": previous_sha256, "version": queued.version, "arguments": arguments});
+        "previousSha256": previous_sha256, "version": queued.version, "arguments": arguments,
+        "releaseIdentity": queued.release_identity});
     #[cfg(windows)]
     {
         use std::os::windows::process::CommandExt as _;
