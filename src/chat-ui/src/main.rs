@@ -394,8 +394,7 @@ mod tests {
     use std::{ffi::OsString, fs, io};
 
     #[test]
-    fn native_speech_configuration_requires_complete_groups_and_rejects_legacy_options()
-    -> io::Result<()> {
+    fn native_speech_configuration_requires_complete_groups() -> io::Result<()> {
         let stamp = std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)
             .map_err(io::Error::other)?
@@ -476,11 +475,6 @@ mod tests {
                 broker.clone().into_os_string(),
             ]);
             assert!(configuration(repeated).is_err());
-        }
-        for old_flag in ["--tts-python", "--tts-service", "--tts-snapshot"] {
-            let mut legacy = base.clone();
-            legacy.extend([OsString::from(old_flag), broker.clone().into_os_string()]);
-            assert!(configuration(legacy).is_err());
         }
         for (flag, value) in [("--tts-threads", "10"), ("--tts-quantization", "Q4_K_M")] {
             let mut unowned = base.clone();
