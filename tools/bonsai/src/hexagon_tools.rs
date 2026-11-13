@@ -13,7 +13,7 @@ use bonsai_artifacts::{hash_reader, is_redirect, validate_external_path};
 use serde::Deserialize;
 use serde_json::{Value, json};
 
-use crate::hexagon_policy::{SOURCE_NAMES, TOOLCHAIN};
+use crate::hexagon_policy::{SOURCE_NAMES as NATIVE_INPUTS, TOOLCHAIN};
 use crate::{Result, identity, startup_cache, startup_process};
 
 mod device;
@@ -340,7 +340,7 @@ fn dispatch(mut context: Context) -> Result<Value> {
         .and_then(|()| fs::create_dir(&native_bundle))
         .map_err(|error| error.to_string())?;
     let native_source = context.repo.join("tools/hexagon/native_rpc");
-    let sources = context.input_set(&native_source, SOURCE_NAMES)?;
+    let sources = context.input_set(&native_source, NATIVE_INPUTS)?;
     let library = native.join("libhexagon_native_rpc.rlib");
     let query = native.join("native-hexagon-query.exe");
     let contract = native.join("native-hexagon-contract.exe");
