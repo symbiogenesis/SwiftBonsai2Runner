@@ -1,5 +1,6 @@
 //! First-run preparation and recovery without shell commands.
 use super::{ModelLifecycle, RichText, State, egui};
+use crate::startup::{SetupActivity, SetupKind, SetupStatus};
 use std::{io, path::PathBuf};
 
 #[derive(Default)]
@@ -14,6 +15,56 @@ pub(super) struct Setup {
 
 fn cleanup_known(error: &str) -> bool {
     !error.contains("Setup process cleanup could not be confirmed.")
+}
+
+fn preparation_title(progress: Option<&SetupStatus>, pausing: bool) -> &'static str {
+    if pausing {
+        "Pausing setup"
+    } else {
+        match progress.map(|progress| progress.activity) {
+            Some(SetupActivity::Downloading) => "Downloading Swift",
+            Some(SetupActivity::Ready) => "Starting Swift",
+            _ if progress.is_some_and(|progress| progress.kind == Some(SetupKind::FirstRun)) => {
+                "Setting up Swift"
+            }
+            _ => "Preparing Swift",
+        }
+    }
+}
+
+fn download_progress(progress: &SetupStatus) -> Option<(f32, String)> {
+    if progress.activity != SetupActivity::Downloading {
+        return None;
+    }
+    let (downloaded, expected) = (progress.downloaded?, progress.expected?);
+    if expected == 0 {
+        return None;
+    }
+    let downloaded = downloaded.min(expected);
+    #[expect(
+        clippy::cast_precision_loss,
+        clippy::as_conversions,
+        reason = "Approximate display only; provisioning verifies exact integer lengths and SHA-256."
+    )]
+    let fraction = downloaded as f32 / expected as f32;
+    Some((
+        fraction,
+        format!("{} / {}", byte_count(downloaded), byte_count(expected)),
+    ))
+}
+
+fn byte_count(bytes: u64) -> String {
+    #[expect(
+        clippy::cast_precision_loss,
+        clippy::as_conversions,
+        reason = "Rounded display units only; artifact verification uses exact byte counts."
+    )]
+    let bytes = bytes as f64;
+    if bytes >= 1024.0 * 1024.0 * 1024.0 {
+        format!("{:.2} GiB", bytes / (1024.0 * 1024.0 * 1024.0))
+    } else {
+        format!("{:.1} MiB", bytes / (1024.0 * 1024.0))
+    }
 }
 
 pub(super) fn failure_message(error: &io::Error) -> &'static str {
@@ -117,50 +168,112 @@ impl State {
         }
     }
 
+    fn preparation_card(&mut self, ui: &mut egui::Ui) -> egui::Response {
+        egui::Frame::new()
+            .fill(ui.visuals().faint_bg_color)
+            .stroke(ui.visuals().widgets.noninteractive.bg_stroke)
+            .corner_radius(12)
+            .inner_margin(12)
+            .show(ui, |ui| {
+                ui.set_width(ui.available_width());
+                ui.spacing_mut().item_spacing = egui::vec2(8.0, 6.0);
+                ui.horizontal(|ui| {
+                    ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                        if let Some(startup) = &self.startup
+                            && ui.add_enabled(!self.setup.pausing, egui::Button::new("Pause setup"))
+                                .on_hover_text("Stop setup safely and keep partial downloads for later.")
+                                .clicked()
+                        {
+                            startup.cancel();
+                            self.setup.pausing = true;
+                        }
+                        ui.with_layout(egui::Layout::left_to_right(egui::Align::Center), |ui| {
+                            ui.add(egui::Spinner::new().size(16.0));
+                            ui.add(egui::Label::new(RichText::new(preparation_title(
+                                self.setup.progress.as_ref(), self.setup.pausing,
+                            )).strong()).wrap());
+                        });
+                    });
+                });
+                if self.setup.pausing {
+                    ui.label("Stopping setup safely…");
+                } else if let Some(progress) = &self.setup.progress {
+                    ui.add(egui::Label::new(&progress.message).wrap());
+                    if let Some((fraction, bytes)) = download_progress(progress) {
+                        let label = ui.label(RichText::new(format!("{:.0}% · {bytes}", fraction * 100.0)).small());
+                        ui.add(egui::ProgressBar::new(fraction).desired_height(6.0).animate(false))
+                            .labelled_by(label.id)
+                            .on_hover_text("Downloaded bytes for the current file. Verification follows the download.");
+                    }
+                } else {
+                    ui.label("Checking runtime and local files…");
+                }
+                let details = match self.setup.progress.as_ref().and_then(|progress| progress.kind) {
+                    Some(SetupKind::FirstRun) => "First-time model setup",
+                    Some(SetupKind::Existing) => "Saved model found",
+                    None => "Setup details",
+                };
+                ui.collapsing(details, |ui| {
+                    ui.label("You can keep drafting while Swift prepares.");
+                    match self.setup.progress.as_ref().and_then(|progress| progress.kind) {
+                        Some(SetupKind::FirstRun) => {
+                            ui.label("This setup started without a saved model. Completed downloads are reused, and partial downloads resume where possible.");
+                        }
+                        Some(SetupKind::Existing) => {
+                            ui.label("The selected model is already saved. Setup checks local files and downloads replacements only when needed.");
+                        }
+                        None => {}
+                    }
+                    ui.label("Pausing or closing Swift stops setup and retains partial downloads.");
+                });
+            })
+            .response
+    }
+
     pub(super) fn setup_controls(&mut self, ui: &mut egui::Ui) {
         let preparing =
             self.worker.is_none() && (self.startup_request.is_some() || self.startup.is_some());
-        if preparing || self.setup.error.is_some() {
-            egui::Frame::group(ui.style()).inner_margin(14).show(ui, |ui| {
-                ui.label(RichText::new(if preparing { "Setting up Swift" } else { "Setup needs attention" }).strong());
-                if preparing {
-                    ui.label("First-time setup downloads the local model (6.71 GiB), its adapter and runtime. Verified files are reused.");
-                    if let Some(progress) = &self.setup.progress {
-                        ui.label(&progress.message);
-                        if let (Some(downloaded), Some(expected)) = (progress.downloaded, progress.expected) {
-                            #[expect(clippy::cast_precision_loss, clippy::as_conversions, reason = "Approximate UI progress; artifact acceptance uses exact integer lengths and SHA-256.")]
-                            let fraction = downloaded as f32 / expected as f32;
-                            ui.add(egui::ProgressBar::new(fraction).show_percentage());
-                        } else {
-                            ui.spinner();
-                        }
-                    } else {
-                        ui.horizontal(|ui| { ui.spinner(); ui.label("Checking setup…"); });
-                    }
-                    ui.label("You can draft while setup runs. Closing Swift stops setup and retains partial downloads.");
-                    if let Some(startup) = &self.startup
-                        && ui.add_enabled(!self.setup.pausing, egui::Button::new("Pause setup")).clicked()
-                    {
-                        startup.cancel();
-                        self.setup.pausing = true;
-                    }
-                    if self.setup.pausing { ui.label("Pausing setup safely…"); }
-                } else {
+        if preparing {
+            let _ = self.preparation_card(ui);
+            ui.add_space(8.0);
+        } else if self.setup.error.is_some() {
+            egui::Frame::group(ui.style())
+                .inner_margin(12)
+                .corner_radius(12)
+                .show(ui, |ui| {
+                    ui.label(RichText::new("Setup needs attention").strong());
                     ui.label(&self.status);
-                    if ui.add_enabled(self.can_retry_setup(), egui::Button::new("Retry setup")).clicked() {
+                    if ui
+                        .add_enabled(self.can_retry_setup(), egui::Button::new("Retry setup"))
+                        .clicked()
+                    {
                         self.retry_setup();
                     }
                     ui.collapsing("Setup details", |ui| {
                         if let Some(error) = &self.setup.error {
-                            ui.add(egui::Label::new(error.chars().take(super::MAX_DIAGNOSTIC_CHARS).collect::<String>()).selectable(true).wrap());
+                            ui.add(
+                                egui::Label::new(
+                                    error
+                                        .chars()
+                                        .take(super::MAX_DIAGNOSTIC_CHARS)
+                                        .collect::<String>(),
+                                )
+                                .selectable(true)
+                                .wrap(),
+                            );
                         }
                         if ui.button("Copy diagnostics").clicked() {
-                            ui.ctx().copy_text(self.diagnostics.iter().cloned().collect::<Vec<_>>().join("\n\n"));
+                            ui.ctx().copy_text(
+                                self.diagnostics
+                                    .iter()
+                                    .cloned()
+                                    .collect::<Vec<_>>()
+                                    .join("\n\n"),
+                            );
                         }
                     });
-                }
-            });
-            ui.add_space(10.0);
+                });
+            ui.add_space(8.0);
         }
         if self.setup.speech_error.is_some() {
             egui::Frame::group(ui.style())
@@ -211,6 +324,128 @@ impl State {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    #[expect(
+        clippy::too_many_lines,
+        reason = "Keep native setup phase transitions, layout bounds and pause behavior in one model-free fixture."
+    )]
+    fn setup_card_separates_downloads_from_local_preparation_and_fits_narrow_layouts() {
+        use egui_kittest::{
+            Harness,
+            kittest::{NodeT as _, Queryable as _},
+        };
+        struct Fixture {
+            app: State,
+            card: egui::Rect,
+        }
+        for width in [320.0, 480.0, 800.0] {
+            let (commands, incoming) = std::sync::mpsc::channel();
+            let (_events, events) = crate::client::event_channel();
+            let mut app = State::create(commands, events, None, None);
+            app.input = "Keep my draft".into();
+            let (session, _outgoing) = crate::startup::Session::fixture();
+            app.startup = Some(session);
+            let mut harness = Harness::builder()
+                .with_size([width, 480.0])
+                .with_context_setup(super::super::configure)
+                .build_ui_state(
+                    |ui, fixture: &mut Fixture| {
+                        fixture.card = fixture.app.preparation_card(ui).rect;
+                    },
+                    Fixture {
+                        app,
+                        card: egui::Rect::NOTHING,
+                    },
+                );
+            assert!(harness.query_by_label("Preparing Swift").is_some());
+            assert!(harness.query_by_label("First-time model setup").is_none());
+            for (kind, activity, title, message, details, downloading) in [
+                (
+                    SetupKind::FirstRun,
+                    SetupActivity::Downloading,
+                    "Downloading Swift",
+                    "Downloading the Swift model…",
+                    "First-time model setup",
+                    true,
+                ),
+                (
+                    SetupKind::Existing,
+                    SetupActivity::Verifying,
+                    "Preparing Swift",
+                    "Verifying the saved Swift model…",
+                    "Saved model found",
+                    false,
+                ),
+                (
+                    SetupKind::Existing,
+                    SetupActivity::Preparing,
+                    "Preparing Swift",
+                    "Unpacking the saved runtime…",
+                    "Saved model found",
+                    false,
+                ),
+                (
+                    SetupKind::Existing,
+                    SetupActivity::Ready,
+                    "Starting Swift",
+                    "Starting your local model…",
+                    "Saved model found",
+                    false,
+                ),
+            ] {
+                let app = &mut harness.state_mut().app;
+                app.setup.progress = Some(SetupStatus {
+                    kind: Some(kind),
+                    activity,
+                    message: message.into(),
+                    // Stale observations must never become a verification bar.
+                    downloaded: Some(1024 * 1024 * 1024),
+                    expected: Some(2 * 1024 * 1024 * 1024),
+                });
+                harness.run_steps(2);
+                assert!(harness.query_by_label(title).is_some());
+                assert!(harness.query_by_label(message).is_some());
+                assert!(
+                    harness
+                        .query_by_role_and_label(egui::Role::DisclosureTriangle, details)
+                        .is_some()
+                );
+                assert_eq!(
+                    harness
+                        .query_by_label("50% · 1.00 GiB / 2.00 GiB")
+                        .is_some(),
+                    downloading
+                );
+                let card = harness.state().card;
+                assert!(
+                    card.max.x <= width && card.height() < 150.0,
+                    "Card bounds: {card:?}"
+                );
+                assert!(
+                    card.contains_rect(
+                        harness
+                            .get_by_role_and_label(egui::Role::Button, "Pause setup")
+                            .rect()
+                    )
+                );
+                assert_eq!(harness.state().app.input, "Keep my draft");
+                assert!(incoming.try_recv().is_err());
+            }
+            harness
+                .get_by_role_and_label(egui::Role::Button, "Pause setup")
+                .click();
+            harness.run_steps(2);
+            assert!(harness.state().app.setup.pausing);
+            assert!(harness.query_by_label("Pausing setup").is_some());
+            assert!(harness.query_by_label("Stopping setup safely…").is_some());
+            assert!(
+                harness
+                    .query_by_label("50% · 1.00 GiB / 2.00 GiB")
+                    .is_none()
+            );
+        }
+    }
 
     #[test]
     fn setup_failure_advice_keeps_cleanup_unknowns_closed_and_pauses_resumable() {

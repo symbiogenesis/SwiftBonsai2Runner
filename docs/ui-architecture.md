@@ -89,7 +89,12 @@ model files stay in place until a complete verified replacement is published;
 runtime repair stages verified files and refuses unknown or redirected entries.
 Explicit PTQ1 remains verify-only and never falls back to PQ2. Fixed bounded status
 reports and partial lengths are read by the preparation worker, outside the event
-loop. Pause and Retry setup preserve drafts and launch options, use fresh attempt
+loop. The compact setup card distinguishes a selected model found at attempt start
+from first-time model setup; this is file availability, not a historical launch
+receipt. Explicit activity reports distinguish downloads/resume, saved-file and
+download verification, and local runtime preparation. Byte progress appears only
+during a reported download; legacy reports retain conservative preparation text.
+Pause and Retry setup preserve drafts and launch options, use fresh attempt
 directories and require confirmed owned-process cleanup; unexpected worker exits
 disable retry. Speech has its own retry path and cannot block text chat. Drafts and
 recovered conversations survive preparation;
