@@ -14,9 +14,7 @@ separately labelled approximation research. [PLAN.md](../PLAN.md) owns qualifica
 
 [swift-assessment.lock.json](../config/swift-assessment.lock.json) pins
 `Swift-Bonsai-2-PQ2_0.gguf` at revision `a3bdac086bbb6b04d87d0108d18943b5f63868f7`:
-**7,206,168,928 bytes (6.71 GiB)**. The merged-weight release is distinct from the
-earlier PTQ checkpoint and about 5.53 GiB smaller than Qwen; file size is not peak RAM
-or speed. Sources: [publisher](https://ukisai.com/swift-bonsai-2) and [immutable
+**7,206,168,928 bytes (6.71 GiB)**. File size is not peak RAM or speed. Sources: [publisher](https://ukisai.com/swift-bonsai-2) and [immutable
 metadata](https://huggingface.co/api/models/ukisai/Swift-Bonsai-2-GGUF/revision/a3bdac086bbb6b04d87d0108d18943b5f63868f7?blobs=true).
 
 The publisher ARM64 package is Prism `prism-b10787-73bfe6c`, commit
@@ -192,149 +190,69 @@ leave the gate pending if setup, work and cleanup cannot fit the owner budget.
 
 ## Memory-selected serving context
 
-Native Prism 0.1.27 and publisher Swift serving select context once per model
-launch from available physical memory. Retry takes a new observation; an active
-model keeps its context
-so counting, generation, readiness and the native UI use the same capacity.
-The reviewed native pin activates the paired context/memory protocol and
-selected-cache accounting. Serving capacity is separate from historical fixed-8K
-qualification workloads; those evidence identities remain unchanged.
+Context is selected once at model launch from available physical memory. Retry
+samples memory again; an active model keeps its capacity. Readiness, counting,
+generation and the UI share that value. The planner in
+`bonsai-cpu-policy::context` charges:
 
-The pure planner in `bonsai-cpu-policy::context` retains the existing 4 GiB
-Windows reserve and non-context allowance from the 11.5 GiB/8K reference budget.
-Publisher sizing charges 137,344 bytes per token: two 65,536-byte FP16 KV copies
-for live and rollback state, 6,144 bytes for the publisher's 64-token/24-head
-score scratch, and 128 bytes for context metadata. The reviewed native profile
-instead charges the immutable selected cache and sequential score scratch:
+- 11 GiB fixed allowance for weights, adapters, recurrent state, transforms and
+  runtime headroom, with no PTQ1 discount.
+- Two complete caches, sequential score scratch and metadata per context token.
+- A 4 GiB Windows reserve and separate 256 MiB startup margin.
 
 | Sizing profile | One KV copy, bytes/token | Process growth, bytes/token | State ceiling, tokens |
 | --- | ---: | ---: | ---: |
 | Publisher FP16 | 65,536 | 137,344 | 62,720 |
 | Native FP16 recovery | 65,536 | 131,296 | 62,720 |
-| Reviewed full-context K4/V4 (Prism 0.1.27) | 16,896 | 34,016 | 262,144 (separate state allowance) |
-| Native K4/V3 capacity candidate | 14,848 | 29,920 | 262,144 (model limit) |
+| Native K4/V4 | 16,896 | 34,016 | 262,144 |
+| K4/V3 capacity candidate | 14,848 | 29,920 | 262,144 |
 
-Native process growth retains two complete caches, 96 bytes per token for
-24 F32 score rows and 128 bytes for metadata. K4/V4 records include their
-four-byte scales; no FP16 history mirror is assumed. The metadata allowance
-covers the 64-token cache page tables and headers, token histories and tails;
-256-token selection alignment spans complete cache pages. Codec/codebook storage,
-prepared rows and fixed checkpoint overhead stay in the fixed allowance and the
-runtime's minimum 1 GiB state/checkpoint allowance. A divergent request can retain
-the previous cache, so immutable page sharing does not reduce the two-cache charge.
-Explicit tiled prefill and speculation retain separate additive reservations.
-The non-context allowance remains 11 GiB, the reference
-Job budget minus its original 512 MiB KV charge; it includes weights, adapters,
-recurrent state, transforms and runtime headroom. These are conservative source
-allowances, not measured peaks. Native Prism 0.1.27 retains this cache-aware
-sizing through its exact reviewed release pin; this establishes no measured
-memory savings. PTQ1 receives no reduction in the fixed allowance.
+Native process growth includes both caches, 96 bytes per token for 24 F32 score
+rows and 128 bytes for metadata. Publisher growth includes 6,144 bytes per token
+for 64-token/24-head score scratch and 128 metadata bytes. Packed records include
+scales; no FP16 history mirror is assumed. Page tables, token histories and tails
+fit the metadata allowance; codec storage, prepared rows and fixed checkpoint
+costs stay in the fixed allowance and minimum 1 GiB state/checkpoint allowance.
+Shared pages do not reduce admission because
+divergent requests may retain the old cache. Tiled prefill and speculation need
+separate additive reservations.
 
-Capacity rounds down to 256-token pages and must accommodate the 4,096-token
-reply cap plus the 64-token template reserve. It never exceeds Swift's declared
-262,144-token model context or the selected live-state bound after charging
-156,893,184 recurrent bytes plus single-copy native KV, score and metadata
-charges. FP16's 4 GiB state ceiling permits 62,720 tokens. The reviewed Swift
-K4/V4 scope permits 262,144 tokens
-through its geometry-derived state allowance. The separate K4/V3 candidate fits
-the same model ceiling within 4 GiB, but its serving gate remains closed.
-At 20 GiB available before launch, publisher sizing selects 37,120 tokens and
-the native K4/V4 profile selects 149,760; K4/V3 selects 170,240.
-At 24 GiB available, the reviewed K4/V4 profile reaches the model ceiling.
-These are calculated admission
-bounds, not measured usable capacities or long-range quality results.
-Less available RAM selects a smaller window and more can
-select a larger one, while insufficient space for a usable window rejects launch.
-The larger charge for rollback and batch scratch can require more available RAM
-than the historical 15.5 GiB admission floor.
-Sizing also leaves a separate 256 MiB startup margin so process creation need
-not consume the last page of admission slack. The immediate pre-spawn and child
-checks still require the Job allowance plus the 4 GiB host reserve.
-The Job ceiling and launch admission follow the selected budget. Unknown or
-insufficient memory rejects launch, and running pressure still tears down the
-owned model. An available-memory snapshot reserves no RAM.
+Capacity rounds down to 256-token pages, reserves the 4,096-token reply cap and
+64-token template margin, and never exceeds Swift's 262,144-token model limit.
+Live-state sizing charges 156,893,184 recurrent bytes plus single-copy KV,
+scores and metadata. FP16 retains a 4 GiB state ceiling. The reviewed Swift
+K4/V4 allowance is 4,644,798,464 bytes, requiring the exact model identity and
+geometry: 16 attention and 48 recurrent layers. Generic graph constructors,
+FP16 and individual allocation/scratch ceilings retain their own limits.
 
-Publisher serving passes the selected capacity through `--ctx-size`. Native
-**Prism 0.1.27**, source `1429a33772089dfd3a50a96c698b9dbe0b36836a`, uses paired
-`--context-tokens` and `--memory-limit-bytes` child arguments with the reviewed
-selected-cache/sequential-scratch accounting. Runner binds capability activation
-to this exact release identity; unrelated versions and an older FP16-only memory
-protocol cannot receive the smaller K4/V4 allowance. The binary archive and files
-must still match their compiled lock; a version string alone enables no protocol.
+At 20 GiB available, the calculated capacities are 37,120 publisher-FP16 tokens,
+149,760 K4/V4 tokens and 170,240 K4/V3 tokens. K4/V4 reaches the model ceiling at
+24 GiB available. These are conservative admission calculations, not measured
+usable capacities, peaks or long-context quality results. Unknown/insufficient
+memory rejects launch; running pressure tears down the owned model. Memory
+snapshots reserve no RAM. Immediate pre-spawn and child checks still require
+the selected Job allowance plus the 4 GiB host reserve.
 
-Runner prepares explicit `--kv-cache rsq4k3v` selection through trusted source,
-installed and deferred launches, including Retry. A separate exact-source release
-gate keeps it unavailable with the current 0.1.27 pin. Future activation requires
-review of both the K4/V3 numerical identity and the complete M1/M2 accounting
-contract; neither a version string nor a raw CLI option establishes support.
-The K4/V4 default and explicit FP16 recovery remain separate selections.
+Publisher serving receives `--ctx-size`. Native serving receives paired
+`--context-tokens` and `--memory-limit-bytes`. Runner enables cache-aware sizing,
+full-context K4/V4, four workers and latest-prefix capabilities only for the
+verified source/file identities in the [runtime lock](../config/prism-inference.lock.json).
+A version string cannot enable them. The prepared K4/V3 planner remains gated
+off until a reviewed bundle delivers its numerical and M1/M2 accounting contracts.
 
-The reviewed Prism 0.1.27 full-context K4/V4 profile preserves that cache precision and
-the 34,016-byte process charge. Its separate state allowance is 4,644,798,464
-bytes: 156,893,184 recurrent bytes plus 262,144 times 17,120 bytes for cache,
-sequential scores and metadata. This is 333.625 MiB above the generic 4 GiB bound;
-generic graph constructors, FP16 and individual allocation/scratch limits retain
-their existing ceilings. The larger scope requires the exact verified Swift
-model identity and geometry, including all 16 attention and 48 recurrent layers.
-With unchanged two-cache, fixed, host and startup charges, the planner projects
-262,144 tokens at 24 GiB available before launch. Runner's separate exact-source
-gate binds this allowance to the same reviewed release as memory sizing, with
-matching graph, live-state and checkpoint guards. Full-state/resource and
-long-range quality qualification remain pending. Arithmetic alone establishes
-no usable capacity or latency.
+Trusted `--placement cpu` (JSON `Placement: "cpu"`, PowerShell `-Placement cpu`)
+skips accelerator initialization and requires readiness to report both
+`placement: "cpu"` and `projection_backend: "cpu"`. Omission or `auto` preserves
+automatic placement. Selection survives setup and Retry, is native-only and
+cannot change per request. Admission retains all charges until measurements
+justify different headroom; omitted NPU payload alone establishes no RAM saving.
 
-The capacity-first alternative is available as trusted `--placement cpu` (JSON
-`Placement: "cpu"`, PowerShell `-Placement cpu`). It survives source, installed
-and deferred setup and model Retry. Its exact-source release gate selects the
-reviewed 0.1.27 runtime, which skips accelerator initialization and reports both
-`placement: "cpu"` and
-`projection_backend: "cpu"` at readiness. Omission or explicit `auto` keeps the
-existing automatic placement. Explicit placement is native-only, and requests
-cannot change it. The fixed 11 GiB allowance, two-cache charge and host/startup
-reserves stay unchanged until measurements establish distinct usable headroom.
-Omitting the roughly 2.69 GiB NPU-resident payload is a capacity investigation,
-not a measured RAM saving or a latency result.
-
-Release activation must review cache selection, default four-worker support,
-latest-prefix reuse and memory-context accounting together. The exact reviewed
-memory release is also recognized by those native capability checks; unrelated
-future versions remain rejected. K4/V3 retains its separate closed release gate;
-CPU placement is enabled only for the reviewed 0.1.27 source. Qualify each selected
-combination independently; publication does not transfer historical model evidence.
-
-For memory-sized serving, closing memory-heavy applications before a fresh launch
-or Retry can leave more RAM for the selected context. This cannot enlarge an
-already running model. Historical fixed-8K releases keep their original capacity.
-Keep completed work before
-restarting; the planner retains the same host and startup reserves.
-
-The broker publishes the actual capacity to its owned UI. Until it is known,
-the Context control shows a pending capacity; afterward its estimates, meter and
-warnings use that capacity. Exact admission still counts the canonical rendered
-prompt and reserves the requested reply plus 64 tokens. It never trims history,
-changes reply settings or replays a request. Larger windows and changing-memory
-startup need independent source-bound application/resource qualification; the
-historical 8K captures establish no larger-context result.
-The 1 MiB serialized chat-request bound also remains effective. A token
-capacity alone does not guarantee that every Unicode or JSON-escaped history fits
-the transport; larger-profile acceptance must check representative complete
-requests against both token and byte limits.
-The native draft path accepts up to 1,048,576 Unicode scalar characters, with
-whole-edit overflow rejection and complete rejected-draft restoration. Draft
-capacity is independent of request eligibility: serialized history, escaping,
-reply reservation and exact rendered token counts still apply. Recovery retains
-its separate 8 MiB encoded-workspace bound and reports a failure rather than
-silently shortening a draft. Increasing transport requires a coordinated Prism
-server, message, tokenizer and worker-protocol change and a reviewed release;
-changing the desktop HTTP ceiling alone cannot deliver that capability.
-
-## Source text in messages
-
-Paste source text directly into the message, add any title or version useful to
-the request, and review it before Send. Pasted text becomes ordinary draft and
-conversation content under the existing recovery preference. The composer
-rejects oversized insertions as a whole; the broker still enforces exact token
-counts, output reservation, input-marker policy and serialized request bounds.
+The UI shows pending capacity until readiness. Exact admission uses the rendered
+prompt plus requested reply and 64-token reserve, without trimming history or
+replaying requests. Token capacity does not override the broker's
+[request byte limits](broker-policy.md#public-request-contract) or the
+[draft and recovery bounds](streaming-resources.md). Increasing transport capacity
+requires coordinated server, tokenizer, message and worker protocols.
 
 ## Numerical and admission boundaries
 
@@ -394,8 +312,7 @@ Inspect a capture offline:
 The screen verifies artifacts/resources, retains failures and compares median decode
 throughput. Schema 2 retains native CPU identity, topology and power observations
 before/after all fourteen processes and compares adjacent boundaries. Changed or
-unknown conditions make timing **inconclusive**, requiring a new capture; legacy
-schema-1 captures remain inspectable with the same timing limitation. Boundary
+unknown conditions make timing **inconclusive**. Boundary
 observations do not establish steady clocks, thermal stability or an idle machine.
 Rejection blocks the candidate only for the declared screen; continue means only this
 prefix screen did not reject it. Neither verdict qualifies completed answers, long
@@ -404,9 +321,10 @@ scale-one/512-token LoRA contract.
 
 ## Allocation audit
 
-This audit targets Prism `73bfe6cc485554822f80c473a3c0c4f25e80f41b`.
-Storage reductions are not measured RAM/throughput gains. Lossless changes preserve
-weights, KV precision, checkpoints, adapters and the [resource policy](#memory-selected-serving-context).
+Lossless allocation changes preserve weights, cache precision, checkpoints,
+adapters and [admission](#memory-selected-serving-context). Component storage
+counts below are not measured process-memory or throughput gains. The publisher
+comparison uses source `73bfe6cc485554822f80c473a3c0c4f25e80f41b`.
 
 ### Native allocation candidates
 
@@ -446,31 +364,16 @@ NPU payloads supplies that guarantee; their separate gates remain in PLAN.
 
 ### Mapping and startup
 
-Runner's shared Windows artifact verifier streams complete SHA-256 checks through
-[Windows CNG](../src/windows-credentials/src/hash.rs), avoiding the pinned
-RustCrypto ARM64 detector's software fallback on Windows. Verification still reads
-every byte, checks the exact length and retains the same read-only file guards;
-it does not trust timestamps or a cached model digest. This also applies to runtime,
-adapter and speech artifact verification. The pinned Rust inference runtime also
-uses Windows CNG through its `native-hash` helper for its own complete model hash
-before loading. That independent pass remains; CNG dispatch does not eliminate
-verification or establish a measured startup gain.
+Runner and the pinned Rust runtime independently hash every model byte through
+Windows CNG while retaining verified read-only handles. Neither pass trusts
+cached digests or timestamps. Hashing, census and export use bounded buffers.
 
-The [CPU check](../tools/bonsai/src/cpu_check.rs) selects mmap, no repack, no warmup, CPU
-buffers and 128/64 batch/microbatch. The
-[loader](https://github.com/PrismML-Eng/llama.cpp/blob/73bfe6cc485554822f80c473a3c0c4f25e80f41b/src/llama-model-loader.cpp)
-can point supported CPU tensors into the read-only mapping; other buffer types may copy
-them. Load receipts determine which allocations count as savings. Hashing/census/export
-use bounded buffers rather than whole-file arrays or model-wide float conversion and
-precede inference.
-
-The pinned [Windows mapping
-code](https://github.com/PrismML-Eng/llama.cpp/blob/73bfe6cc485554822f80c473a3c0c4f25e80f41b/src/llama-mmap.cpp)
-prefetches the complete mapping and cannot unmap fragments. Windows
-[prefetch](https://learn.microsoft.com/en-us/windows/win32/api/memoryapi/nf-memoryapi-prefetchvirtualmemory)
-populates the physical cache, not the process working set. Disabling it could avoid
-eager startup caching, but does not reduce tensor bytes or prove sustained savings once
-inference touches the weights. No current CLI switch exposes it.
+The publisher [loader](https://github.com/PrismML-Eng/llama.cpp/blob/73bfe6cc485554822f80c473a3c0c4f25e80f41b/src/llama-model-loader.cpp)
+can map eligible CPU tensors directly; other buffer types may copy them. Its
+[Windows mapping](https://github.com/PrismML-Eng/llama.cpp/blob/73bfe6cc485554822f80c473a3c0c4f25e80f41b/src/llama-mmap.cpp)
+prefetches the complete file and cannot unmap fragments. Prefetch populates the
+physical cache, not the process working set. Disabling it would not remove tensor
+storage; no current CLI switch exposes that choice.
 
 ### Graph and output buffers
 
