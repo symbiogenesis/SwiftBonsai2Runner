@@ -21,11 +21,18 @@ impl Search {
     }
 
     pub(super) fn clear_on_escape(&mut self, ctx: &egui::Context) -> bool {
+        // egui's input prepass can release focus before the application sees
+        // Escape. Only reclaim that release, never another control's focus.
+        let owns_escape = ctx.memory(|memory| {
+            memory.has_focus(field_id())
+                || (memory.focused().is_none() && memory.had_focus_last_frame(field_id()))
+        });
         if !self.text.is_empty()
-            && ctx.memory(|memory| memory.has_focus(field_id()))
+            && owns_escape
             && ctx.input_mut(|input| input.consume_key(egui::Modifiers::NONE, egui::Key::Escape))
         {
             self.clear();
+            ctx.memory_mut(|memory| memory.request_focus(field_id()));
             return true;
         }
         false

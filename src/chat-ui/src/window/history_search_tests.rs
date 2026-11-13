@@ -415,11 +415,35 @@ fn conversation_history_escape_clears_before_drawer_dismissal_during_generation(
     assert_eq!(chat.state().app.conversation_search.text, "");
     assert!(chat.state().app.sidebar_open);
     assert!(chat.state().app.model.busy());
+    assert!(
+        chat.get_by_role_and_label(egui::Role::TextInput, "Search conversations")
+            .is_focused()
+    );
     assert_eq!(chat.state().app.input, DRAFT);
     assert!(chat.state().commands.try_recv().is_err());
     chat.key_press(egui::Key::Escape);
     chat.run();
     assert!(!chat.state().app.sidebar_open);
+    assert!(chat.state().app.model.busy());
+    assert_eq!(chat.state().app.input, DRAFT);
+    assert!(chat.state().commands.try_recv().is_err());
+}
+
+#[test]
+fn conversation_history_escape_from_another_control_preserves_the_query() {
+    let mut chat = harness([480.0, 640.0]);
+    chat.state_mut().app.model = ModelLifecycle::Generating;
+    chat.get_by_role_and_label(egui::Role::Button, "Conversation menu")
+        .click();
+    chat.run();
+    type_query(&mut chat, "garden");
+    chat.get_by_role_and_label(egui::Role::Button, "Close conversations")
+        .focus();
+    chat.run();
+    chat.key_press(egui::Key::Escape);
+    chat.run();
+    assert!(!chat.state().app.sidebar_open);
+    assert_eq!(chat.state().app.conversation_search.text, "garden");
     assert!(chat.state().app.model.busy());
     assert_eq!(chat.state().app.input, DRAFT);
     assert!(chat.state().commands.try_recv().is_err());
