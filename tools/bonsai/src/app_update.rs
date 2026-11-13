@@ -217,7 +217,7 @@ fn verified_portable_release(
     candidate: &Candidate,
     working: &Path,
 ) -> crate::Result<policy::Installer> {
-    portable_release_metadata(candidate, working, false)
+    release_metadata(candidate, working, false, policy::Distribution::Portable)
 }
 
 type AssetMetadata = fn(&policy::Asset, &Path) -> crate::Result<Vec<u8>>;
@@ -231,15 +231,19 @@ const fn metadata_functions(conditional: bool) -> (AssetMetadata, Metadata) {
     }
 }
 
-fn portable_release_metadata(
+fn release_metadata(
     candidate: &Candidate,
     working: &Path,
     conditional: bool,
+    distribution: policy::Distribution,
 ) -> crate::Result<policy::Installer> {
     let (asset, metadata) = metadata_functions(conditional);
     let manifest = asset(&candidate.manifest, working)?;
     let checksums = asset(&candidate.checksums, working)?;
-    let executable = policy::portable(candidate, &manifest, &checksums)?;
+    let application = match distribution {
+        policy::Distribution::Portable => policy::portable(candidate, &manifest, &checksums)?,
+        policy::Distribution::Installer => policy::installer(candidate, &manifest, &checksums)?,
+    };
     let commit = metadata(
         &format!(
             "https://api.github.com/repos/{REPOSITORY}/commits/v{}",
@@ -247,8 +251,8 @@ fn portable_release_metadata(
         ),
         working,
     )?;
-    executable.verify_source(&commit)?;
-    Ok(executable)
+    application.verify_source(&commit)?;
+    Ok(application)
 }
 
 fn portable_download(version: &str) -> crate::Result<Value> {
@@ -366,27 +370,7 @@ fn startup_handoff(handoff: &Path) -> crate::Result<Value> {
 }
 
 fn verified_release(candidate: &Candidate, working: &Path) -> crate::Result<policy::Installer> {
-    installer_release_metadata(candidate, working, false)
-}
-
-fn installer_release_metadata(
-    candidate: &Candidate,
-    working: &Path,
-    conditional: bool,
-) -> crate::Result<policy::Installer> {
-    let (asset, metadata) = metadata_functions(conditional);
-    let manifest = asset(&candidate.manifest, working)?;
-    let checksums = asset(&candidate.checksums, working)?;
-    let installer = policy::installer(candidate, &manifest, &checksums)?;
-    let commit = metadata(
-        &format!(
-            "https://api.github.com/repos/{REPOSITORY}/commits/v{}",
-            candidate.version
-        ),
-        working,
-    )?;
-    installer.verify_source(&commit)?;
-    Ok(installer)
+    release_metadata(candidate, working, false, policy::Distribution::Installer)
 }
 
 fn selected_release(version: &str, working: &Path) -> crate::Result<Candidate> {
@@ -527,7 +511,8 @@ pub fn run(value: Value) -> crate::Result<Value> {
                 env!("CARGO_PKG_VERSION"),
             )?;
             if let Some(candidate) = candidate {
-                let published = portable_release_metadata(&candidate, &working, true)?;
+                let published =
+                    release_metadata(&candidate, &working, true, policy::Distribution::Portable)?;
                 Ok(json!({"Status": "available", "Version": candidate.version,
                     "ReleaseIdentity": published.release_identity()?}))
             } else {
@@ -556,7 +541,7 @@ pub fn run(value: Value) -> crate::Result<Value> {
             let working = cache_root()?;
             let (published, candidate) = discover(&working)?;
             if let Some(candidate) = candidate {
-                installer_release_metadata(&candidate, &working, true)?;
+                release_metadata(&candidate, &working, true, policy::Distribution::Installer)?;
                 Ok(
                     json!({"Status": "available", "Version": candidate.version, "ReleaseUrl": candidate.release_url}),
                 )
