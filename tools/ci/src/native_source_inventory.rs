@@ -255,11 +255,12 @@ fn verify(inventory: &Inventory, source: &Path) -> Result<u64> {
 }
 
 fn lock_matches(root: &Path, inventory: &Inventory) -> Result<()> {
-    let lock: toml::Value =
-        String::from_utf8(read_bounded(&root.join("Cargo.lock"), 4 * 1024 * 1024)?)
-            .map_err(|error| error.to_string())?
-            .parse()
-            .map_err(|error: toml::de::Error| error.to_string())?;
+    let lock_text = String::from_utf8(read_bounded(&root.join("Cargo.lock"), 4 * 1024 * 1024)?)
+        .map_err(|error| error.to_string())?;
+    // Value::from_str parses an individual TOML value in the pinned toml crate;
+    // Cargo.lock is a document containing tables and must use its deserializer.
+    let lock: toml::Value = toml::from_str(&lock_text)
+        .map_err(|error| format!("Cannot parse native inventory Cargo.lock document: {error}"))?;
     let packages = lock
         .get("package")
         .and_then(toml::Value::as_array)
@@ -482,7 +483,7 @@ mod tests {
             inventory.package.archive_sha256,
         );
         fs::write(scratch.0.join("Cargo.lock"), &lock)?;
-        assert!(lock_matches(&scratch.0, &inventory).is_ok());
+        lock_matches(&scratch.0, &inventory)?;
         for changed in [
             "version = 4".to_owned(),
             "[[package]]\nname = \"transcribe-cpp-sys\"".to_owned(),
