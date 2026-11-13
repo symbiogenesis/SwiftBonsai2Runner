@@ -387,12 +387,12 @@ impl State {
         // Reserve the ordinary label width so copy confirmation never moves
         // adjacent actions or changes a wrapping footer's height.
         let font = egui::TextStyle::Button.resolve(ui.style());
-        let width = ui
+        let text_width = ui
             .painter()
             .layout_no_wrap(label.to_owned(), font, ui.visuals().text_color())
             .size()
-            .x
-            + ui.spacing().button_padding.x * 2.0;
+            .x;
+        let width = ui.spacing().button_padding.x.mul_add(2.0, text_width);
         let mut text = egui::RichText::new(if copied { "Copied" } else { label });
         if primary {
             text = text.color(ui.visuals().selection.stroke.color);
