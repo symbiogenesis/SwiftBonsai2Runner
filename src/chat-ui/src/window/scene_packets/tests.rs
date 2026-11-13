@@ -201,7 +201,16 @@ fn scene_packet_review_adds_only_after_explicit_action_at_narrow_and_wide_sizes(
         assert!(egui::Rect::from_min_size(egui::Pos2::ZERO, size.into()).contains_rect(add.rect()));
         add.click();
         chat.run();
-        assert!(!chat.state().app.scene_packets.is_open());
+        let remaining = &chat.state().app.scene_packets.dialog;
+        assert!(
+            remaining.is_none(),
+            "size={size:?}; remaining notice/packet/selection={:?}",
+            remaining.as_ref().map(|dialog| (
+                dialog.notice,
+                dialog.packet.is_some(),
+                dialog.selected.as_slice()
+            ))
+        );
         assert!(chat.state().app.input.contains("Mira kept the blue key."));
         assert!(chat.state().commands.try_recv().is_err());
     }
