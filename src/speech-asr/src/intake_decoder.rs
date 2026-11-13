@@ -4,10 +4,10 @@ use super::{Index, Value, invalid};
 use crate::decoder::{Block, CachePrecision, Config, Model, Projection};
 use std::io::{self, Read, Seek, SeekFrom};
 
-struct Loader<'a, R> {
-    index: Index,
-    source: &'a mut R,
-    remaining: u64,
+pub(super) struct Loader<'a, R> {
+    pub(super) index: Index,
+    pub(super) source: &'a mut R,
+    pub(super) remaining: u64,
 }
 
 impl<R: Read + Seek> Loader<'_, R> {
@@ -41,7 +41,7 @@ impl<R: Read + Seek> Loader<'_, R> {
         }
     }
 
-    fn bytes(
+    pub(super) fn bytes(
         &mut self,
         name: &str,
         cancel: &mut impl FnMut() -> bool,
@@ -67,7 +67,11 @@ impl<R: Read + Seek> Loader<'_, R> {
         Ok((tensor.kind, bytes))
     }
 
-    fn vector(&mut self, name: &str, cancel: &mut impl FnMut() -> bool) -> io::Result<Vec<f32>> {
+    pub(super) fn vector(
+        &mut self,
+        name: &str,
+        cancel: &mut impl FnMut() -> bool,
+    ) -> io::Result<Vec<f32>> {
         let (kind, bytes) = self.bytes(name, cancel)?;
         if kind != 0 || !bytes.len().is_multiple_of(4) {
             return Err(invalid());
@@ -82,7 +86,7 @@ impl<R: Read + Seek> Loader<'_, R> {
         Ok(values)
     }
 
-    fn projection(
+    pub(super) fn projection(
         &mut self,
         name: &str,
         cancel: &mut impl FnMut() -> bool,
@@ -95,6 +99,25 @@ impl<R: Read + Seek> Loader<'_, R> {
             0 => Projection::f32(input, output, self.vector(name, cancel)?),
             1 => Projection::f16(input, output, &self.bytes(name, cancel)?.1),
             8 => Projection::q8(input, output, self.bytes(name, cancel)?.1),
+            _ => Err(invalid()),
+        }
+    }
+
+    pub(super) fn convolution(
+        &mut self,
+        name: &str,
+        cancel: &mut impl FnMut() -> bool,
+    ) -> io::Result<Projection> {
+        let tensor = self.index.tensors.get(name).ok_or_else(invalid)?;
+        if tensor.shape.len() != 4 || tensor.shape[0] != 3 || tensor.shape[1] != 3 {
+            return Err(invalid());
+        }
+        let input = usize::try_from(9_u64.checked_mul(tensor.shape[2]).ok_or_else(invalid)?)
+            .map_err(|_| invalid())?;
+        let output = usize::try_from(tensor.shape[3]).map_err(|_| invalid())?;
+        match tensor.kind {
+            0 => Projection::f32(input, output, self.vector(name, cancel)?),
+            1 => Projection::f16(input, output, &self.bytes(name, cancel)?.1),
             _ => Err(invalid()),
         }
     }

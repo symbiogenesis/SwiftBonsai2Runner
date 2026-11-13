@@ -15,6 +15,8 @@ use std::{
 
 #[path = "intake_decoder.rs"]
 mod decoder;
+#[path = "intake_encoder.rs"]
+mod encoder;
 #[path = "intake_model.rs"]
 mod model;
 
@@ -330,6 +332,16 @@ pub(super) fn decoder(
     let index = read_index(source, length)?;
     model::validate(&index)?;
     decoder::load(index, source, precision, cancel)
+}
+
+pub(super) fn encoder(
+    source: &mut (impl Read + Seek),
+    length: u64,
+    cancel: &mut impl FnMut() -> bool,
+) -> io::Result<(crate::encoder::Encoder, crate::frontend::Frontend)> {
+    let index = read_index(source, length)?;
+    model::validate(&index)?;
+    encoder::load(index, source, cancel)
 }
 
 pub(super) fn tokenizer(

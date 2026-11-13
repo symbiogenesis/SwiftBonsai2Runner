@@ -1,0 +1,44 @@
+{
+  "schemaVersion": 1,
+  "provider": "rust-independent-scalar-audio-encoder",
+  "scope": "complete-three-convolution-bidirectional-transformer-and-decoder-width-output-head",
+  "arithmeticIdentity": "rust-scalar-encoder-f32-v1-f64-erfc-gelu",
+  "nativeSource": {
+    "package": "transcribe-cpp-sys", "version": "0.4.1",
+    "repository": "https://github.com/handy-computer/transcribe.cpp",
+    "commit": "4d7c1ccefd39e5a9ea36cca5f8fefc6dcc14b99b", "license": "MIT",
+    "files": [
+      {"path": "src/arch/qwen3_asr/encoder.cpp", "sha256": "88c18dc5b9e8de38dbea97d100b84f70b2cd149e7fe6fd75b52e30366825f2d9"},
+      {"path": "src/arch/qwen3_asr/model.cpp", "sha256": "90aeefb27ffb74d57ed338a27c342b44f388207b8c4a111faa5673e975c43ecc"}
+    ]
+  },
+  "controls": {
+    "provider": "hand-calculated-cnn-corner-sums-known-gelu-and-sinusoid-values-layernorm-bidirectional-uniform-attention-and-ragged-tail-controls",
+    "freshNativeExecution": false, "modelInputs": false,
+    "testFilter": "rust_asr_encoder_",
+    "nativeConvolutionHalfArithmeticParity": false,
+    "nativeQuantizedMatmulParity": false, "nativeFlashAttentionParity": false
+  },
+  "semantics": {
+    "convolution": "three-kernel3-stride2-pad1-stages-with-erf-gelu-and-independent-mel-chunk-padding",
+    "flattening": "time-major-then-channel-slow-frequency-fast",
+    "position": "f64-sinusoid-10000-timescale-rounded-to-f32-restarting-per-chunk",
+    "tail": "remove-padded-final-chunk-rows-before-every-transformer-block",
+    "transformer": "biased-layernorm-qkv-unmasked-full-attention-residual-and-biased-gelu-ffn",
+    "head": "layernorm-biased-projection-gelu-biased-decoder-width-projection",
+    "frontend": "exact-16khz-128-mel-400fft-160hop-periodic-hann-slaney-reflect-per-utterance-subset-with-checkpoint-tensor-precedence",
+    "publication": "only-complete-finite-encoder-output-no-partial-rows-on-failure"
+  },
+  "limits": {
+    "maximumMelFrames": 3000, "maximumMelBins": 128,
+    "maximumChannels": 1024, "maximumHidden": 8192,
+    "maximumLayers": 256, "maximumIntermediate": 65536,
+    "maximumScratchElementsPerAllocation": 134217728
+  },
+  "pending": [
+    "complete pipeline owning-crate build/link and source-bound qualification consumer",
+    "independent native layerwise observations and full pinned-model transcript comparisons",
+    "native optimized convolution/quantization/flash-attention numerical parity at declared tolerance",
+    "actual-model quality, microphone integration, cancellation, lifecycle and resource acceptance"
+  ]
+}

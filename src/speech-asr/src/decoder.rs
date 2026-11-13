@@ -64,6 +64,11 @@ enum Storage {
 }
 
 impl Projection {
+    /// Return `(input width, output rows)` for checked graph construction.
+    #[must_use]
+    pub const fn dimensions(&self) -> (usize, usize) {
+        (self.input, self.output)
+    }
     /// Admit little-endian IEEE binary16 rows, expanding only this projection.
     ///
     /// # Errors

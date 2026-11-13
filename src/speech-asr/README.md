@@ -110,7 +110,20 @@ binary16 rounding/overflow, uniform grouped attention, complete cache/reset and
 cancellation/unwind. `rust-decoder.json` identifies this scalar arithmetic
 separately from native activation requantization and flash attention.
 
-Complete CNN/transformer encoder, end-to-end Rust inference integration,
+`encoder.rs` now implements the full scalar CNN/transformer graph: three
+kernel-three stride-two convolutions, independently padded chunks, channel/frequency
+flattening, per-chunk positional sinusoids, ragged-tail trimming, full bidirectional
+attention, biased layer normalization/GELU FFNs and the decoder-width output head.
+Its GGUF loader rejects different frontend metadata and preserves checkpoint
+window/filterbank tensors. `encode_pcm` consumes the Rust frontend directly.
+Six `rust_asr_encoder_` controls cover hand-calculated convolution edges, GELU,
+normalization, bidirectional attention, sinusoidal positions and complete chunk-tail
+output, including failure/cancellation replay. The scalar F32 convolution,
+f64 erf-based GELU and F32-activation Q8 projections have distinct arithmetic
+identities in `rust-encoder.json`; they do not establish native optimized-kernel
+or full-model parity.
+
+Complete end-to-end Rust inference integration,
 independent numerical observations and actual-model comparisons
 remain necessary before replacing the engine or removing native dependencies.
 Standalone source-module checks do not establish owning-crate native build/link,

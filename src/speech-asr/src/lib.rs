@@ -6,6 +6,7 @@
 #![forbid(unsafe_code)]
 
 pub mod decoder;
+pub mod encoder;
 pub mod frontend;
 mod intake;
 pub mod protocol;
