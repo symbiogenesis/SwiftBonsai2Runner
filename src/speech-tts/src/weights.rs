@@ -380,7 +380,7 @@ pub(crate) fn packed_layout(kind: u32) -> io::Result<(usize, usize)> {
     }
 }
 
-fn half(bytes: &[u8]) -> f32 {
+pub(crate) fn half(bytes: &[u8]) -> f32 {
     let bits = u16::from_le_bytes([bytes[0], bytes[1]]);
     let fraction = u32::from(bits & 1023);
     let exponent = u32::from((bits >> 10) & 31);

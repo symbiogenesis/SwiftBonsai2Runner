@@ -24,6 +24,8 @@ use fearless_simd::{Level, dispatch, f32x4, prelude::*};
 
 use crate::{codec::codec_ref_key, sampling};
 
+mod packed;
+
 /// Number of residual acoustic codebooks predicted by `CodePredictor` (`15`).
 pub const NUM_ACOUSTIC_CODEBOOKS: usize = 15;
 /// Default low-latency streaming chunk size in 12.5 Hz codec frames (`4` frames = `320` ms).
@@ -900,20 +902,13 @@ impl LinearProjection {
                     ));
                 }
                 let compute_slice = |row_offset: usize, destination: &mut [f32]| {
-                    let mut decoded = [0.0_f32; 256];
-                    for (local, value) in destination.iter_mut().enumerate() {
-                        let offset = (row_offset + local) * row_bytes;
-                        let row = &bytes[offset..offset + row_bytes];
-                        for (source, input) in row.chunks_exact(size).zip(input.chunks_exact(block))
-                        {
-                            crate::weights::decode_block(*ggml_type, source, &mut decoded[..block]);
-                            *value += if block == 1 {
-                                decoded[0] * input[0]
-                            } else {
-                                dispatch!(level, simd => f32_dot_simd(simd, &decoded[..block], input))
-                            };
+                    dispatch!(level, simd => {
+                        for (local, value) in destination.iter_mut().enumerate() {
+                            let offset = (row_offset + local) * row_bytes;
+                            let row = &bytes[offset..offset + row_bytes];
+                            *value = packed::row(simd, *ggml_type, row, input, *value);
                         }
-                    }
+                    });
                 };
                 run_row_chunks(&mut out, worker_count, compute_slice);
             }
