@@ -11,52 +11,14 @@ Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 $PSNativeCommandUseErrorActionPreference = $true
 . (Join-Path $PSScriptRoot '../../scripts/release/Release-Common.ps1')
+. (Join-Path $PSScriptRoot '../../scripts/release/Release-Assets.ps1')
 if ($Tag -cnotmatch '^v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$' -or $SourceRevision -cnotmatch '^[0-9a-f]{40}$') { throw 'Invalid release identity.' }
 if ($env:GITHUB_REPOSITORY -cne 'symbiogenesis/SwiftBonsai2Runner' -or $env:GITHUB_REF -cne 'refs/heads/main' -or $env:GITHUB_SHA -cne $SourceRevision) { throw 'Publishing requires this repository main at the dispatched revision.' }
 $RepositoryRoot = Resolve-ReleasePath $RepositoryRoot
 $AssetDirectory = Resolve-ReleasePath $AssetDirectory
 $version = $Tag.Substring(1)
-$names = @("SwiftBonsai2Runner-$version-windows-arm64.exe", "SwiftBonsai2Runner-$version-windows-arm64.msi", "SwiftBonsai2Runner-$version-windows-arm64.zip", 'THIRD-PARTY-NOTICES.txt', 'release-manifest.json', 'SHA256SUMS.txt')
-$children = @(Get-ChildItem -LiteralPath $AssetDirectory -Force)
-if ($children.Count -ne $names.Count) { throw 'Release asset inventory differs from the reviewed inventory.' }
-foreach ($file in $children) {
-    if ($file.PSIsContainer -or $file.Name -cnotin $names -or ($file.Attributes -band [IO.FileAttributes]::ReparsePoint)) { throw 'Unexpected or redirected release asset.' }
-}
-$checksums = @{}
-foreach ($line in Get-Content -LiteralPath (Join-Path $AssetDirectory 'SHA256SUMS.txt')) {
-    if ($line -cnotmatch '^([a-f0-9]{64})  ([A-Za-z0-9._-]+)$') { throw 'Invalid release checksum record.' }
-    $digest = $Matches[1]; $name = $Matches[2]
-    if ($name -ceq 'SHA256SUMS.txt' -or $name -cnotin $names -or $checksums.ContainsKey($name)) { throw 'Unexpected or duplicate checksum record.' }
-    $actual = (Get-FileHash -LiteralPath (Join-Path $AssetDirectory $name) -Algorithm SHA256).Hash.ToLowerInvariant()
-    if ($actual -cne $digest) { throw "Release checksum differs: $name" }
-    $checksums[$name] = $digest
-}
-if ($checksums.Count -ne ($names.Count - 1)) { throw 'Release checksums are incomplete.' }
-$manifest = Get-Content -LiteralPath (Join-Path $AssetDirectory 'release-manifest.json') -Raw | ConvertFrom-Json
-if ($manifest.schemaVersion -ne 1 -or $manifest.tag -cne $Tag -or $manifest.version -cne $version -or
-    $manifest.sourceRevision -cne $SourceRevision -or $manifest.target -cne 'aarch64-pc-windows-msvc' -or
-    $manifest.installerSmoke -cne 'passed-install-inspect-uninstall-without-model' -or
-    $manifest.executableSmoke -cne 'passed-inspect-extract-verify-without-model' -or
-    $manifest.signed -ne $false) { throw 'Release manifest source, architecture or packaging checks differ.' }
-$assetNames = @("SwiftBonsai2Runner-$version-windows-arm64.exe", "SwiftBonsai2Runner-$version-windows-arm64.msi", "SwiftBonsai2Runner-$version-windows-arm64.zip", 'THIRD-PARTY-NOTICES.txt')
-$seenAssets = [Collections.Generic.HashSet[string]]::new([StringComparer]::Ordinal)
-if (@($manifest.assets).Count -ne $assetNames.Count) { throw 'Release manifest asset inventory is incomplete.' }
-foreach ($asset in $manifest.assets) {
-    if ($asset.name -cnotin $assetNames -or -not $seenAssets.Add($asset.name)) { throw 'Unexpected or duplicate manifest asset.' }
-    $path = Join-Path $AssetDirectory $asset.name
-    if ($asset.bytes -ne (Get-Item -LiteralPath $path).Length -or $asset.sha256 -cne $checksums[$asset.name]) { throw 'Manifest asset identity disagrees with its checksum record.' }
-}
-$buildFiles = @{
-    maintenance = 'bonsai-tools.exe'; core = 'bonsai-broker.exe'; ui = 'bonsai-chat.exe'
-    asr = 'bonsai-speech-asr.exe'; tts = 'bonsai-speech-tts.exe'
-}
-$seenBuilds = [Collections.Generic.HashSet[string]]::new([StringComparer]::Ordinal)
-if (@($manifest.builds).Count -ne $buildFiles.Count -or $manifest.manifestSha256 -cnotmatch '^[a-f0-9]{64}$') { throw 'Release build inventory is incomplete.' }
-foreach ($build in $manifest.builds) {
-    if (-not $buildFiles.ContainsKey($build.lane) -or -not $seenBuilds.Add($build.lane) -or
-        $build.schemaVersion -ne 1 -or $build.sourceRevision -cne $SourceRevision -or $build.target -cne 'aarch64-pc-windows-msvc' -or
-        $build.file -cne $buildFiles[$build.lane] -or $build.bytes -le 0 -or $build.sha256 -cnotmatch '^[a-f0-9]{64}$') { throw 'Unexpected build lane, source or executable identity.' }
-}
+$names = @(Get-PortableReleaseAssetNames $version)
+$null = Assert-PortableReleaseAssets -AssetDirectory $AssetDirectory -Tag $Tag -SourceRevision $SourceRevision
 
 $repository = $env:GITHUB_REPOSITORY
 function Confirm-RemoteTag([switch]$RequireExisting) {
