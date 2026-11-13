@@ -1,31 +1,60 @@
-name: Bootstrap the native Rust CI command
-description: Build the source-bound check orchestrator in a separate hosted-only target directory.
+name: Reuse the exact native Rust CI command
+description: Verify an exact-input CI executable; compile changed inputs in a separate hosted-only target.
 runs:
   using: composite
   steps:
-    - name: Require hosted compilation for the CI bootstrap
+    - name: Select the exact hosted CI bootstrap identity and external paths
       if: env.BONSAI_CI_PATH == ''
       shell: pwsh
+      working-directory: ${{ runner.temp }}
       env:
+        CI_SOURCE_ID: ${{ hashFiles('Cargo.toml', 'Cargo.lock', '**/Cargo.toml', 'tools/ci/**', 'src/artifacts/**', 'src/windows-*/**', '.cargo/**', 'rust-toolchain.toml', '.github/actions/ci-tool/**', '.github/actions/rust-toolchain/**') }}
         RUNNER_ENVIRONMENT: ${{ runner.environment }}
       run: |
+        Set-StrictMode -Version Latest
+        $ErrorActionPreference = 'Stop'
+        $PSNativeCommandUseErrorActionPreference = $true
         if ($env:RUNNER_ENVIRONMENT -cne 'github-hosted') {
           throw 'A missing CI command must be prepared on hosted CI; owner-device build setup cannot bypass the shared five-minute allowance.'
         }
-    - uses: $/.github/actions/rust-toolchain
+        if (-not $IsWindows -or [Runtime.InteropServices.RuntimeInformation]::ProcessArchitecture -ne 'Arm64') { throw 'The CI bootstrap requires native Windows ARM64.' }
+        if (-not $env:ImageOS -or -not $env:ImageVersion) { throw 'Hosted CI executable caching requires the runner image identity.' }
+        if ($env:CI_SOURCE_ID -cnotmatch '^[a-f0-9]{64}$') { throw 'An exact CI source identity is required.' }
+        # Environment compiler/profile overrides must miss the executable cache too.
+        $buildInputs = @(Get-ChildItem Env: | Where-Object { $_.Name -cne 'CARGO_BUILD_FINGERPRINT' -and $_.Name -cmatch '^(RUSTFLAGS|CARGO_ENCODED_RUSTFLAGS|RUSTC|RUSTC_WRAPPER|RUSTC_WORKSPACE_WRAPPER|CARGO_BUILD_.*|CARGO_PROFILE_RELEASE_.*|CARGO_TARGET_.*)$' } | Sort-Object Name | ForEach-Object { "$($_.Name)=$($_.Value)" })
+        $cargoHome = if ($env:CARGO_HOME) { $env:CARGO_HOME } else { Join-Path $env:USERPROFILE '.cargo' }
+        foreach ($name in @('config', 'config.toml')) {
+          $config = Join-Path $cargoHome $name
+          $digest = if (Test-Path -LiteralPath $config -PathType Leaf) { (Get-FileHash -LiteralPath $config -Algorithm SHA256).Hash.ToLowerInvariant() } else { 'absent' }
+          $buildInputs += "cargo-home-$name=$digest"
+        }
+        $buildEnvironment = $buildInputs -join "`n"
+        $environmentId = [Convert]::ToHexString([Security.Cryptography.SHA256]::HashData([Text.Encoding]::UTF8.GetBytes($buildEnvironment))).ToLowerInvariant()
+        "BONSAI_CI_CACHE_HOST=$env:ImageOS-$env:ImageVersion-$([Environment]::OSVersion.Version)-$environmentId" >> $env:GITHUB_ENV
+        "BONSAI_CI_SOURCE_ID=$env:CI_SOURCE_ID" >> $env:GITHUB_ENV
+        "BONSAI_CI_PACKAGE=$(Join-Path $env:RUNNER_TEMP 'SwiftBonsai-CiCommandPackage')" >> $env:GITHUB_ENV
+    - name: Reuse only the exact CI executable and build receipt
       if: env.BONSAI_CI_PATH == ''
+      id: executable-cache
+      uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      with:
+        path: ${{ env.BONSAI_CI_PACKAGE }}
+        # No fallback keys: only identical inputs can skip compilation.
+        key: native-ci-executable-v1-${{ runner.os }}-${{ runner.arch }}-${{ env.BONSAI_CI_CACHE_HOST }}-nightly-2026-11-12-${{ env.BONSAI_CI_SOURCE_ID }}
+    - uses: $/.github/actions/rust-toolchain
+      if: env.BONSAI_CI_PATH == '' && steps.executable-cache.outputs.cache-hit != 'true'
       with:
         toolchain: nightly-2026-11-12-aarch64-pc-windows-msvc
-    - name: Reuse the CI command build artifacts
-      if: env.BONSAI_CI_PATH == ''
+    - name: Reuse the CI command build artifacts after an executable miss
+      if: env.BONSAI_CI_PATH == '' && steps.executable-cache.outputs.cache-hit != 'true'
       uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
       with:
         path: ${{ runner.temp }}/SwiftBonsai-CiBootstrap
-        key: native-ci-v1-${{ runner.os }}-${{ runner.arch }}-${{ env.ImageOS }}-${{ env.ImageVersion }}-nightly-2026-11-12-${{ hashFiles('Cargo.toml', 'Cargo.lock', 'tools/ci/**', 'src/artifacts/**', 'src/windows-*/**', '.cargo/**') }}
+        key: native-ci-v2-${{ runner.os }}-${{ runner.arch }}-${{ env.BONSAI_CI_CACHE_HOST }}-nightly-2026-11-12-${{ env.BONSAI_CI_SOURCE_ID }}
         restore-keys: |
-          native-ci-v1-${{ runner.os }}-${{ runner.arch }}-${{ env.ImageOS }}-${{ env.ImageVersion }}-nightly-2026-11-12-
-    - name: Build and select the native CI executable
-      if: env.BONSAI_CI_PATH == ''
+          native-ci-v2-${{ runner.os }}-${{ runner.arch }}-${{ env.BONSAI_CI_CACHE_HOST }}-nightly-2026-11-12-
+    - name: Build the CI executable only after its inputs change
+      if: env.BONSAI_CI_PATH == '' && steps.executable-cache.outputs.cache-hit != 'true'
       shell: pwsh
       working-directory: ${{ runner.temp }}
       env:
@@ -37,9 +66,26 @@ runs:
         $PSNativeCommandUseErrorActionPreference = $true
         $target = Join-Path $env:RUNNER_TEMP 'SwiftBonsai-CiBootstrap'
         cargo +nightly-2026-11-12-aarch64-pc-windows-msvc build --locked --release --manifest-path (Join-Path $env:GITHUB_WORKSPACE 'Cargo.toml') --package bonsai-ci --bin bonsai-ci --target-dir $target
-        # A separate image permits the checks to rebuild bonsai-ci itself.
+        [void][IO.Directory]::CreateDirectory($env:BONSAI_CI_PACKAGE)
+        Copy-Item -LiteralPath (Join-Path $target 'release/bonsai-ci.exe') -Destination (Join-Path $env:BONSAI_CI_PACKAGE 'bonsai-ci.exe')
+        $compiler = Join-Path $env:RUNNER_TEMP 'SwiftBonsai-CiBootstrap-Compiler.txt'
+        rustup run nightly-2026-11-12-aarch64-pc-windows-msvc rustc -vV | Set-Content -LiteralPath $compiler -Encoding utf8NoBOM
+        python -B (Join-Path $env:GITHUB_WORKSPACE 'tools/ci/native_ci_cache.py') create --package $env:BONSAI_CI_PACKAGE --source $env:BONSAI_CI_SOURCE_ID --host $env:BONSAI_CI_CACHE_HOST --compiler $compiler
+    - name: Verify cached CI bytes before selecting a separate executable image
+      if: env.BONSAI_CI_PATH == ''
+      shell: pwsh
+      working-directory: ${{ runner.temp }}
+      env:
+        EXECUTABLE_CACHE_HIT: ${{ steps.executable-cache.outputs.cache-hit }}
+      run: |
+        Set-StrictMode -Version Latest
+        $ErrorActionPreference = 'Stop'
+        $PSNativeCommandUseErrorActionPreference = $true
+        python -B (Join-Path $env:GITHUB_WORKSPACE 'tools/ci/native_ci_cache.py') verify --package $env:BONSAI_CI_PACKAGE --source $env:BONSAI_CI_SOURCE_ID --host $env:BONSAI_CI_CACHE_HOST
+        # A separate running image permits the checks to rebuild bonsai-ci itself.
         $directory = Join-Path $env:RUNNER_TEMP ('SwiftBonsai-CiCommand-' + [guid]::NewGuid().ToString('N'))
         [void][IO.Directory]::CreateDirectory($directory)
         $tool = Join-Path $directory 'bonsai-ci.exe'
-        Copy-Item -LiteralPath (Join-Path $target 'release/bonsai-ci.exe') -Destination $tool
+        Copy-Item -LiteralPath (Join-Path $env:BONSAI_CI_PACKAGE 'bonsai-ci.exe') -Destination $tool
         "BONSAI_CI_PATH=$tool" >> $env:GITHUB_ENV
+        "Exact CI executable cache hit: $env:EXECUTABLE_CACHE_HIT; all selected checks still execute." >> $env:GITHUB_STEP_SUMMARY
