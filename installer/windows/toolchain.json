@@ -1,6 +1,0 @@
-{
-  "wixVersion": "7.0.1",
-  "architecture": "arm64",
-  "target": "aarch64-pc-windows-msvc",
-  "minimumWindowsBuild": 22000
-}

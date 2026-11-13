@@ -21,7 +21,7 @@ switch ($Mode) {
         exit 0
     }
     failure {
-        [Console]::Out.Write("WiX diagnostic-$unicode`n")
+        [Console]::Out.Write("Native diagnostic-$unicode`n")
         [Console]::Error.Write("stderr diagnostic-$unicode`n")
         exit 17
     }
@@ -44,7 +44,7 @@ switch ($Mode) {
     }
     $unicode = [char]0x03b2
     $diagnostic = Get-RejectedCommandMessage 'failure' 17
-    if (-not $diagnostic.Contains("stdout: WiX diagnostic-$unicode") -or
+    if (-not $diagnostic.Contains("stdout: Native diagnostic-$unicode") -or
         -not $diagnostic.Contains("stderr: stderr diagnostic-$unicode")) {
         throw 'Native stdout/stderr failure diagnostics were lost or changed.'
     }

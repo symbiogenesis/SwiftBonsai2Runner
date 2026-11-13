@@ -17,7 +17,7 @@ implemented behavior from actual-model, device, quality and isolation acceptance
 | --- | --- |
 | [Development](development-guide.md) | Requirements, provisioning, app/settings/speech, developer commands, build caches and runtime lock updates |
 | [Portable packages](chat-packages.md) | Assembly, installation, update, rollback and installed launch |
-| [Windows releases](releases.md) | Windows ARM64 MSI setup, release assets, upgrades and owner publication |
+| [Windows releases](releases.md) | Portable Windows ARM64 executable, manual updates and owner publication |
 | [Validation](validation.md) | Local-check policy, CI ownership, standards, regression coverage, acceptance and promotion |
 | [Licensing](licensing.md) | Project, dependency, model and font terms; notices and redistribution |
 

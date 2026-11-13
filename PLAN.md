@@ -27,7 +27,7 @@ the corresponding detailed task changes; keep every acceptance obligation below.
 | P1 / external, qualification | Prism and Runner | Original authoring inputs for provenance; hosted public-pack reconstruction for its separate gate | Run the declared reconstruction and independent replay while pursuing provenance intake independently; follow the PTQ1 critical path below. Neither blocks A1. |
 | N1 / qualification | Prism and Runner | Frozen NPU-1 packet and applicable signed/runtime prerequisites | Complete [NPU-1 through NPU-7](#promotion-sequence) for the selected explicit X2 profile. HMX/PTQ1/X1/GPU/automatic selection retain their separate later gates. |
 | Q1 / qualification | Runner and independent human reviewers | Exact complete-answer/audio captures and declared rubric | Prepare the [creative and speech](#creative-quality-adapters-and-memory) review packets in parallel with source work; retained output can support applicable review without another device capture. |
-| D1 / owner, qualification | Runner | Reviewed source, exact release assets and C1 | Publish the first MSI/updater and close installed update, clean-machine, isolation and rollback acceptance; deploy and retrieve the selected [durable evidence](#durable-qualification-evidence). |
+| D1 / owner, qualification | Runner | Reviewed source, exact portable release assets and C1 | Publish v0.2.0 as a portable executable and close clean-machine launch, verified manual replacement, data preservation, isolation and rollback acceptance; deploy and retrieve the selected [durable evidence](#durable-qualification-evidence). |
 | F1 / conditional | As specified in each detailed section | Its existing measured need, compatible artifact or release trigger | Retain precision research, broader profiles, optional agents, future Qwen migration and deferred Prism/dependency work in full; activation conditions and ordering remain unchanged. |
 
 Freeze one coherent qualification candidate after its reviewed logical commits are
@@ -93,13 +93,18 @@ self-hosted runner v2.338.0 or newer before its lanes. The published-source pass
 does not validate later local changes.
 
 Publish the owner-selected experimental Windows ARM64 release, **v0.2.0**, after the
-owner reviews and pushes the local installer/pipeline commits to Runner `main`.
+owner reviews and pushes the local portable-release commits to Runner `main`.
 The [release guide](docs/releases.md) records the owner-run publication command;
 the [release notes](docs/releases/v0.2.0.md) retain the development-default
-and qualification limits. GitHub pipeline activation, a genuine hosted build,
-MSI install/uninstall acceptance and a downloadable release remain pending.
-Include the native runtime updater in that first source publication; no earlier
-release is required to implement it. Qualify startup/manual discovery, no-release
+and qualification limits. Qualify the hosted build and exact executable,
+checksum inventory and release manifest, then verify clean-machine launch,
+terminal-free startup, manual close-and-replace updates, preserved model/recovery
+data and explicit rollback. Portable launches must not start installer/update
+discovery. Runtime and model provisioning retain their own gates.
+
+The retained native MSI updater is legacy/internal code, outside portable-only
+v0.2.0 publication. Reopen its following acceptance obligations only if the owner
+selects an installer distribution again: qualify startup/manual discovery, no-release
 and network failures, published prerelease selection, wrong-target/tampered
 metadata rejection, verified download, confirmed owned teardown and MSI handoff
 on installed Windows ARM64. Retain source-bound evidence that upgrades preserve
@@ -118,33 +123,34 @@ correctly dispatched v0.1.0 from `7f595952` and passed release validation. Its U
 lane failed seven interaction fixtures, and TTS notice collection rejected
 AccessKit's omitted license files; packaging and publication never ran. Publish
 the local search-focus, popup focus/geometry, navigation-fixture and source-bound
-notice fixes, then rerun Windows Release for v0.1.0 on settled `main`. Local
+notice fixes, then qualify Windows Release for v0.2.0 on settled `main`. Local
 PowerShell/startup controls and all 22 omitted-notice source recoveries pass;
 Rust replay remains pending because the local pinned compiler is incomplete.
-These checks do not establish a successful installer or close hosted acceptance.
+These historical checks do not qualify the current portable release.
 
-Have the owner publish the release-policy and diagnostic corrections, review and
-explicitly acknowledge the pinned WiX 7 EULA, then qualify Windows Release on that
-source. Leaving the tag blank derives it from the workspace version; explicit
+Have the owner publish the portable-only release-policy and diagnostic corrections,
+then qualify Windows Release on that source. Confirm the pipeline has no WiX,
+installer tool provisioning or MSI build/install stage. Leaving the tag blank
+derives it from the workspace version; explicit
 mismatches remain errors with both identities visible. Confirm failed native
-commands retain their bounded stdout/stderr diagnostics, and retain the actual
-WiX verdict rather than treating a wrapper exit code as the cause. Local mocked
-policy/command controls do not qualify real WiX compilation or MSI install.
+commands retain their bounded stdout/stderr diagnostics. Require exactly the
+portable executable, release manifest and checksum inventory in published assets;
+local mocked policy/command controls do not qualify hosted publication.
 
 Include the single-file Windows executable in the next owner-run Windows Release
 acceptance. Verify the source-bound bundle, model-free extraction and executable
-inventory alongside the existing MSI install/uninstall checks, then qualify
+inventory and checksum/source identities, then qualify
 double-click launch without a terminal on a supported clean Windows ARM64 machine,
 including a visible native startup error when preparation fails. Exercise the same
 bundle builder from a local checkout; local focused checks do not establish hosted
 publication, clean-machine prerequisites or actual-model acceptance. Preserve the
-separate-process containment and MSI-only update contracts.
+separate-process containment and manual-update data-preservation contracts.
 
 Complete the focused launcher/package regressions and native Clippy check on the
 settled source. Qualify deflated bundle creation and stored-entry compatibility,
 malformed compression rejection and expanded-byte limits alongside the GUI
 subsystem, command JSON and native startup-error controls. Run those controls in
-the owning hosted and installed-device lanes; local production assembly and
+the owning hosted and clean-device lanes; local production assembly and
 static package integrity checks do not close those acceptance gates. Keep earlier
 diagnostic allowances closed.
 
