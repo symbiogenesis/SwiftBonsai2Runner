@@ -176,9 +176,7 @@ impl Sender {
                 queue.retain(|command| !matches!(command, Command::PrepareInput { .. }));
             }
             Command::StopSpeaking => queue.retain(is_input),
-            Command::StopListening => {
-                queue.retain(|command| !is_input(command));
-            }
+            Command::StopListening => queue.retain(|command| !is_input(command)),
             Command::AppendStream { text } => {
                 if matches!(queue.stream, StreamState::Failed) {
                     return Ok(());

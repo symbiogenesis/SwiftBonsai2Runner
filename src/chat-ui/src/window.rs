@@ -2590,7 +2590,7 @@ fn startup_exit_result(update_approved: bool, failure: Option<String>) -> io::Re
     if update_approved {
         return Ok(true);
     }
-    failure.map_or_else(|| Ok(false), |error| Err(io::Error::other(error)))
+    failure.map_or(Ok(false), |error| Err(io::Error::other(error)))
 }
 
 pub(super) fn run_startup(request: crate::startup::Request) -> io::Result<bool> {
