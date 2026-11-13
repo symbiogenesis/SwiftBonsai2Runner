@@ -155,6 +155,7 @@ struct State {
     status_detail: String,
     runtime_description: String,
     warning: bool,
+    alerts: error_ui::View,
     diagnostics: VecDeque<String>,
     show_diagnostics: bool,
     show_settings: bool,
@@ -282,6 +283,7 @@ impl State {
             status_detail: String::new(),
             runtime_description: "Model-free preview".to_owned(),
             warning: false,
+            alerts: error_ui::View::default(),
             diagnostics: VecDeque::new(),
             show_diagnostics: false,
             show_settings: false,
@@ -662,7 +664,7 @@ impl State {
     fn handle_escape(&mut self, ctx: &egui::Context) {
         // The transcript viewer owns Escape and all background shortcuts, even
         // on its first frame. Closing it must not also cancel or stop a request.
-        if self.show_audio_transcript {
+        if self.show_audio_transcript || self.alerts.details.is_some() {
             return;
         }
         if self.scene_packets.is_open() {
@@ -735,6 +737,7 @@ impl State {
             && self.edit_message.is_none()
             && !self.show_settings
             && !self.show_audio_transcript
+            && self.alerts.details.is_none()
             && !self.scene_packets.is_open()
             && ctx.input_mut(|input| input.consume_key(egui::Modifiers::CTRL, egui::Key::N))
         {
@@ -742,6 +745,7 @@ impl State {
         }
         if !self.show_settings
             && !self.show_audio_transcript
+            && self.alerts.details.is_none()
             && !self.scene_packets.is_open()
             && self.rename_conversation.is_none()
             && self.delete_conversation.is_none()
@@ -1421,6 +1425,7 @@ impl State {
             && self.edit_message.is_none()
             && !self.show_settings
             && !self.show_audio_transcript
+            && self.alerts.details.is_none()
             && !(from_file && self.audio_file_review_required)
         {
             self.submit();
@@ -1752,41 +1757,11 @@ impl State {
                 }
             });
         }
-        if (self.warning || self.model.retryable()) && self.setup.error.is_none() {
-            let status = self.status.clone();
-            let detail = if self.status_detail.is_empty() {
-                status.clone()
-            } else {
-                self.status_detail.clone()
-            };
-            error_ui::card(
-                ui,
-                "model-error",
-                "Model needs attention",
-                &status,
-                &detail,
-                |ui| {
-                    if self.model.retryable() && ui.button("Retry model").clicked() {
-                        self.retry();
-                    }
-                },
-            );
-        }
         if self.preview {
             ui.label(
                 RichText::new("PREVIEW  ·  Launch normally to use your local model.")
                     .small()
                     .weak(),
-            );
-        }
-        if self.recovery_notice.starts_with("Could not") {
-            error_ui::card(
-                ui,
-                "recovery-error",
-                "Conversation saving needs attention",
-                &self.recovery_notice,
-                &self.recovery_notice,
-                |_| {},
             );
         }
     }
@@ -2009,6 +1984,7 @@ impl State {
                                 let focus_requested = self.focus_composer
                                     && !self.show_settings
                                     && !self.show_audio_transcript
+                                    && self.alerts.details.is_none()
                                     && !self.scene_packets.is_open();
                                 if focus_requested {
                                     response.request_focus();
@@ -2061,6 +2037,7 @@ impl State {
                             && !egui::Popup::is_any_open(ui.ctx())
                             && !self.show_settings
                             && !self.show_audio_transcript
+                            && self.alerts.details.is_none()
                             && !self.scene_packets.is_open()
                             && ui.is_enabled()
                             && response.has_focus()
@@ -2148,32 +2125,9 @@ impl State {
     }
 
     fn application_notices(&mut self, ui: &mut egui::Ui) {
-        egui::ScrollArea::vertical()
-            .id_salt("application-notices")
-            .max_height((ui.available_height() * 0.3).min(200.0))
-            .min_scrolled_height(0.0)
-            .auto_shrink([false, true])
-            .show(ui, |ui| {
-                self.setup_controls(ui);
-                self.conversation_notices(ui);
-                if self.audio_file_error {
-                    self.audio_file_status(ui);
-                }
-                if self.speech_notice
-                    && self.help.is_none()
-                    && self.setup.speech_error.is_none()
-                    && self.audio_file_notice.as_deref() != Some(self.speech_status.as_str())
-                {
-                    error_ui::card(
-                        ui,
-                        "speech-error",
-                        "Speech needs attention",
-                        &self.speech_status,
-                        &self.speech_status,
-                        |_| {},
-                    );
-                }
-            });
+        self.setup_controls(ui);
+        self.conversation_notices(ui);
+        self.alert_panel(ui);
     }
 
     fn draw_workspace(&mut self, ui: &mut egui::Ui) {
@@ -2253,6 +2207,7 @@ impl State {
         ui.add_enabled_ui(
             !self.show_settings
                 && !self.show_audio_transcript
+                && self.alerts.details.is_none()
                 && !self.scene_packets.is_open()
                 && !drawer,
             |ui| {
@@ -2268,6 +2223,7 @@ impl State {
         self.diagnostics(&ctx);
         self.conversation_dialogs(&ctx);
         self.iteration_dialog(&ctx);
+        self.alert_details_dialog(&ctx);
         self.audio_transcript_dialog(&ctx);
         self.scene_packet_dialog(&ctx);
         if let Some((title, message)) = self.help {
@@ -2325,6 +2281,7 @@ impl eframe::App for State {
             || (was_busy && !self.model.busy() && self.model.ready()))
             && !self.show_settings
             && !self.show_audio_transcript
+            && self.alerts.details.is_none()
             && !self.scene_packets.is_open()
             && ctx.memory(|memory| {
                 memory
@@ -2710,7 +2667,7 @@ mod startup_tests {
         ));
         let mut harness = Harness::builder()
             .with_size([480.0, 480.0])
-            .build_ui_state(|ui, state: &mut State| state.setup_controls(ui), state);
+            .build_ui_state(|ui, state: &mut State| state.application_notices(ui), state);
         harness
             .get_by_role_and_label(egui::Role::Button, "Retry setup")
             .click();

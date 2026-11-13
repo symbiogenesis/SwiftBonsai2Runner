@@ -604,36 +604,31 @@ impl Updates {
         }
     }
 
+    pub(super) fn error_notice(&self) -> Option<(&str, &str)> {
+        self.error
+            .as_deref()
+            .map(|error| (self.status.as_str(), error))
+    }
+
     fn status_controls(&self, ui: &mut egui::Ui) {
-        if let Some(error) = &self.error {
-            super::error_ui::card(
-                ui,
-                "update-error",
-                "Update needs attention",
-                &self.status,
-                error,
-                |_| {},
-            );
-        } else {
-            status_frame(ui, |ui| {
-                ui.horizontal_top(|ui| {
-                    if self.task.is_some() || self.installing() {
-                        ui.spinner();
-                    }
-                    super::error_ui::summary(ui, &self.status);
-                });
-                if self.installation.portable {
-                    ui.add_space(4.0);
-                    ui.label(
-                        egui::RichText::new(
-                            "New releases download automatically. You choose when to install.",
-                        )
-                        .small()
-                        .weak(),
-                    );
+        status_frame(ui, |ui| {
+            ui.horizontal_top(|ui| {
+                if self.task.is_some() || self.installing() {
+                    ui.spinner();
                 }
+                super::error_ui::summary(ui, &self.status);
             });
-        }
+            if self.installation.portable {
+                ui.add_space(4.0);
+                ui.label(
+                    egui::RichText::new(
+                        "New releases download automatically. You choose when to install.",
+                    )
+                    .small()
+                    .weak(),
+                );
+            }
+        });
     }
 
     pub(super) fn controls(&mut self, ui: &mut egui::Ui, can_install: bool) -> bool {

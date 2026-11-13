@@ -378,9 +378,12 @@ promotion or admission changes; the Rust/PQ2 development default retains these g
 
 Qualify bounded error reporting at minimum and normal window sizes, display
 scaling and Windows high contrast. Verify exact full-message Copy error, copied
-feedback, keyboard access, Retry, recovery and stacked setup/model/speech/audio
-failures without displacing the composer. Include the fixed native startup
-dialog, its scrollable preview, clipboard ownership and exceptional fallback.
+feedback, keyboard access, Retry, recovery and simultaneous setup/model/speech/audio
+and update failures through the shared alert selector without displacing the
+composer. Check stable source selection as alerts clear, details-modal Escape
+without background actions, and retained audio transcript actions. Include the
+fixed native startup dialog, its scrollable preview, clipboard ownership and
+exceptional fallback.
 The one five-minute model-free operation closed after 116 seconds: selected-file
 formatting passed, then focused Release test compilation rejected one unused test
 import. That import is corrected; the closed operation was not retried. Tests,

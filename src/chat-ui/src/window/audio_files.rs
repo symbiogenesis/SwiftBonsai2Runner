@@ -62,6 +62,7 @@ impl State {
             || self.delete_conversation.is_some()
             || self.show_settings
             || self.show_audio_transcript
+            || self.alerts.details.is_some()
             || self.scene_packets.is_open()
             || self.edit_message.is_some()
             || self.help.is_some()
@@ -289,34 +290,25 @@ impl State {
             <= super::INPUT_LIMIT.saturating_sub(length - (range.end - range.start))
     }
 
-    fn audio_file_error_status(&mut self, ui: &mut egui::Ui, message: &str) {
-        super::error_ui::card(
-            ui,
-            "audio-file-error",
-            "Audio transcription failed",
-            message,
-            message,
-            |ui| {
-                if !self.audio_file_transcript.is_empty() {
-                    if ui.button("View transcript").clicked() {
-                        self.show_audio_transcript = true;
-                        self.focus_composer = false;
-                    }
-                    self.copy_audio_transcript(ui, "Copy transcript", false);
-                }
-                if ui
-                    .button("Dismiss")
-                    .accessible_name("Dismiss audio status")
-                    .clicked()
-                {
-                    self.audio_file_notice = None;
-                    self.audio_file_transcript.clear();
-                    self.audio_file_progress = None;
-                    self.audio_file_error = false;
-                    self.show_audio_transcript = false;
-                }
-            },
-        );
+    pub(super) fn audio_file_error_actions(&mut self, ui: &mut egui::Ui) {
+        if !self.audio_file_transcript.is_empty() {
+            if ui.button("View transcript").clicked() {
+                self.show_audio_transcript = true;
+                self.focus_composer = false;
+            }
+            self.copy_audio_transcript(ui, "Copy transcript", false);
+        }
+        if ui
+            .button("Dismiss")
+            .accessible_name("Dismiss audio status")
+            .clicked()
+        {
+            self.audio_file_notice = None;
+            self.audio_file_transcript.clear();
+            self.audio_file_progress = None;
+            self.audio_file_error = false;
+            self.show_audio_transcript = false;
+        }
     }
 
     pub(super) fn audio_file_status(&mut self, ui: &mut egui::Ui) {
@@ -324,7 +316,6 @@ impl State {
             return;
         };
         if self.audio_file_error {
-            self.audio_file_error_status(ui, &message);
             return;
         }
         notice_frame(ui).show(ui, |ui| {

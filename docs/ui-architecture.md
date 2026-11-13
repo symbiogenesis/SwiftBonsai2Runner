@@ -324,11 +324,16 @@ share 16-point horizontal and 12-point vertical insets with a 12-point gap;
 thinking expands beneath the answer using its measured text height. Cached text
 wrapping and Find geometry use the same content insets as presentation.
 
-Failure notices share compact native cards with a two-line summary, a visible
-**Copy error** action with confirmation, and scrollable details. Preview limits
-never truncate the copied current error. Each card's content is capped at 168
-points; combined setup, model, recovery, speech and audio failures share a
-scroll area capped at 200 points and 30% of the available workspace height.
+Setup, model, conversation-saving, speech, audio-import and update failures
+share one native alert panel above the transcript. A count and labelled selector
+keep every active alert reachable while showing one two-line summary and its
+actions at a time, without stacked cards or scrolling in the panel. Selection
+follows the error source when other alerts clear. **Copy error** includes the
+complete current message and confirms the copy. **Details** opens a bounded native
+modal with a scrollable preview and full-message copy; Escape closes it without
+sending, stopping generation or cancelling speech. Preview limits never truncate
+the copied error. Source-specific Retry and transcript actions retain their
+readiness and cleanup requirements. Successful progress stays outside the panel.
 Full model errors stay in session memory, including across conversation switches;
 recovery saves only bounded status text. Diagnostics retain bounded recent previews
 and offer a separate Copy diagnostics action. Fatal launcher/graphics failures

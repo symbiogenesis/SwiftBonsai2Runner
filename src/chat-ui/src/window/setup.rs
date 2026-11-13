@@ -236,49 +236,31 @@ impl State {
         if preparing {
             let _ = self.preparation_card(ui);
             ui.add_space(8.0);
-        } else if let Some(error) = self.setup.error.clone() {
-            let status = self.status.clone();
-            super::error_ui::card(
-                ui,
-                "setup-error",
-                "Setup needs attention",
-                &status,
-                &error,
-                |ui| {
-                    if ui
-                        .add_enabled(self.can_retry_setup(), egui::Button::new("Retry setup"))
-                        .clicked()
-                    {
-                        self.retry_setup();
-                    }
-                },
-            );
-            ui.add_space(8.0);
         }
-        if let Some(error) = self.setup.speech_error.clone() {
-            super::error_ui::card(
-                ui,
-                "speech-setup-error",
-                "Speech setup needs attention",
-                "Speech setup could not finish. You can continue using text chat.",
-                &error,
-                |ui| {
-                    let retry = self.startup.is_none()
-                        && self.startup_request.is_none()
-                        && !self
-                            .updates
-                            .as_ref()
-                            .is_some_and(super::updates::Updates::installing)
-                        && cleanup_known(&error);
-                    if ui
-                        .add_enabled(retry, egui::Button::new("Retry speech setup"))
-                        .clicked()
-                    {
-                        self.retry_speech_setup();
-                    }
-                },
-            );
-            ui.add_space(8.0);
+    }
+
+    pub(super) fn setup_error_actions(&mut self, ui: &mut egui::Ui) {
+        if ui
+            .add_enabled(self.can_retry_setup(), egui::Button::new("Retry setup"))
+            .clicked()
+        {
+            self.retry_setup();
+        }
+    }
+
+    pub(super) fn speech_setup_error_actions(&mut self, ui: &mut egui::Ui, error: &str) {
+        let retry = self.startup.is_none()
+            && self.startup_request.is_none()
+            && !self
+                .updates
+                .as_ref()
+                .is_some_and(super::updates::Updates::installing)
+            && cleanup_known(error);
+        if ui
+            .add_enabled(retry, egui::Button::new("Retry speech setup"))
+            .clicked()
+        {
+            self.retry_speech_setup();
         }
     }
 }
