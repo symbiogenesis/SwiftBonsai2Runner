@@ -11,7 +11,7 @@ runs:
       shell: pwsh
       working-directory: ${{ runner.temp }}
       env:
-        TOOLS_SOURCE_ID: ${{ hashFiles('Cargo.toml', 'Cargo.lock', '**/Cargo.toml', 'tools/bonsai/**', 'src/artifacts/**', 'src/cpu-policy/**', 'src/windows-*/**', 'src/speech-asr/model.lock.json', 'src/speech-tts/model*.lock.json', '.cargo/**', 'rust-toolchain.toml', 'tools/ci/**', '.github/actions/ci-tool/**', 'config/**', '.github/actions/bonsai-tools/action.yml') }}
+        TOOLS_SOURCE_ID: ${{ hashFiles('Cargo.toml', 'Cargo.lock', '**/Cargo.toml', 'tools/bonsai/**', 'src/audio/**', 'src/artifacts/**', 'src/cpu-policy/**', 'src/windows-*/**', 'src/speech-asr/model.lock.json', 'src/speech-tts/model*.lock.json', 'tools/canary-asr/**', 'tools/qwen-tts/**', 'tools/hexagon/diagnostic.manifest', 'src/chat-ui/assets/bonsai.ico', 'LICENSE', 'NOTICE', '.cargo/**', 'rust-toolchain.toml', 'tools/ci/**', '.github/actions/ci-tool/**', '.github/actions/rust-toolchain/**', 'config/**', '.github/actions/bonsai-tools/action.yml') }}
         RUNNER_ENVIRONMENT: ${{ runner.environment }}
       run: |
         Set-StrictMode -Version Latest
@@ -20,7 +20,18 @@ runs:
         if (-not $IsWindows -or [Runtime.InteropServices.RuntimeInformation]::ProcessArchitecture -ne 'Arm64') { throw 'Packaged tools require native Windows ARM64.' }
         if ($env:TOOLS_SOURCE_ID -cnotmatch '^[a-f0-9]{64}$') { throw 'An exact source identity is required.' }
         if ($env:RUNNER_ENVIRONMENT -ceq 'github-hosted' -and (-not $env:ImageOS -or -not $env:ImageVersion)) { throw 'Hosted executable caching requires the runner image identity.' }
-        "BONSAI_TOOLS_CACHE_HOST=$env:ImageOS-$env:ImageVersion-$([Environment]::OSVersion.Version)" >> $env:GITHUB_ENV
+        # Compiler/profile overrides and Cargo-home configuration are build
+        # inputs too. The explicit target directory and forced content mode do
+        # not change compiled bytes, so they do not partition executable reuse.
+        $buildInputs = @(Get-ChildItem Env: | ForEach-Object { [pscustomobject]@{ Name = $_.Name.ToUpperInvariant(); Value = $_.Value } } | Where-Object { $_.Name -cnotin @('CARGO_BUILD_FINGERPRINT', 'CARGO_TARGET_DIR') -and $_.Name -cmatch '^(RUSTFLAGS|CARGO_ENCODED_RUSTFLAGS|RUSTC(?:_.*)?|CARGO_INCREMENTAL|CARGO_BUILD_.*|CARGO_PROFILE_RELEASE_.*|CARGO_TARGET_.*)$' } | Sort-Object Name | ForEach-Object { "$($_.Name)=$($_.Value)" })
+        $cargoHome = if ($env:CARGO_HOME) { $env:CARGO_HOME } else { Join-Path $env:USERPROFILE '.cargo' }
+        foreach ($name in @('config', 'config.toml')) {
+          $config = Join-Path $cargoHome $name
+          $digest = if (Test-Path -LiteralPath $config -PathType Leaf) { (Get-FileHash -LiteralPath $config -Algorithm SHA256).Hash.ToLowerInvariant() } else { 'absent' }
+          $buildInputs += "cargo-home-$name=$digest"
+        }
+        $environmentId = [Convert]::ToHexString([Security.Cryptography.SHA256]::HashData([Text.Encoding]::UTF8.GetBytes(($buildInputs -join "`n")))).ToLowerInvariant()
+        "BONSAI_TOOLS_CACHE_HOST=$env:ImageOS-$env:ImageVersion-$([Environment]::OSVersion.Version)-$environmentId" >> $env:GITHUB_ENV
         "BONSAI_TOOLS_SOURCE_ID=$env:TOOLS_SOURCE_ID" >> $env:GITHUB_ENV
         "BONSAI_TOOLS_TARGET=$(Join-Path $env:RUNNER_TEMP 'SwiftBonsai-PackagedTools')" >> $env:GITHUB_ENV
         "BONSAI_TOOLS_PACKAGE=$(Join-Path $env:RUNNER_TEMP 'SwiftBonsai-PackagedToolsBin')" >> $env:GITHUB_ENV
@@ -34,7 +45,7 @@ runs:
       with:
         path: ${{ env.BONSAI_TOOLS_PACKAGE }}
         # No fallback keys: skipping compilation requires identical build inputs.
-        key: bonsai-tools-executable-v2-${{ runner.os }}-${{ runner.arch }}-${{ env.BONSAI_TOOLS_CACHE_HOST }}-nightly-2026-11-12-${{ env.BONSAI_TOOLS_SOURCE_ID }}
+        key: bonsai-tools-executable-v3-${{ runner.os }}-${{ runner.arch }}-${{ env.BONSAI_TOOLS_CACHE_HOST }}-nightly-2026-11-12-${{ env.BONSAI_TOOLS_SOURCE_ID }}
     - name: Reuse the pinned native Rust compiler when compilation is needed
       if: steps.executable-cache.outputs.cache-hit != 'true'
       uses: $/.github/actions/rust-toolchain
@@ -48,9 +59,9 @@ runs:
           ~/.cargo/registry/index
           ~/.cargo/registry/cache
           ${{ env.BONSAI_TOOLS_TARGET }}
-        key: bonsai-tools-v1-${{ runner.os }}-${{ runner.arch }}-${{ env.BONSAI_TOOLS_CACHE_HOST }}-nightly-2026-11-12-${{ hashFiles('Cargo.toml', 'Cargo.lock', 'tools/bonsai/**', 'src/cpu-policy/**', 'src/artifacts/**', 'src/windows-*/**', 'src/speech-asr/model.lock.json', 'src/speech-tts/model*.lock.json', 'config/**/*.json', 'rust-toolchain.toml') }}-content-v1
+        key: bonsai-tools-v2-${{ runner.os }}-${{ runner.arch }}-${{ env.BONSAI_TOOLS_CACHE_HOST }}-nightly-2026-11-12-${{ env.BONSAI_TOOLS_SOURCE_ID }}-content-v1
         restore-keys: |
-          bonsai-tools-v1-${{ runner.os }}-${{ runner.arch }}-${{ env.BONSAI_TOOLS_CACHE_HOST }}-nightly-2026-11-12-
+          bonsai-tools-v2-${{ runner.os }}-${{ runner.arch }}-${{ env.BONSAI_TOOLS_CACHE_HOST }}-nightly-2026-11-12-
     - uses: $/.github/actions/ci-tool
       if: steps.executable-cache.outputs.cache-hit != 'true'
     - name: Build the packaged CLI after build inputs change
@@ -77,7 +88,8 @@ runs:
         $probe = Join-Path $env:BONSAI_TOOLS_PACKAGE 'bonsai-completion-test-probe.exe'
         Copy-Item -LiteralPath (Join-Path $env:BONSAI_TOOLS_TARGET 'aarch64-pc-windows-msvc/release/bonsai-completion-test-probe.exe') -Destination $probe
         @{
-          SchemaVersion = 2
+          SchemaVersion = 3
+          HostId = $env:BONSAI_TOOLS_CACHE_HOST
           SourceId = $env:BONSAI_TOOLS_SOURCE_ID
           Toolchain = 'nightly-2026-11-12-aarch64-pc-windows-msvc'
           Sha256 = (Get-FileHash -LiteralPath $tool -Algorithm SHA256).Hash.ToLowerInvariant()
@@ -95,7 +107,8 @@ runs:
         $tool = Join-Path $env:BONSAI_TOOLS_PACKAGE 'bonsai-tools.exe'
         $probe = Join-Path $env:BONSAI_TOOLS_PACKAGE 'bonsai-completion-test-probe.exe'
         $receipt = Get-Content -LiteralPath (Join-Path $env:BONSAI_TOOLS_PACKAGE 'receipt.json') -Raw | ConvertFrom-Json
-        if ($receipt.SchemaVersion -ne 2 -or $receipt.SourceId -cne $env:BONSAI_TOOLS_SOURCE_ID -or
+        if ($receipt.SchemaVersion -ne 3 -or $receipt.HostId -cne $env:BONSAI_TOOLS_CACHE_HOST -or
+            $receipt.SourceId -cne $env:BONSAI_TOOLS_SOURCE_ID -or
             $receipt.Toolchain -cne 'nightly-2026-11-12-aarch64-pc-windows-msvc' -or
             $receipt.Sha256 -cne (Get-FileHash -LiteralPath $tool -Algorithm SHA256).Hash.ToLowerInvariant() -or
             $receipt.ProbeSha256 -cne (Get-FileHash -LiteralPath $probe -Algorithm SHA256).Hash.ToLowerInvariant()) { throw 'Packaged CLI digest or build identity differs.' }

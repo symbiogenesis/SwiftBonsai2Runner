@@ -66,6 +66,7 @@ jobs:
         run: |
           python -B "$GITHUB_WORKSPACE/tools/ci/test_foundation_handoff.py"
           python -B "$GITHUB_WORKSPACE/tools/ci/test_native_ci_cache.py"
+          python -B "$GITHUB_WORKSPACE/tools/ci/test_tools_cache_inputs.py"
           python -B "$GITHUB_WORKSPACE/tools/ci/test_rust_toolchain.py"
           cargo +nightly-2026-11-12 test --locked --manifest-path "$GITHUB_WORKSPACE/Cargo.toml" --package bonsai-ci
       - name: Select affected crates and app groups

@@ -21,7 +21,7 @@ runs:
         if (-not $env:ImageOS -or -not $env:ImageVersion) { throw 'Hosted CI executable caching requires the runner image identity.' }
         if ($env:CI_SOURCE_ID -cnotmatch '^[a-f0-9]{64}$') { throw 'An exact CI source identity is required.' }
         # Environment compiler/profile overrides must miss the executable cache too.
-        $buildInputs = @(Get-ChildItem Env: | Where-Object { $_.Name -cne 'CARGO_BUILD_FINGERPRINT' -and $_.Name -cmatch '^(RUSTFLAGS|CARGO_ENCODED_RUSTFLAGS|RUSTC|RUSTC_WRAPPER|RUSTC_WORKSPACE_WRAPPER|CARGO_BUILD_.*|CARGO_PROFILE_RELEASE_.*|CARGO_TARGET_.*)$' } | Sort-Object Name | ForEach-Object { "$($_.Name)=$($_.Value)" })
+        $buildInputs = @(Get-ChildItem Env: | ForEach-Object { [pscustomobject]@{ Name = $_.Name.ToUpperInvariant(); Value = $_.Value } } | Where-Object { $_.Name -cnotin @('CARGO_BUILD_FINGERPRINT', 'CARGO_TARGET_DIR') -and $_.Name -cmatch '^(RUSTFLAGS|CARGO_ENCODED_RUSTFLAGS|RUSTC(?:_.*)?|CARGO_INCREMENTAL|CARGO_BUILD_.*|CARGO_PROFILE_RELEASE_.*|CARGO_TARGET_.*)$' } | Sort-Object Name | ForEach-Object { "$($_.Name)=$($_.Value)" })
         $cargoHome = if ($env:CARGO_HOME) { $env:CARGO_HOME } else { Join-Path $env:USERPROFILE '.cargo' }
         foreach ($name in @('config', 'config.toml')) {
           $config = Join-Path $cargoHome $name

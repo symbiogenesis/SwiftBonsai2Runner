@@ -134,6 +134,7 @@ class FoundationHandoffTests(unittest.TestCase):
         self.assertIn("'rust-toolchain.toml', '.cargo/**'", planner)
         self.assertIn("cargo +nightly-2026-11-12 test --locked", planner)
         self.assertIn("test_native_ci_cache.py", planner)
+        self.assertIn("test_tools_cache_inputs.py", planner)
         self.assertIn("test_rust_toolchain.py", planner)
         self.assertNotIn("cache-hit", planner)
 
