@@ -78,6 +78,13 @@ upstream revision without compiling or executing the package. Only Cargo's local
 backend families; it does not establish the selected preprocessed/compiled source
 closure, inference parity or permission to delete native files.
 
+The Rust [`native-closure-verify` command](../tools/ci/README.md#selected-compiler-source-closure)
+separately checks a reviewed selection of compiled translation units against
+original Clang dependency reports, preprocessed/object identities and generated
+input provenance. Owning builds must still establish complete selection,
+configuration and linked-library closure; passing a selected capture does not
+qualify native retirement.
+
 TTS has no signed RPC dispatcher. Its [signed-dispatch prerequisites](../src/speech-tts/README.md#optional-hexagon-runtime)
 require independent wire/Windows ABI controls before hybrid placement. Fixed
 F32/guarded-Q2 controls do not qualify Q8 prefill, shared KV or complete speech state.

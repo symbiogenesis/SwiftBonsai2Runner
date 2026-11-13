@@ -73,7 +73,7 @@ fn plain_metadata(path: &Path) -> Result<Metadata> {
     Ok(metadata)
 }
 
-fn plain_ancestors(path: &Path) -> Result<()> {
+pub(super) fn plain_ancestors(path: &Path) -> Result<()> {
     for ancestor in path.ancestors() {
         if !ancestor.as_os_str().is_empty() {
             plain_metadata(ancestor)?;
@@ -82,7 +82,7 @@ fn plain_ancestors(path: &Path) -> Result<()> {
     Ok(())
 }
 
-fn digest(path: &Path, limit: u64) -> Result<(u64, String)> {
+pub(super) fn digest(path: &Path, limit: u64) -> Result<(u64, String)> {
     let before = plain_metadata(path)?;
     if !before.is_file() || before.len() > limit {
         return Err("Native inventory input is not a bounded regular file.".into());
@@ -109,7 +109,7 @@ fn digest(path: &Path, limit: u64) -> Result<(u64, String)> {
     Ok((length, hex(&hash.finalize())))
 }
 
-fn hex(bytes: &[u8]) -> String {
+pub(super) fn hex(bytes: &[u8]) -> String {
     const DIGITS: &[u8; 16] = b"0123456789abcdef";
     let mut text = String::with_capacity(bytes.len() * 2);
     for byte in bytes {
@@ -119,7 +119,7 @@ fn hex(bytes: &[u8]) -> String {
     text
 }
 
-fn read_bounded(path: &Path, limit: u64) -> Result<Vec<u8>> {
+pub(super) fn read_bounded(path: &Path, limit: u64) -> Result<Vec<u8>> {
     let metadata = plain_metadata(path)?;
     if !metadata.is_file() || metadata.len() > limit {
         return Err("Native inventory input is not a bounded regular file.".into());
@@ -136,7 +136,7 @@ fn read_bounded(path: &Path, limit: u64) -> Result<Vec<u8>> {
     Ok(bytes)
 }
 
-fn lower_hex(value: &str, length: usize) -> bool {
+pub(super) fn lower_hex(value: &str, length: usize) -> bool {
     value.len() == length
         && value
             .bytes()

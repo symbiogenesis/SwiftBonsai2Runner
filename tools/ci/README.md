@@ -110,6 +110,55 @@ gates. This command is read-only and does not replace Cargo's build or introduce
 automatic CI dispatch. Its focused model-free controls use the
 `native_source_inventory_` filter.
 
+### Selected compiler source closure
+
+`native-closure-verify` checks a reviewed selection of Clang translation units,
+including system headers and generated inputs, without running any compiler or
+generator:
+
+```powershell
+& $reviewedCiTool native-closure-verify --manifest $closureManifest --expected-sha256 $reviewedManifestSha256
+```
+
+The caller supplies the manifest's independently reviewed SHA-256. Capture the
+original compiler dependency reports with Clang's
+[`-MD -MF`](https://clang.llvm.org/docs/ClangCommandLineReference.html#dependency-file-generation)
+and the preprocessed bytes with an explicit `-E` command under the same build
+configuration. Use absolute paths and an absolute object target (`-MT` when
+necessary). Preserve each successful exit code. Do not substitute `-MMD`, which
+omits system headers. The supported subset excludes response files, Make
+variables/comments, multiple/phony rules, NMake format and relative dependencies;
+unsupported captures reject rather than silently dropping inputs.
+
+The strict schema-1 manifest has `kind: selected-clang-native-source-closure`,
+`sourceRevision` (40 lowercase hex characters), `target`, `configuration`,
+`compiler` and a nonempty `units` array. Every file identity is an object with
+absolute `path`, `bytes` and lowercase `sha256` fields. The compiler is one such
+identity. Each unit supplies:
+
+| Field | Required capture |
+| --- | --- |
+| `source`, `workingDirectory` | Absolute original translation-unit and working-directory paths. |
+| `arguments`, `preprocessingArguments` | Full argument arrays, starting with the exact compiler path. Compilation includes explicit `-MD`, `-MF PATH` and `-o PATH`; preprocessing includes `-E` and `-o PATH`. Both include the exact source path. |
+| `compilerExitCode`, `preprocessorExitCode` | Both must be zero. |
+| `dependencies`, `preprocessed`, `object` | Distinct file identities for the original dependency report, nonempty preprocessed output and nonempty object. |
+| `inputs` | Exact source/header identities from the dependency report, each as `{identity, origin, generation}`. `origin` is `source`, `toolchain` or `generated`. |
+| `generation` | Null for source/toolchain inputs; generated inputs require `{generator, arguments, inputs}`, binding the generator executable, original arguments and nonempty input file identities. |
+
+The verifier rejects omitted/extra/aliased inputs, changed bytes, unsafe paths,
+reparse ancestors and absent generated-input provenance. It binds dependency
+parsing to the verified report bytes. Bounds are 4,096 units, 8,192 inputs per
+unit, 16 MiB documents, 256 MiB per file and 2 GiB aggregate checked bytes,
+including repeated inputs. `native_source_closure_` controls use literal miniature
+fixtures; they are not captures of a compiler execution.
+
+This verifies the declared selection and its retained bytes. A trusted owning
+build must independently establish the complete unit selection, generated-file
+classification, effective compiler/environment configuration, matching
+preprocessing/compilation and linker/library closure. The receipt explicitly
+leaves complete-build, linkage, inference and retirement qualification false.
+Retain only the selected bytes needed by that consumer, under the evidence policy.
+
 ## Workflow scope
 
 The retained workflows own current checks or open gates in [PLAN.md](../../PLAN.md):
