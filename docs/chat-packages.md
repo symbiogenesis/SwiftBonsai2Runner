@@ -1,34 +1,26 @@
 # Portable native chat packages
 
-For the portable single-executable distribution and its GitHub publication
-workflow, see [Windows releases](releases.md). Current releases publish one
-Windows ARM64 executable with separate checksum and release metadata files for
-verification; those sidecars do not need deployment beside the application.
-The checked-directory mechanism below remains a separate installation and
-rollback option.
+This guide covers checked-directory installation and rollback. For the portable
+Windows ARM64 executable, verification sidecars and publication workflow, see
+[Windows releases](releases.md); only the `.exe` needs deployment.
 
-Checked-directory packages use the explicit install/rollback commands below;
-they do not discover releases or replace the running application automatically.
-Single-executable bundles built from current source use the separate
-[portable update path](releases.md#update-and-remove): verified automatic download,
-then confirmed executable replacement and restart. Published v0.2.0 bundles
-require manual replacement. Keep the same user data directory in either case.
+Checked-directory packages use explicit install/rollback commands, without
+automatic discovery or running-app replacement. Current-source single-executable
+bundles instead use [portable updates](releases.md#update-and-remove): verified
+download, then confirmed replacement/restart. Published v0.2.0 needs manual
+replacement. Always preserve the same user data directory.
 
-The native `bonsai-tools chat-package` command assembles reviewed Windows ARM64
-application files, installs versioned directories, activates updates atomically
-and retains an explicit rollback choice. Installation and launch need a trusted
-maintenance executable and the ordinary model/runtime installation. Neither a
-source checkout, PowerShell nor a Rust/C++ compiler is required. Native speech
-also requires the compatible ARM64 Microsoft Visual C++ runtime used by its
-dynamic MSVC build; this package does not install runtime DLLs.
+`bonsai-tools chat-package` assembles reviewed Windows ARM64 files, installs
+versioned directories, activates updates atomically and retains a rollback choice.
+Install and launch with a trusted maintenance executable and provisioned models/runtime;
+no checkout, PowerShell or compiler is needed. Native speech requires the compatible
+ARM64 Microsoft Visual C++ runtime, which the package does not install.
 
-This checked-directory distribution path does not provide a signed installer,
-publisher authentication or automatic update discovery. SHA-256 detects changed
-bytes; review the manifest digest through a trusted channel before installation.
-Use an independently trusted `bonsai-tools.exe` for installation and subsequent
-launches. Executing an unverified received package's maintenance binary to verify
-itself does not establish trust. Same-user replacement remains outside this
-boundary. Remaining distribution and actual-model acceptance gates live in
+Packages provide no signed installer or publisher authentication. Verify the
+manifest digest through a trusted channel and use an independently trusted
+`bonsai-tools.exe` for installation and launch. SHA-256 detects changed bytes;
+an unverified package cannot authenticate itself. Same-user replacement is outside
+this boundary. Distribution and actual-model acceptance remain in
 [PLAN.md](../PLAN.md#application-and-daily-service).
 
 ## Native command
@@ -40,10 +32,10 @@ Git, then invoke the trusted executable directly:
 bonsai-tools.exe chat-package --request C:\BonsaiRequests\package.json
 ```
 
-Success returns a JSON receipt on stdout; errors return a nonzero exit code and
-diagnostic on stderr. Requests reject unknown fields. All filesystem paths must
-be expanded absolute paths without links, device namespaces or alternate data
-streams. Package output, artifacts and installation storage remain outside Git.
+Success emits a JSON receipt on stdout; failure emits stderr and a nonzero exit
+code. Unknown fields are rejected. Use expanded absolute paths without links,
+device namespaces or alternate data streams. Keep outputs, artifacts and
+installation storage outside Git.
 
 ## Assemble a package
 
@@ -67,12 +59,11 @@ supplied declarations, not proof of build provenance.
 }
 ```
 
-Replace the example revision with the reviewed build identity. The command
-includes project `LICENSE` and `NOTICE` embedded in the trusted tool's source
-build, plus the supplied third-party notice text. Review these against the exact
-shipped dependencies under [redistribution requirements](licensing.md#redistribution).
-The tool does not certify notice completeness. Models, adapters and inference
-runtime files remain separately provisioned artifacts with their own terms.
+Replace the example revision with the reviewed build identity. Creation includes
+the trusted tool's embedded `LICENSE`/`NOTICE` and supplied third-party notices.
+Review them against exact shipped dependencies under the
+[redistribution requirements](licensing.md#redistribution); the tool cannot certify
+completeness. Models, adapters and runtimes remain separate artifacts with their own terms.
 
 Schema-2 packages contain exactly five ARM64 executables under `bin/`, three
 notice files and bounded `package.json` metadata with each file's size and
@@ -83,18 +74,15 @@ intact and retain the returned `ManifestSha256` independently. `inspect` accepts
 
 ## Bundle a package into one executable
 
-The same verified schema-2 package can become one distributable `.exe`. This
-embeds the five application executables, package metadata and notices in the
-native maintenance launcher; it preserves the separate worker processes and
-their containment. Models, adapters and inference runtime downloads stay separate.
+A verified schema-2 package can become one `.exe`, embedding all five executables,
+metadata and notices while preserving separate contained workers. Models, adapters
+and runtimes remain separate downloads; computation settings are unchanged.
 
-New bundles compress their payload with ZIP deflate using the existing archive
-dependency. Inspection and extraction also accept retained stored entries and keep
-the same fixed inventory, expanded-byte limits and complete SHA-256 checks. The
-launcher remains directly executable; model computation settings are unchanged.
-Use the dedicated GUI-subsystem `bonsai-launcher.exe` build as the package's
-`toolPath`; it is stored as `bin/bonsai-tools.exe`. The console maintenance build
-remains available for source tooling, while the packaged launcher opens no terminal.
+ZIP deflate compresses new payloads. Inspection/extraction also accept retained
+stored entries, with the same fixed inventory, expanded-byte limits and SHA-256
+checks. Use GUI-subsystem `bonsai-launcher.exe` as `toolPath`, stored as
+`bin/bonsai-tools.exe`, to launch without a terminal. The console build remains
+available for source tooling.
 
 ```powershell
 ./scripts/release/Build-WindowsExecutable.ps1 -PackageDirectory C:\BonsaiPackages\0.2.0 -ManifestSha256 REPLACE_WITH_THE_REVIEWED_64_HEX_DIGEST -OutputPath C:\BonsaiPackages\SwiftBonsai2Runner.exe
@@ -140,12 +128,11 @@ the five components and assembles this same distribution format.
 }
 ```
 
-The package activation command validates the fixed inventory, native architecture, sizes, hashes
-and external paths before selecting a version. A single-writer lock serializes
-operations. Rust copies into private staging, verifies again, publishes a new
-version directory and atomically replaces `active.json`. Failed verification
-preserves the current selection. Existing versions are retained. Digests supplied
-in uppercase are canonicalized before deriving the version directory identity.
+Activation validates inventory, architecture, sizes, hashes and external paths.
+A single-writer lock serializes operations: copy to private staging, verify again,
+publish a version directory and atomically replace `active.json`. Failure preserves
+the current selection; existing versions are retained. Uppercase digests are
+canonicalized before deriving directory identity.
 
 Install the next reviewed package with the same operation and its new digest.
 Rollback verifies the retained previous package before switching:
@@ -174,11 +161,10 @@ unverified incoming distributions.
 }
 ```
 
-One native operation checks the selected manifest and complete fixed inventory,
-then derives executable paths and starts the same native application. Options
-cannot supply executable paths or request source builds. The legacy `launch`
-operation also remains available for callers that bind `expectedDirectory`,
-`expectedId` and `expectedManifestSha256` before handoff.
+`start` checks the selected manifest and complete inventory, derives executable
+paths and launches the native app. Options cannot override paths or request source
+builds. Legacy `launch` remains available with `expectedDirectory`, `expectedId`
+and `expectedManifestSha256` bound before handoff.
 
 Provision Swift model/runtime and the adapter before launch using the
 [setup commands](releases.md#prerequisites-and-model-setup), which need no checkout.
@@ -205,9 +191,9 @@ native app and broker. No failed PTQ1 launch falls back automatically.
 
 ## Validation
 
-Foundation's `bonsai-tools` Rust suite owns package creation, installation,
-updates, bidirectional rollback, legacy-package compatibility, write contention,
-tampering, fixed inventory, metadata and launch handoff checks. The former
-PowerShell package tests and wrappers are deleted. Inert ARM64 fixture headers
-and injected launch handoffs establish package behavior, not actual-model,
-speech, signing or daily-service acceptance. Complete suites remain CI-only.
+Foundation's `bonsai-tools` suite checks creation, installation, updates,
+bidirectional rollback, legacy compatibility, write contention, tampering,
+inventory, metadata and launch handoff. Rust replaced the PowerShell tests/wrappers.
+Inert ARM64 headers and injected handoffs establish package behavior only;
+actual-model, speech, signing and daily-service acceptance remain separate.
+Complete suites are CI-only.

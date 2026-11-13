@@ -16,9 +16,8 @@ or MPL; permissive dependencies remain subject to their own notices.
 
 ## Reviewed dependencies
 
-The review covers workspace manifests, the shared lockfile, resolved package
-metadata/cached license files, Prism notices and pinned artifact declarations.
-Dependency terms apply independently of the application's license.
+The review covers workspace manifests/lockfile, resolved metadata and cached
+licenses, Prism notices and pinned artifacts. Dependency terms apply independently.
 
 | Material | Declared terms | Distribution requirements |
 | --- | --- | --- |
@@ -43,11 +42,9 @@ Dependency terms apply independently of the application's license.
 | `epaint_default_fonts` 0.37.0 | (MIT OR Apache-2.0) AND OFL-1.1 AND Ubuntu-font-1.0 | Preserve the individual font notices described below; the crate's code license does not replace them. |
 | Prism/ggml codec, loader and native reference portions | MIT | Retain upstream MIT notices; Apache-2.0 does not replace them. |
 
-The other reviewed code packages have permissive alternatives; bundled font
-assets have separate terms. None lacked a declared license in the review.
-The former `tools/prism` build helper and its cbindgen dependency are retired;
-cbindgen is absent from the current workspace lockfile. Historical review of that
-tool does not describe the current application dependency graph.
+All reviewed code packages declare licenses with permissive options; fonts have
+separate terms. The retired `tools/prism` helper and cbindgen dependency are absent
+from the current workspace graph; their historical reviews describe earlier code.
 
 ### Native GUI fonts
 
@@ -77,11 +74,9 @@ files from the exact `epaint_default_fonts` package's `fonts/` directory:
   OFL font software under OFL and respect reserved names and standalone-sale
   restrictions.
 
-`system_fonts` uses `fontique` to locate installed fonts at runtime; the provider
-memory-maps those local files rather than bundling them. This does not grant
-permission to ship a user's or the operating system's fonts. Review each font's
-own terms before adding it to a release. These font terms do not relicense the
-original application code.
+`system_fonts` uses `fontique` to locate and memory-map installed fonts; it does
+not bundle them or grant redistribution rights. Review each font's terms before
+shipping it. Font terms do not relicense the application code.
 
 ## External engines
 
@@ -120,8 +115,7 @@ license does not replace terms for additional included components.
 
 ## Models and adapters
 
-External weights/adapters retain their terms; the application license does not
-relicense them.
+Weights and adapters retain their publishers' terms.
 
 | Artifact | Pinned revision | Published terms |
 | --- | --- | --- |
@@ -144,7 +138,6 @@ copyright/license/notice material, including Unicode notices. Mark modified
 Apache-licensed files. Include separate upstream notices/licenses when shipping
 models/adapters. Review separately any additional build tools redistributed with a release.
 
-Assemble complete distribution notices from the exact packages, runtime
-archives and artifacts shipped; repeat the review when pins, enabled features
-or bundled assets change. The current portable executable embeds these notices;
-models and inference runtimes retain their separate distribution terms.
+Assemble notices from the exact shipped packages, runtime archives and artifacts.
+Repeat review when pins, features or bundled assets change. The portable executable
+embeds its notices; models and runtimes retain separate distribution terms.

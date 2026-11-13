@@ -5,11 +5,10 @@ developer commands, or [portable packages](chat-packages.md) to run without a
 checkout. [PLAN.md](../PLAN.md) is the single backlog; these guides own current
 behavior, technical contracts and retained evidence.
 
-The current application uses a native Rust UI, pinned Prism 0.1.25 inference on
-Windows ARM64, a CPU baseline with experimental X2 resident Hexagon acceleration,
-and a strict local HTTP/JSON/SSE subset. Experimental runtimes, formats and
-accelerators require separate qualification. Evidence scopes below distinguish
-implemented behavior from actual-model, device, quality and isolation acceptance.
+The app uses a native Rust UI, pinned Prism 0.1.25 on Windows ARM64, CPU inference
+with experimental X2 resident Hexagon acceleration, and a strict local HTTP/JSON/SSE
+subset. Implementation does not establish model, device, quality or isolation
+acceptance; experimental runtimes, formats and accelerators need separate qualification.
 
 ## Use and develop
 
@@ -68,22 +67,19 @@ implemented behavior from actual-model, device, quality and isolation acceptance
 | [Performance and speech](performance-expectations.md) | Publisher benchmark context, paired speech results and latency/memory/energy measurement |
 | [Research register](research-register.md) | Dated sources, mathematical proof obligations, applicability, negative results and experiment review |
 
-Retained JSON receipts live in [evidence/](evidence/), candidate manifests and
-patches in [runtime-candidates/](runtime-candidates/README.md), and charts in
-[assets/](assets/). Owning guides explain their scope and reproduction; file
-presence alone is not qualification. Add prose to its owning topic, link shared
-requirements and put outstanding work in PLAN.
+Receipts live in [evidence/](evidence/), candidate manifests/patches in
+[runtime-candidates/](runtime-candidates/README.md), and charts in [assets/](assets/).
+Owning guides explain scope and reproduction; file presence alone is not
+qualification. Keep prose in its owning topic, link shared requirements and put
+outstanding work in PLAN.
 
-Follow the [evidence-retention policy](validation.md#evidence-retention): keep the
-smallest selection supporting current claims, actionable failures or required
-replay. Prefer one concise summary; omit blank logs, placeholder receipts and
-redundant records. Routine check results belong in the commit or delivery message.
-Required raw replay inputs and integrity records remain exact. Completed
-source-review diaries, temporary validation drivers and duplicate build/release
-payloads belong in Git history. Trimmed historical summaries identify the original
-revision and state when raw replay requires that history; they do not qualify
-current source.
-The evidence tree before the latest cleanup is available at commit
-`7b37b29826b377386c1ddfe933cd4e75d6a97856`. Historical Git links identify local
-commits; read them locally with `git show <revision>:<path>`. They become available
-on GitHub after the owner publishes those commits.
+Follow the [evidence-retention policy](validation.md#evidence-retention): retain
+only current claim evidence, actionable failures and required replay inputs.
+Routine check results belong in commits or delivery messages. Preserve required
+raw bytes and integrity records; leave completed review diaries, temporary drivers
+and duplicate payloads in Git history. Historical summaries identify their original
+revision and replay limits; they cannot qualify current source.
+
+The pre-cleanup evidence tree is at `7b37b29826b377386c1ddfe933cd4e75d6a97856`.
+Read historical local commits with `git show <revision>:<path>`; GitHub links work
+after the owner publishes them.

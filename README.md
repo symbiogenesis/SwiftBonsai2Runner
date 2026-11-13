@@ -20,33 +20,30 @@ Swift Bonsai 2 is a compact language model by [UkisAI](https://ukisai.com/swift-
 built on [PrismML's Bonsai 2](https://huggingface.co/prism-ml/Ternary-Bonsai-2-27B-gguf)
 and [Alibaba's Qwen3.8-27B](https://huggingface.co/Qwen/Qwen3.8-27B).
 
-This project is a local creative-writing and brainstorming app for **Windows ARM64
-laptops with Snapdragon X and X2 processors**. Everything runs on your laptop, so
-your prompts and conversations stay on your device.
+This creative-writing and brainstorming app runs locally on **Windows ARM64
+laptops with Snapdragon X and X2 processors**. Prompts and conversations stay on
+your device.
 
-The app uses the [Prism Inference](https://github.com/symbiogenesis/prism-inference)
-Rust engine and downloads a prebuilt engine automatically, so you don't need to
-compile the model engine yourself. It runs on the CPU and can also use the built-in
-Hexagon NPU on Snapdragon X2 laptops when the NPU driver is installed, with
-[broader hardware tuning and GPU/NPU support](docs/hardware-capabilities.md#automatic-profile-selection)
-in progress.
+The app downloads the prebuilt [Prism Inference](https://github.com/symbiogenesis/prism-inference)
+Rust engine automatically. It runs on the CPU and can use the Hexagon NPU on
+Snapdragon X2 with its driver installed.
+[Broader hardware tuning and GPU/NPU support](docs/hardware-capabilities.md#automatic-profile-selection)
+are in progress.
 
-Once you've [downloaded the model and tools](docs/development-guide.md#native-chat-app),
-open the Windows chat app with `bonsai-tools chat` or `./scripts/Start-Chat.ps1`.
-If you want to switch back to the original publisher C++ engine, add
-`--publisher-engine` (or `-PublisherEngine` with the script).
+After [setup](docs/development-guide.md#native-chat-app), launch with
+`bonsai-tools chat` or `./scripts/Start-Chat.ps1`. Add `--publisher-engine`
+(or `-PublisherEngine` with the script) to use the original publisher C++ engine.
 
-The [Windows release guide](docs/releases.md) describes the single executable
-containing all five application tools and the prepared v0.2.1 experimental
-release. [Local builds](docs/development-guide.md#build-a-single-executable)
-can produce the same single-file distribution. Release publication is pending the
-owner's source push and GitHub release workflow run.
+The [Windows release guide](docs/releases.md) covers the portable executable and
+prepared v0.2.1 experimental release, pending the owner's source push and release
+workflow run. [Build locally](docs/development-guide.md#build-a-single-executable)
+to create the same single-file distribution containing all five application tools.
 
 > [!NOTE]
-> **Work in progress.** The Rust engine is our default for everyday development while
-> we finish testing long conversations, writing quality, sustained speed, security
-> isolation, and clean-machine setup. If startup fails, the app stops and shows the
-> error rather than quietly switching engines or model files.
+> **Work in progress.** Rust is the development default. Long conversations,
+> writing quality, sustained speed, isolation and clean-machine setup still need
+> acceptance testing. Startup failures stop the app with an error; they never
+> silently switch engines or model files.
 
 ## Features
 
@@ -58,13 +55,11 @@ owner's source push and GitHub release workflow run.
 - **Portable updates:** Download and verify the newer Windows ARM64 executable,
   close Swift, then replace your copy. Keep the same data directory to preserve
   model downloads and conversations; see [Windows releases](docs/releases.md).
-- **Thinking and Extra effort:** Extended **Thinking** is off by default. Turn it on
-  under **Settings → Response** when you want the model to work through a request
-  before answering, or use **Extra effort** to have it plan, draft, and revise its
-  reply. Each conversation remembers its own choice.
-- **Response tuning:** Settings includes a slider that adjusts the built-in style
-  adapter's strength for the next reply (set to **1.3** by default, or **0** to turn
-  it off). Its effect and output quality on Swift are still experimental.
+- **Thinking and Extra effort:** **Thinking** is off by default; enable it under
+  **Settings → Response** for reasoning before answers. **Extra effort** plans,
+  drafts and revises a reply. Each conversation remembers its choice.
+- **Response tuning:** Set the style adapter's strength for the next reply in
+  Settings: **1.3** by default, **0** to disable. Its effect on Swift is experimental.
 - **Voice and dictation:** Chat by typing, hear answers read aloud in a voice you
   describe in plain words, or record a message with Qwen3-ASR 1.7B. Finish recording
   to transcribe and send it to Swift. The microphone stays off until you turn it
@@ -72,10 +67,10 @@ owner's source push and GitHub release workflow run.
   aloud as responses arrive** speaks new replies while Swift writes, and each
   reply's speaker button lets you replay it anytime.
 
-The launcher downloads speech models automatically. The [setup guide](docs/development-guide.md)
-explains how to skip speech downloads or preview the app window without loading a
-model. For technical details, see the [UI architecture](docs/ui-architecture.md) and
-[local API guide](docs/broker-policy.md#public-request-contract).
+The launcher downloads speech models automatically; the [setup guide](docs/development-guide.md)
+explains how to skip them or preview the app without a model. See the
+[UI architecture](docs/ui-architecture.md) and
+[local API](docs/broker-policy.md#public-request-contract) for technical details.
 
 ## At a glance
 
@@ -95,10 +90,9 @@ are from **November 9, 2026**, using **Prism 0.1.23**, four CPU workers and the
 standard adapter at strength 1.3 on a **Snapdragon X2 Elite Extreme** laptop.
 AC power was connected and battery saver was off at every recorded power sample.
 
-The [Prism 0.1.25 experimental release](https://github.com/symbiogenesis/prism-inference/releases/tag/v0.1.25)
-is published, and Runner's development repin uses its verified files with the
-K4/V4 cache default and explicit FP16 recovery. New performance measurements
-remain [pending](PLAN.md). The timings below still apply to 0.1.23.
+Runner's development build uses published [Prism 0.1.25](https://github.com/symbiogenesis/prism-inference/releases/tag/v0.1.25)
+with verified files, K4/V4 cache and explicit FP16 recovery. Its performance
+measurements remain [pending](PLAN.md); the timings below apply to **0.1.23**.
 
 | Model option | Time to first token | Generation speed | Model file size | Peak Job commit (short reply) | Free RAM required |
 | --- | ---: | ---: | ---: | ---: | ---: |
@@ -113,10 +107,9 @@ sustained speed. The default acceleration policy was used, but actual NPU usage
 was not verified. Peak Job commit excludes mapped-file residency and NPU
 allocations; it is not total RAM use.
 
-The extra-compact model option (`--use-repacked-ptq1`) saves about **1.17 GiB** of
-disk space without changing the model's weights. It also used about **1.17 GiB**
-less peak Job commit in these short requests, while generating tokens more
-slowly on the measured release. It remains an optional experiment.
+The optional `--use-repacked-ptq1` experiment saves about **1.17 GiB** on disk
+without changing weights. In these short requests it also reduced peak Job commit
+by about **1.17 GiB**, but generated tokens more slowly.
 
 For detailed benchmarks, NPU layer timings, and memory breakdowns, see:
 
@@ -128,11 +121,10 @@ For detailed benchmarks, NPU layer timings, and memory breakdowns, see:
 
 ### Response speed
 
-Compact models use less memory, but reply speed still depends on your laptop's
-processor, the engine, and how long your prompt is. **We have only measured short
-replies on Snapdragon so far; sustained speed over long conversations is still being
-tested.** For context, these are PrismML's published speeds for the **base Bonsai 2
-model** on other hardware:
+Reply speed depends on processor, engine and prompt length. **Snapdragon
+measurements cover short replies; sustained long-conversation speed is still
+being tested.** For context, PrismML publishes these speeds for **base Bonsai 2**
+on other hardware:
 
 ![Base Bonsai 2 PQ2 generation speed: Apple M5 Pro 28.1, RTX 4090 81.2 and RTX 5090 129.9 tokens per second.](docs/assets/reference-throughput.svg)
 
@@ -159,10 +151,8 @@ and we are still evaluating its creative-writing quality for everyday use. See
 
 ## Documentation
 
-The [documentation index](docs/README.md) lists all setup guides and technical
-references. Start with [setup and development](docs/development-guide.md),
-[testing and validation](docs/validation.md), or the [project TODO](PLAN.md). For
-architecture and research notes, see
+Start with [setup](docs/development-guide.md), [validation](docs/validation.md)
+or the [project TODO](PLAN.md). The [documentation index](docs/README.md) covers
 [application design](docs/README.md#application-contracts),
 [models and runtime](docs/README.md#models-memory-and-runtime), and
 [hardware and inference](docs/README.md#hardware-and-inference).

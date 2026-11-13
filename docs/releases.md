@@ -1,21 +1,19 @@
 # Windows releases
 
-Swift Bonsai 2 Runner ships as a **single portable Windows ARM64 executable**
-for Snapdragon X and X2 laptops. The next prepared experimental release is **v0.2.1**;
-its [release notes](releases/v0.2.1.md) describe the development default and
-remaining acceptance limits. The earlier [v0.2.0 release](https://github.com/symbiogenesis/SwiftBonsai2Runner/releases/tag/v0.2.0)
-remains available. New publication requires the owner's source push and Windows
-Release workflow run; local changes alone do not publish a release.
+Swift Bonsai 2 Runner ships as a **portable Windows ARM64 executable** for
+Snapdragon X and X2 laptops. [v0.2.1](releases/v0.2.1.md) is prepared locally;
+publication requires the owner's source push and Windows Release workflow run.
+The published [v0.2.0 release](https://github.com/symbiogenesis/SwiftBonsai2Runner/releases/tag/v0.2.0)
+remains available.
 
 ## Download and open
 
-After publication, obtain the executable from the project's
-[GitHub releases](https://github.com/symbiogenesis/SwiftBonsai2Runner/releases).
-The complete release has three assets:
+Download from [GitHub releases](https://github.com/symbiogenesis/SwiftBonsai2Runner/releases)
+after publication. The v0.2.1 release has three assets:
 
 | Asset | Purpose |
 | --- | --- |
-| `SwiftBonsai2Runner-0.2.1-windows-arm64.exe` | The runnable application, containing all five application executables and their notices. |
+| `SwiftBonsai2Runner-0.2.1-windows-arm64.exe` | All five application executables and their notices. |
 | `SHA256SUMS.txt` | Checksums for the executable and release manifest. |
 | `release-manifest.json` | Version, source revision, build identities and executable digest. |
 
@@ -27,20 +25,20 @@ Get-FileHash .\SwiftBonsai2Runner-0.2.1-windows-arm64.exe -Algorithm SHA256
 .\SwiftBonsai2Runner-0.2.1-windows-arm64.exe
 ```
 
-**Deploy only the `.exe`.** The verification files and any local build-summary
-JSON files are not needed beside it at runtime. Package metadata and project and
-dependency notices are embedded. Windows Release publishes no MSI or separate
-ZIP package and invokes no installer tool or installer-EULA acceptance.
+**Deploy only the `.exe`.** Package metadata and project/dependency notices are
+embedded; verification files and local build summaries need not accompany it.
+Windows Release publishes no MSI or separate ZIP, uses no installer tool and
+requires no installer-EULA acceptance.
 
-The native Rust GUI launcher opens chat without a terminal, source checkout or
-compiler. It verifies its compressed inventory and extracts a checked package
-under `%LOCALAPPDATA%\SwiftBonsai2\application-bundles\<first-24-manifest-sha256-characters>\`.
-UI, broker and speech still run as separate owned processes with the existing
-containment and shutdown rules. Retained cache files are checked before use.
+The native Rust GUI launcher opens chat without a terminal, checkout or compiler.
+It verifies and extracts its compressed package under
+`%LOCALAPPDATA%\SwiftBonsai2\application-bundles\<first-24-manifest-sha256-characters>\`,
+checking cached files before reuse. UI, broker and speech remain separate owned
+processes under the existing containment and shutdown rules.
 
-The experimental executable is unsigned. Published checksums detect changed
-bytes within the GitHub release trust boundary; they do not establish an
-independent publisher signature. Review the release source identity before use.
+The experimental executable is unsigned. Checksums detect changed bytes within
+GitHub's release trust boundary; they provide no independent publisher signature.
+Review the release source identity before use.
 
 ## Prerequisites and model setup
 
@@ -52,17 +50,15 @@ Install the compatible ARM64 Microsoft Visual C++ v14 runtime from
 It is a separate prerequisite for the native speech components; the bundle does
 not install that redistributable.
 
-The executable contains application code and notices. Swift weights (about
-**6.71 GiB**), the adapter, inference runtime and speech models remain separate
-locked downloads with their own [license terms](licensing.md). Opening the bundle
-does not waive artifact checks or memory admission. Missing runtime preparation
-can download the pinned inference runtime; model and adapter provisioning remain
-explicit. Speech preparation can download the selected speech models, while
-microphone capture requires explicit consent.
+Swift weights (about **6.71 GiB**), adapter, inference runtime and speech models
+are separate locked downloads with their own [license terms](licensing.md).
+Artifact checks and memory admission still apply. Preparation can download the
+pinned runtime and selected speech models; model and adapter provisioning remain
+explicit. Microphone capture requires explicit consent.
 
 To provision Swift without a checkout, retain the verified `release-manifest.json`
-for this setup command and download the model lock from its exact source revision.
-Use the same data directory for setup and launch:
+and download the model lock from its exact source revision. Use one data directory
+for setup and launch:
 
 ```powershell
 $tool = (Resolve-Path .\SwiftBonsai2Runner-0.2.1-windows-arm64.exe).Path
@@ -77,9 +73,9 @@ Invoke-WebRequest "https://raw.githubusercontent.com/symbiogenesis/SwiftBonsai2R
 & $tool bundled-chat --data-directory $data
 ```
 
-The explicit `swift-assessment.lock.json` selects Swift weights; omitting it
-selects the separate reference model. Review the release manifest and source
-identity with the published checksum inventory before using this command.
+`swift-assessment.lock.json` selects Swift; omitting it selects the reference
+model. Verify the release manifest and source identity against the published
+checksum inventory before running these commands.
 
 For text-only launch without speech-model preparation, use:
 
@@ -87,44 +83,40 @@ For text-only launch without speech-model preparation, use:
 & $tool bundled-chat --data-directory $data --no-speech-models
 ```
 
-The Rust/PQ2 development default, explicit publisher rollback and opt-in PTQ1
-representation retain their existing verification rules. A preparation failure
-never silently changes the selected engine or representation. See the
-[development guide](development-guide.md#native-chat-app) for model setup and the
-[package contract](chat-packages.md#launch-without-a-checkout) for launch options.
+Rust/PQ2 is the development default; publisher rollback is explicit and PTQ1 is
+opt-in. Verification rules still apply, and preparation failures never silently
+switch engine or representation. See the
+[development guide](development-guide.md#native-chat-app) and
+[package launch options](chat-packages.md#launch-without-a-checkout).
 
 ## Update and remove
 
-Current source and the prepared v0.2.1 release check GitHub at startup and every
-six hours, including published experimental prereleases, and automatically
-download a newer Windows ARM64 executable. The published v0.2.0 executable has
-no automatic discovery; use the manual update steps below to replace it.
+Current source and prepared v0.2.1 builds check GitHub at startup and every six
+hours, then download newer Windows ARM64 releases, including experimental
+prereleases. **Settings > Application** also offers a manual check. Discovery
+selects the highest numeric version in the bounded catalog, excluding drafts and
+older versions. An incomplete catalog or invalid newest release fails without
+falling back. Published v0.2.0 requires manual replacement.
 
-For current builds, Settings > Application also provides a manual check. Discovery
-chooses the highest numeric version across the bounded release catalog; drafts and older
-versions are excluded. An incomplete catalog or invalid newest release is an error,
-never a reason to fall back to an older download.
+The updater verifies the GitHub asset digest, manifest, checksum inventory and
+tag/source revision. Choose **Install update and close**, then **Close and install**.
+Swift follows your save setting, stops owned processes, revalidates publication
+and starts the verified native helper. It atomically replaces the executable and
+reopens it with the original options and data directory. Models, runtimes, saved
+conversations and preferences remain separate.
 
-Before replacement, the updater verifies the GitHub asset digest, release manifest,
-checksum inventory and tag/source revision. Choose **Install update and close**,
-then confirm **Close and install**. Swift saves according to your existing setting,
-stops its owned processes, revalidates publication and starts the verified native
-replacement helper. The helper replaces the same executable atomically and reopens
-it with the original launch options and data directory. No MSI is used. Models,
-runtime downloads, saved conversations and preferences remain separate. A failed
-download or replacement retains the existing executable; a failed restart leaves
-the updated executable available to open manually. A read-only executable location
-requires manual replacement.
+Failed downloads or replacement preserve the existing executable. If restart
+fails, open the updated executable manually. Read-only locations require manual
+replacement.
 
 Manual updates remain available: download the newer executable from the project's
 releases, verify its checksum, close Swift and replace the old `.exe`. Keep the same
 data directory when reopening it. Source and preview launches perform no automatic
 update work.
 
-To remove the app, close it and delete its executable. Its cached application
-package can also be removed to reclaim space; launching the bundle again recreates
-that cache. User model and conversation data remain until explicitly removed.
-The separate [checked-directory package mechanism](chat-packages.md) retains its
+To remove Swift, close it and delete the executable and, optionally, its package
+cache. Relaunching recreates the cache. Model and conversation data remain until
+explicitly removed. [Checked-directory packages](chat-packages.md) have separate
 manual activation and rollback controls.
 
 For local builds of the same format, use the
@@ -132,31 +124,27 @@ For local builds of the same format, use the
 
 ## Publish a release
 
-Release scripts require PowerShell 7.6 or newer. The workflow checks syntax,
-argument preservation, UTF-8 output, native failures and unsafe paths before its
-build jobs. It accepts serviced newer PowerShell versions.
+Release scripts require PowerShell 7.6 or newer. Before building, the workflow
+checks syntax, argument preservation, UTF-8 output, native failures and unsafe paths.
 
-`AGENTS.md` reserves every Git push and routine release operation for the owner.
-After reviewing the local commits on `main`, the owner can publish the source and
-request the release:
+`AGENTS.md` reserves pushes and routine release operations for the owner.
+After reviewing local `main`, the owner publishes source and requests the release:
 
 ```powershell
 git push origin main
 gh workflow run release.yml --repo symbiogenesis/SwiftBonsai2Runner --ref main -f prerelease=true
 ```
 
-Leave `tag` blank to derive it from `workspace.package.version` in `Cargo.toml`.
-An explicit numeric version (`0.2.1`) or tag (`v0.2.1`) must match; both resolve
-to canonical `v0.2.1`, with notes at
-`docs/releases/v0.2.1.md`. A mismatch reports the requested tag, workspace version
-and expected tag. Increase the workspace version and commit matching notes before
-requesting the next release. `prerelease` defaults to `true`.
+Leave `tag` blank to use `workspace.package.version` from `Cargo.toml`.
+Explicit `0.2.1` or `v0.2.1` must match that version; both select `v0.2.1` and
+`docs/releases/v0.2.1.md`. Mismatches report requested, workspace and expected
+identities. For the next release, increment the workspace version and commit
+matching notes first. `prerelease` defaults to `true`.
 
-Windows Release builds and checks the five native application lanes on hosted
-Windows ARM64, verifies their source-bound build receipts and complete notices,
-then assembles the GUI-subsystem, deflated executable. Its model-free smoke check
-verifies the GUI header, extraction and all executable identities. There is no
-installer authoring, prerequisite installation or install/uninstall step.
+Windows Release builds and checks all five application lanes on hosted Windows
+ARM64, verifies source-bound receipts and notices, and assembles the compressed
+GUI executable. A model-free smoke check verifies its GUI header, extraction and
+executable identities. It neither installs prerequisites nor runs an installer.
 
 The notice collector conservatively includes resolved Windows build/development
 dependencies. Missing crate-archive notices are bound to their recorded source
@@ -165,11 +153,10 @@ commit and the immutable release commit supplying the shared license material.
 Missing or changed material stops publication. The complete notices remain
 inside the executable.
 
-Only the publication job receives repository-content write permission. It
-verifies the exact three-asset inventory, uploads it to a draft release and
-publishes only after remote asset and source checks pass. The release creates
-its tag at the checked commit; no workflow step runs `git push`, and an existing
-release is never silently replaced.
+Only the publication job can write repository content. It verifies the three-asset
+inventory, uploads a draft and publishes after remote asset/source checks pass.
+The tag points to the checked commit. No step runs `git push` or silently replaces
+an existing release.
 
 The owner can inspect the run and release with:
 
