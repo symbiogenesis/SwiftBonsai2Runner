@@ -108,7 +108,7 @@ impl State {
         output
     }
 
-    fn composer_hint(&self) -> &'static str {
+    const fn composer_hint(&self) -> &'static str {
         if self.model.busy() {
             "Draft your next message…"
         } else if self.model.ready() {
@@ -227,13 +227,6 @@ impl State {
     fn composer_feedback(&self, ui: &mut egui::Ui) {
         // Text-only status should grow with its contents, without
         // reserving the horizontal helper's button-height row.
-        let status = if self.model.busy() {
-            self.generation_status()
-        } else if !self.model.ready() {
-            self.status.clone()
-        } else {
-            "Enter to send · Shift+Enter for a new line".to_owned()
-        };
         if (self.dictation_requested || self.speaking)
             && (self.audio_file_notice.is_none() || !self.audio_file_active)
             && !self.speech_notice
@@ -243,6 +236,13 @@ impl State {
         }
         // Keyboard guidance stays visually separate from audio feedback.
         if self.model.busy() || self.model.ready() || !self.warning && self.setup.error.is_none() {
+            let status: std::borrow::Cow<'_, str> = if self.model.busy() {
+                self.generation_status().into()
+            } else if self.model.ready() {
+                "Enter to send · Shift+Enter for a new line".into()
+            } else {
+                self.status.as_str().into()
+            };
             let preview: String = status.chars().take(320).collect();
             ui.add(egui::Label::new(RichText::new(preview).small().weak()).truncate());
         }
