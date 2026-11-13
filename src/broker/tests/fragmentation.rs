@@ -319,6 +319,19 @@ fn parts(wire: &[u8]) -> (&[u8], &[u8]) {
     wire.split_at(split)
 }
 
+fn assert_stage_failure(wire: &[u8], code: &str) {
+    let (head, body) = parts(wire);
+    assert!(head.starts_with(b"HTTP/1.1 502 Bad Gateway\r\n"));
+    assert_eq!(
+        body,
+        format!(r#"{{"error":{{"code":"{code}"}}}}"#).as_bytes()
+    );
+    let wire = std::str::from_utf8(wire).unwrap();
+    assert_eq!(wire.matches("HTTP/1.1 ").count(), 1);
+    assert!(!wire.contains(CLIENT_KEY) && !wire.contains(BACKEND_KEY));
+    assert!(!wire.contains(TEXT));
+}
+
 fn assert_success(outcome: &Outcome, streaming: bool) {
     assert_eq!(outcome.result, Ok(()));
     assert_eq!(outcome.calls, 2);
@@ -406,7 +419,7 @@ fn cooperative_one_byte_reads_and_writes_preserve_utf8_and_terminal_framing() {
 }
 
 #[test]
-fn every_truncated_count_prefix_prevents_generation_and_client_output() {
+fn every_truncated_count_prefix_reports_stage_without_generation() {
     run(async {
         for chunked in [false, true] {
             let reply = response(COUNT, false, chunked);
@@ -425,7 +438,10 @@ fn every_truncated_count_prefix_prevents_generation_and_client_output() {
                 };
                 assert_eq!(outcome.result, Err(ServeError::Backend(expected)));
                 assert_eq!(outcome.calls, 1);
-                assert_eq!(outcome.states[0].borrow().written, [0_u8; 0]);
+                assert_stage_failure(
+                    &outcome.states[0].borrow().written,
+                    "backend_token_count_failed",
+                );
                 assert_eq!(outcome.states[2].borrow().written, [0_u8; 0]);
                 assert_eq!(outcome.states[2].borrow().read_polls, 0);
             }
@@ -435,7 +451,7 @@ fn every_truncated_count_prefix_prevents_generation_and_client_output() {
 }
 
 #[test]
-fn every_truncated_json_reply_is_rejected_before_any_downstream_write() {
+fn every_truncated_json_reply_rejects_before_forwarding_backend_payload() {
     run(async {
         for chunked in [false, true] {
             let reply = response(JSON, false, chunked);
@@ -454,7 +470,12 @@ fn every_truncated_json_reply_is_rejected_before_any_downstream_write() {
                 };
                 assert_eq!(outcome.result, Err(expected));
                 assert_eq!(outcome.calls, 2);
-                assert_eq!(outcome.states[0].borrow().written, [0_u8; 0]);
+                let client = outcome.states[0].borrow();
+                if end < parts(&reply).0.len() {
+                    assert_stage_failure(&client.written, "backend_generation_failed");
+                } else {
+                    assert_eq!(client.written, [0_u8; 0]);
+                }
             }
             assert_success(&Exchange::new(false, chunked).finish().await, false);
         }
@@ -486,7 +507,7 @@ fn every_truncated_sse_reply_omits_successful_downstream_terminal_framing() {
                 if head_complete {
                     assert!(!parts(&client.written).1.ends_with(b"0\r\n\r\n"));
                 } else {
-                    assert_eq!(client.written, [0_u8; 0]);
+                    assert_stage_failure(&client.written, "backend_generation_failed");
                 }
             }
             assert_success(&Exchange::new(true, chunked).finish().await, true);

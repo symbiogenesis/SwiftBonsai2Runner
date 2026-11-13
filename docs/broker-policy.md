@@ -97,8 +97,9 @@ arrays and unknown part types reject. Scale rejects for reference,
 no-adapter and independently bound services; it maps only to pinned adapter slot
 0 in identical canonical count/generation requests, without model restart.
 The verified native Rust Swift service supports the same approved adapter.
-Generic schema rejections close the connection without HTTP bytes and preserve
-broker admission; framed HTTP 400 is reserved for the control-token case below.
+Fully received, authenticated schema rejections return framed HTTP 400
+`invalid_chat_request` and preserve broker admission. Control-token rejections
+use the separate code below.
 
 Before counting/backend contact, caller content and assistant reasoning reject
 the exact 33 control/user-defined spellings in the pinned Swift vocabulary,
@@ -188,7 +189,8 @@ HTTP 502 `backend_generation_failed`. These fixed codes identify the failed stag
 without exposing upstream bytes or claiming a token, memory or runtime cause.
 They require explicit model retry. Generation failure still closes admission
 until owned-process cleanup completes. No error response is appended after
-streaming starts; malformed or unauthenticated intake still closes silently.
+streaming starts; malformed headers, incomplete intake or unauthenticated
+requests still close silently.
 
 ### Native client completion and recovery
 
