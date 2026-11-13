@@ -81,7 +81,12 @@ to the [development guide](development-guide.md#native-chat-app) and
 
 ## Update and remove
 
-The portable application checks GitHub at startup and every 15 minutes,
+Published v0.3.0 checks at startup and every six hours, with explicit confirmation
+to close, replace and restart. The faster discovery, background staging and
+deferred close behavior below are implemented in newer source and await the next
+release and application qualification.
+
+The development updater checks GitHub at startup and every 15 minutes,
 then downloads newer Windows ARM64 releases, including experimental
 prereleases. **Settings > Application** also offers a manual check. Discovery
 selects the highest numeric version in the bounded catalog, excluding drafts and
