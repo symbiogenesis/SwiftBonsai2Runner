@@ -1943,6 +1943,19 @@ LoRA gates; calibration proves neither quality nor reduced admission.
 
 ## CPU kernels
 
+Deliver and qualify the local [prepared packed-KV query and CPU preparation
+reuse candidates](docs/cpu-kernels.md#prepared-packed-kv-queries-and-cpu-preparation-reuse):
+one borrowed query proof per packed-attention head, exact internal Q8_K sum reuse
+for PQ2 preparation, and direct committed-to-provisional prompt-convolution
+history. Preserve public arbitrary-input checks, original arithmetic and complete
+state publication. Require final-source focused/native/portable and failure
+controls, strict runtime/helper Release analysis, feature-disabled fallback,
+production linking, ARM64 codegen/resource review, full-model state/logit/adapter/
+cancellation acceptance and matched selected-family complete-request benefit.
+Publish changed helper APIs before dependent registry packages, then deliver a
+genuine source-bound bundle and reviewed Runner repin. Source work reductions
+alone establish no X1 performance result and do not change current defaults.
+
 Use [cross-generation CPU promotion](docs/cpu-kernels.md#cross-generation-cpu-promotion)
 for shared CPU work reductions: matched CPU-only whole-request benefit on X2,
 plus the reviewed X1 path/ISA/fallback applicability and existing correctness,

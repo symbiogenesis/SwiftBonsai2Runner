@@ -389,6 +389,50 @@ power stability remains unknown. All selected children exited, command logs
 were removed and the external build cache was retained. No model, benchmark or
 CI operation ran. Final-source compiler and execution acceptance remain pending.
 
+### Prepared packed-KV queries and CPU preparation reuse
+
+Further local Prism source work targets repeated CPU preparation on X1 without
+requiring an accelerator or changing the selected precision:
+
+- Packed-KV attention prepares each immutable rotated query once before scanning
+  cached keys. The borrowed proof retains query/codebook validation and native
+  selection outside the history loop; each record still checks its length,
+  scale, canonical zero encoding and finite result. The public single-record
+  scoring API remains defensive. This reduces repeated validation at longer
+  contexts while preserving the existing scalar/native dot reduction.
+- Internally quantized PQ2 activations can reuse their exact per-sixteen-value
+  integer sums during packed preparation. Arbitrary public activation blocks
+  retain defensive value-derived sums; their compatibility fields do not become
+  trusted. Packed bytes, scales, accumulation and runtime ISA fallback stay the
+  same, without an additional weight or activation allocation.
+- Eligible pinned prompt convolution reads committed history directly into the
+  existing provisional next-history destination, omitting its preceding full
+  history copy. Original FMA/SiLU order and the graph's state publication boundary
+  remain required; other geometries keep their existing path.
+
+These changes are local source candidates, not measured X1 speedups or a Runner
+runtime repin. Require focused exact native/portable and failure controls,
+strict Release analysis of runtime and changed helpers on ARM64 and x64,
+feature-disabled fallback, production linking and ARM64 codegen/resource review.
+Complete-model logits/state/adapter/cancellation acceptance and matched
+CPU-only complete-request benefit remain pending under
+[cross-generation CPU promotion](#cross-generation-cpu-promotion).
+New helper APIs need publication before a dependent registry release; an exact
+source-bound runtime bundle and reviewed Runner repin are required before the
+application consumes these changes. Retain the current runtime as rollback.
+
+The fixed model-free check on Prism `9703109` closed after 16.420 seconds of its
+300-second allowance. Rust formatting passed; native all-target strict Release
+analysis stopped on documentation/test-style lints, including two existing
+speculative-buffer assertions. The source corrections were reviewed without
+retrying the workload. No regression test executed; x64 and feature-disabled
+analysis, production linking and Markdown checks were skipped. Aggregate and
+command endpoints observed AC disconnected, battery saver off and 82% charge;
+continuous power stability remains unknown. Owned commands exited and temporary
+driver/logs were removed; the external Cargo cache and one compact local summary
+were retained. No model, benchmark, CI operation or performance qualification ran.
+Final-source compiler and execution acceptance remain pending.
+
 ## Execution and dispatch
 
 The default `experimental-neon` feature uses [`fearless_simd` 1.1.0][fearless]'s safe core API under
