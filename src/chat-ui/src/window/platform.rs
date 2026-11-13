@@ -1,19 +1,14 @@
 //! Small Windows boundary for system contrast colors and fatal launch errors.
 
 use eframe::egui::{Color32, Shadow, Stroke, Visuals};
-use windows_sys::{
-    Win32::{
-        Graphics::Gdi::{
-            COLOR_HIGHLIGHT, COLOR_HIGHLIGHTTEXT, COLOR_WINDOW, COLOR_WINDOWTEXT, GetSysColor,
-        },
-        UI::{
-            Accessibility::{HCF_HIGHCONTRASTON, HIGHCONTRASTW},
-            WindowsAndMessaging::{
-                MB_ICONERROR, MB_OK, MessageBoxW, SPI_GETHIGHCONTRAST, SystemParametersInfoW,
-            },
-        },
+use windows_sys::Win32::{
+    Graphics::Gdi::{
+        COLOR_HIGHLIGHT, COLOR_HIGHLIGHTTEXT, COLOR_WINDOW, COLOR_WINDOWTEXT, GetSysColor,
     },
-    core::w,
+    UI::{
+        Accessibility::{HCF_HIGHCONTRASTON, HIGHCONTRASTW},
+        WindowsAndMessaging::{SPI_GETHIGHCONTRAST, SystemParametersInfoW},
+    },
 };
 
 #[derive(Clone, Copy)]
@@ -120,22 +115,8 @@ fn contrast_visuals(colors: SystemColors) -> Visuals {
 }
 
 /// Keep fatal startup failures visible when an egui window cannot be created.
-#[allow(
-    unsafe_code,
-    reason = "Synchronous native startup dialog; Windows retains no pointer to the owned UTF-16 message."
-)]
 pub(super) fn show_error(message: &str) {
-    let message: Vec<u16> = message.encode_utf16().chain(Some(0)).collect();
-    // SAFETY: No parent is supplied; both strings stay valid for the synchronous
-    // modal call and Windows owns the dialog internals.
-    unsafe {
-        MessageBoxW(
-            std::ptr::null_mut(),
-            message.as_ptr(),
-            w!("Swift Bonsai 2"),
-            MB_OK | MB_ICONERROR,
-        );
-    }
+    bonsai_windows_process::show_startup_error(message);
 }
 
 #[cfg(test)]

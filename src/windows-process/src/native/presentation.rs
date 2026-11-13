@@ -4,8 +4,9 @@ use windows_sys::Win32::{
     Foundation::INVALID_HANDLE_VALUE,
     Storage::FileSystem::{FILE_TYPE_DISK, FILE_TYPE_PIPE, GetFileType},
     System::Console::{ATTACH_PARENT_PROCESS, AttachConsole, GetStdHandle, STD_OUTPUT_HANDLE},
-    UI::WindowsAndMessaging::{MB_ICONERROR, MB_OK, MessageBoxW},
 };
+
+mod error_dialog;
 
 pub(crate) fn attach_parent_console() {
     // SAFETY: The predefined standard-handle selector takes no caller pointers.
@@ -23,15 +24,5 @@ pub(crate) fn attach_parent_console() {
 }
 
 pub(crate) fn show_error(message: &str) {
-    let message: Vec<u16> = message.encode_utf16().chain(Some(0)).collect();
-    // SAFETY: Both terminated strings remain live throughout the synchronous
-    // modal call; no parent or retained pointer is supplied.
-    let _ = unsafe {
-        MessageBoxW(
-            std::ptr::null_mut(),
-            message.as_ptr(),
-            windows_sys::w!("Swift Bonsai 2 Runner"),
-            MB_OK | MB_ICONERROR,
-        )
-    };
+    error_dialog::show(message);
 }

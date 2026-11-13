@@ -35,7 +35,10 @@ pub fn attach_parent_console() {
 
 /// Displays a fatal graphical startup failure using a native Windows dialog.
 ///
-/// The synchronous dialog retains no caller pointers and creates no console.
+/// The fixed-size dialog offers a scrollable preview and an explicit button to
+/// copy the complete error. The synchronous call retains no caller pointers and
+/// creates no console. If Windows cannot create the dialog, a bounded native
+/// message box reports that the detailed controls are unavailable.
 pub fn show_startup_error(message: &str) {
     native::presentation::show_error(message);
 }
