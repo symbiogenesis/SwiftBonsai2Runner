@@ -11,6 +11,10 @@ use serde_json::{Value, json};
 use zip::ZipArchive;
 
 use crate::identity::is_lower_hex;
+use crate::startup_download::RepairActivity;
+
+type RuntimeObserver<'a> =
+    dyn FnMut(RepairActivity, Option<(&Path, u64)>) -> crate::Result<()> + 'a;
 
 const REFERENCE: &str = include_str!("../../../config/runtime.lock.json");
 const INFERENCE: &str = include_str!("../../../config/prism-inference.lock.json");
@@ -637,7 +641,11 @@ fn runtime_archive_expanded_bytes(path: &Path) -> crate::Result<u64> {
     Ok(expanded)
 }
 
-fn repair_inference(request: &Request, working: &Path) -> crate::Result<Value> {
+fn repair_inference(
+    request: &Request,
+    working: &Path,
+    observe: &mut RuntimeObserver<'_>,
+) -> crate::Result<Value> {
     let lock = read_lock(request.lock_path.as_deref(), INFERENCE)?;
     let files = inference_lock(&lock)?;
     let destination = request
@@ -652,6 +660,7 @@ fn repair_inference(request: &Request, working: &Path) -> crate::Result<Value> {
     fs::create_dir_all(parent).map_err(|error| error.to_string())?;
     validate_external_path(parent).map_err(|error| error.to_string())?;
     let _guard = crate::startup_cache::lock_file(&parent.join(".chat-runtime-setup.lock"))?;
+    observe(RepairActivity::VerifyingExisting, None)?;
     if destination.exists()
         && let Ok(installed) = verify_inference(&lock, &files, &destination)
     {
@@ -671,22 +680,28 @@ fn repair_inference(request: &Request, working: &Path) -> crate::Result<Value> {
         .data_directory
         .join("downloads")
         .join(text(pin, "filename")?);
-    crate::startup_download::receive_repair(
+    let archive_bytes = pin["bytes"]
+        .as_u64()
+        .ok_or("Missing runtime archive length.")?;
+    crate::startup_download::receive_repair_observed(
         text(pin, "url")?,
         &archive,
-        pin["bytes"]
-            .as_u64()
-            .ok_or("Missing runtime archive length.")?,
+        archive_bytes,
         text(pin, "sha256")?,
         working,
+        &mut |activity| observe(activity, Some((&archive, archive_bytes))),
     )?;
+    observe(RepairActivity::Publishing, None)?;
     // Available space already excludes the retained invalid installation and
     // the downloaded archive. Only the fresh expanded staging files are added.
     require_runtime_staging_space(parent, files.iter().map(|file| file.bytes).sum())?;
     let staging = parent.join(format!(".staging-{}", crate::startup_process::unique()));
     extract_inference(&archive, pin, &files, &staging)?;
+    observe(RepairActivity::VerifyingExisting, None)?;
     verify_inference(&lock, &files, &staging)?;
+    observe(RepairActivity::Publishing, None)?;
     let previous = publish_repaired_runtime(&staging, &destination, &expected)?;
+    observe(RepairActivity::VerifyingExisting, None)?;
     let mut installed = verify_inference(&lock, &files, &destination)?;
     if let Some(previous) = previous {
         installed["PreviousInvalidDirectory"] = json!(previous);
@@ -695,7 +710,10 @@ fn repair_inference(request: &Request, working: &Path) -> crate::Result<Value> {
 }
 
 #[cfg(windows)]
-fn stage_publisher_repair(spec: &bonsai_artifacts::RuntimeSpec) -> crate::Result<Option<PathBuf>> {
+fn stage_publisher_repair(
+    spec: &bonsai_artifacts::RuntimeSpec,
+    observe: &mut RuntimeObserver<'_>,
+) -> crate::Result<Option<PathBuf>> {
     let parent = spec
         .runtime_directory
         .parent()
@@ -725,6 +743,7 @@ fn stage_publisher_repair(spec: &bonsai_artifacts::RuntimeSpec) -> crate::Result
     let previous = publish_repaired_runtime(staging, &spec.runtime_directory, &expected)?;
     // A successful rename is not a verification result. Recheck the published
     // directory against the original locked archive before returning to launch.
+    observe(RepairActivity::VerifyingExisting, None)?;
     bonsai_artifacts::VerifiedRuntime::verify_with(spec, || {
         crate::startup_cancel::checkpoint().map_err(|_| bonsai_artifacts::ArtifactError::Cancelled)
     })
@@ -733,7 +752,11 @@ fn stage_publisher_repair(spec: &bonsai_artifacts::RuntimeSpec) -> crate::Result
 }
 
 #[cfg(windows)]
-fn repair_engine(request: &Request, working: &Path) -> crate::Result<Value> {
+fn repair_engine(
+    request: &Request,
+    working: &Path,
+    observe: &mut RuntimeObserver<'_>,
+) -> crate::Result<Value> {
     let lock = read_lock(request.lock_path.as_deref(), REFERENCE)?;
     model_lock(&lock)?;
     let runtime = &lock["runtime"];
@@ -754,42 +777,58 @@ fn repair_engine(request: &Request, working: &Path) -> crate::Result<Value> {
     let _guard = crate::startup_cache::lock_file(
         &parent.join(format!(".chat-runtime-{}.lock", text(runtime, "commit")?)),
     )?;
-    crate::startup_download::receive_repair(
+    let archive_bytes = pin["bytes"]
+        .as_u64()
+        .ok_or("Missing runtime archive length.")?;
+    crate::startup_download::receive_repair_observed(
         text(pin, "url")?,
         &archive,
-        pin["bytes"]
-            .as_u64()
-            .ok_or("Missing runtime archive length.")?,
+        archive_bytes,
         text(pin, "sha256")?,
         working,
+        &mut |activity| observe(activity, Some((&archive, archive_bytes))),
     )?;
     let spec = bonsai_artifacts::RuntimeSpec {
         archive_path: archive,
         runtime_directory: destination.clone(),
-        archive_bytes: pin["bytes"]
-            .as_u64()
-            .ok_or("Missing runtime archive length.")?,
+        archive_bytes,
         archive_sha256: text(pin, "sha256")?.into(),
     };
+    observe(RepairActivity::VerifyingExisting, None)?;
     if bonsai_artifacts::VerifiedRuntime::verify_with(&spec, || {
         crate::startup_cancel::checkpoint().map_err(|_| bonsai_artifacts::ArtifactError::Cancelled)
     })
     .is_err()
     {
         crate::startup_cancel::checkpoint()?;
-        stage_publisher_repair(&spec)?;
+        observe(RepairActivity::Publishing, None)?;
+        stage_publisher_repair(&spec, observe)?;
     }
+    observe(RepairActivity::VerifyingExisting, None)?;
     engine(request, working)
 }
 
 #[cfg(not(windows))]
-fn repair_engine(_request: &Request, _working: &Path) -> crate::Result<Value> {
+fn repair_engine(
+    _request: &Request,
+    _working: &Path,
+    _observe: &mut RuntimeObserver<'_>,
+) -> crate::Result<Value> {
     Err("Publisher runtime setup requires Windows.".into())
 }
 
 /// Automatic chat setup may restore only its selected locked runtime. The public
 /// provisioning API continues to reject changed existing installations.
+#[cfg(test)]
 pub(crate) fn prepare_chat_runtime(value: Value) -> crate::Result<Value> {
+    prepare_chat_runtime_observed(value, &mut |_, _| Ok(()))
+}
+
+/// Reports selected chat-runtime work without observing unrelated provisioners.
+pub(crate) fn prepare_chat_runtime_observed(
+    value: Value,
+    observe: &mut RuntimeObserver<'_>,
+) -> crate::Result<Value> {
     let request: Request = serde_json::from_value(value).map_err(|error| error.to_string())?;
     validate_external_path(&request.data_directory).map_err(|error| error.to_string())?;
     if request.verify_only
@@ -802,8 +841,8 @@ pub(crate) fn prepare_chat_runtime(value: Value) -> crate::Result<Value> {
     }
     let working = working_directory(&request)?;
     match request.operation {
-        Operation::Inference => repair_inference(&request, &working),
-        Operation::Engine => repair_engine(&request, &working),
+        Operation::Inference => repair_inference(&request, &working, observe),
+        Operation::Engine => repair_engine(&request, &working, observe),
         _ => {
             Err("Automatic runtime setup requires the selected native or publisher runtime.".into())
         }
@@ -1335,7 +1374,20 @@ mod tests {
             b"changed worker"
         );
         request["verifyOnly"] = json!(false);
-        let repaired = prepare_chat_runtime(request.clone())?;
+        let mut activities = Vec::new();
+        let repaired =
+            prepare_chat_runtime_observed(request.clone(), &mut |activity, artifact| {
+                activities.push((activity, artifact.is_some()));
+                Ok(())
+            })?;
+        assert!(activities.contains(&(RepairActivity::VerifyingExisting, true)));
+        assert!(activities.contains(&(RepairActivity::Publishing, false)));
+        assert!(
+            !activities
+                .iter()
+                .any(|(activity, _)| matches!(activity, RepairActivity::Downloading { .. })),
+            "Repair from a cached archive must report local preparation without a download"
+        );
         assert_eq!(repaired["Verified"], true);
         assert_eq!(fs::read(worker).map_err(|error| error.to_string())?, image);
         let previous = Path::new(text(&repaired, "PreviousInvalidDirectory")?);
@@ -1343,6 +1395,13 @@ mod tests {
             fs::read(previous.join("bonsai-swift-worker.exe")).map_err(|error| error.to_string())?,
             b"changed worker"
         );
+
+        activities.clear();
+        prepare_chat_runtime_observed(request.clone(), &mut |activity, artifact| {
+            activities.push((activity, artifact.is_some()));
+            Ok(())
+        })?;
+        assert_eq!(activities, [(RepairActivity::VerifyingExisting, false)]);
 
         fs::remove_file(worker).map_err(|error| error.to_string())?;
         assert_eq!(prepare_chat_runtime(request.clone())?["Verified"], true);
