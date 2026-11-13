@@ -112,6 +112,15 @@ struct Response {
     status: String,
     #[serde(default)]
     version: Option<String>,
+    #[serde(default)]
+    release_identity: Option<String>,
+}
+
+fn release_identity(value: &str) -> bool {
+    value.len() == 64
+        && value
+            .bytes()
+            .all(|byte| byte.is_ascii_digit() || (b'a'..=b'f').contains(&byte))
 }
 
 fn parse_version(text: &str) -> Option<(u8, u8, u16)> {
@@ -167,6 +176,27 @@ fn response(text: &str, operation: Operation, expected: Option<&str>) -> io::Res
     Ok(response)
 }
 
+fn verified_response(
+    text: &str,
+    operation: Operation,
+    expected: Option<&str>,
+    portable: bool,
+) -> io::Result<Response> {
+    let result = response(text, operation, expected)?;
+    if portable
+        && matches!(result.status.as_str(), "available" | "downloaded")
+        && !result
+            .release_identity
+            .as_deref()
+            .is_some_and(release_identity)
+    {
+        return Err(io::Error::other(
+            "The update tool did not identify the exact verified portable release. Check for updates again.",
+        ));
+    }
+    Ok(result)
+}
+
 fn bounded_text(path: &Path) -> io::Result<String> {
     let mut bytes = Vec::new();
     File::open(path)?
@@ -190,6 +220,7 @@ fn update_request(
     installation: &Installation,
     operation: Operation,
     version: Option<&str>,
+    identity: Option<&str>,
 ) -> serde_json::Value {
     let mut request = if installation.portable {
         serde_json::json!({"operation": format!("portable-{}", operation.name())})
@@ -201,6 +232,11 @@ fn update_request(
     }
     if operation == Operation::Install {
         request["handoffPath"] = serde_json::json!(installation.handoff);
+        if installation.portable
+            && let Some(identity) = identity
+        {
+            request["releaseIdentity"] = identity.into();
+        }
     }
     request
 }
@@ -209,10 +245,11 @@ fn execute(
     installation: &Installation,
     operation: Operation,
     version: Option<&str>,
+    identity: Option<&str>,
     cancelled: &AtomicBool,
 ) -> io::Result<Response> {
     let directory = PrivateDirectory::create(&std::env::temp_dir())?;
-    let request = update_request(installation, operation, version);
+    let request = update_request(installation, operation, version, identity);
     let path = directory.path().join("request.json");
     fs::write(
         &path,
@@ -235,7 +272,7 @@ fn execute(
     }
     let child = Process(OwnedProcess::start_tool(&spec)?);
     let started = Instant::now();
-    let code = loop {
+    let outcome = (|| loop {
         if cancelled.load(Ordering::Acquire) {
             return Err(io::Error::other("Update operation cancelled."));
         }
@@ -248,15 +285,25 @@ fn execute(
             return Err(io::Error::other("Update tool output exceeded its limit."));
         }
         if let Some(code) = child.0.try_wait()? {
-            break code;
+            break Ok(code);
         }
         thread::sleep(Duration::from_millis(20));
-    };
-    child.0.stop(Duration::from_secs(3))?;
+    })();
+    child.0.stop(Duration::from_secs(3)).map_err(|error| {
+        io::Error::other(format!(
+            "Application update process cleanup could not be confirmed. Close Swift before trying another update. {error}"
+        ))
+    })?;
+    let code = outcome?;
     if code != 0 {
         return Err(io::Error::other(bounded_text(&spec.stderr)?));
     }
-    response(&bounded_text(&spec.stdout)?, operation, version)
+    verified_response(
+        &bounded_text(&spec.stdout)?,
+        operation,
+        version,
+        installation.portable,
+    )
 }
 
 struct Task {
@@ -271,6 +318,7 @@ impl Task {
         installation: Installation,
         operation: Operation,
         version: Option<String>,
+        identity: Option<String>,
     ) -> io::Result<Self> {
         let (outgoing, incoming) = mpsc::sync_channel(1);
         let cancelled = Arc::new(AtomicBool::new(false));
@@ -278,7 +326,13 @@ impl Task {
         let worker = thread::Builder::new()
             .name("swift-app-update".into())
             .spawn(move || {
-                let result = execute(&installation, operation, version.as_deref(), &cancellation);
+                let result = execute(
+                    &installation,
+                    operation,
+                    version.as_deref(),
+                    identity.as_deref(),
+                    &cancellation,
+                );
                 let _sent = outgoing.send(result);
             })?;
         Ok(Self {
@@ -307,10 +361,13 @@ pub(super) struct Updates {
     installation: Installation,
     task: Option<Task>,
     version: Option<String>,
+    release_identity: Option<String>,
     downloaded: bool,
     queued: bool,
     confirming: bool,
+    confirmed: bool,
     waiting_for_stop: bool,
+    cleanup_unconfirmed: bool,
     next_check: Instant,
     status: String,
 }
@@ -328,10 +385,13 @@ impl Updates {
             installation,
             task: None,
             version: None,
+            release_identity: None,
             downloaded: false,
             queued: false,
             confirming: false,
+            confirmed: false,
             waiting_for_stop: false,
+            cleanup_unconfirmed: false,
             next_check: Instant::now(),
             status: "Checking for application updates shortly.".into(),
         })
@@ -350,15 +410,51 @@ impl Updates {
                 .is_some_and(|task| task.operation == Operation::Install)
     }
 
+    fn verified_download(&self) -> bool {
+        self.downloaded
+            && self.version.as_deref().is_some_and(newer_version)
+            && (!self.installation.portable
+                || self
+                    .release_identity
+                    .as_deref()
+                    .is_some_and(release_identity))
+    }
+
+    fn select_candidate(&mut self, result: Response) -> bool {
+        let same = self.version == result.version
+            && (!self.installation.portable || self.release_identity == result.release_identity);
+        self.downloaded = self.downloaded && same;
+        if !same {
+            self.confirming = false;
+            self.confirmed = false;
+        }
+        if !self.downloaded {
+            self.release_identity = None;
+        }
+        self.version = result.version;
+        self.status = self.version.as_ref().map_or_else(String::new, |version| {
+            format!("Version {version} is available.")
+        });
+        self.installation.portable && !self.downloaded
+    }
+
     fn start(&mut self, operation: Operation) {
-        if self.task.is_some() || self.queued {
+        if self.task.is_some() || self.queued || self.cleanup_unconfirmed {
             return;
         }
         self.confirming = false;
+        if operation != Operation::Install {
+            self.confirmed = false;
+        }
         if operation == Operation::Check {
             self.next_check = Instant::now() + CHECK_INTERVAL;
         }
-        match Task::start(self.installation.clone(), operation, self.version.clone()) {
+        match Task::start(
+            self.installation.clone(),
+            operation,
+            self.version.clone(),
+            self.release_identity.clone(),
+        ) {
             Ok(task) => {
                 self.task = Some(task);
                 self.status = match operation {
@@ -368,22 +464,29 @@ impl Updates {
                 }
                 .into();
             }
-            Err(_) => self.status = "Could not start the update check. Try again.".into(),
+            Err(_) => {
+                self.confirmed = false;
+                self.status = "Could not start the update check. Try again.".into();
+            }
         }
     }
 
     /// Polls one finite worker result and schedules at most one periodic check.
     pub(super) fn poll(&mut self) -> Option<String> {
-        if self.task.is_none() && !self.installing() && Instant::now() >= self.next_check {
+        if self.task.is_none()
+            && !self.installing()
+            && !self.cleanup_unconfirmed
+            && Instant::now() >= self.next_check
+        {
             self.start(Operation::Check);
         }
         let task = self.task.as_ref()?;
         let result = match task.incoming.try_recv() {
             Ok(result) => result,
             Err(mpsc::TryRecvError::Empty) => return None,
-            Err(mpsc::TryRecvError::Disconnected) => {
-                Err(io::Error::other("The update worker stopped unexpectedly."))
-            }
+            Err(mpsc::TryRecvError::Disconnected) => Err(io::Error::other(
+                "Application update process cleanup could not be confirmed. The update worker stopped unexpectedly. Close Swift before trying another update.",
+            )),
         };
         let operation = task.operation;
         self.task.take();
@@ -391,30 +494,36 @@ impl Updates {
             Ok(result) => {
                 match result.status.as_str() {
                     "available" => {
-                        self.downloaded = self.downloaded && self.version == result.version;
-                        self.version = result.version;
-                        self.status = self.version.as_ref().map_or_else(String::new, |version| {
-                            format!("Version {version} is available.")
-                        });
-                        if self.installation.portable && !self.downloaded {
+                        if self.select_candidate(result) {
                             self.start(Operation::Download);
                         }
                     }
                     "current" => {
                         self.version = None;
+                        self.release_identity = None;
                         self.downloaded = false;
                         self.status = "You are using the latest published version.".into();
                     }
                     "no-release" => {
                         self.version = None;
+                        self.release_identity = None;
                         self.downloaded = false;
                         self.status = "No published releases yet.".into();
                     }
                     "downloaded" => {
+                        self.release_identity = result.release_identity;
                         self.downloaded = true;
                         self.status = "Update verified and ready to install.".into();
                     }
                     "queued" => {
+                        if operation != Operation::Install
+                            || !self.confirmed
+                            || !self.verified_download()
+                        {
+                            self.confirmed = false;
+                            self.status = "The update was not approved for this verified download. Check for updates and confirm again.".into();
+                            return Some("Application update: rejected a queued result without current confirmation and a verified download.".into());
+                        }
                         self.queued = true;
                         self.status = if self.installation.portable {
                             "Closing Swift to replace the executable and reopen..."
@@ -428,7 +537,23 @@ impl Updates {
                 None
             }
             Err(error) => {
-                self.status = if operation == Operation::Check {
+                self.cleanup_unconfirmed = error
+                    .to_string()
+                    .contains("Application update process cleanup could not be confirmed.");
+                if operation == Operation::Install {
+                    // Failed queue preparation never carries an old approval or
+                    // a potentially changed publication into another attempt.
+                    self.confirming = false;
+                    self.confirmed = false;
+                    self.downloaded = false;
+                    self.release_identity = None;
+                    if !self.cleanup_unconfirmed {
+                        self.next_check = Instant::now();
+                    }
+                }
+                self.status = if self.cleanup_unconfirmed {
+                    "Update cleanup could not be confirmed. Close Swift before trying another update."
+                } else if operation == Operation::Check {
                     "Could not check for updates. Try again or open diagnostics for details."
                 } else {
                     "The update did not complete. Try again or open diagnostics for details."
@@ -440,10 +565,18 @@ impl Updates {
     }
 
     pub(super) const fn should_close(&self) -> bool {
-        self.queued
+        self.queued && self.confirmed
     }
 
     pub(super) fn wait_for_stop(&mut self) {
+        if self.task.is_some()
+            || self.queued
+            || self.cleanup_unconfirmed
+            || !self.confirmed
+            || !self.verified_download()
+        {
+            return;
+        }
         self.waiting_for_stop = true;
         self.status = "Stopping the local model before installation...".into();
     }
@@ -456,6 +589,7 @@ impl Updates {
         if stopped {
             self.start(Operation::Install);
         } else {
+            self.confirmed = false;
             self.status =
                 "The model could not stop safely. Close Swift before updating manually.".into();
         }
@@ -469,7 +603,7 @@ impl Updates {
         if self.installation.portable {
             ui.label("New releases download automatically. Replacing the executable requires your confirmation.");
         }
-        let idle = self.task.is_none() && !self.installing();
+        let idle = self.task.is_none() && !self.installing() && !self.cleanup_unconfirmed;
         if ui
             .add_enabled(idle, egui::Button::new("Check for updates"))
             .clicked()
@@ -487,7 +621,7 @@ impl Updates {
         if self.downloaded {
             if ui
                 .add_enabled(
-                    idle && can_install,
+                    idle && can_install && self.verified_download(),
                     egui::Button::new("Install update and close"),
                 )
                 .clicked()
@@ -505,14 +639,19 @@ impl Updates {
             } else { "The app will close. Unsaved conversations follow your saving setting. Windows may ask for administrator approval. Reopen Swift after installation." });
             ui.horizontal(|ui| {
                 if ui
-                    .add_enabled(can_install && idle, egui::Button::new("Close and install"))
+                    .add_enabled(
+                        can_install && idle && self.verified_download(),
+                        egui::Button::new("Close and install"),
+                    )
                     .clicked()
                 {
                     self.confirming = false;
+                    self.confirmed = true;
                     install = true;
                 }
                 if ui.button("Cancel update").clicked() {
                     self.confirming = false;
+                    self.confirmed = false;
                 }
             });
         }
@@ -538,6 +677,252 @@ mod tests {
             return Err(io::Error::other("No newer fixture version is available."));
         };
         Ok(format!("{}.{}.{}", next.0, next.1, next.2))
+    }
+
+    fn update_fixture() -> io::Result<Updates> {
+        let root = std::env::temp_dir().join("Bonsai model-free update controls");
+        Ok(Updates {
+            installation: Installation {
+                tool: root.join("Swift.exe"),
+                root: root.clone(),
+                handoff: root.join("chat-startup-fixture.update.json"),
+                portable: true,
+            },
+            task: None,
+            version: Some(next_version(env!("CARGO_PKG_VERSION"))?),
+            release_identity: Some("a".repeat(64)),
+            downloaded: true,
+            queued: false,
+            confirming: false,
+            confirmed: false,
+            waiting_for_stop: false,
+            cleanup_unconfirmed: false,
+            next_check: Instant::now() + CHECK_INTERVAL,
+            status: "Verified fixture update".into(),
+        })
+    }
+
+    fn completed_task(operation: Operation, result: Option<io::Result<Response>>) -> Task {
+        let (outgoing, incoming) = mpsc::sync_channel(1);
+        if let Some(result) = result {
+            let _sent = outgoing.send(result);
+        }
+        Task {
+            operation,
+            incoming,
+            cancelled: Arc::new(AtomicBool::new(false)),
+            worker: None,
+        }
+    }
+
+    #[test]
+    fn update_confirmation_needs_both_clicks_and_current_install_admission() -> io::Result<()> {
+        use egui_kittest::{
+            Harness,
+            kittest::{NodeT as _, Queryable as _},
+        };
+        let mut harness = Harness::builder().with_size([640.0, 640.0]).build_ui_state(
+            |ui, state: &mut (Updates, bool, usize)| {
+                let can_install = state.1;
+                if state.0.controls(ui, can_install) {
+                    state.2 += 1;
+                }
+            },
+            (update_fixture()?, true, 0),
+        );
+        harness
+            .get_by_role_and_label(egui::Role::Button, "Install update and close")
+            .click();
+        harness.run();
+        assert_eq!(harness.state().2, 0);
+        assert!(harness.state().0.confirming);
+        assert!(!harness.state().0.confirmed);
+        assert!(!harness.state().0.should_close());
+        harness.state_mut().1 = false;
+        harness.run();
+        assert!(
+            harness
+                .get_by_role_and_label(egui::Role::Button, "Close and install")
+                .is_disabled()
+        );
+        harness
+            .get_by_role_and_label(egui::Role::Button, "Cancel update")
+            .click();
+        harness.run();
+        assert!(!harness.state().0.confirming);
+        assert!(!harness.state().0.confirmed);
+        assert_eq!(harness.state().2, 0);
+        harness.state_mut().1 = true;
+        harness.run();
+        harness
+            .get_by_role_and_label(egui::Role::Button, "Install update and close")
+            .click();
+        harness.run();
+        harness
+            .get_by_role_and_label(egui::Role::Button, "Close and install")
+            .click();
+        harness.run();
+        assert_eq!(harness.state().2, 1);
+        assert!(!harness.state().0.confirming);
+        assert!(harness.state().0.confirmed);
+        assert!(harness.state().0.task.is_none());
+        assert!(!harness.state().0.should_close());
+        Ok(())
+    }
+
+    #[test]
+    fn unsafe_teardown_or_unverified_download_never_queues_an_update() -> io::Result<()> {
+        let mut updates = update_fixture()?;
+        updates.wait_for_stop();
+        assert!(
+            !updates.waiting_for_stop,
+            "A direct call cannot replace user confirmation"
+        );
+        updates.confirmed = true;
+        updates.wait_for_stop();
+        assert!(updates.waiting_for_stop);
+        updates.finish_stop(false);
+        assert!(!updates.waiting_for_stop);
+        assert!(updates.task.is_none());
+        assert!(!updates.should_close());
+        assert!(updates.status.contains("could not stop safely"));
+        assert!(!updates.confirmed);
+        updates.downloaded = false;
+        updates.confirmed = true;
+        updates.wait_for_stop();
+        assert!(!updates.waiting_for_stop);
+        assert!(updates.task.is_none());
+        updates.downloaded = true;
+        updates.version = Some(env!("CARGO_PKG_VERSION").into());
+        updates.wait_for_stop();
+        assert!(!updates.waiting_for_stop);
+        assert!(updates.task.is_none());
+        Ok(())
+    }
+
+    #[test]
+    fn unknown_update_cleanup_blocks_further_tasks_and_never_closes() -> io::Result<()> {
+        for result in [
+            None,
+            Some(Err(io::Error::other(
+                "Application update process cleanup could not be confirmed. Synthetic native failure.",
+            ))),
+        ] {
+            let mut updates = update_fixture()?;
+            updates.task = Some(completed_task(Operation::Install, result));
+            let diagnostic = updates
+                .poll()
+                .ok_or_else(|| io::Error::other("Missing cleanup diagnostic"))?;
+            assert!(diagnostic.contains("cleanup could not be confirmed"));
+            assert!(updates.cleanup_unconfirmed);
+            assert!(updates.task.is_none());
+            assert!(!updates.should_close());
+            for operation in [Operation::Check, Operation::Download, Operation::Install] {
+                updates.start(operation);
+                assert!(
+                    updates.task.is_none(),
+                    "Unconfirmed cleanup must never overlap a new update task"
+                );
+            }
+            updates.wait_for_stop();
+            assert!(!updates.waiting_for_stop);
+            updates.next_check = Instant::now();
+            assert!(updates.poll().is_none());
+            assert!(updates.task.is_none());
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn failed_queue_is_retryable_but_only_verified_queue_success_requests_close() -> io::Result<()>
+    {
+        let mut updates = update_fixture()?;
+        updates.confirmed = true;
+        updates.task = Some(completed_task(
+            Operation::Install,
+            Some(Err(io::Error::other("Publication changed; confirm again"))),
+        ));
+        assert!(updates.poll().is_some());
+        assert!(!updates.cleanup_unconfirmed);
+        assert!(!updates.confirming);
+        assert!(!updates.confirmed);
+        assert!(!updates.should_close());
+        assert!(updates.task.is_none());
+        assert!(!updates.downloaded);
+        assert!(updates.release_identity.is_none());
+        let selected = updates
+            .version
+            .clone()
+            .ok_or_else(|| io::Error::other("Missing selected version"))?;
+        let queued = response(
+            &serde_json::json!({"Status":"queued","Version":selected}).to_string(),
+            Operation::Install,
+            Some(&selected),
+        )?;
+        updates.task = Some(completed_task(Operation::Install, Some(Ok(queued))));
+        assert!(
+            updates.poll().is_some(),
+            "A stale queued result cannot replace a fresh approval"
+        );
+        assert!(!updates.should_close());
+        updates.downloaded = true;
+        updates.release_identity = Some("b".repeat(64));
+        updates.confirmed = true;
+        let queued = response(
+            &serde_json::json!({"Status":"queued","Version":selected}).to_string(),
+            Operation::Install,
+            Some(&selected),
+        )?;
+        updates.task = Some(completed_task(Operation::Install, Some(Ok(queued))));
+        assert!(updates.poll().is_none());
+        assert!(updates.should_close());
+        assert!(updates.installing());
+        assert!(updates.task.is_none());
+        Ok(())
+    }
+
+    #[test]
+    fn portable_update_requires_exact_release_fingerprint_and_changed_publication_cancels_approval()
+    -> io::Result<()> {
+        let mut updates = update_fixture()?;
+        let version = updates
+            .version
+            .clone()
+            .ok_or_else(|| io::Error::other("Missing version"))?;
+        for identity in [
+            None,
+            Some("".into()),
+            Some("a".repeat(63)),
+            Some("A".repeat(64)),
+            Some("z".repeat(64)),
+        ] {
+            for (status, operation) in [
+                ("available", Operation::Check),
+                ("downloaded", Operation::Download),
+            ] {
+                let payload = serde_json::json!({"Status":status,"Version":version,"ReleaseIdentity":identity}).to_string();
+                assert!(verified_response(&payload, operation, Some(&version), true).is_err());
+                assert!(
+                    verified_response(&payload, operation, Some(&version), false).is_ok(),
+                    "Legacy MSI responses retain their existing protocol"
+                );
+            }
+        }
+        updates.confirming = true;
+        let same = verified_response(&serde_json::json!({"Status":"available","Version":version,"ReleaseIdentity":"a".repeat(64)}).to_string(), Operation::Check, None, true)?;
+        assert!(!updates.select_candidate(same));
+        assert!(updates.downloaded && updates.confirming);
+        assert!(updates.verified_download());
+        let changed = verified_response(&serde_json::json!({"Status":"available","Version":version,"ReleaseIdentity":"b".repeat(64)}).to_string(), Operation::Check, None, true)?;
+        assert!(updates.select_candidate(changed));
+        assert!(!updates.downloaded);
+        assert!(!updates.confirming);
+        assert!(updates.release_identity.is_none());
+        assert!(!updates.verified_download());
+        assert!(!updates.should_close());
+        updates.wait_for_stop();
+        assert!(!updates.waiting_for_stop);
+        Ok(())
     }
 
     #[test]
@@ -626,13 +1011,23 @@ mod tests {
         };
         for portable in [true, false] {
             installation.portable = portable;
-            let check = update_request(&installation, Operation::Check, Some("0.9.0"));
+            let check = update_request(
+                &installation,
+                Operation::Check,
+                Some("0.9.0"),
+                Some(&"a".repeat(64)),
+            );
             assert!(check.get("version").is_none());
             assert_eq!(
                 check["operation"],
                 if portable { "portable-check" } else { "check" }
             );
-            let download = update_request(&installation, Operation::Download, Some("0.9.0"));
+            let download = update_request(
+                &installation,
+                Operation::Download,
+                Some("0.9.0"),
+                Some(&"a".repeat(64)),
+            );
             assert_eq!(download["version"], "0.9.0");
             assert_eq!(
                 download["operation"],
@@ -643,6 +1038,18 @@ mod tests {
                 }
             );
             assert_eq!(download.get("installationDirectory").is_none(), portable);
+            assert!(check.get("releaseIdentity").is_none());
+            assert!(download.get("releaseIdentity").is_none());
+            let install = update_request(
+                &installation,
+                Operation::Install,
+                Some("0.9.0"),
+                Some(&"a".repeat(64)),
+            );
+            assert_eq!(install.get("releaseIdentity").is_some(), portable);
+            if portable {
+                assert_eq!(install["releaseIdentity"], "a".repeat(64));
+            }
         }
     }
 
