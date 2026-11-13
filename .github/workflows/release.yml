@@ -46,7 +46,7 @@ jobs:
         run: |
           Write-Host "Release script baseline: PowerShell 7.6 or newer; running $($PSVersionTable.PSVersion)."
           & (Join-Path $env:GITHUB_WORKSPACE 'scripts/release/Test-ReleasePrimitives.ps1')
-      - name: Validate release version, source and notes before building
+      - name: Validate release version, source and description before building
         id: release
         working-directory: ${{ runner.temp }}
         env:
@@ -62,8 +62,8 @@ jobs:
           $env:RELEASE_TAG = $identity.Tag
           Write-Host "Resolved release $($identity.Tag) from workspace version $($identity.Version)."
           "tag=$($identity.Tag)" | Add-Content -LiteralPath $env:GITHUB_OUTPUT -Encoding utf8NoBOM
-          $notes = Join-Path $env:GITHUB_WORKSPACE "docs/releases/$env:RELEASE_TAG.md"
-          if (-not (Test-Path -LiteralPath $notes -PathType Leaf)) { throw 'Reviewed release notes must be committed before dispatch.' }
+          $description = Join-Path $env:GITHUB_WORKSPACE 'README.md'
+          if (-not (Test-Path -LiteralPath $description -PathType Leaf)) { throw 'Reviewed README must be committed before dispatch.' }
           $head = (git -C $env:GITHUB_WORKSPACE rev-parse HEAD).Trim()
           if ($head -cne $env:GITHUB_SHA) { throw 'Checkout differs from the dispatched source.' }
           $releases = @(gh api "repos/$env:GITHUB_REPOSITORY/releases" --paginate --jq '.[].tag_name')

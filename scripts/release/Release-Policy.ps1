@@ -19,6 +19,6 @@ function Resolve-ReleaseIdentity {
     if (-not $Tag) { $Tag = $expected }
     if ($Tag -cmatch '^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$') { $Tag = "v$Tag" }
     if ($Tag -cnotmatch '^v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$') { throw 'Release tag must use vMAJOR.MINOR.PATCH without a prerelease suffix.' }
-    if ($Tag -cne $expected) { throw "Release tag '$Tag' does not match workspace version '$version'; expected '$expected'. Omit the tag to use the workspace version, or update the workspace version and matching release notes first." }
+    if ($Tag -cne $expected) { throw "Release tag '$Tag' does not match workspace version '$version'; expected '$expected'. Omit the tag to use the workspace version, or update the workspace version first." }
     [pscustomobject]@{ Version = $version; Tag = $Tag }
 }

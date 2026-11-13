@@ -10,12 +10,11 @@ $ErrorActionPreference = 'Stop'
 . (Join-Path $PSScriptRoot 'Release-Publication.ps1')
 $fixture = Join-Path ([IO.Path]::GetTempPath()) ('SwiftBonsai-Publication-Controls-' + [guid]::NewGuid().ToString('N'))
 $assetDirectory = Join-Path $fixture 'assets'
-$notesDirectory = Join-Path $fixture 'docs/releases'
-foreach ($directory in @($fixture, $assetDirectory, $notesDirectory)) { [void][IO.Directory]::CreateDirectory($directory) }
+foreach ($directory in @($fixture, $assetDirectory)) { [void][IO.Directory]::CreateDirectory($directory) }
 $tag = 'v0.3.0'; $source = 'a' * 40; $repository = 'symbiogenesis/SwiftBonsai2Runner'
 $names = @(Get-PortableReleaseAssetNames '0.3.0')
-$notesPath = Join-Path $notesDirectory "$tag.md"
-$notes = "# Release fixture`n`nReviewed notes with Unicode 雪.`n"
+$notesPath = Join-Path $fixture 'README.md'
+$notes = "# Application fixture`n`nReviewed description with Unicode 雪.`n"
 $oldTemp = $env:RUNNER_TEMP
 $env:RUNNER_TEMP = $fixture
 $passed = 0
@@ -199,5 +198,5 @@ try {
     $env:RUNNER_TEMP = $oldTemp
     foreach ($name in $names) { $path = Join-Path $assetDirectory $name; if (Test-Path -LiteralPath $path) { Remove-Item -LiteralPath $path -Force } }
     if (Test-Path -LiteralPath $notesPath) { Remove-Item -LiteralPath $notesPath -Force }
-    foreach ($directory in @($assetDirectory, $notesDirectory, (Join-Path $fixture 'docs'), $fixture)) { [IO.Directory]::Delete($directory) }
+    foreach ($directory in @($assetDirectory, $fixture)) { [IO.Directory]::Delete($directory) }
 }

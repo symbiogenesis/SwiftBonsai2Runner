@@ -1,196 +1,109 @@
-# Windows releases
+# Windows distribution
 
-Swift Bonsai 2 Runner ships as a **portable Windows ARM64 executable** for
-Snapdragon X and X2 laptops. The current experimental release is
-[v0.3.0](https://github.com/symbiogenesis/SwiftBonsai2Runner/releases/tag/v0.3.0).
-See its [release notes](releases/v0.3.0.md) for the shipped features and limits.
-Contributor builds can include changes awaiting the next release; those
-differences are identified below.
+Runner is unreleased. Build the portable Windows ARM64 executable with the
+[development guide](development-guide.md#build-a-single-executable).
+The format, setup and update behavior below still require the acceptance work
+in [PLAN.md](../PLAN.md).
 
 ## Download and open
 
-Download from [GitHub releases](https://github.com/symbiogenesis/SwiftBonsai2Runner/releases).
-The v0.3.0 release publishes three assets:
+The distribution format is one portable executable for Snapdragon X and X2
+laptops. A publication contains three assets:
 
 | Asset | Purpose |
 | --- | --- |
-| `SwiftBonsai2Runner-0.3.0-windows-arm64.exe` | All five application executables and their notices. |
-| `SHA256SUMS.txt` | Checksums for the executable and release manifest. |
-| `release-manifest.json` | Version, source revision, build identities and executable digest. |
+| `SwiftBonsai2Runner-<version>-windows-arm64.exe` | Five application tools, package metadata and notices |
+| `SHA256SUMS.txt` | Executable and manifest checksums |
+| `release-manifest.json` | Version, source, build identities and executable digest |
 
-Check the executable's SHA-256 against `SHA256SUMS.txt` from the same release
-using your preferred checksum tool, then double-click the executable in Explorer.
+Verify the executable against the same publication's checksums, then open it.
+Only the `.exe` needs deploying. It opens the native UI without a terminal,
+checkout, compiler, installer or separate Microsoft runtime installation.
+Checksums establish byte integrity within GitHub's trust boundary; the executable
+is unsigned.
 
-**Deploy only the `.exe`.** Package metadata and project/dependency notices are
-embedded; verification files and local build summaries need not accompany it.
-Windows Release publishes no MSI or separate ZIP, uses no installer tool and
-requires no installer-EULA acceptance.
-
-The native Rust GUI launcher opens chat without a terminal, checkout or compiler.
-It verifies and extracts its compressed package under
-`%LOCALAPPDATA%\SwiftBonsai2\application-bundles\<first-24-manifest-sha256-characters>\`,
-checking cached files before reuse. UI, broker and speech remain separate owned
-processes under the existing containment and shutdown rules.
-
-The experimental executable is unsigned. Checksums detect changed bytes within
-GitHub's release trust boundary; they provide no independent publisher signature.
-Review the release source identity before use.
+The launcher verifies and extracts its package into
+`%LOCALAPPDATA%\SwiftBonsai2\application-bundles\<first-24-manifest-sha256-characters>\`
+and verifies cached files before reuse. Process ownership follows
+[Windows sandboxing](sandboxing.md).
 
 ## First launch and in-app setup
 
-Use serviced Windows 11 ARM64 with the containment capabilities described in
-[Windows sandboxing](sandboxing.md). Native Prism 0.1.27 selects context and its
-launch memory budget from available RAM, retaining a 4 GiB Windows reserve and
-startup margin. Unsupported containment, unknown memory or insufficient resources
-stop startup; see [context sizing](swift-memory.md#memory-selected-serving-context).
+Use serviced Windows 11 ARM64 with the required
+[containment capabilities](sandboxing.md). Startup selects context and memory
+from available RAM, reserving 4 GiB for Windows and other apps. Unknown or
+insufficient memory stops startup; see [context sizing](swift-memory.md#memory-selected-serving-context).
 
-Swift weights (about **6.71 GiB**), adapter, inference runtime and speech models
-are separate locked downloads with their own [license terms](licensing.md).
-Artifact checks and memory admission still apply. Opening the executable
-prepares the compiled Swift model, adapter and selected runtime automatically.
-No checkout, external lockfile or provisioning command is needed for the default
-model. Speech preparation follows separately; text chat can work before it finishes.
-Microphone capture requires explicit consent.
+The app downloads the pinned Swift weights (about 6.71 GiB), adapter, inference
+runtime and speech models under their [license terms](licensing.md). Text chat
+can start before speech preparation finishes. Microphone capture requires consent.
 
-The application executables include their Microsoft runtime dependencies. TTS
-inference runs in Rust on the CPU, without GGML DLLs or a separate runtime
-installer. These build guarantees still require clean-machine speech acceptance.
+**Pause setup** retains partial downloads; **Retry setup** or reopening resumes
+preparation. Verified files are reused. Corrupt model files are replaced only
+after the replacement verifies. Unsafe paths, unreadable files and unrelated
+runtime files require attention. Repair needs storage for both copies.
+Setup details and **Copy diagnostics** identify the failed step and data folder.
+Speech has a separate **Retry speech setup** action in **Settings > Voice**.
 
-Keep the setup window open to see the current step and download progress. **Pause
-setup** stops safely and retains partial downloads; **Retry setup** continues
-without losing drafts or conversations. Closing and reopening also resumes setup.
-Verified files are reused. Damaged model bytes are replaced only after the new
-download verifies; unsafe paths, unreadable files and unrelated runtime files
-require attention rather than being overwritten. Allow free storage for the
-downloads and, during repair, both old and replacement files. Setup details and
-**Copy diagnostics** provide the exact failed step and selected data folder.
-
-If speech preparation fails, open **Settings > Voice** and use **Retry speech
-setup** while continuing text chat. Setup status and diagnostics stay in the app.
-To use an older deployment, update to the current executable and keep the same
-data directory rather than following obsolete manual model-setup instructions.
-
-Rust/PQ2 is the development default; publisher rollback is explicit and PTQ1 is
-opt-in. Verification rules still apply, and preparation failures never silently
-switch engine or representation. Contributor and explicit engine options belong
-to the [development guide](development-guide.md#native-chat-app) and
-[package contract](chat-packages.md#launch-without-a-checkout).
+Preparation never silently substitutes an engine or model. Explicit engine,
+representation and rollback options are in the
+[development guide](development-guide.md#native-chat-app).
 
 ## Update and remove
 
-Published v0.3.0 checks at startup and every six hours, with explicit confirmation
-to close, replace and restart. The faster discovery, background staging and
-deferred close behavior below are implemented in newer source and await the next
-release and application qualification.
-
-The development updater checks GitHub at startup and every 15 minutes,
-then downloads newer Windows ARM64 releases, including experimental
-prereleases. **Settings > Application** also offers a manual check. Discovery
-selects the highest numeric version in the bounded catalog, excluding drafts and
+Portable builds check GitHub at startup and every 15 minutes; **Settings >
+Application** also offers a manual check. Discovery selects the highest numeric
+version, including prereleases, from a bounded catalog, excluding drafts and
 older versions. An incomplete catalog or invalid newest release fails without
-falling back.
+falling back. Conditional requests reuse unchanged metadata; failures honor
+server backoff and never count as successful checks.
 
-Checks reuse unchanged metadata through conditional HTTP requests and request gzip
-compression. Network and server failures back off, including GitHub's retry and
-rate-limit instructions; cached metadata never turns a failed request into success.
+The app downloads and verifies the asset digest, manifest, checksums and
+tag/source identity before offering an update. Install now closes, replaces and
+reopens the app with its original options and data directory. **Later** leaves a
+Settings badge and installs on close without reopening. A verified release prompts
+once per session. Closing before verification finishes exits without replacement.
 
-The updater verifies the GitHub asset digest, manifest, checksum inventory and
-tag/source revision before offering the downloaded update. Choose to install now
-and Swift closes, replaces the executable and reopens with the original options
-and data directory. Choose **Later** to keep working: the Settings button shows a
-pending-update badge and closing Swift installs the verified update without
-reopening. The same verified release does not repeatedly prompt during the session.
-Downloads continue independently of that choice; closing before verification
-finishes exits normally without waiting for the download or replacing the app.
+Replacement requires confirmed process teardown and revalidated publication.
+Download or replacement failure preserves the existing executable. If restart
+fails, reopen manually; read-only locations require manual replacement. Source
+and preview launches do not check for updates.
 
-Both installation paths follow your save setting, stop owned processes,
-revalidate publication and start the verified native helper. Unknown teardown or
-changed publication cannot authorize replacement. Models, runtimes, saved
-conversations and preferences remain separate.
-
-Failed downloads or replacement preserve the existing executable. If restart
-fails, open the updated executable manually. Read-only locations require manual
-replacement.
-
-Manual updates remain available: download the newer executable from the project's
-releases, verify its checksum, close Swift and replace the old `.exe`. Keep the same
-data directory when reopening it. Source and preview launches perform no automatic
-update work.
-
-To remove Swift, close it and delete the executable and, optionally, its package
-cache. Relaunching recreates the cache. Model and conversation data remain until
-explicitly removed. [Checked-directory packages](chat-packages.md) have separate
-manual activation and rollback controls.
-
-For local builds of the same format, use the
-[single-executable build command](development-guide.md#build-a-single-executable).
+Manual replacement also works: close the app, replace the verified executable
+and reopen with the same data directory. To remove it, delete the executable and
+optionally its package cache. Models, conversations and preferences remain in the
+data directory until explicitly deleted. Developer
+[checked-directory packages](chat-packages.md) have separate activation controls.
 
 ## Publish a release
 
-The current v0.3.0 [publication-verification record](evidence/windows-release-030-20261113/summary.json)
-binds the source, workflow and downloaded asset identities. It also retains the
-failed and cancelled Foundation bundle outcomes; model/device acceptance remains separate.
+The owner handles pushes and release dispatch under [AGENTS.md](../AGENTS.md).
+After source review, publish local `main` and dispatch `release.yml` with
+`prerelease=true`. An omitted `tag` uses `workspace.package.version` from
+`Cargo.toml`; an explicit tag must match it. The publication body is the README
+from that source revision. No per-version notes are required.
 
-Release scripts require PowerShell 7.6 or newer. Before building, the workflow
-checks workflow lock coverage and tooling policy, then syntax, argument preservation,
-UTF-8 output, native failures and unsafe paths. These inexpensive checks finish
-before the five build lanes start. Failed Rust commands print their phase, log
-location and bounded output directly in the run; complete logs remain in artifacts.
+Windows Release runs startup and tooling checks before building five application
+lanes on hosted Windows ARM64. It verifies source-bound receipts and notices,
+assembles the executable, and checks its GUI header, extraction and identities.
+Missing notice material stops publication. These checks do not establish
+clean-machine, actual-model, quality, performance or isolation acceptance.
 
-`AGENTS.md` reserves pushes and routine release operations for the owner.
-After reviewing local `main`, the owner publishes source and requests the release:
+Only the publication job writes release content. It uploads the exact three-asset
+inventory to a draft and verifies remote assets and source before publication.
+The tag must identify the checked commit. Existing publications are never replaced.
 
-```powershell
-git push origin main
-gh workflow run release.yml --repo symbiogenesis/SwiftBonsai2Runner --ref main -f prerelease=true
-```
-
-Leave `tag` blank to use `workspace.package.version` from `Cargo.toml`.
-Explicit `0.3.0` or `v0.3.0` must match that version; both select `v0.3.0` and
-`docs/releases/v0.3.0.md`. Mismatches report requested, workspace and expected
-identities. For the next release, increment the workspace version and commit
-matching notes first. `prerelease` defaults to `true`.
-
-Windows Release builds and checks all five application lanes on hosted Windows
-ARM64, verifies source-bound receipts and notices, and assembles the compressed
-GUI executable. A model-free smoke check verifies its GUI header, extraction and
-executable identities. It neither installs prerequisites nor runs an installer.
-
-The notice collector conservatively includes resolved Windows build/development
-dependencies. Missing crate-archive notices are bound to their recorded source
-commit; the reviewed egui 0.37.0 exception records both its unavailable archive
-commit and the immutable release commit supplying the shared license material.
-Missing or changed material stops publication. The complete notices remain
-inside the executable.
-
-Only the publication job can write repository content. It verifies the three-asset
-inventory, uploads a draft and publishes after remote asset/source checks pass.
-The tag points to the checked commit. No step runs `git push` or silently replaces
-an existing release.
-
-If publication fails after creating a draft, rerun only the failed job from the
-same run: `gh run rerun RUN_ID --failed --repo symbiogenesis/SwiftBonsai2Runner`.
-The successful packaging job's retained assets are reused. Publication resumes
-only a draft with the exact source, release notes, title, prerelease setting and
-asset identities. It uploads missing assets and verifies existing ones without
-replacing them. Lost mutation responses trigger authoritative readback rather
-than a repeated upload or publication request. If the release already published
-before a final readback failed, the same retry succeeds only after verifying all
-metadata, all three asset digests and the exact source tag without any remote
-write. This completed-release verification can succeed after `main` advances;
-draft creation, upload and publication still require the original current-main
-checks. Unknown assets, changed bytes or metadata, an absent or changed source
-tag, or advanced `main` for a draft stop recovery for review.
-A fresh dispatch still refuses an existing release; do not rebuild to recover
-an interrupted upload or delete a draft merely to bypass these checks.
-
-The owner can inspect the run and release with:
+To recover interrupted publication, rerun the failed job from the same run:
 
 ```powershell
-gh run list --repo symbiogenesis/SwiftBonsai2Runner --workflow release.yml --limit 5
-gh release view v0.3.0 --repo symbiogenesis/SwiftBonsai2Runner
+gh run rerun RUN_ID --failed --repo symbiogenesis/SwiftBonsai2Runner
 ```
 
-Hosted packaging checks do not qualify clean-machine startup, actual-model
-behavior, quality, sustained performance or isolation. Those remaining gates
-stay in [PLAN.md](../PLAN.md).
+Recovery reuses retained packaging assets and requires matching source, README
+body, title, prerelease setting and asset identities. It uploads missing assets,
+verifies existing ones and resolves ambiguous responses through readback. A
+completed publication is verified without writes, even if `main` has advanced.
+Draft mutation still requires the original current `main`. Unknown assets,
+changed metadata or bytes, and absent or changed tags stop recovery. A new
+dispatch refuses an existing release; rebuilding or deleting a draft is not a
+recovery path.

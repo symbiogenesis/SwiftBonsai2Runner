@@ -7,7 +7,6 @@ removing evidence.
 
 | Retained material | Current consumer |
 | --- | --- |
-| `windows-release-030-20261113/` | [Published release identities and verification limits](../releases.md) |
 | `headless-publisher-startup.json` | [Headless candidate](../runtime-candidates/README.md) and its [frozen fixture](../../tools/bonsai/tests/fixtures/README.md) |
 | `cpp-retirement-model-free.json` | [TTS decode-graph fixture provenance](../../src/speech-tts/tests/fixtures/decode-graph-v1.provenance.json) |
 | `hexagon-public-qaic-*` and `hexagon-sdk-*` | [Signed-Q2 source lock](../../config/hexagon-signed-q2-candidate.lock.json), independent SDK/wire review and [Windows ABI replay inputs](../../tools/hexagon/windows_queue_abi.ps1) |
