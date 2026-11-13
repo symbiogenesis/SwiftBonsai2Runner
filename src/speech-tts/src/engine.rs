@@ -33,6 +33,7 @@ use crate::{
 mod kv_append;
 mod packed;
 pub(crate) mod predictor_workspace;
+mod projection_layout;
 pub(crate) mod row_workers;
 
 /// Number of residual acoustic codebooks predicted by `CodePredictor` (`15`).
@@ -563,17 +564,7 @@ pub fn apply_hadamard_sign_fold(
     signs: &[i8],
     block_size: usize,
 ) -> io::Result<Vec<f32>> {
-    if input.is_empty()
-        || input.len() != signs.len()
-        || block_size == 0
-        || !block_size.is_power_of_two()
-        || !input.len().is_multiple_of(block_size)
-    {
-        return Err(io::Error::new(
-            io::ErrorKind::InvalidInput,
-            "Invalid Hadamard sign-fold dimensions.",
-        ));
-    }
+    projection_layout::fold_dimensions(input.len(), signs.len(), block_size)?;
     let mut folded = vec![0.0_f32; input.len()];
     let norm = 1.0_f32 / usize_to_f32(block_size).sqrt();
     let level = Level::new();
@@ -676,25 +667,14 @@ impl LinearProjection {
     ) -> io::Result<Self> {
         let name = name.into();
         validate_talker_ternary_policy(&name, &weight)?;
-        if in_dim == 0 || out_dim == 0 || bias.as_ref().is_some_and(|b| b.len() != out_dim) {
+        if bias.as_ref().is_some_and(|b| b.len() != out_dim) {
             return Err(io::Error::new(
                 io::ErrorKind::InvalidInput,
                 "Invalid LinearProjection dimensions.",
             ));
         }
+        projection_layout::validate(in_dim, out_dim, &weight)?;
         if let WeightQuantization::Packed { ggml_type, bytes } = &weight {
-            let (block, size) = crate::weights::packed_layout(*ggml_type)?;
-            if !in_dim.is_multiple_of(block)
-                || (in_dim / block)
-                    .checked_mul(out_dim)
-                    .and_then(|count| count.checked_mul(size))
-                    != Some(bytes.len())
-            {
-                return Err(io::Error::new(
-                    io::ErrorKind::InvalidData,
-                    "Invalid packed projection size.",
-                ));
-            }
             crate::weights::validate_packed(*ggml_type, bytes)?;
         }
         Ok(Self {
@@ -826,6 +806,7 @@ impl LinearProjection {
                 "LinearProjection input or bias length mismatch.",
             ));
         }
+        let layout = projection_layout::validate(self.in_dim, self.out_dim, &self.weight)?;
         let mut out = self
             .bias
             .clone()
@@ -835,21 +816,7 @@ impl LinearProjection {
 
         match &self.weight {
             WeightQuantization::Packed { ggml_type, bytes } => {
-                let (block, size) = crate::weights::packed_layout(*ggml_type)?;
-                let row_bytes = (self.in_dim / block).checked_mul(size).ok_or_else(|| {
-                    io::Error::new(
-                        io::ErrorKind::InvalidData,
-                        "Invalid packed projection size.",
-                    )
-                })?;
-                if !self.in_dim.is_multiple_of(block)
-                    || row_bytes.checked_mul(self.out_dim) != Some(bytes.len())
-                {
-                    return Err(io::Error::new(
-                        io::ErrorKind::InvalidData,
-                        "Invalid packed projection size.",
-                    ));
-                }
+                let row_bytes = layout.bytes_per_row;
                 let compute_slice = |row_offset: usize, destination: &mut [f32]| {
                     dispatch!(level, simd => {
                         let offset = row_offset * row_bytes;
@@ -859,12 +826,6 @@ impl LinearProjection {
                 run_row_chunks(&mut out, worker_count, compute_slice);
             }
             WeightQuantization::F32(w) => {
-                if w.len() != self.out_dim * self.in_dim {
-                    return Err(io::Error::new(
-                        io::ErrorKind::InvalidData,
-                        "F32 weight buffer size mismatch.",
-                    ));
-                }
                 let in_dim = self.in_dim;
                 let compute_slice = |row_offset: usize, dst_slice: &mut [f32]| {
                     dispatch!(level, simd => {
@@ -878,14 +839,7 @@ impl LinearProjection {
                 run_row_chunks(&mut out, worker_count, compute_slice);
             }
             WeightQuantization::Q8_0 { blocks } => {
-                let blocks_per_row = self.in_dim / 32;
-                if !self.in_dim.is_multiple_of(32) || blocks.len() != self.out_dim * blocks_per_row
-                {
-                    return Err(io::Error::new(
-                        io::ErrorKind::InvalidData,
-                        "Q8_0 block count mismatch.",
-                    ));
-                }
+                let blocks_per_row = layout.groups_per_row;
                 let compute_slice = |row_offset: usize, dst_slice: &mut [f32]| {
                     dispatch!(level, simd => {
                         for (local_o, dst) in dst_slice.iter_mut().enumerate() {
@@ -910,29 +864,10 @@ impl LinearProjection {
                 hadamard_block,
                 signs,
             } => {
-                let owned_folded;
-                let x_folded: &[f32] = if let Some(pf) = pre_folded
-                    && pf.len() == self.in_dim
-                {
-                    pf
-                } else {
-                    owned_folded = apply_hadamard_sign_fold(input, signs, *hadamard_block)?;
-                    &owned_folded
-                };
-                let groups_per_row = self.in_dim / *group_size;
-                let bytes_per_row = self.in_dim / 4;
-                if *group_size == 0
-                    || !group_size.is_multiple_of(4)
-                    || !self.in_dim.is_multiple_of(*group_size)
-                    || !self.in_dim.is_multiple_of(4)
-                    || scales.len() != self.out_dim * groups_per_row
-                    || packed_trits.len() != self.out_dim * bytes_per_row
-                {
-                    return Err(io::Error::new(
-                        io::ErrorKind::InvalidData,
-                        "PQ2_0 buffer dimensions mismatch.",
-                    ));
-                }
+                let x_folded =
+                    projection_layout::folded(input, pre_folded, signs, *hadamard_block)?;
+                let groups_per_row = layout.groups_per_row;
+                let bytes_per_row = layout.bytes_per_row;
                 let gsize = *group_size;
                 let gbytes = gsize / 4;
                 let compute_slice = |row_offset: usize, dst_slice: &mut [f32]| {
@@ -963,30 +898,10 @@ impl LinearProjection {
                 hadamard_block,
                 signs,
             } => {
-                let owned_folded;
-                let x_folded: &[f32] = if let Some(pf) = pre_folded
-                    && pf.len() == self.in_dim
-                {
-                    pf
-                } else {
-                    owned_folded = apply_hadamard_sign_fold(input, signs, *hadamard_block)?;
-                    &owned_folded
-                };
-                let groups_per_row = self.in_dim / *group_size;
-                let bytes_per_row = self.in_dim / 8;
-                if *group_size == 0
-                    || !group_size.is_multiple_of(8)
-                    || !self.in_dim.is_multiple_of(*group_size)
-                    || !self.in_dim.is_multiple_of(8)
-                    || scales.len() != self.out_dim * groups_per_row
-                    || nz_mask.len() != self.out_dim * bytes_per_row
-                    || sign_mask.len() != self.out_dim * bytes_per_row
-                {
-                    return Err(io::Error::new(
-                        io::ErrorKind::InvalidData,
-                        "PTQ1_0 buffer dimensions mismatch.",
-                    ));
-                }
+                let x_folded =
+                    projection_layout::folded(input, pre_folded, signs, *hadamard_block)?;
+                let groups_per_row = layout.groups_per_row;
+                let bytes_per_row = layout.bytes_per_row;
                 let gsize = *group_size;
                 let gbytes = gsize / 8;
                 let compute_slice = |row_offset: usize, dst_slice: &mut [f32]| {
