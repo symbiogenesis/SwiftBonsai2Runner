@@ -32,9 +32,10 @@ const PLAYBACK_PACKETS: usize = 8;
 // Only released packets enter this pool. Full queues discard excess buffers,
 // keeping retained spare PCM capacity to one WinMM queue.
 const RECYCLED_PACKETS: usize = PLAYBACK_PACKETS;
-// Cover the native codec's 640 ms steady bursts, including after an underrun.
-const PREROLL_PACKETS: usize = 7;
-const CODEC_BURST: Duration = Duration::from_millis(640);
+// The Rust codec emits one 80 ms frame per callback. Observe three packet
+// intervals before starting, retaining four packets to absorb callback jitter.
+const PREROLL_PACKETS: usize = 4;
+const CODEC_BURST: Duration = Duration::from_millis(80);
 const MAX_BUFFER_BYTES: usize = 48_000 * 120;
 
 pub(super) const fn packet_bytes_for_rate(sample_rate: u32) -> usize {
@@ -560,6 +561,18 @@ fn consume_with_progress(
     loop {
         check(generation, current, stop)?;
         output.reap()?;
+        if started
+            && output.queued() == 0
+            && buffered.ready.is_empty()
+            && pending.is_none()
+            && !finished
+        {
+            // A late consumer wake can find WinMM empty while the producer has
+            // already queued more audio. Refill before latching slow synthesis;
+            // otherwise scheduler jitter buffers the rest of a healthy segment.
+            (pending, finished) =
+                refill_queued(incoming, &mut buffered, generation, current, stop)?;
+        }
         if started && output.queued() == 0 && buffered.ready.is_empty() {
             output.pause()?;
             if buffered.released {
@@ -628,6 +641,37 @@ fn consume_with_progress(
     }
 }
 
+fn refill_queued(
+    incoming: &Receiver<Audio>,
+    buffered: &mut Buffered,
+    generation: u64,
+    current: &AtomicU64,
+    stop: &AtomicBool,
+) -> Result<(Option<Audio>, bool), tts::Failure> {
+    for _ in 0..PREFETCH_PACKETS {
+        check(generation, current, stop)?;
+        match incoming.try_recv() {
+            Ok(Audio::Frame(pcm)) => {
+                if let Some(pcm) = buffered.frame(pcm, Instant::now())? {
+                    return Ok((Some(Audio::Frame(pcm)), false));
+                }
+            }
+            Ok(Audio::SegmentEnd) => buffered.end()?,
+            Err(mpsc::TryRecvError::Empty) => break,
+            Err(mpsc::TryRecvError::Disconnected) => {
+                if buffered.segment_bytes != 0 {
+                    return Err(AUDIO_FAILURE);
+                }
+                return Ok((None, true));
+            }
+        }
+        if !buffered.ready.is_empty() {
+            break;
+        }
+    }
+    Ok((None, false))
+}
+
 // At most one 120-second clip of application staging, plus the 16-second
 // producer channel and 800 ms WinMM queue. Slow synthesis waits for a validated
 // segment instead of repeatedly playing short bursts separated by silence.
@@ -693,11 +737,9 @@ impl Buffered {
                     u64::try_from(self.segment_bytes - initial).map_err(|_| AUDIO_FAILURE)?
                         / bytes_per_ms,
                 );
-                // The native ramp groups 80/160/320/640 ms into separate callbacks,
-                // requiring 12 frames (960 ms) and two vocoder decodes between the
-                // first packet (Callback 2) and Packet 7 (Callback 4).
-                self.slow |= now.saturating_duration_since(first)
-                    > duration.saturating_mul(2) + CODEC_BURST.saturating_mul(2);
+                // Allow half a codec frame of observed jitter while rejecting sustained
+                // slower-than-playback supply before releasing the first audio.
+                self.slow |= now.saturating_duration_since(first) > duration + CODEC_BURST / 2;
                 if !self.slow {
                     self.ready.append(&mut self.segment);
                     self.released = true;
@@ -1422,12 +1464,12 @@ mod tests {
     }
 
     #[test]
-    fn realtime_native_callback_ramp_keeps_streaming_despite_burst_jitter() -> Result<(), Failure> {
+    fn realtime_codec_frames_prime_with_jitter_and_reject_slow_supply() -> Result<(), Failure> {
         let now = Instant::now() + Duration::from_secs(90);
         let mut buffered = Buffered::default();
         let mut frames = Frames::default();
-        for (millis, bytes) in [(80, 3_840), (240, 7_680), (560, 15_360), (1_200, 30_720)] {
-            frames.push(&vec![0; bytes], |frame| {
+        for millis in [80, 160, 240, 360, 400, 480, 560, 640, 720, 800] {
+            frames.push(&[0; 3_840], |frame| {
                 assert!(
                     buffered
                         .frame(frame, now + Duration::from_millis(millis))?
@@ -1435,9 +1477,29 @@ mod tests {
                 );
                 Ok(())
             })?;
+            if millis == 400 {
+                assert_eq!(buffered.ready.len(), PREROLL_PACKETS);
+            }
         }
         assert!(!buffered.slow);
-        assert_eq!(buffered.ready.len(), 12);
+        assert_eq!(buffered.ready.len(), 8);
+        for interval in [120, 160] {
+            let mut slow = Buffered::default();
+            let mut frames = Frames::default();
+            for index in 1..=5 {
+                frames.push(&[0; 3_840], |frame| {
+                    assert!(
+                        slow.frame(frame, now + Duration::from_millis(index * interval))?
+                            .is_none()
+                    );
+                    Ok(())
+                })?;
+            }
+            assert!(slow.slow);
+            assert!(slow.ready.is_empty());
+            slow.end()?;
+            assert_eq!(slow.ready.len(), PREROLL_PACKETS);
+        }
         Ok(())
     }
 
@@ -1512,6 +1574,80 @@ mod tests {
     }
 
     #[test]
+    fn queued_producer_audio_refills_before_a_late_wake_can_latch_an_underrun()
+    -> Result<(), Failure> {
+        struct DelayedOutput {
+            output: RecordingOutput,
+            producer: Option<mpsc::SyncSender<Audio>>,
+        }
+
+        impl Output for DelayedOutput {
+            fn queued(&self) -> usize {
+                self.output.queued()
+            }
+
+            fn push(&mut self, pcm: Vec<u8>) -> Result<(), Failure> {
+                self.output.push(pcm)
+            }
+
+            fn reap(&mut self) -> Result<(), Failure> {
+                if !self.output.paused
+                    && let Some(producer) = self.producer.take()
+                {
+                    // Simulate a late consumer wake after the native queue has
+                    // drained, with subsequent audio already in the channel.
+                    while let Some(pcm) = self.output.queued.pop_front() {
+                        self.output.played.extend(pcm);
+                    }
+                    for _ in 0..PREROLL_PACKETS {
+                        producer
+                            .send(Audio::Frame(vec![9; PACKET_BYTES]))
+                            .map_err(|_| super::AUDIO_FAILURE)?;
+                    }
+                    producer
+                        .send(Audio::SegmentEnd)
+                        .map_err(|_| super::AUDIO_FAILURE)?;
+                    Ok(())
+                } else {
+                    self.output.reap()
+                }
+            }
+
+            fn pause(&mut self) -> Result<(), Failure> {
+                self.output.pause()
+            }
+
+            fn start(&mut self) -> Result<(), Failure> {
+                self.output.start()
+            }
+        }
+
+        let (sender, incoming) = mpsc::sync_channel(PREFETCH_PACKETS);
+        for _ in 0..PREROLL_PACKETS {
+            sender
+                .send(Audio::Frame(vec![7; PACKET_BYTES]))
+                .map_err(|_| super::AUDIO_FAILURE)?;
+        }
+        let mut output = DelayedOutput {
+            output: RecordingOutput::default(),
+            producer: Some(sender),
+        };
+        consume_with(
+            &incoming,
+            4,
+            &AtomicU64::new(4),
+            &AtomicBool::new(false),
+            &mut output,
+        )?;
+        assert_eq!(output.output.starts, vec![PREROLL_PACKETS]);
+        let mut expected = vec![7; PACKET_BYTES * PREROLL_PACKETS];
+        expected.extend(vec![9; PACKET_BYTES * PREROLL_PACKETS]);
+        assert_eq!(output.output.played, expected);
+        assert!(output.output.maximum <= PLAYBACK_PACKETS);
+        Ok(())
+    }
+
+    #[test]
     fn playback_progress_tracks_output_start_and_buffering_without_an_audio_device()
     -> Result<(), Failure> {
         let (sender, incoming) = mpsc::sync_channel(PREFETCH_PACKETS);
@@ -1577,10 +1713,7 @@ mod tests {
             &AtomicBool::new(false),
             &mut multi_segment_output,
         )?;
-        assert_eq!(
-            multi_segment_output.starts,
-            vec![PREROLL_PACKETS, PREROLL_PACKETS]
-        );
+        assert_eq!(multi_segment_output.starts, vec![PREROLL_PACKETS]);
         assert_eq!(
             multi_segment_output.played.len(),
             PACKET_BYTES * (PREROLL_PACKETS * 2 + 1)
@@ -1614,9 +1747,8 @@ mod tests {
     #[test]
     fn punctuation_boundaries_drain_48k_partial_tails_and_reset_false_underruns()
     -> Result<(), Failure> {
-        // 1. 48 kHz short sentence (4 full 9,600-byte packets + 1 partial 1,920-byte tail
-        // at a punctuation mark) must not prematurely release on the partial tail or hang
-        // paused with queued buffers when SegmentEnd arrives.
+        // 1. A 48 kHz sentence's partial tail must drain without hanging paused;
+        // the next queued sentence continues through its punctuation boundary.
         let (sender, incoming) = mpsc::sync_channel(PREFETCH_PACKETS);
         let mut frames_48k = Frames {
             packet_bytes: PACKET_BYTES_48K,
@@ -1660,7 +1792,7 @@ mod tests {
             output_48k.played.len(),
             sentence_one.len() + sentence_two.len()
         );
-        assert_eq!(output_48k.starts, vec![5, PREROLL_PACKETS]);
+        assert_eq!(output_48k.starts, vec![PREROLL_PACKETS]);
 
         // 2. A boundary underrun right after all released packets of a sentence have
         // drained (before SegmentEnd is popped) must reset when SegmentEnd arrives so
