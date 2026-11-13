@@ -63,6 +63,15 @@ pub(crate) enum Command {
     Shutdown,
 }
 
+/// Audio positions, independent of presentation text. Total is decoder metadata
+/// and may be unknown or smaller than the actual decoded recording.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(crate) struct FileProgress {
+    pub(crate) start: Duration,
+    pub(crate) end: Duration,
+    pub(crate) total: Duration,
+}
+
 pub(crate) enum Event {
     Capabilities {
         input: bool,
@@ -79,7 +88,7 @@ pub(crate) enum Event {
     },
     FileProgress {
         generation: u64,
-        message: String,
+        progress: Option<FileProgress>,
     },
     FilePart {
         generation: u64,

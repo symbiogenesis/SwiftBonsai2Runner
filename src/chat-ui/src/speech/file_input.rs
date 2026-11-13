@@ -52,12 +52,11 @@ fn run(
         check(generation, current)?;
         let _sent = events.send(Event::FileProgress {
             generation,
-            message: format!(
-                "Transcribing audio: {:.1}–{:.1} of {:.1} seconds. Cancel or Escape stops transcription.",
-                chunk.start.as_secs_f64(),
-                chunk.end.as_secs_f64(),
-                chunk.total.as_secs_f64(),
-            ),
+            progress: Some(super::FileProgress {
+                start: chunk.start,
+                end: chunk.end,
+                total: chunk.total,
+            }),
         });
         let text = transcribe(&chunk.wav)?;
         check(generation, current)?;
@@ -77,8 +76,7 @@ fn run(
         import.advance();
         let _sent = events.send(Event::FileProgress {
             generation,
-            message: "Preparing the next audio segment. Cancel or Escape stops transcription."
-                .to_owned(),
+            progress: None,
         });
         chunk = loop {
             check(generation, current)?;

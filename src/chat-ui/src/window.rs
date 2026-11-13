@@ -170,6 +170,8 @@ struct State {
     audio_file_generation: u64,
     audio_file_active: bool,
     audio_file_notice: Option<String>,
+    audio_file_progress: Option<speech::FileProgress>,
+    audio_file_review_required: bool,
     audio_file_transcript: String,
     audio_file_error: bool,
     show_audio_transcript: bool,
@@ -294,6 +296,8 @@ impl State {
             audio_file_generation: 0,
             audio_file_active: false,
             audio_file_notice: None,
+            audio_file_progress: None,
+            audio_file_review_required: false,
             audio_file_transcript: String::new(),
             audio_file_error: false,
             show_audio_transcript: false,
@@ -637,6 +641,11 @@ impl State {
     }
 
     fn handle_escape(&mut self, ctx: &egui::Context) {
+        // The transcript viewer owns Escape and all background shortcuts, even
+        // on its first frame. Closing it must not also cancel or stop a request.
+        if self.show_audio_transcript {
+            return;
+        }
         // Voice cancellation takes effect before overlays consume Escape. Keep
         // the key available so the same action also dismisses Find or a modal.
         if self.dictation_requested
@@ -703,11 +712,13 @@ impl State {
             && self.delete_conversation.is_none()
             && self.edit_message.is_none()
             && !self.show_settings
+            && !self.show_audio_transcript
             && ctx.input_mut(|input| input.consume_key(egui::Modifiers::CTRL, egui::Key::N))
         {
             self.new_chat();
         }
         if !self.show_settings
+            && !self.show_audio_transcript
             && self.rename_conversation.is_none()
             && self.delete_conversation.is_none()
             && self.edit_message.is_none()
@@ -1240,14 +1251,15 @@ impl State {
             }
             speech::Event::FileProgress {
                 generation,
-                message,
-            } => {
-                if self.audio_file_active && self.microphone_generation == Some(generation) {
-                    self.audio_file_notice = Some(message);
-                }
-            }
+                progress,
+            } => self.update_audio_file_progress(generation, progress),
             speech::Event::FilePart { generation, text } => self.audio_file_part(generation, &text),
-            speech::Event::FileFinished { generation } => self.finish_audio_file(generation),
+            speech::Event::FileFinished { generation } => {
+                if self.audio_file_active && self.microphone_generation == Some(generation) {
+                    self.audio_file_review_required |= self.show_audio_transcript;
+                }
+                self.finish_audio_file(generation);
+            }
             speech::Event::Recognized { generation, text } => {
                 if self.dictation_requested
                     && self.dictation_finishing
@@ -1305,6 +1317,27 @@ impl State {
         }
     }
 
+    fn update_audio_file_progress(
+        &mut self,
+        generation: u64,
+        progress: Option<speech::FileProgress>,
+    ) {
+        if !self.audio_file_active || self.microphone_generation != Some(generation) {
+            return;
+        }
+        if let Some(progress) = progress {
+            self.audio_file_progress = Some(progress);
+        }
+        self.audio_file_notice = Some(
+            if progress.is_some() {
+                "Recognizing speech in this segment. Cancel or Escape stops transcription."
+            } else {
+                "Preparing the next audio segment. Cancel or Escape stops transcription."
+            }
+            .to_owned(),
+        );
+    }
+
     fn output_status(&mut self, generation: u64, speaking: bool, message: &str) {
         if self
             .speech
@@ -1351,6 +1384,9 @@ impl State {
             && self.rename_conversation.is_none()
             && self.delete_conversation.is_none()
             && self.edit_message.is_none()
+            && !self.show_settings
+            && !self.show_audio_transcript
+            && !(from_file && self.audio_file_review_required)
         {
             self.submit();
             if self.model.busy() {
@@ -1362,7 +1398,9 @@ impl State {
                 .clone_into(&mut self.speech_status);
             }
         } else {
-            if from_file {
+            if from_file && self.model.ready() {
+                "Audio file transcribed. Review the draft, then select Send."
+            } else if from_file {
                 "Audio file transcribed. Select Send when the model is ready."
             } else {
                 "Voice message transcribed. Select Send when the model is ready."
@@ -1372,10 +1410,16 @@ impl State {
         if from_file {
             self.audio_file_notice = Some(self.speech_status.clone());
         }
-        self.focus_composer = true;
+        self.focus_composer = !self.show_audio_transcript && !self.show_settings;
     }
 
     fn flush_voice_transcript(&mut self, ctx: &egui::Context) {
+        if self.audio_file_active
+            && self.show_audio_transcript
+            && self.pending_voice_transcript.is_some()
+        {
+            self.audio_file_review_required = true;
+        }
         // A press can become a Cancel or conversation switch on release. Leave
         // the transcript staged until the native widgets have handled that click.
         if ctx.input(|input| input.pointer.any_down()) {
@@ -1920,7 +1964,9 @@ impl State {
                                         self.composer_cursor = state.cursor.char_range();
                                     }
                                 }
-                                let focus_requested = self.focus_composer && !self.show_settings;
+                                let focus_requested = self.focus_composer
+                                    && !self.show_settings
+                                    && !self.show_audio_transcript;
                                 if focus_requested {
                                     response.request_focus();
                                     self.focus_composer = false;
@@ -1971,6 +2017,7 @@ impl State {
                             && self.edit_message.is_none()
                             && !egui::Popup::is_any_open(ui.ctx())
                             && !self.show_settings
+                            && !self.show_audio_transcript
                             && ui.is_enabled()
                             && response.has_focus()
                             && !self.composing
@@ -2130,7 +2177,12 @@ impl State {
         // Disable the workspace on the first modal frame too: egui's modal
         // focus layer is otherwise inherited only from the preceding pass.
         let drawer = self.sidebar_open && ui.available_width() < navigation::DOCK_THRESHOLD;
-        ui.add_enabled_ui(!self.show_settings && !drawer, |ui| self.draw_workspace(ui));
+        ui.add_enabled_ui(
+            !self.show_settings && !self.show_audio_transcript && !drawer,
+            |ui| {
+                self.draw_workspace(ui);
+            },
+        );
         let ctx = ui.ctx().clone();
         if self.show_settings {
             self.settings(&ctx);
@@ -2172,6 +2224,7 @@ impl eframe::App for State {
         if ((!was_ready && self.model.ready())
             || (was_busy && !self.model.busy() && self.model.ready()))
             && !self.show_settings
+            && !self.show_audio_transcript
             && ctx.memory(|memory| {
                 memory
                     .focused()

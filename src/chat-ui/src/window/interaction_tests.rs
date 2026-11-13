@@ -1276,3 +1276,133 @@ fn audio_file_progress_cancel_and_rejection_are_visible_in_wide_and_narrow_windo
         assert!(chat.state().app.audio_file_notice.is_none());
     }
 }
+
+#[test]
+fn audio_transcript_modal_stays_bounded_as_a_long_recording_arrives() {
+    for size in [[480.0, 480.0], [620.0, 640.0], [1180.0, 860.0]] {
+        let mut chat = harness(size, false);
+        let app = &mut chat.state_mut().app;
+        app.audio_file_notice = Some("Recognizing speech in this segment.".into());
+        app.audio_file_active = true;
+        app.dictation_requested = true;
+        app.dictation_finishing = true;
+        app.microphone_generation = Some(7);
+        app.show_audio_transcript = true;
+        app.input = "Keep draft".into();
+        let bounds = egui::Rect::from_min_size(egui::Pos2::ZERO, size.into());
+        let mut initial = None;
+        // Include long unbroken text as well as paragraphs: neither may expand
+        // the viewport or move the action row as recognition appends more text.
+        for part in [
+            "First segment.\n".to_owned(),
+            "word ".repeat(3000),
+            "界".repeat(16000),
+        ] {
+            chat.state_mut().app.audio_file_part(7, &part);
+            chat.run_steps(2);
+            let (modal, viewport) = chat.ctx.data(|data| {
+                (
+                    data.get_temp::<egui::Rect>(egui::Id::unique("audio-transcript-bounds"))
+                        .expect("modal bounds"),
+                    data.get_temp::<egui::Rect>(egui::Id::unique("audio-transcript-viewport"))
+                        .expect("transcript viewport"),
+                )
+            });
+            assert!(bounds.contains_rect(modal), "{size:?}: {modal:?}");
+            assert!(modal.contains_rect(viewport));
+            let close = chat
+                .get_by_role_and_label(egui::Role::Button, "Close transcript")
+                .rect();
+            let copy = chat
+                .get_by_role_and_label(egui::Role::Button, "Copy full transcript")
+                .rect();
+            assert!(bounds.contains_rect(close) && bounds.contains_rect(copy));
+            assert!(close.top() >= viewport.bottom());
+            if let Some(first) = initial {
+                assert_eq!(modal, first, "transcript growth changed the modal bounds");
+            } else {
+                initial = Some(modal);
+            }
+        }
+        assert_eq!(chat.state().app.input, "Keep draft");
+        assert!(chat.state().commands.try_recv().is_err());
+    }
+}
+
+#[test]
+fn audio_transcript_modal_owns_shortcuts_and_completion_requires_review() {
+    for size in [[480.0, 480.0], [1180.0, 860.0]] {
+        let mut chat = harness(size, false);
+        chat.get_by_role_and_label(egui::Role::MultilineTextInput, "Message")
+            .focus();
+        chat.run();
+        let app = &mut chat.state_mut().app;
+        app.input = "Keep draft".into();
+        app.audio_file_active = true;
+        app.dictation_requested = true;
+        app.dictation_finishing = true;
+        app.microphone_generation = Some(7);
+        app.audio_file_transcript = "Recognized speech".into();
+        app.show_audio_transcript = true;
+        let original = app.active_conversation;
+        chat.key_press_modifiers(egui::Modifiers::CTRL, egui::Key::N);
+        chat.key_press_modifiers(egui::Modifiers::CTRL, egui::Key::F);
+        chat.key_press(egui::Key::Enter);
+        chat.run_steps(2);
+        assert_eq!(chat.state().app.active_conversation, original);
+        assert_eq!(chat.state().app.conversations.len(), 1);
+        assert_eq!(chat.state().app.input, "Keep draft");
+        assert!(chat.query_by_label("Find in conversation").is_none());
+        assert!(chat.state().commands.try_recv().is_err());
+        chat.state_mut()
+            .app
+            .speech_event(speech::Event::FileFinished { generation: 7 });
+        // A completion racing the Close/Escape action must also stay a draft.
+        chat.key_press(egui::Key::Escape);
+        chat.run_steps(2);
+        assert!(!chat.state().app.show_audio_transcript);
+        let ctx = chat.ctx.clone();
+        chat.state_mut().app.flush_voice_transcript(&ctx);
+        assert!(!chat.state().app.audio_file_active);
+        assert!(chat.state().app.input.contains("Keep draft"));
+        assert!(chat.state().app.input.contains("Recognized speech"));
+        assert!(chat.state().commands.try_recv().is_err());
+        assert!(chat.state().app.speech_status.contains("Review the draft"));
+    }
+}
+
+#[test]
+fn audio_file_progress_is_generation_bound_and_metadata_never_finishes_import() {
+    let mut chat = harness([620.0, 640.0], false);
+    let app = &mut chat.state_mut().app;
+    app.audio_file_active = true;
+    app.dictation_requested = true;
+    app.dictation_finishing = true;
+    app.microphone_generation = Some(7);
+    let progress = speech::FileProgress {
+        start: Duration::from_secs(30),
+        end: Duration::from_secs(60),
+        total: Duration::from_secs(45),
+    };
+    app.speech_event(speech::Event::FileProgress {
+        generation: 7,
+        progress: Some(progress),
+    });
+    assert_eq!(app.audio_file_progress, Some(progress));
+    app.speech_event(speech::Event::FileProgress {
+        generation: 7,
+        progress: None,
+    });
+    assert_eq!(app.audio_file_progress, Some(progress));
+    assert!(app.audio_file_active);
+    app.cancel_audio_file();
+    let cancelled = app.audio_file_notice.clone();
+    app.speech_event(speech::Event::FileProgress {
+        generation: 7,
+        progress: Some(progress),
+    });
+    app.speech_event(speech::Event::FileFinished { generation: 7 });
+    assert_eq!(app.audio_file_notice, cancelled);
+    assert!(app.pending_voice_transcript.is_none());
+    assert!(chat.state().commands.try_recv().is_err());
+}
