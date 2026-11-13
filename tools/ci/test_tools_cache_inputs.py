@@ -172,7 +172,14 @@ class ToolsCacheInputTests(unittest.TestCase):
             wrapper = r"""
 $results = @()
 foreach ($scenario in ($env:FIXTURE_SCENARIOS | ConvertFrom-Json -AsHashtable)) {
-    foreach ($key in $scenario.environment.Keys) { [Environment]::SetEnvironmentVariable($key, $scenario.environment[$key]) }
+    # Null means absence. .NET's Unix setter can retain an empty variable;
+    # remove through the provider before setting case-equivalent Windows names.
+    foreach ($key in $scenario.environment.Keys) {
+        if ($null -eq $scenario.environment[$key]) { Remove-Item -LiteralPath "Env:$key" -ErrorAction SilentlyContinue }
+    }
+    foreach ($key in $scenario.environment.Keys) {
+        if ($null -ne $scenario.environment[$key]) { [Environment]::SetEnvironmentVariable($key, $scenario.environment[$key]) }
+    }
     foreach ($name in @('config', 'config.toml')) {
         $path = Join-Path $env:CARGO_HOME $name
         if ($scenario.ContainsKey($name)) { [IO.File]::WriteAllText($path, $scenario[$name]) }
@@ -208,12 +215,14 @@ ConvertTo-Json -InputObject @($results) -Compress
         for canonical, mixed in (("RUSTFLAGS", "RustFlags"), ("CARGO_PROFILE_RELEASE_LTO", "Cargo_Profile_Release_Lto")):
             with self.subTest(canonical=canonical):
                 values = self.environment_identities([
+                    {"environment": {}},
                     {"environment": {canonical: "changed"}},
                     {"environment": {canonical: None, mixed: "changed"}},
                     {"environment": {mixed: None}},
                 ])
-                self.assertEqual(values[0], values[1])
-                self.assertNotEqual(values[1], values[2])
+                self.assertEqual(values[0], values[3])
+                self.assertEqual(values[1], values[2])
+                self.assertNotEqual(values[0], values[1])
 
     def test_run_metadata_and_overridden_build_paths_do_not_partition_reuse(self):
         values = self.environment_identities([{"environment": {}}, {"environment": {"GITHUB_RUN_ID": "new-run",
