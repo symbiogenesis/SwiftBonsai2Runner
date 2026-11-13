@@ -55,6 +55,8 @@ enum Request {
         repository_directory: PathBuf,
         gguf_source_directory: PathBuf,
         output_directory: PathBuf,
+        #[serde(default)]
+        build_target_directory: Option<PathBuf>,
     },
     SdkInventory {
         repository_directory: PathBuf,
@@ -466,11 +468,56 @@ fn dispatch(mut context: Context) -> Result<Value> {
     Ok(receipt)
 }
 
+fn packed_build_target(
+    output: &Path,
+    sources: [&Path; 2],
+    supplied: Option<&Path>,
+) -> Result<PathBuf> {
+    let Some(target) = supplied else {
+        return Ok(output.join("target"));
+    };
+    plain(target)?;
+    validate_external_path(target).map_err(|error| error.to_string())?;
+    let normalized = |path: &Path| -> Result<String> {
+        #[cfg(windows)]
+        if path.components().any(|component| {
+            matches!(component, std::path::Component::Normal(part) if part.to_str().is_none_or(|part| part.ends_with(['.', ' ']) || part.contains('~')))
+        }) {
+            return Err("Cached build paths cannot use Windows trailing-dot, trailing-space or short-name aliases.".into());
+        }
+        let path: PathBuf = path.components().collect();
+        Ok(path
+            .to_str()
+            .ok_or("Cached build paths must have unambiguous Unicode spelling.")?
+            .replace('/', "\\")
+            .trim_end_matches('\\')
+            .to_uppercase())
+    };
+    let target_key = normalized(target)?;
+    for path in [output, sources[0], sources[1]] {
+        let key = normalized(path)?;
+        if target_key == key
+            || target_key.starts_with(&(key.clone() + "\\"))
+            || key.starts_with(&(target_key.clone() + "\\"))
+        {
+            return Err(
+                "Cached Cargo outputs must be separate from source and fresh Hexagon evidence."
+                    .into(),
+            );
+        }
+    }
+    Ok(target.to_owned())
+}
+
 #[expect(
     clippy::too_many_lines,
     reason = "The source-bound extractor recipe retains exact dependency artifacts, compiler images and model-free controls together."
 )]
-fn packed_artifact(mut context: Context, gguf: &Path) -> Result<Value> {
+fn packed_artifact(
+    mut context: Context,
+    gguf: &Path,
+    build_target: Option<&Path>,
+) -> Result<Value> {
     const PIN: &str = "7aca2251f09acb345d4afb53d5ce411f81017745";
     plain(gguf)?;
     let git = startup_process::resolve(OsStr::new("git.exe"))?;
@@ -514,7 +561,7 @@ fn packed_artifact(mut context: Context, gguf: &Path) -> Result<Value> {
     let manifest = context.repo.join("tools/hexagon/diagnostic.manifest");
     let manifest_digest = context.digest(&manifest, 65_536)?;
     let lock_digest = context.digest(&gguf.join("Cargo.lock"), 16 * 1024 * 1024)?;
-    let target = context.output.join("target");
+    let target = packed_build_target(&context.output, [&context.repo, gguf], build_target)?;
     let examples = gguf.join("tools/gguf/examples");
     fs::create_dir_all(&examples).map_err(|error| error.to_string())?;
     let example = examples.join("packed_artifact.rs");
@@ -806,9 +853,11 @@ pub fn run(request: Value) -> Result<Value> {
             repository_directory,
             gguf_source_directory,
             output_directory,
+            build_target_directory,
         } => packed_artifact(
             Context::new(repository_directory, output_directory)?,
             &gguf_source_directory,
+            build_target_directory.as_deref(),
         ),
         Request::SdkInventory {
             repository_directory,
@@ -841,6 +890,80 @@ mod tests {
             assert!(run(json!({"operation":operation,"repositoryDirectory":"relative","outputDirectory":"relative","ggufSourceDirectory":"relative"})).is_err());
         }
     }
+    #[test]
+    fn hexagon_cached_build_target_keeps_source_and_evidence_separate() -> Result<()> {
+        let root = std::env::temp_dir().join("bonsai-hexagon-target-contract");
+        let output = root.join("evidence");
+        let repo = root.join("runner");
+        let gguf = root.join("prism");
+        let sources = [repo.as_path(), gguf.as_path()];
+        assert_eq!(
+            packed_build_target(&output, sources, None)?,
+            output.join("target")
+        );
+        let target = root.join("cargo");
+        assert_eq!(
+            packed_build_target(&output, sources, Some(&target))?,
+            target
+        );
+        for path in [
+            &root,
+            &output,
+            &output.join("target"),
+            &repo,
+            &gguf,
+            &repo.join("target"),
+        ] {
+            assert!(packed_build_target(&output, sources, Some(path)).is_err());
+        }
+        assert!(packed_build_target(&output, sources, Some(Path::new("relative"))).is_err());
+        let parent = root.join("cargo").join("..").join("escape");
+        assert!(packed_build_target(&output, sources, Some(&parent)).is_err());
+        assert!(packed_build_target(&output, sources, Some(&output.join("."))).is_err());
+        #[cfg(windows)]
+        for alias in [
+            output.to_string_lossy().to_uppercase(),
+            output.to_string_lossy().replace('\\', "\\\\"),
+            format!("{}.cargo\\..", output.display()),
+        ] {
+            assert!(packed_build_target(&output, sources, Some(Path::new(&alias))).is_err());
+        }
+        #[cfg(windows)]
+        for alias in ["evidence.", "evidence ", "EVIDEN~1"] {
+            let alias = root.join(alias);
+            assert!(packed_build_target(&output, sources, Some(&alias)).is_err());
+            assert!(packed_build_target(&alias, sources, Some(&target)).is_err());
+            assert!(packed_build_target(&output, [&alias, &gguf], Some(&target)).is_err());
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn hexagon_cached_build_target_is_an_optional_typed_request_field() -> Result<()> {
+        let mut request = json!({
+            "operation":"build-packed-artifact", "repositoryDirectory":"C:/runner",
+            "ggufSourceDirectory":"C:/prism", "outputDirectory":"C:/evidence"
+        });
+        assert!(matches!(
+            serde_json::from_value::<Request>(request.clone()).map_err(|error| error.to_string())?,
+            Request::BuildPackedArtifact {
+                build_target_directory: None,
+                ..
+            }
+        ));
+        request["buildTargetDirectory"] = json!("C:/cargo");
+        assert!(matches!(
+            serde_json::from_value::<Request>(request.clone()).map_err(|error| error.to_string())?,
+            Request::BuildPackedArtifact {
+                build_target_directory: Some(_),
+                ..
+            }
+        ));
+        request["buildTargetDirectory"] = json!(123);
+        assert!(serde_json::from_value::<Request>(request).is_err());
+        Ok(())
+    }
+
     #[test]
     fn retained_sdk_inputs_recheck_exact_pins() -> Result<()> {
         let directory = std::env::temp_dir().join(format!(
