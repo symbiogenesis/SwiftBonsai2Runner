@@ -148,8 +148,13 @@ use those identical bytes and immutable model/runtime/template/thinking mode.
 Positive counts and checked arithmetic must satisfy:
 
 ```text
-rendered prompt tokens + requested completion tokens + 64 reserve <= 8192
+rendered prompt tokens + requested completion tokens + 64 reserve <= selected context tokens
 ```
+
+The owned launcher binds this capacity to the backend launch and exact readiness
+identity; independently constructed policies retain their explicit default.
+[Memory-selected context](swift-memory.md#memory-selected-serving-context) defines
+selection, reserves and the pinned native runtime limitation.
 
 The reserve is conservative policy, not a measured tokenizer-error allowance.
 Bytes/characters are never treated as tokens. Counter errors or identity drift
@@ -377,7 +382,9 @@ Artifact verification attests neither source-to-binary builds nor restricted exe
 Safe broker code delegates Win32 ownership to `bonsai-windows-process` and protected
 keys to `bonsai-windows-credentials`. Fresh protected evidence holds two keys and
 stdout/stderr. Reference admission is 22 GiB available / 18 GiB service; Swift is
-15.5 / 11.5 GiB, each retaining 4 GiB physical reserve. Batch/microbatch is 256/128
+15.5 / 11.5 GiB for the pinned native release and fixed qualification controls.
+Memory-selected Swift serving uses the selected launch budget described above;
+all paths retain 4 GiB physical reserve. Batch/microbatch is 256/128
 for reference, 128/64 for Swift. Suspended creation applies kill-on-close Job,
 commit/process-one/no-breakaway bounds and standard-handle attributes before
 execution; Job handles are noninheritable. The external evidence directory is cwd.

@@ -400,7 +400,7 @@ Reply limits and adapter controls remain in advanced Settings.
 | --- | --- |
 | **Thinking** | Off initially and in older saved chats; enables reasoning for the next response and every Extra effort pass. |
 | **Mode** | Standard makes one call. Experimental Extra effort makes at most three sequential plan/draft/review calls, shows stage labels and retains complete drafts. Neither mode has an elapsed generation-time limit; Stop cancels the active response. A truncated revision does not replace a complete draft; quality gains remain unproven. |
-| **Output cap** | Available only in **Settings > Response > Advanced response controls**, under **Reply length**. Defaults to 4,096; also offers 512/1,024/2,048 reasoning-inclusive tokens within the fixed 8,192-token context and 64-token template reserve. |
+| **Output cap** | Available only in **Settings > Response > Advanced response controls**, under **Reply length**. Defaults to 4,096; also offers 512/1,024/2,048 reasoning-inclusive tokens within the model session's selected context and 64-token template reserve. |
 | **Abliteration scale** | The advanced adapter disclosure in **Settings > Response** explains this experimental correction. The pinned adapter defaults to 1.3; choose 0-2 in 0.1 steps for the next response/every Extra effort pass without restart. Zero disables the correction. Older saved chats use 1.3; effectiveness and quality remain experimental. |
 
 The composer's **Context:** button pairs its label with a circular occupancy indicator
@@ -412,7 +412,10 @@ history including retained reasoning, the trimmed draft and approximate template
 Extra effort planning overhead when enabled, the selected reply reservation and
 the fixed 64-token reserve. The input counts are heuristic and may
 overestimate or underestimate the tokenizer. The selected reply cap, reserve and
-8,192-token limit are exact policy values; the estimate is no guarantee of fit.
+session context limit are exact policy values; the estimate is no guarantee of fit.
+The capacity comes from the owned broker and stays pending until startup reports
+it. [Memory-selected context](swift-memory.md#memory-selected-serving-context)
+defines launch-time sizing and the current pinned native runtime limitation.
 Extra effort estimates cover its planning pass only: later passes include generated
 working material that is not yet known. Message iteration can use a different
 prompt or committed prefix, so the composer estimate does not preflight those actions.

@@ -21,6 +21,7 @@ the corresponding detailed task changes; keep every acceptance obligation below.
 | R1 / owner, qualification | Runner with Prism | Published source-bound 0.1.25 prerelease and atomic runtime/source pins | Have the owner publish the reviewed Runner repin, then qualify the new active release. This is a development upgrade, not a performance promotion. Keep the fixed 0.1.23 CPU comparison baseline and all historical evidence identities unchanged. |
 | R2 / implementation, qualification | Prism, then Runner | Settled candidate, published comparison tooling and owning hosted checks | Publish and run the prepared [native CPU bundle comparison](docs/cpu-bundle-comparison.md) against registry 0.1.25; the existing X2 screen compares publisher thread counts, while one-token source timing is attribution only. Qualify the explicit exact LUT candidate, integrate selected cross-token consumers and genuinely batched verification; close CPU/prefill codegen, fallback, state/adapter/cancellation and matched selected-device benefit gates. X2 CPU benefit may promote reviewed shared CPU paths on X1 under [cross-generation CPU promotion](docs/cpu-kernels.md#cross-generation-cpu-promotion); device-specific tuning and claims retain matching-family gates. Qualify changes already consumed in 0.1.23 without another repin; follow the [inference delivery order](#lossless-inference-delivery-order). |
 | R3 / integration, qualification | Prism and Runner harnesses | Agreed execution/state identities and existing complete-state fixtures | Prepare shared state/restore and fault-control tooling independently of runtime qualification; map each prefix/prefill/speculation/accelerator path to its independent assertions and evidence. |
+| M1 / owner, qualification | Prism, then Runner | Reviewed memory-selected context source and a genuine compatible runtime release | Publish a source-bound Prism release with paired context/memory child arguments, review its exact identity and repin Runner to activate native memory sizing. Qualify selected context/admission/Job limits, unknown and changing memory, retry, UI reporting and full-state/resource behavior at the selected capacities. Current native 0.1.25 remains fixed at 8K; publisher serving uses memory selection. Historical fixed-8K controls retain their identities. |
 | K1 / owner, qualification | Prism, then Runner | Published 0.1.25 K4/V4 development runtime and matching local Runner repin | Have the owner publish the reviewed Runner repin, preserving explicit FP16 recovery and existing admission/8K bounds. Complete the [paired quality/memory packet](docs/quantized-kv.md#first-practical-promotion-packet) for measured qualification, independently on X1/X2; it is not a prerequisite for the development default. Defer K4/V3. |
 | S1 / implementation, integration | Runner; Prism for shared runtime/RPC consumers | Agreed verified-loading, state, stream and transport ownership interfaces | Integrate Talker/CodePredictor, codec/speaker and signed Rust RPC through [C++ retirement](#complete-c-retirement); qualify the ordinary Q4 baseline before ternary speech and new 48 kHz artifacts. |
 | S2 / implementation, qualification | Runner | Pinned Qwen3-ASR 1.7B artifacts and replacement controls | Qualify microphone-to-Swift submission, then replace ASR's native engine and close transcript/state, cancellation, lifecycle, quality and resource gates before removing its compiler/dependency paths. |
@@ -227,6 +228,15 @@ comparison control keeps FP16. This development selection does not qualify
 performance, quality or cache savings. The
 [cache contract](docs/quantized-kv.md) retains measured-quality, memory and
 independent device qualification, unchanged process admission and the 8K bound.
+
+Swift serving must size context from available memory rather than treating 8K as
+an architecture limit. The [memory-selected context contract](docs/swift-memory.md#memory-selected-serving-context)
+keeps host/runtime reserves, exact admission and one immutable capacity per model
+session. Local publisher integration is implemented; native activation requires a
+compatible verified release and exact reviewed repin. Complete the M1 release,
+changing-memory and selected-capacity acceptance gates without transferring any
+historical 8K result to larger windows. Fixed qualification/comparison workloads
+retain their declared 8K controls and closed budgets.
 
 Prioritize usable native startup, model readiness, stop/retry and explicit rollback,
 then actual-model application acceptance, daily-service isolation, creative

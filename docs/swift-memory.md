@@ -333,6 +333,58 @@ verifies the installed inference release in `dataDirectory`. No tool is built or
 downloaded by these commands. The complete-process deadline includes hashing;
 leave the gate pending if setup, work and cleanup cannot fit the owner budget.
 
+## Memory-selected serving context
+
+Swift serving selects its context once per model launch from available physical
+memory. Retry takes a new observation; an active model keeps its context so
+counting, generation, readiness and the native UI use the same capacity. This
+is separate from the fixed 8K qualification workloads below.
+
+The pure planner in `bonsai-cpu-policy::context` retains the existing 4 GiB
+Windows reserve and non-context allowance from the 11.5 GiB/8K reference budget.
+It charges 137,344 bytes per token: two 65,536-byte FP16 KV copies for live and
+rollback state, 6,144 bytes for the publisher's 64-token/24-head score scratch,
+and 128 bytes for context metadata. Native serial prefill uses a smaller score
+workspace but retains this shared conservative allowance, even with K4/V4. The
+non-context allowance remains 11 GiB, the reference
+Job budget minus its original 512 MiB KV charge; it includes weights, adapters,
+recurrent state, transforms and runtime headroom. These are conservative source
+allowances, not measured peaks. Cache quantization or PTQ1 alone does not increase
+the selected capacity or shrink that allowance.
+
+Capacity rounds down to 256-token pages and must accommodate the 4,096-token
+reply cap plus the 64-token template reserve. It never exceeds Swift's declared
+262,144-token model context or the runtime's 4 GiB live-state bound after charging
+156,893,184 recurrent bytes plus single-copy native KV, score and metadata
+charges. The resulting shared ceiling
+is 62,720 tokens. Less available RAM selects a smaller window and more can
+select a larger one, while insufficient space for a usable window rejects launch.
+The larger charge for rollback and batch scratch can require more available RAM
+than the historical 15.5 GiB admission floor.
+Sizing also leaves a separate 256 MiB startup margin so process creation need
+not consume the last page of admission slack. The immediate pre-spawn and child
+checks still require the Job allowance plus the 4 GiB host reserve.
+The Job ceiling and launch admission follow the selected budget. Unknown or
+insufficient memory rejects launch, and running pressure still tears down the
+owned model. An available-memory snapshot reserves no RAM.
+
+Publisher serving can pass the selected capacity through `--ctx-size`. The pinned
+native **Prism 0.1.25** release still implements a fixed 8,192-token context and
+keeps its existing admission/Job policy. Native memory selection remains gated
+until a genuine source-bound release implements the paired `--context-tokens`
+and `--memory-limit-bytes` child interface and Runner reviews that exact release
+identity. Local Prism source changes do not modify installed release bytes;
+startup reports this limit explicitly. No version-only guess or fabricated
+release pin enables the new protocol.
+
+The broker publishes the actual capacity to its owned UI. Until it is known,
+the Context control shows a pending capacity; afterward its estimates, meter and
+warnings use that capacity. Exact admission still counts the canonical rendered
+prompt and reserves the requested reply plus 64 tokens. It never trims history,
+changes reply settings or replays a request. Larger windows and changing-memory
+startup need independent source-bound application/resource qualification; the
+historical 8K captures establish no larger-context result.
+
 ## Native CPU status
 
 This section describes the publisher CPU assessment command, not current-release
