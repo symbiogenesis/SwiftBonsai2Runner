@@ -25,6 +25,7 @@ use fearless_simd::{Level, dispatch, f32x4, prelude::*};
 use crate::{codec::codec_ref_key, sampling};
 
 mod packed;
+mod row_workers;
 
 /// Number of residual acoustic codebooks predicted by `CodePredictor` (`15`).
 pub const NUM_ACOUSTIC_CODEBOOKS: usize = 15;
@@ -848,7 +849,7 @@ impl LinearProjection {
     }
 
     /// Project one vector `input` (`[in_dim]`) into `[out_dim]` using `fearless_simd` NEON
-    /// and up to `threads` scoped row workers.
+    /// and up to `threads` reusable row workers.
     pub fn forward_vec_parallel(
         &self,
         input: &[f32],
@@ -862,7 +863,7 @@ impl LinearProjection {
     /// Hadamard activation slice (`pre_folded`) shared across sibling projections (`q/k/v` or `gate/up`).
     #[expect(
         clippy::too_many_lines,
-        reason = "Dispatches across F32, Q8_0, PQ2_0, and PTQ1_0 weight representations with optional scoped row parallelism."
+        reason = "Dispatches across F32, Q8_0, PQ2_0, and PTQ1_0 weight representations with optional reusable row parallelism."
     )]
     pub fn forward_vec_with_pre_folded(
         &self,
@@ -1078,28 +1079,7 @@ fn run_row_chunks<F>(out: &mut [f32], worker_count: usize, compute_slice: F)
 where
     F: Fn(usize, &mut [f32]) + Sync,
 {
-    if worker_count <= 1 || out.len() < 4 {
-        compute_slice(0, out);
-        return;
-    }
-    let chunk_rows = out.len().div_ceil(worker_count);
-    let mut chunks = out.chunks_mut(chunk_rows);
-    let Some(first) = chunks.next() else {
-        return;
-    };
-    let first_len = first.len();
-    std::thread::scope(|scope| {
-        let mut row_offset = first_len;
-        let compute_ref = &compute_slice;
-        for slice in chunks {
-            let start = row_offset;
-            row_offset += slice.len();
-            scope.spawn(move || {
-                compute_ref(start, slice);
-            });
-        }
-        compute_ref(0, first);
-    });
+    row_workers::run(out, worker_count, &compute_slice);
 }
 
 #[expect(

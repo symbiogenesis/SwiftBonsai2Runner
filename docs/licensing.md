@@ -26,6 +26,7 @@ licenses, Prism notices and pinned artifacts. Dependency terms apply independent
 | `mxc-sdk` 1.0.1 | MIT | Retain Microsoft copyright and MIT permission notice; the native PSEC integration is confined to the Windows process boundary. |
 | `flatbuffers` 25.12.19 | Apache-2.0 | Retain the selected license and notices for the fixed PSEC policy encoder. |
 | `fearless_simd` 1.2.0 (Runner), 1.1.0 (external runtime) | Apache-2.0 OR MIT | Retain the applicable license/attribution for each independently pinned selection. |
+| `rayon` 1.12.0, `rayon-core` 1.13.0 and Crossbeam worker queues | MIT OR Apache-2.0 | Retain the selected licenses/attribution for the Rust TTS worker pool and its queue dependencies. |
 | `subtle` 2.6.1 | BSD-3-Clause | Retain copyright, conditions and disclaimer; respect non-endorsement. |
 | `zip` 9.5.1 | MIT | Retain the notice; enabled deflate dependencies also have permissive options. |
 | `simd-json` 0.19.0 | Apache-2.0 OR MIT | Qualification-only published crate; retain its selected license terms and the attribution in NOTICE when redistributing. |

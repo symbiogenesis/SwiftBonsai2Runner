@@ -158,6 +158,7 @@ consumer acceptance remains pending as recorded below.
 | `transcribe-cpp` | Static CPU ASR, defaults disabled; reviewed CMake script downloads no source and explicitly enables MSVC optimization. |
 | `simd-json` | Exact optional qualification-only crates.io pin; ordinary requests still use serde_json. |
 | `fearless_simd` | Pinned safe SIMD (`=1.2.0` in Runner speech and the active external runtime, with independent locks). ASR uses it in `validate_pcm`; TTS uses it in the serving Rust `engine`/`codec` modules. Prism's `bonsai-neon-dot` kernels are a separate runtime dependency. |
+| `rayon` | TTS pins `=1.12.0` for safe borrowed projection work on a reusable, explicitly bounded team owned by its calling thread. No global pool or whole-weight copies; one-worker and failed-team construction run serially. This replaces per-projection OS thread creation and requires owning hosted dependency/model acceptance. |
 | `memchr` | Promoted from transitive to direct (`=2.8.3`, `default-features = false`) in `bonsai-broker`, `bonsai-chat`, and `bonsai-speech-service` for NEON-vectorized HTTP header, SSE line, multipart boundary, and ASCII folded Find scanning. |
 | Windows CNG | Runner artifact and maintenance digests use `bonsai_windows_credentials::Sha256` (`BCryptHashData`); CPU dispatch belongs to the Windows provider. Prism's `bonsai-native-hash` is external to this workspace. These paths alone establish no device speedup. |
 | `mxc-sdk`, `flatbuffers` | Required security integration; pursue upstream modularity. |
