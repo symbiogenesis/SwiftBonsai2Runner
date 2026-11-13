@@ -9,6 +9,18 @@ use super::{MAX_INSTALLER, MAX_METADATA, REPOSITORY, TARGET};
 pub(super) struct Version(u8, u8, u16);
 
 impl Version {
+    #[cfg(test)]
+    pub(super) fn next_for_test(self) -> crate::Result<String> {
+        let next = self
+            .2
+            .checked_add(1)
+            .map(|patch| (self.0, self.1, patch))
+            .or_else(|| self.1.checked_add(1).map(|minor| (self.0, minor, 0)))
+            .or_else(|| self.0.checked_add(1).map(|major| (major, 0, 0)))
+            .ok_or("No newer fixture version is available.")?;
+        Ok(format!("{}.{}.{}", next.0, next.1, next.2))
+    }
+
     pub(super) fn parse(text: &str) -> crate::Result<Self> {
         let parts: Vec<_> = text.split('.').collect();
         if parts.len() != 3

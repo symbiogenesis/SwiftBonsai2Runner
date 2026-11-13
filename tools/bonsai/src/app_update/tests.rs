@@ -1,12 +1,12 @@
 use super::*;
 
-fn installer() -> crate::Result<policy::Installer> {
+fn installer(version: &str) -> crate::Result<policy::Installer> {
     serde_json::from_value(json!({
-        "schemaVersion": 1, "version": "0.1.1", "sourceRevision": "a".repeat(40),
+        "schemaVersion": 1, "version": version, "sourceRevision": "a".repeat(40),
         "target": TARGET,
         "asset": {
-            "name": "SwiftBonsai2Runner-0.1.1-windows-arm64.msi",
-            "url": format!("https://github.com/{REPOSITORY}/releases/download/v0.1.1/SwiftBonsai2Runner-0.1.1-windows-arm64.msi"),
+            "name": format!("SwiftBonsai2Runner-{version}-windows-arm64.msi"),
+            "url": format!("https://github.com/{REPOSITORY}/releases/download/v{version}/SwiftBonsai2Runner-{version}-windows-arm64.msi"),
             "bytes": 8, "sha256": crate::identity::sha256(b"original"),
         }
     }))
@@ -21,13 +21,15 @@ fn final_stage_requires_published_identity_and_retains_immutable_ancestry() -> c
     ));
     external(&root)?;
     fs::create_dir(&root).map_err(|error| error.to_string())?;
-    let published = installer()?;
+    let version = Version::parse(env!("CARGO_PKG_VERSION"))?.next_for_test()?;
+    let other_version = Version::parse(&version)?.next_for_test()?;
+    let published = installer(&version)?;
     let path = root.join(&published.asset.name);
     let receipt = root.join("verified-release.json");
     let encoded = serde_json::to_vec(&published).map_err(|error| error.to_string())?;
     transfer::write_exclusive(&path, b"original")?;
     transfer::write_exclusive(&receipt, &encoded)?;
-    let guard = verify_stage(&root, "0.1.1", &published)?;
+    let guard = verify_stage(&root, &version, &published)?;
     assert_eq!(guard.path(), path);
     assert!(fs::write(&path, b"tampered").is_err());
     assert!(fs::rename(&root, root.with_extension("moved")).is_err());
@@ -43,15 +45,15 @@ fn final_stage_requires_published_identity_and_retains_immutable_ancestry() -> c
         serde_json::to_vec(&rewritten).map_err(|error| error.to_string())?,
     )
     .map_err(|error| error.to_string())?;
-    let error = verify_stage(&root, "0.1.1", &published)
+    let error = verify_stage(&root, &version, &published)
         .err()
         .ok_or("Accepted a rewritten installer receipt.")?;
     assert!(error.contains("differs from the published release"));
 
     fs::write(&receipt, &encoded).map_err(|error| error.to_string())?;
-    assert!(verify_stage(&root, "0.1.1", &published).is_err());
+    assert!(verify_stage(&root, &version, &published).is_err());
     fs::write(&path, b"original").map_err(|error| error.to_string())?;
-    assert!(verify_stage(&root, "0.1.2", &published).is_err());
+    assert!(verify_stage(&root, &other_version, &published).is_err());
     fs::remove_file(&path)
         .and_then(|()| fs::remove_file(&receipt))
         .and_then(|()| fs::remove_dir(&root))
