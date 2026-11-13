@@ -9,36 +9,23 @@ in Git history.
 
 ## Existing evidence and project scope
 
-The target is native Windows ARM64 on Snapdragon X/X2. Swift's verified `qwen35`
-graph has 16 full-attention and 48 Gated DeltaNet/convolution layers. The active
-runtime and cache come from the [release lock](../config/prism-inference.lock.json)
-and [inference defaults](inference-defaults.md). Context is
-[memory-selected at launch](swift-memory.md#memory-selected-serving-context),
-with F32 recurrent state and explicit FP16 recovery; PTQ1 remains a separate opt-in.
-Model metadata and locks take precedence over similarly named paper models.
+The [runtime contract](native-rust-engine.md) and [inference defaults](inference-defaults.md)
+define Swift's Windows ARM64 scope. Locks/metadata take precedence over similarly
+named paper models. Prism owns kernels; Runner owns provisioning, admission,
+orchestration and [native presentation](ui-architecture.md).
 
-Kernels belong in [Prism Inference](https://github.com/symbiogenesis/prism-inference);
-Runner owns provisioning, admission, orchestration and [native Rust presentation](ui-architecture.md).
-Ideas from Python/C++/GPU systems do not require their UI, broad API or backend.
-
-Evidence labels: **theorem** = published result under stated assumptions (possibly
-an unreviewed preprint); **derivation** = local algebra/counting; **paper** = authors'
-algorithm/evaluation; **implementation** = inspectable source needing revision,
-license and conformance review; **report** = author/maintainer account. HN supplies
-leads and discussion; trace claims to originals.
+Evidence labels: **theorem** = published result under stated assumptions;
+**derivation** = local algebra/counting; **paper** = authors' algorithm/evaluation;
+**implementation** = inspectable source needing revision/license/conformance
+review; **report** = author/maintainer account. Trace discussion leads to originals.
 
 ## Experiment scope and budgets
 
-Use available native Snapdragon X/X2 hardware and compatible published artifacts.
-Predeclare candidate count, shapes, prompts/tokens, memory and the complete
-workload estimate. Exclude WSL/emulation, unavailable kernels, full retraining
-and architecture changes from the laptop qualification lane.
-
-Follow [validation](validation.md) and [owner-device budget/power rules](../AGENTS.md#owner-device-execution-budgets):
-one original allowance includes setup, every arm, power, cleanup and retention.
-Complete suites and benchmarks remain owner-operated CI work. A smaller smoke
-cannot replace full-context, numerical or human-quality gates. Source-bound tools
-must already be built before owner-device qualification starts.
+Predeclare candidate count, shapes, prompts/tokens, memory and complete workload
+estimate under [validation](validation.md) and [owner-device budget/power policy](../AGENTS.md#owner-device-execution-budgets).
+Use available native X/X2 hardware, compatible published artifacts and source-bound
+prebuilt tools. WSL/emulation, unavailable kernels, full retraining and architecture
+changes are outside this laptop lane.
 
 ## Priorities for this model and hardware
 
@@ -319,31 +306,18 @@ no Snapdragon benefit or generation/attention shortcut.
 
 ## Turning a lead into an experiment
 
-1. Identify phase, shapes, bottleneck and missing evidence; check existing Prism
-   work before choosing a mechanism to remove traffic/compute.
+1. Identify the bottleneck and missing evidence; check existing Prism consumers
+   before selecting a mechanism.
 2. Declare numerical/state identity: exact bytes/integers, reordered floats with
-   tolerances, distribution-preserving sampling, or explicit approximation/new
-   artifacts. Include adapter and checkpoint identity.
-3. Account for packed/expanded weights, copies, LUTs, activations, KV/recurrent
-   snapshots, rollback, scratch, mappings and device allocations. File size,
-   nominal buffers and Job commit measure different things.
-4. Pin source/license; implement kernels upstream, preserving Runner policy and
-   Rust/native presentation. Predeclare candidate count, shapes, sample, peak RAM
-   and deadline under the [experiment budgets](#experiment-scope-and-budgets).
-5. Run focused untimed conformance for relevant tails, generic PQ2 `+2`, i8 `-128`,
-   continuation, edits, restores, cancellation and failed commit; reuse suitable fixtures.
-6. Run all benchmarks/full suites in [CI only](validation.md), on actual Snapdragon
-   hardware for device claims. Pair identical artifacts/LoRA/context/output/sampler;
-   retain cold/warm/prefix-hit TTFT, first useful token, prefill/decode/complete-task
-   time, private/commit/resident/device peaks, comfort and observable energy.
-   Preserve losing cases and uncertainty.
-7. Retain minimal evidence under the validation policy; put outstanding work in PLAN.
-   Promotion still needs correctness, quality, resources and standard LoRA gates; research inclusion
-   authorizes neither lower reserves, a new default nor a smaller substitute model.
-
-Include [application queues/parsing/search/PCM](streaming-resources.md) and
-[speech evaluation](performance-expectations.md#q4-speech-resource-comparison) in
-complete-task accounting; UI delivery timing is not inference-kernel throughput.
+   tolerances, distribution-preserving sampling or explicit approximation.
+   Pin source/license, artifacts, adapter, checkpoint and complete resource costs.
+3. Implement kernels in Prism, preserving Runner's policy and native UI. Qualify
+   tails, generic PQ2 `+2`, i8 `-128`, continuation, edits, restore, cancellation
+   and failed commit using independent controls.
+4. Apply [promotion criteria](validation.md#promotion-criteria),
+   [measurement requirements](performance-expectations.md#measurement-and-comparison)
+   and [evidence retention](validation.md#evidence-retention). Include application
+   delivery and speech costs; put outstanding work in PLAN.
 
 ## Keeping the register current
 
