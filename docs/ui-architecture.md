@@ -45,7 +45,7 @@ path downloads verified releases and requires user
 confirmation before replacement, preserving the data directory. Published v0.2.0 requires
 [manual replacement](releases.md#update-and-remove).
 
-Swift launches default to native Rust Prism 0.1.25, original PQ2, four CPU row
+Swift launches default to native Rust Prism 0.1.26, original PQ2, four CPU row
 workers and the standard adapter at scale 1.3. `--native-engine` remains accepted;
 `--publisher-engine` selects the explicit publisher rollback. Engine options are
 mutually exclusive, and retry preserves the selected engine and representation.
@@ -56,7 +56,7 @@ resident `native-q2` path under the [Hexagon policy](hexagon.md); CPU fallback f
 an absent signed package or CDSP driver does not change engine or representation.
 PTQ1 remains an explicit opt-in.
 
-The owner-selected 0.1.25 development pin uses TurboQuant-inspired K4/V4 (`rsq4`); historical
+The reviewed 0.1.26 development pin retains TurboQuant-inspired K4/V4 (`rsq4`); historical
 0.1.23 used FP16. Runner binds the cache to reviewed runtime source and verifies
 cache/startup-graph readiness. Quality, memory, performance and actual-model
 qualification remain pending. Trusted `--kv-cache f16` selects recovery on a new
@@ -69,11 +69,21 @@ through deferred setup and Retry. The current pin rejects it before model launch
 activation requires a separate exact-source release review of K4/V3 and the paired
 context/memory accounting. Request bodies cannot select this profile.
 
-Trusted `--placement auto|cpu` also survives preparation and Retry. CPU placement
-requires a separately reviewed runtime source and readiness declaring both CPU
-placement and CPU projection execution; the current pin rejects it. Explicit
-placement is native-only. Omission preserves automatic placement. This option
-does not change the fixed memory allowance or establish recovered RAM or speed.
+Native Prism 0.1.26, source `3d735627df43056d3bf569002af2c23af30a3e6a`, activates
+reviewed memory-selected context through paired context/memory child arguments.
+The broker selects context and Job/admission budgets once from available RAM,
+charges the immutable selected cache and sequential scratch, and retains the
+4 GiB host reserve and startup margin. Retry takes a new memory observation.
+The UI uses broker-reported capacity for guidance; history, reply reservation
+and exact admission remain unchanged. This source accounting does not qualify
+larger-context quality, measured peak memory or performance. Historical fixed-8K
+releases retain their own evidence and limits.
+
+Trusted `--placement auto|cpu` also survives preparation and Retry. The reviewed
+0.1.26 source skips accelerator initialization for CPU placement and must report
+both CPU placement and CPU projection execution at readiness. Explicit placement
+is native-only. Omission preserves automatic placement. This option retains the
+same conservative memory allowance and establishes no recovered RAM or speed.
 
 The launcher checks/builds presentation first. After the first UI tick, an owned
 preparation worker verifies/provisions the selected pinned Rust runtime alongside
@@ -223,7 +233,7 @@ remain separate from MSI application files.
 | Recovery | Automatic by default with a persistent explicit opt-out; user-scoped DPAPI, 8 MiB bound, atomic replacement outside Git and one writer/data directory. A saved, locally identified in-flight turn with a usable partial answer becomes conversation context on restore. Older snapshots can recover an unbound trailing pair only when their saved completion state and last answer identify the interruption; ambiguous records remain visible separately. Restore never replays a request or activates microphone or playback. [Recovery operation](development-guide.md#optional-recovery-and-preview) defines saved fields, unreadable-file preservation, saving/deletion and same-user limits. |
 | Window placement | Separate bounded geometry-only file in the data directory, independent of conversation saving. Preserve normal bounds and maximized state, never reopen minimized; native Windows restores offscreen placement onto current monitors. Preview leaves the real window settings untouched. Disk writes run on a coalescing worker joined at shutdown. |
 | Appearance and layout | Device-wide System/Light/Dark theme, 14–24-point reading text and 640–1,040-point maximum reading width. Windows high contrast overrides the palette. The sidebar resizes from 216–340 points and can be hidden; below 900 points it becomes a left-anchored modal drawer with Escape/backdrop dismissal. A manual resize remains stable after release and layout changes; content cannot override it. Default window size is 1,080×780 points with a 480×480 minimum. A separate bounded `chat-appearance.json` stores only these preferences and sidebar geometry/visibility, independently of conversation saving; writes coalesce off the event loop and flush on close. Preview never opens this store. Text-size changes invalidate transcript, reasoning and Find geometry without changing source text or history. |
-| Stop/retry | Standard and Extra effort generation have no elapsed-time cutoff. Stop freezes queued updates and wakes network and notification-pressure waits. Startup, connection and owned-teardown operations retain their deadlines. Retry waits for owned-backend teardown, creates fresh credentials/diagnostics and repeats artifact, identity and 15.5 GiB admission checks. Preserve completed turns and newer drafts; a usable partial answer and its original prompt become conversation context, otherwise restore the interrupted prompt only to an empty composer. Never replay automatically or reduce the profile. If completion wins the Stop race, the visible answer and committed history agree. |
+| Stop/retry | Standard and Extra effort generation have no elapsed-time cutoff. Stop freezes queued updates and wakes network and notification-pressure waits. Startup, connection and owned-teardown operations retain their deadlines. Retry waits for owned-backend teardown, creates fresh credentials/diagnostics and repeats artifact, identity and selected-memory admission checks. Preserve completed turns and newer drafts; a usable partial answer and its original prompt become conversation context, otherwise restore the interrupted prompt only to an empty composer. Never replay automatically or reduce the profile. If completion wins the Stop race, the visible answer and committed history agree. |
 | Rejections/failures | Recognized local input rejections restore the draft and retain readiness. Other disconnects require retry and identify no token/memory cause. [Broker policy](broker-policy.md#native-client-completion-and-recovery) defines accepted errors and completion. |
 | Settings | A centered native modal blocks background pointer and keyboard actions. Response opens first and names the selected conversation; Voice, Appearance, Privacy and Application label their device-wide scope. Wide, sufficiently tall layouts use side navigation; narrow or short layouts use wrapping categories. Changes take effect immediately; Done, Close or Escape dismisses Settings and returns focus to the composer without sending or stopping generation. An open selector consumes Escape first; active input retains its explicit cancellation behavior. Voice setup and diagnostics stay inside the modal. |
 | Response settings | Thinking, Extra effort, output cap and adapter scale belong to the selected conversation. They apply to the next response and every Extra effort pass; controls lock during generation. The composer's compact Thinking button opens its own native popup with only Thinking and Extra effort checkboxes and their explanations; these also appear in Settings. Reply length and adapter controls stay inside Settings behind the Advanced response controls disclosure. Popup actions retain ordinary button accessibility semantics; enabled thinking uses the native selection foreground/background pair. [Settings](development-guide.md#conversations-and-response-settings) defines defaults, bounds and execution; adapter and Extra effort quality gains remain unproven. |
