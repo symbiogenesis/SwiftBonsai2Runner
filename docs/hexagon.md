@@ -60,82 +60,55 @@ qualification gates under [PLAN.md](../PLAN.md#hexagon-npu).
 
 ## Device and route boundaries
 
-Acceptance requires completed-response latency or energy benefit within memory, quality and
-sustained-comfort
-limits against the same Swift artifact on CPU and qualified Adreno. TOPS, utilization and
-simultaneous
-CPU/GPU/NPU activity do not qualify a backend. X1/X2 qualify independently.
-
-| Device class | Execution boundary |
-| --- | --- |
-| Recorded X1E-78-100 / v73 | Packed HVX arithmetic, native signed access, mapping-window/dynamic-mapping costs |
-| X2 / v81, initially Elite Extreme | Batched HMX prefill, packed HVX decode, verified DMA/VTCM limits and matching signed package |
-
-Receipts bind exact SKU/capabilities, driver/runtime/kernel bytes, ABI and resource limits;
-processor names establish none of these. Unknown or changed facts exclude the candidate. Shared
-profile policy governs admission, fallback, bounded lifetime and teardown; packed work needs a
-trusted operation oracle. [DMA64][hexagon-dma64] targets v81+ to avoid old-window dynamic weight
-mappings via DMA/VTCM. [Q1/Q2 Hadamard matmul and row reads][hexagon-q2] are source leads; neither
-proves Swift PQ2/PTQ1, full-graph or signed Windows coverage. Rebuilt source and bundled signed
-binaries have distinct identities.
+X1/v73 and X2/v81 qualify independently. Receipts bind actual SKU/capabilities,
+package/DSP/catalog, installed driver, host executable, ABI and resource limits.
+Unknown or changed identities exclude the candidate. Source availability cannot
+replace Windows ABI, supported signing or distribution. The
+[GenieX v0.10.0 catalog][geniex-signed] covers only bundled kernels. Trust,
+certificate, Secure Boot or test-signing changes require a separate owner decision;
+missing signed deployment blocks execution.
 
 | Route | Required boundary |
 | --- | --- |
-| Prism/ggml Hexagon | Packed types, transforms, hybrid graph, adapters and signed deployment together |
-| GenieX `llama_cpp` | Exact plugin/package, supported format and actual placement |
-| GenieX `qairt` or ONNX Runtime GenAI/QNN | Faithful prepared package, chipset/precision/shapes/cache identity and bounded memory |
-| Native Rust device boundary | Safe ownership API, audited driver ABI, no C/C++ inference-library dependency |
+| Prism/ggml Hexagon | Packed formats, transforms, hybrid graph, adapters and signed deployment |
+| GenieX `llama_cpp` | Exact plugin/package, supported format and measured placement |
+| GenieX `qairt` or ONNX Runtime GenAI/QNN | Faithful prepared package with chipset/precision/shapes/cache identity and bounded memory |
+| Native Rust | Audited safe driver/ownership boundary without a C/C++ inference library |
 
-[GGUF/QAIRT plugins][geniex-sdk], a [Q4_0 recommendation][geniex-models] and the
-[ternary HTP prototype][htp-prototype] do not establish Swift support. Supported-type fixtures or
-separately pinned small models establish access only; they cannot change model selection. Concurrent
-residency with another large control model exceeds the 32 GB contract. Wrapping an external engine
-in Rust does not satisfy native replacement. [GenAI/QNN][qnn-genai] requires a prepared package, not
-a GGUF provider switch: 27B weights at one/two bytes cost roughly 27/54 GB before
-scales/state/duplicates. Expansion needs a demonstrated bounded representation.
+[Plugins][geniex-sdk], [format recommendations][geniex-models] and the
+[ternary HTP prototype][htp-prototype] are leads, not Swift support.
+[QNN][qnn-genai] requires a prepared package; expanding 27B weights to one/two
+bytes costs roughly 27/54 GB before scales, state or duplicates. Small-model
+access controls cannot change model selection, and another large resident model
+exceeds the 32 GB contract.
 
-The [GenieX v0.10.0 catalog][geniex-signed] covers only its bundled kernels, not newer or
-rebuilt code. Custom binaries require supported signing/distribution.
-[Test-signing][hexagon-windows], Secure Boot, boot/signing policy and certificate trust changes
-require a separate owner decision. Missing signed deployment blocks execution.
-
+[DMA64][hexagon-dma64] targets v81+ mapping limits; [Q1/Q2 Hadamard support][hexagon-q2]
+does not establish Swift PQ2/PTQ1, full-graph or signed Windows coverage. Preserve
+independent X1 mapping/HVX and X2 DMA/VTCM/HMX evidence. TOPS and utilization do
+not qualify latency, energy or complete-request benefit.
 ## Packed arithmetic and graph state
 
-The [assessment lock](../config/swift-assessment.lock.json) identifies PQ2;
-[current-weight PTQ1](swift-memory.md)
-is separate. Fix weights, tokenizer/template, sampler, transforms, attention and declared
-activation/cache
-precision within comparisons. PQ2 Q8_K (odd-group Q8_0), PTQ1 Q8_0 and generic upstream types have
-distinct
-arithmetic. [SIMD contracts](cpu-kernels.md) own fixtures; pinned Prism remains the whole-model
-oracle until
-the relevant Rust parity scope qualifies.
+The [assessment lock](../config/swift-assessment.lock.json) identifies original
+PQ2; [current-weight PTQ1](swift-memory.md) is separate. Fix artifact, tokenizer/
+template, sampler, transforms and activation/cache precision in comparisons.
+[CPU arithmetic](cpu-kernels.md#packed-arithmetic) owns independent fixtures:
+PQ2 Q8_K/odd-group Q8_0, PTQ1 Q8_0 and generic upstream types differ.
 
-Q2_0 has 64 weights per scale versus PQ2's 128. Splitting blocks and duplicating scales adds about
-5.9% packed storage while preserving symbols, raw scale bits and transform metadata. Equal decoded
-weights do not establish activation quantization, reduction/scale order, logits or PQ2/Q8_K state
-parity. [Operation fixtures](cpu-kernels.md#packed-arithmetic) cover fourth symbols, extremes/zeros,
-malformed/unaligned blocks,
-tails, awkward dimensions, integer sums/scale order and independent PTQ1 canonicality/Q8_0. Initial
-parity is bitwise; FMA/reassociation or precision changes need declared tolerances and quality
-acceptance. HVX/HMX must support the arithmetic; HMX prefill needs batched weight reuse and
-compatible hybrid-state scheduling.
+Splitting 128-weight PQ2 into two 64-weight Q2 blocks preserves symbols and raw
+scale bits while adding 5.88235% storage. It does not preserve activation
+quantization, floating reduction order or logits/state by itself. The exact
+HMX bridge and tolerance-based `native-q2` path have separate numerical contracts;
+see [source/ABI boundaries](hexagon-source-audit.md) and the
+[packed operation control](../tools/hexagon/packed-projection.md).
 
-Transform normalization/signs/axes and grouped recurrent basis are artifact identity.
-[LoRA basis correctness](swift-lora.md), including grouped SSM, survives fusion; no-LoRA and approved-adapter
-forwards have separate evidence. The placement ledger covers embedding, packed/floating projections,
-norm/RoPE, attention, GDN/convolution, FFN/output, adapters, caches/checkpoints,
-strides/shapes/precision and every prefill/decode fallback, transfer and synchronization boundary.
-Contiguous regions and resident weights/scratch need explicit ownership. KV/convolution/GDN state,
-checkpoints and phase layouts must preserve logits/state and deterministic streams across
-fresh/reused/edited prefixes, reset, cancellation, failure and restored continuation.
-
-[Chunkwise WY/UT GDN](inference-algorithms.md#chunkwise-gated-deltanet-prefill) has a separate schedule/float-order contract. The
-[multiplication-only inverse][approximate-inverse] uses truncation/residual correction; strict
-triangularity does not bound low-order error. Phone results do not qualify Windows X Elite.
-[Low-bit LUT KV](inference-algorithms.md#compression-and-approximation-constraints) differs from lossless physical FP16. Requantization, training, retrieval
-embeddings, drafters and speculation qualify separately.
-
+A placement ledger owns every graph operation, adapter, cache/checkpoint,
+shape/stride/precision and prefill/decode fallback, transfer and synchronization.
+Transform signs, normalization, axes and grouped recurrent basis are artifact
+identity. [LoRA basis acceptance](swift-lora.md) survives fusion. Preserve complete
+attention/convolution/GDN state, checkpoints and deterministic continuation across
+prefix reuse/edits, reset, cancellation and failure. Projection completion cannot
+commit a token. [Chunkwise GDN](inference-algorithms.md#chunkwise-gated-deltanet-prefill),
+cache approximation and speculation retain separate algorithm gates.
 ## Memory, lifecycle and failure
 
 Apply the [accelerator resource contract](hardware-capabilities.md#accelerator-storage-and-lifetime)
@@ -162,65 +135,39 @@ the single-process Job.
 
 ## Qualification evidence
 
-Correctness precedes timing. Shared [qualification](hardware-capabilities.md#qualification-scope)
-and
-[measurement rules](performance-expectations.md#measurement-and-comparison) own identities,
-workload/state/power cases, cost accounting, acceptance and upgrades. Separate NPU RPC/submission,
-synchronization, mappings and supported counters. Verify effective power modes: the
-[guide][hexagon-guide]
-describes burst aliasing and warning fallback for unknown modes. Utilization/overlap proves no
-benefit.
+Follow [profile qualification](hardware-capabilities.md#qualification-scope),
+[measurement rules](performance-expectations.md#measurement-and-comparison) and
+[owner-device budgets](../AGENTS.md#owner-device-execution-budgets). Compare the
+same artifact on CPU, qualified Adreno and NPU, charging RPC/submission, waits,
+mappings and complete setup/teardown. Verify effective power modes; the
+[Hexagon guide][hexagon-guide] documents burst aliases and warning fallbacks.
 
-Admitted 8K trials use 512/2K/near-limit prompts, full output reservation, fixed 128/512-token and
-natural creative outputs, occupied state, cancellation and failed recovery. Larger contexts qualify
-separately. Compare same-contract CPU, qualified Vulkan and NPU; retain median/p95/variance and
-separate sustained runs in owning CI. Owner-device runs, including self-hosted CI,
-default to five minutes total; only a predeclared justified workload may use the
-smallest longer allowance, up to fifteen minutes, including setup and retention.
-Sustained acceptance that cannot fit remains pending; do not schedule a
-30-minute laptop run. Missing evidence or critical failures keep profiles experimental; absence
-supplies no verdict. The
-[fixed native Rust compute probe](../tools/bonsai/src/hexagon_tools/device.rs) offers F32 and
-guarded-Q2 controls with
-separate timed/nonblocking writes, checked queue responses and poisoned output. The
-supervisor verifies exact sources, all seventeen newer runtime files, five catalog members and the
-installed driver, retaining uncertain owners until the owned process exits. This qualifies fixed
-access/arithmetic; Swift inference and a performance comparison remain separate. Independent hosted
-ABI/build controls must pass before owner-device intake; the caller verifies trusted same-run
-provenance. Native diagnostics use absolute system-temp lanes with inherited Windows system/profile
-variables.
+Admitted 8K coverage includes 512/2K/near-limit prompts, full output reservation,
+128/512-token and natural creative outputs, occupied state, cancellation and
+failed recovery. Larger contexts qualify separately. Retain median/p95/variance;
+sustained acceptance remains pending when it cannot fit the laptop allowance.
 
-The [original-artifact projection control](../tools/hexagon/projection_probe.rs)
-extends that fixed arithmetic control to independently hashed original Swift
-weights/signs and an explicitly supplied activation vector. Its native Rust
-submitter supports K=256/N=2 guarded limbs with up to 17,408 weight rows over
-one mapping and queue. A full first projection schedules 40 original-block
-operations. Every returned limb and the final ordered CPU FMA result must match
-the CPU control before the result directory is published. These are implemented
-bounds and comparison rules; full-M signed execution, actual model activations,
-logits/state, adapters, vendor teardown and speed remain unqualified.
+The [fixed compute supervisor](../tools/bonsai/src/hexagon_tools/device.rs)
+checks F32/guarded-Q2 access under source-bound runtime, catalog and installed-driver
+identities. Independent hosted ABI/build controls precede device intake; callers
+verify same-run provenance. Native diagnostics use absolute system-temp lanes
+and inherited Windows system/profile variables.
 
-Hosted preparation publishes a source-bound `hexagon-projection-probe` bundle
-alongside its model-free controls. The native `hexagon-tools` device supervisor
-accepts `kind: projection` with an external `projectionRequestFile`; it retains
-the request against mutation, verifies every runtime/catalog member and the
-installed driver, clears inherited overrides, and owns the child through its
-outer deadline and 75-second cleanup reserve. Device requests allow at most
-120 seconds for input preparation, comparison and the native session, within
-the original aggregate owner allowance. No profile or application backend is
-enabled by a passing projection receipt. The
-[projection guide](../tools/hexagon/packed-projection.md)
-defines the external input contract and remaining qualification.
-
+The [artifact-bound projection diagnostic](../tools/hexagon/packed-projection.md#artifact-bound-signed-projection-diagnostic)
+extends this to hashed Swift weights/signs and an explicit activation vector.
+It owns operation/input bounds, per-limb and ordered-FMA checks, runtime/catalog
+verification, native lifetimes and cleanup deadlines. A passing receipt does not
+qualify actual model activations, full state/adapters, serving isolation or speed.
+The [model probe](../tools/hexagon/model-probe.md) separately defines bounded
+CPU-shadow graph comparisons. Remaining acceptance belongs in
+[PLAN.md](../PLAN.md#hexagon-npu).
 [rust-runtime]: https://github.com/symbiogenesis/prism-inference/blob/main/README.md
 [geniex-sdk]: https://github.com/qualcomm/GenieX/blob/main/sdk/README.md
 [geniex-models]: https://geniex.aihub.qualcomm.com/en/models/supported
 [geniex-signed]: https://github.com/qualcomm/GenieX/releases/tag/v0.10.0
-[hexagon-windows]: https://github.com/ggml-org/llama.cpp/blob/master/docs/backend/snapdragon/windows.md
 [hexagon-guide]: https://github.com/ggml-org/llama.cpp/blob/master/docs/backend/snapdragon/README.md
 [hexagon-design]: https://github.com/ggml-org/llama.cpp/blob/master/docs/backend/snapdragon/developer.md
 [hexagon-dma64]: https://github.com/ggml-org/llama.cpp/pull/29197
 [hexagon-q2]: https://github.com/ggml-org/llama.cpp/pull/30627
 [qnn-genai]: https://github.com/microsoft/onnxruntime-genai/blob/main/docs/qnn.md
 [htp-prototype]: https://github.com/aakar-mutha/llama.cpp/tree/ternary-bonsai-htp
-[approximate-inverse]: https://arxiv.org/abs/2606.06034
