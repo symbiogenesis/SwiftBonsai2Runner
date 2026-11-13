@@ -34,6 +34,8 @@ enum Request {
         version: String,
         handoff_path: PathBuf,
         release_identity: String,
+        #[serde(default = "restart_by_default")]
+        restart: bool,
     },
     ReplacePortable(portable::Replacement),
     #[serde(rename_all = "camelCase")]
@@ -68,6 +70,12 @@ struct PortableHandoff {
     distribution: String,
     version: String,
     release_identity: String,
+    #[serde(default = "restart_by_default")]
+    restart: bool,
+}
+
+const fn restart_by_default() -> bool {
+    true
 }
 
 impl PortableHandoff {
@@ -259,7 +267,12 @@ fn stage_portable_with(
     published.release_identity()
 }
 
-fn portable_queue(version: &str, handoff: &Path, release_identity: &str) -> crate::Result<Value> {
+fn portable_queue(
+    version: &str,
+    handoff: &Path,
+    release_identity: &str,
+    restart: bool,
+) -> crate::Result<Value> {
     Version::parse(version)?.newer_than_current()?;
     let selected = portable_installation()?;
     let directory = staged(version)?;
@@ -284,7 +297,7 @@ fn portable_queue(version: &str, handoff: &Path, release_identity: &str) -> crat
     // This command follows a new explicit confirmation and fresh verification.
     // A leftover file from a lost response is replaced, never accepted as prior
     // authorization; only the UI's successful dedicated exit activates it.
-    write_portable_handoff(handoff, version, release_identity, &fresh)?;
+    write_portable_handoff(handoff, version, release_identity, &fresh, restart)?;
     Ok(json!({"Status": "queued", "Version": version}))
 }
 
@@ -293,12 +306,14 @@ fn write_portable_handoff(
     version: &str,
     release_identity: &str,
     published: &policy::Installer,
+    restart: bool,
 ) -> crate::Result<()> {
     let request = PortableHandoff {
         schema_version: 2,
         distribution: "portable-executable".into(),
         version: version.into(),
         release_identity: release_identity.into(),
+        restart,
     };
     request.verify(published)?;
     transfer::write_current(
@@ -481,7 +496,8 @@ pub fn run(value: Value) -> crate::Result<Value> {
             version,
             handoff_path,
             release_identity,
-        } => portable_queue(&version, &handoff_path, &release_identity),
+            restart,
+        } => portable_queue(&version, &handoff_path, &release_identity, restart),
         Request::ReplacePortable(request) => {
             let result = portable::replace(&request);
             #[cfg(windows)]
@@ -592,7 +608,7 @@ fn apply_portable_after_exit(handoff: &Path, value: Value) -> crate::Result<Valu
         .collect::<crate::Result<Vec<_>>>()?;
     let request = json!({"operation": "replace-portable", "target": target,
         "previousSha256": previous_sha256, "version": queued.version, "arguments": arguments,
-        "releaseIdentity": queued.release_identity});
+        "releaseIdentity": queued.release_identity, "restart": queued.restart});
     #[cfg(windows)]
     {
         use std::os::windows::process::CommandExt as _;

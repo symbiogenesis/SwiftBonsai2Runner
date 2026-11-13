@@ -29,6 +29,9 @@ pub(super) struct Replacement {
     // newer helper. New launchers always bind their confirmed release identity.
     #[serde(default)]
     pub(super) release_identity: Option<String>,
+    // Older launchers always reopened the application after replacement.
+    #[serde(default = "super::restart_by_default")]
+    pub(super) restart: bool,
 }
 
 struct Temporary(PathBuf);
@@ -284,6 +287,9 @@ fn report_restart(
     request: &Replacement,
     spawn: impl FnOnce() -> io::Result<u32>,
 ) -> crate::Result<Value> {
+    if !request.restart {
+        return Ok(json!({"Status": "updated", "Version": request.version}));
+    }
     let process_id = spawn().map_err(|error| {
         format!(
             "The portable executable was updated, but restarting it failed: {error}. Open {} manually to start the updated app. Your data directory was preserved.",
@@ -320,14 +326,24 @@ mod tests {
         let request: Replacement =
             serde_json::from_value(legacy.clone()).map_err(|error| error.to_string())?;
         assert!(request.release_identity.is_none());
+        assert!(request.restart);
         let mut bound = legacy;
         bound["releaseIdentity"] = "b".repeat(64).into();
+        bound["restart"] = false.into();
         let request: Replacement =
             serde_json::from_value(bound).map_err(|error| error.to_string())?;
         assert_eq!(
             request.release_identity.as_deref(),
             Some("b".repeat(64).as_str())
         );
+        assert!(!request.restart);
+        let result = report_restart(&request, || {
+            Err(io::Error::other(
+                "A deferred close must never start a new application process",
+            ))
+        })?;
+        assert_eq!(result["Status"], "updated");
+        assert!(result.get("ProcessId").is_none());
         Ok(())
     }
 
@@ -592,6 +608,7 @@ mod tests {
                 "--no-speech-models".into(),
             ],
             release_identity: None,
+            restart: true,
         };
         let arguments = request.arguments.clone();
         validate_restart_arguments(&request)?;

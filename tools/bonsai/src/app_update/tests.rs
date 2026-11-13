@@ -113,20 +113,33 @@ fn fresh_portable_confirmation_replaces_stale_queue_and_binds_changed_publicatio
     let handoff = directory.join("chat-startup-fixture.update.json");
     fs::write(&handoff, b"stale or incomplete authorization").map_err(|error| error.to_string())?;
     let identity = published.release_identity()?;
-    write_portable_handoff(&handoff, &version, &identity, &published)?;
+    write_portable_handoff(&handoff, &version, &identity, &published, true)?;
     let confirmed = transfer::read_bounded(&handoff, 8192)?;
     let queued: PortableHandoff =
         serde_json::from_slice(&confirmed).map_err(|error| error.to_string())?;
     queued.verify(&published)?;
-    write_portable_handoff(&handoff, &version, &identity, &published)?;
-    assert_eq!(transfer::read_bounded(&handoff, 8192)?, confirmed);
+    assert!(queued.restart);
+    write_portable_handoff(&handoff, &version, &identity, &published, false)?;
+    let deferred = transfer::read_bounded(&handoff, 8192)?;
+    let deferred_request: PortableHandoff =
+        serde_json::from_slice(&deferred).map_err(|error| error.to_string())?;
+    deferred_request.verify(&published)?;
+    assert!(!deferred_request.restart);
     let mut changed = serde_json::to_value(&published).map_err(|error| error.to_string())?;
     changed["sourceRevision"] = "b".repeat(40).into();
     let changed: policy::Installer =
         serde_json::from_value(changed).map_err(|error| error.to_string())?;
     assert!(queued.verify(&changed).is_err());
-    assert!(write_portable_handoff(&handoff, &version, &identity, &changed).is_err());
-    assert_eq!(transfer::read_bounded(&handoff, 8192)?, confirmed);
+    assert!(write_portable_handoff(&handoff, &version, &identity, &changed, true).is_err());
+    assert_eq!(transfer::read_bounded(&handoff, 8192)?, deferred);
+    let mut old_handoff = serde_json::to_value(&queued).map_err(|error| error.to_string())?;
+    old_handoff
+        .as_object_mut()
+        .ok_or("Missing handoff object.")?
+        .remove("restart");
+    let old_handoff: PortableHandoff =
+        serde_json::from_value(old_handoff).map_err(|error| error.to_string())?;
+    assert!(old_handoff.restart);
     let mut legacy = serde_json::to_value(&queued).map_err(|error| error.to_string())?;
     legacy["schemaVersion"] = 1.into();
     let legacy: PortableHandoff =
