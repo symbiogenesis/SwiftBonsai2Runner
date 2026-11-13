@@ -199,6 +199,12 @@ uploaded with evidence. Child environment overlays preserve inherited Windows
 and profile variables. A command timeout or output overflow kills its complete
 Job; stdout and stderr each have a 16 MiB bound. Nonzero checks are retained
 while later planned checks continue. Process/timeout errors stop the plan.
+The console identifies each command and its log, then prints the final 12 KiB
+of each failed command's stdout and stderr, including timeout/output-limit
+failures. Excerpts label truncation and empty streams, replace terminal controls
+and prefix captured lines so output cannot become GitHub workflow commands.
+Full original logs and the source-bound receipt remain in the lane artifact;
+the final error names the unsuccessful checks.
 
 Complete suites require `GITHUB_ACTIONS=true` and `GITHUB_REF=refs/heads/main`
 before creating outputs. Ordinary hosted checks retain per-command timeouts

@@ -3,7 +3,7 @@
 use std::collections::BTreeMap;
 use std::ffi::OsString;
 use std::fs::{self, File, OpenOptions};
-use std::io::{Read as _, Write as _};
+use std::io::{Read as _, Seek as _, SeekFrom, Write as _};
 use std::path::{Path, PathBuf};
 use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 
@@ -15,6 +15,59 @@ use super::{Check, Options, Package};
 use crate::Result;
 
 const MAX_LOG_BYTES: u64 = 16 * 1024 * 1024;
+const MAX_CONSOLE_LOG_BYTES: u64 = 12 * 1024;
+
+fn console_excerpt(bytes: &[u8]) -> String {
+    if bytes.is_empty() {
+        return "  | (empty)\n".into();
+    }
+    let text = String::from_utf8_lossy(bytes);
+    let mut excerpt = String::new();
+    for line in text.lines() {
+        // Captured output must not become a GitHub workflow command or emit
+        // terminal control sequences. Preserve the original bytes in artifacts.
+        excerpt.push_str("  | ");
+        for character in line.chars() {
+            excerpt.push(if character.is_control() && character != '\t' {
+                '\u{fffd}'
+            } else {
+                character
+            });
+        }
+        excerpt.push('\n');
+    }
+    excerpt
+}
+
+fn read_log_tail(path: &Path) -> std::io::Result<(bool, Vec<u8>)> {
+    let mut file = File::open(path)?;
+    let length = file.metadata()?.len();
+    let offset = length.saturating_sub(MAX_CONSOLE_LOG_BYTES);
+    file.seek(SeekFrom::Start(offset))?;
+    let mut bytes = Vec::new();
+    file.take(MAX_CONSOLE_LOG_BYTES).read_to_end(&mut bytes)?;
+    Ok((offset != 0, bytes))
+}
+
+fn write_failure_logs(output: &mut impl std::io::Write, spec: &ToolProcessSpec) {
+    for (label, path) in [("stdout", &spec.stdout), ("stderr", &spec.stderr)] {
+        let _ = writeln!(output, "{label}: {}", path.display());
+        match read_log_tail(path) {
+            Ok((truncated, bytes)) => {
+                if truncated {
+                    let _ = writeln!(
+                        output,
+                        "  | [showing the final {MAX_CONSOLE_LOG_BYTES} bytes; full output retained]"
+                    );
+                }
+                let _ = output.write_all(console_excerpt(&bytes).as_bytes());
+            }
+            Err(error) => {
+                let _ = writeln!(output, "  | Cannot read diagnostic output: {error}");
+            }
+        }
+    }
+}
 
 fn external(path: &Path) -> Result<()> {
     validate_external_path(path).map_err(|error| error.to_string())
@@ -80,6 +133,14 @@ fn command(
     if allowance.is_some_and(|duration| duration.is_zero()) {
         return Err("Rust check aggregate deadline expired.".into());
     }
+    let mut output = std::io::stderr().lock();
+    let _ = writeln!(
+        output,
+        "Running {} {:?}; log: {}",
+        spec.executable.display(),
+        spec.arguments,
+        log.display()
+    );
     let child = OwnedProcess::start_tool(spec).map_err(|error| error.to_string())?;
     let started = Instant::now();
     let code = loop {
@@ -95,6 +156,7 @@ fn command(
                 .stop(Duration::from_secs(5))
                 .map_err(|error| error.to_string())?;
             fs::write(log, "Rust command exceeded its deadline or output limit; partial stdout/stderr are retained beside this log.\n").map_err(|error| error.to_string())?;
+            write_failure_logs(&mut output, spec);
             return Err("Rust command exceeded its deadline or output limit; owned descendants were stopped.".into());
         }
         std::thread::sleep(Duration::from_millis(20));
@@ -113,6 +175,14 @@ fn command(
         .write_all(&stdout)
         .and_then(|()| combined.write_all(&stderr))
         .map_err(|error| error.to_string())?;
+    if code != 0 {
+        let _ = writeln!(
+            output,
+            "Command failed with exit code {code}; log: {}",
+            log.display()
+        );
+        write_failure_logs(&mut output, spec);
+    }
     Ok((code, String::from_utf8_lossy(&stdout).trim().into()))
 }
 
@@ -213,7 +283,15 @@ impl Execution<'_> {
                 .ok_or("Invalid check receipt.")?
                 .push(record);
             receipt(receipt_path, report)?;
-            result?;
+            result.map_err(|error| {
+                format!(
+                    "Rust {} check {} for {} could not complete: {error} Log: {}",
+                    check.phase,
+                    check.name,
+                    check.packages.join(", "),
+                    log.display()
+                )
+            })?;
         }
         if report["Checks"]
             .as_array()
@@ -221,7 +299,18 @@ impl Execution<'_> {
             .iter()
             .any(|record| record["Passed"] != true)
         {
-            return Err("Rust checks failed; inspect the retained command logs.".into());
+            let failed = report["Checks"]
+                .as_array()
+                .ok_or("Invalid check receipt.")?
+                .iter()
+                .filter(|record| record["Passed"] != true)
+                .filter_map(|record| record["Name"].as_str())
+                .collect::<Vec<_>>()
+                .join(", ");
+            return Err(format!(
+                "Rust checks failed: {failed}. Failure excerpts are above; complete logs and receipt: {}",
+                receipt_path.display()
+            ));
         }
         Ok(())
     }
@@ -298,6 +387,17 @@ pub(super) fn run(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn failure_excerpts_preserve_unicode_and_neutralize_workflow_commands() {
+        let excerpt = console_excerpt("::error::fixture\n\u{1b}[31m\rmalformed\t雪\n".as_bytes());
+        assert_eq!(
+            excerpt,
+            "  | ::error::fixture\n  | \u{fffd}[31m\u{fffd}malformed\t雪\n"
+        );
+        assert_eq!(console_excerpt(&[0x80, b'\n']), "  | \u{fffd}\n");
+        assert_eq!(console_excerpt(&[]), "  | (empty)\n");
+    }
 
     #[test]
     fn targets_and_uploaded_evidence_cannot_overlap() {
