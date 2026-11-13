@@ -4,6 +4,35 @@
 completion-process supervision and LoRA qualification scoring. It forbids unsafe code and reuses the
 audited Windows boundary crates.
 
+## Single executable builds
+
+`scripts/Build-WindowsExecutable.ps1` builds or reuses the five Windows ARM64
+application executables and produces one `SwiftBonsai2Runner.exe`, including
+their package manifest and license notices. Run it with PowerShell 7.6+ from a
+checkout with the pinned Rust compiler and native speech prerequisites. See
+[build a single executable](../../docs/development-guide.md#build-a-single-executable)
+for output selection and bundling an existing verified package.
+
+The native `chat-bundle` command accepts the usual JSON request forms:
+
+```json
+{"operation":"create","packageDirectory":"C:\\BonsaiPackages\\0.1.0","manifestSha256":"REVIEWED_64_HEX_DIGEST","outputPath":"C:\\Bonsai\\SwiftBonsai2Runner.exe"}
+```
+
+`inspect` accepts `executablePath`; `extract` accepts `executablePath` and
+`installationDirectory` and performs no model or application work. Creation
+validates the complete schema-2 package and embeds the packaged maintenance
+executable as its bootstrap. Existing outputs are never overwritten. All paths
+must be expanded absolute paths under the existing package path policy.
+
+Double-click the resulting executable to verify, extract and launch it, or use
+`bundled-chat` with installed-chat options except `--installation-directory`.
+The extracted application preserves separate owned model/speech processes.
+Models, adapters, inference-runtime downloads and the Microsoft ARM64 C++ runtime
+remain separate. Integrity checks detect changed bytes within the bundle's trust
+boundary; executing a received bundle does not independently establish its
+publisher's identity. Review published release checksums before execution.
+
 ## Packaged use
 
 Select Foundation's native Windows ARM64 executable from the evaluated main

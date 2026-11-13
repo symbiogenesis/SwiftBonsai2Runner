@@ -139,6 +139,48 @@ Retain losing/no-go outcomes and closed clocks; use the existing selected-receip
 staging and `evidence-archive` operations under [evidence retention](validation.md#evidence-retention)
 instead of duplicating captures or inventing empty evidence records.
 
+## Build a single executable
+
+On Windows ARM64 with PowerShell 7.6+, the pinned Rust compiler and the native
+speech prerequisites, run this from the checkout:
+
+```powershell
+./scripts/Build-WindowsExecutable.ps1
+```
+
+The script builds or reuses all five native application executables, collects
+the complete locked-dependency notices and writes one
+`%LOCALAPPDATA%\SwiftBonsai2\build\distribution\SwiftBonsai2Runner.exe`.
+Use `-OutputPath C:\Bonsai\SwiftBonsai2Runner.exe` for another absolute output.
+Existing outputs are never overwritten; choose a new path or explicitly remove
+an earlier local build first. `-RepositoryRoot` and `-DataDirectory` select an
+alternate checkout or external build cache. Cold native compiler/source setup
+and compilation can take several minutes; this build performs no model trial,
+application launch or CI operation.
+
+The executable contains the native window, broker, ASR, TTS, maintenance tool,
+package manifest and license notices. Double-clicking it verifies and extracts
+the package into the user's application cache before starting the native chat
+launcher. Separate owned worker processes retain their existing containment and
+teardown rules. Model weights, adapters, the downloaded inference runtime and
+the Microsoft Visual C++ ARM64 runtime remain separately provisioned. Extraction
+and launching need no checkout, PowerShell or compiler. Portable launches retain
+the package's explicit update policy; MSI-only automatic updates remain separate.
+
+To bundle an already reviewed schema-2 package without compiling or collecting
+notices again:
+
+```powershell
+./scripts/Build-WindowsExecutable.ps1 -PackageDirectory C:\BonsaiPackages\0.1.0 -ManifestSha256 $reviewedDigest -OutputPath C:\Bonsai\SwiftBonsai2Runner.exe
+```
+
+The same package-to-executable helper runs in Windows Release. Local builds
+record the current Git revision in their package; a dirty checkout's local
+changes remain part of that build and do not become source-provenance evidence.
+Review the final source and executable digest before redistribution. The
+[Windows release guide](releases.md) describes published checksums, prerequisites
+and the remaining hosted and clean-machine acceptance gates.
+
 ## Native chat app
 
 The [portable package workflow](chat-packages.md) installs reviewed prebuilt app

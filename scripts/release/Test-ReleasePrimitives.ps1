@@ -8,6 +8,7 @@ $ErrorActionPreference = 'Stop'
 $repository = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '../..'))
 $sources = @(
     (Join-Path $repository 'scripts/Start-Chat.ps1')
+    (Join-Path $repository 'scripts/Build-WindowsExecutable.ps1')
     (Get-ChildItem -LiteralPath $PSScriptRoot -Filter '*.ps1' -File).FullName
     (Get-ChildItem -LiteralPath (Join-Path $repository '.github/release') -Filter '*.ps1' -File).FullName
 )
