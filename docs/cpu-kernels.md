@@ -469,6 +469,11 @@ APIs require publication before a dependent runtime release, followed by a
 genuine source-bound bundle and reviewed Runner repin. Runner's active 0.1.25
 runtime does not consume this local source candidate.
 
+After source-only lint corrections, final-source native/x64 strict analysis,
+feature-disabled checks and production linking remain owner-managed hosted work.
+The fixed local validation allowance is closed; corrected source has not been
+replayed.
+
 ## Execution and dispatch
 
 The default `experimental-neon` feature uses [`fearless_simd` 1.1.0][fearless]'s safe core API under
