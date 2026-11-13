@@ -659,16 +659,12 @@ lifecycle fixtures retain production headless mitigations. Speech and native
 integration lanes depend on `checked-tools` without waiting for independent
 maintenance, broker or UI checks. The aggregate gate still requires every
 selected lane.
-The PowerShell/C# bootstrap, script tests, analyzer job and .NET SDK pin were
-retired with their Rust replacements.
-
-ASR/TTS use separate lanes and the checked CLI for pinned source preparation.
-TTS caches four native static libraries plus digest receipt through
-`BONSAI_TTS_NATIVE_BUILD_DIR`, keyed by build inputs/runner image; all Rust checks
-still run. Missing caches rebuild; identity/digest mismatches fail. Speech
-Cargo/native caches also bind the checked native build-host hash in every restore
-prefix. Version-two library receipts bind full host/source hashes and each library
-SHA-256; each lane retains its model-free host report, including cache hits.
+ASR and TTS use separate lanes. ASR uses the checked CLI to prepare its pinned
+native compiler environment. Its Cargo cache prefixes also bind the checked
+native build-host hash, and the lane retains that model-free host report.
+TTS compiles entirely as Rust and uses the ordinary lane-specific Cargo cache;
+it has no native static-library cache or compiler-preparation step. Cached
+compiler output never replaces the selected checks or fresh receipts.
 
 Pinned C++ `--version`/`--help` use fixed-command inspection with 512 MiB,
 one-process Job limits, caller lifetime, output bounds and deadlines. Inspection
@@ -865,7 +861,7 @@ to run a complete module or reconstruct a suite locally.
 | UI [`client`](../src/chat-ui/src/client.rs) and [`canary::pcm`](../src/chat-ui/src/canary/pcm.rs) | Ready prefixes arrive before remaining body/chunk framing. Gated reads check fixed-buffer reuse, odd PCM fragments, buffered cancellation, truncation and terminal validation without byte-sized socket reads. |
 | [`speech` workers](../src/chat-ui/src/speech/) and [`command_queue`](../src/chat-ui/src/speech/command_queue.rs) | Stalled-worker queue/payload bounds, coalescing, overload, tail compaction, cancellation and fresh recovery. Cold workers wake on command/disconnect/Stop/shutdown; active, warm and retained-input workers continue periodic monitoring. |
 | [`speech::pipeline`](../src/chat-ui/src/speech/pipeline.rs) | Bounded packet/spare reuse across segment tails, byte identity, nonblocking recycling, stable descriptors with cleared fields, eight-descriptor limit, retained PCM/header on unprepare refusal and quarantine teardown. Fake callbacks do not invoke an audio driver. |
-| TTS [`build_overlay`](../src/speech-tts/build_overlay.rs) | Compiles the actual generated decode block with the provisioned compiler; checks cache hits, window/batch replacement, allocation failure, completed-graph lifetime/teardown, immutable source and drift rejection. |
+| Rust TTS [`engine`](../src/speech-tts/src/engine.rs), [`codec`](../src/speech-tts/src/codec.rs) and [`rust_talker`](../src/speech-tts/src/rust_talker.rs) | Model-free controls cover parallel projection/codebook consistency, cancellation between layers, streaming/offline PCM parity and bounded exact-prefix reuse/invalidation. They compile ordinary Rust and do not load a native speech library. Full pinned-model speech, resource and listening acceptance remain separate. |
 | Transcript [`cache_tests`](../src/chat-ui/src/window/transcript/cache_tests.rs), [`search` work tests](../src/chat-ui/src/window/transcript/search/performance_tests.rs) and [`shortcuts`](../src/chat-ui/src/window/transcript/search/shortcuts.rs) | Fixed highlight identities at 10,000 results; navigation, same-length replacements/queries, Find reopen/eviction and no duplicated range vectors. Appends scan/copy only new bytes/results with one continuation, query-sized scratch and folded-Unicode oracle checks; saturated prefixes skip tail work while preserving lookahead, selection and navigation. Accounting checks exact totals and a combined count/byte eviction prefix at the shared 512-message live/restore limit, without visiting completed messages on ordinary append. Keyboard/IME/Escape precedence needs no service. |
 
 For promotion tooling, the Rust `release_lock` integration test (also in
@@ -877,9 +873,9 @@ cannot promote a pin; follow the
 
 | Boundary | What focused/native evidence establishes |
 | --- | --- |
-| TTS bootstrap | `voice_bootstrap` checks native reference pointer identity/limits and handoff through Design teardown/Base initialization/extraction; failure releases once and retains at most one model. |
-| Rust speech helpers | `native::tests::rust_parameter_defaults_match_every_pinned_cpp_field` compares every ABI-v6 default against the linked pinned C++ functions, with exact float bits. `native::cpu_threads::tests::` covers fallback/cast edges, all 1–256 overrides and rejected updates; `thread_overlay_routes_native_queries_to_rust_and_rejects_source_drift` checks policy replacement/source drift. See [helper ports](../src/speech-tts/README.md#rust-parameter-and-cpu-thread-helpers). |
-| Rust speech sampler | `philox::tests::`, `native::philox_tests::rust_philox_scalar_abi_matches_captured_bits`: independent block/f32 answers and 4,411 frozen native observations, with exact fixture/input identity and output bits. Scalar replay starts no compiler or native reference process. Source-identity/overlay checks retain both call replacements and reject drift. Remaining sampler/tokenizer/native integration checks still require the provisioned compiler/environment; see [sampler port](../src/speech-tts/README.md#rust-sampler-port) and [retirement contract](cpp-retirement.md). |
+| TTS bootstrap | `tests::voice_bootstrap_keeps_one_waveform_through_model_switch_and_releases_on_every_exit` checks Rust waveform identity/limits through Design teardown/Base extraction; failure releases once and retains at most one model. |
+| Rust speech threads | `tests::cpu_threads_reserve_ui_capacity_and_bound_explicit_overrides` checks the serving thread policy: reserve two logical CPUs, use at least one, and accept explicit 1–256 overrides. `native::cpu_threads::tests::` separately replays the retired native fallback/cast behavior; it does not define the serving default. See [CPU execution](../src/speech-tts/README.md#cpu-execution). |
+| Rust speech sampler/tokenizer | `philox::tests::`, `native::philox_tests::rust_philox_scalar_abi_matches_captured_bits`, `native::sampling_tests::` and `native::tokenizer_tests::` check independent answers and captured observations with bound fixture/input identities. Philox replay covers 4,411 observations. These Rust checks start no C++ compiler or native reference process and do not qualify complete-model codes/audio, resources or listening quality. See [sampler](../src/speech-tts/README.md#rust-sampler-port), [tokenizer](../src/speech-tts/README.md#rust-speech-tokenizer) and [retirement](cpp-retirement.md) contracts. |
 | ISA discovery | `native::isa::tests::native_isa_queries_neon_dotprod_and_neon_i8mm_independently`: exact Windows feature IDs through an injected query, without executing optional kernels. |
 | X2 conditions | `cpu_evaluation::conditions::tests::condition_comparison_rejects_known_drift_and_unknowns_without_treating_charge_as_energy`; `condition_comparison_binds_exact_native_host_even_when_core_counts_match`; `host_cpu::tests::host_identity_retains_native_cpu_kernel_and_feature_facts_separately`: reject topology/power/registry/kernel/feature drift, malformed/missing identities, legacy receipts and cross-sample changes; separate identity from live availability. |
 | OpenCL inventory | `opencl_inventory_rejects_unbounded_or_malformed_native_properties` (process crate), `opencl_inventory_rejects_overrides_and_unqualified_claim_changes` (tools): property/count bounds without a driver. `host-opencl` only queries bounded information; no executable GPU workload or inference verdict. See [feasibility](adreno.md#opencl-access-and-source-audit). |
