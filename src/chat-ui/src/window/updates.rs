@@ -882,6 +882,72 @@ mod tests {
     }
 
     #[test]
+    fn confirmed_update_blocks_setup_and_speech_retries_through_queue_completion() -> io::Result<()>
+    {
+        use std::ffi::OsString;
+        let directory = std::env::temp_dir().join(format!(
+            "Bonsai-UpdateSetupOwnership-{}-{}",
+            std::process::id(),
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .map_err(io::Error::other)?
+                .as_nanos(),
+        ));
+        fs::create_dir(&directory)?;
+        let tool = directory.join("fixture-tool.exe");
+        let payload = directory.join("fixture-startup.json");
+        fs::write(&tool, [])?;
+        fs::write(&payload, r#"{"PreparationStage":"all"}"#)?;
+        let request = crate::startup::Request::parse(&[
+            OsString::from("--startup-tool"),
+            tool.into_os_string(),
+            OsString::from("--startup-request"),
+            payload.into_os_string(),
+            OsString::from("--startup-data-directory"),
+            directory.clone().into_os_string(),
+        ])?;
+        for phase in 0..3 {
+            let (commands, incoming) = mpsc::channel();
+            let (_events, notifications) = crate::client::event_channel();
+            let mut state =
+                super::super::State::pending_startup(commands, notifications, request.clone());
+            state.startup_request.take();
+            state.fail_startup(&io::Error::other("Synthetic resumable setup failure"));
+            state.setup.broker = Some(directory.join("broker.exe"));
+            state.setup.speech_error = Some("Synthetic resumable speech failure".into());
+            state.input = "Keep this draft through update confirmation".into();
+            let mut updates = update_fixture()?;
+            updates.confirmed = true;
+            match phase {
+                0 => updates.wait_for_stop(),
+                1 => updates.task = Some(completed_task(Operation::Install, None)),
+                _ => updates.queued = true,
+            }
+            assert!(updates.installing());
+            state.updates = Some(updates);
+            state.retry_setup();
+            state.retry_speech_setup();
+            assert!(
+                state.startup_request.is_none(),
+                "Text setup restarted during update phase {phase}"
+            );
+            assert!(
+                state.startup.is_none(),
+                "Speech setup restarted during update phase {phase}"
+            );
+            assert!(state.setup.error.is_some() && state.setup.speech_error.is_some());
+            assert_eq!(state.model, super::super::ModelLifecycle::Unavailable);
+            assert_eq!(state.input, "Keep this draft through update confirmation");
+            assert!(
+                incoming.try_recv().is_err(),
+                "An update must never replay a draft or restart the model"
+            );
+            drop(state);
+        }
+        fs::remove_dir_all(directory)
+    }
+
+    #[test]
     fn portable_update_requires_exact_release_fingerprint_and_changed_publication_cancels_approval()
     -> io::Result<()> {
         let mut updates = update_fixture()?;
