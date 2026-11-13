@@ -736,7 +736,7 @@ fn response_length(head: &[u8], expected: Media) -> Result<usize> {
 
 // Never include a server-controlled reason phrase or response body in errors.
 // Both buffered audio and PCM expose the same fixed, actionable distinctions.
-fn response_status(code: Option<u16>) -> Result<()> {
+const fn response_status(code: Option<u16>) -> Result<()> {
     let message = match code {
         Some(200) => return Ok(()),
         Some(400) => {
