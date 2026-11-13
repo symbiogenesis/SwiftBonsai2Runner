@@ -16,11 +16,7 @@ pub(super) fn segments_iter(text: &str) -> Option<impl Iterator<Item = &str>> {
     let mut remaining = text.trim();
     Some(std::iter::from_fn(move || {
         while !remaining.is_empty() {
-            let maximum = maximum(remaining);
-            let limit = maximum.unwrap_or(remaining.len());
-            let boundary = sentence_boundary(remaining, limit, true)
-                .or_else(|| maximum.map(|limit| word_boundary(remaining, limit)))
-                .unwrap_or(remaining.len());
+            let boundary = clip_boundary(remaining);
             let piece = remaining[..boundary].trim();
             remaining = remaining[boundary..].trim_start();
             if !piece.is_empty() {
@@ -29,6 +25,25 @@ pub(super) fn segments_iter(text: &str) -> Option<impl Iterator<Item = &str>> {
         }
         None
     }))
+}
+
+/// Keep available sentences together, preferring the final sentence in a full clip.
+pub(super) fn clip_boundary(text: &str) -> usize {
+    let Some(limit) = maximum(text) else {
+        return text.len();
+    };
+    let mut boundary = 0;
+    while let Some(next) = sentence_boundary(&text[boundary..], limit - boundary, false) {
+        boundary += next;
+        if boundary == limit {
+            break;
+        }
+    }
+    if boundary == 0 {
+        word_boundary(text, limit)
+    } else {
+        boundary
+    }
 }
 
 /// Return the byte offset only when another character exceeds the clip bound.
@@ -68,15 +83,27 @@ pub(super) fn sentence_boundary(text: &str, limit: usize, complete: bool) -> Opt
         }
         if is_sentence_punctuation(character) && speakable && (character != '.' || non_digit) {
             let mut end = index + character.len_utf8();
+            let mut repeated = false;
             while let Some(&(next_index, next_char)) = indices.peek() {
                 if is_sentence_punctuation(next_char) || is_closing_delimiter(next_char) {
+                    repeated |= is_sentence_punctuation(next_char);
                     end = next_index + next_char.len_utf8();
                     indices.next();
                 } else {
                     break;
                 }
             }
-            if text[end..].chars().next().is_some_and(char::is_whitespace)
+            // Titles, initials and dotted abbreviations belong to their following
+            // words. Splitting here restarts synthesis in the middle of a phrase.
+            if character == '.'
+                && !repeated
+                && abbreviation(&text[..index])
+                && !(complete && text[end..].trim().is_empty())
+            {
+                continue;
+            }
+            if (matches!(character, '。' | '！' | '？') && end < text.len())
+                || text[end..].chars().next().is_some_and(char::is_whitespace)
                 || (complete && end == text.len())
             {
                 return Some(include_non_speakable_tail(text, limit, end, complete));
@@ -86,11 +113,19 @@ pub(super) fn sentence_boundary(text: &str, limit: usize, complete: bool) -> Opt
     None
 }
 
-pub(super) fn ends_sentence(text: &str) -> bool {
-    let trimmed = text.trim_end_matches(|character: char| {
-        !character.is_alphanumeric() && !is_sentence_punctuation(character)
+fn abbreviation(prefix: &str) -> bool {
+    let word = prefix
+        .rsplit(|character: char| !character.is_alphabetic() && character != '.')
+        .next()
+        .unwrap_or_default();
+    let initials = word.split('.').all(|part| {
+        let mut characters = part.chars();
+        characters.next().is_some_and(char::is_alphabetic) && characters.next().is_none()
     });
-    trimmed.chars().last().is_some_and(is_sentence_punctuation)
+    initials
+        || ["Mr", "Mrs", "Ms", "Dr", "Prof", "Sr", "Jr", "St", "vs"]
+            .iter()
+            .any(|title| word.eq_ignore_ascii_case(title))
 }
 
 fn include_non_speakable_tail(text: &str, limit: usize, end: usize, complete: bool) -> usize {
@@ -112,6 +147,19 @@ const fn is_sentence_punctuation(character: char) -> bool {
 const fn is_closing_delimiter(character: char) -> bool {
     matches!(
         character,
-        '"' | '\'' | '”' | '’' | ')' | ']' | '}' | '»' | '*' | '_' | '`'
+        '"' | '\''
+            | '”'
+            | '’'
+            | ')'
+            | ']'
+            | '}'
+            | '»'
+            | '*'
+            | '_'
+            | '`'
+            | '」'
+            | '』'
+            | '）'
+            | '】'
     )
 }

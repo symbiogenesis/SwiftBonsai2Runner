@@ -52,8 +52,11 @@ impl Text {
             consumed = self.pending.len() - pending.len();
             let maximum = segmentation::maximum(pending);
             let limit = maximum.unwrap_or(pending.len());
-            let sentence =
-                segmentation::sentence_boundary(pending, limit, self.finished || expired);
+            let sentence = if self.finished {
+                Some(segmentation::clip_boundary(pending))
+            } else {
+                segmentation::sentence_boundary(pending, limit, expired)
+            };
             let boundary = sentence.or_else(|| {
                 if maximum.is_some() {
                     Some(segmentation::word_boundary(pending, limit))
@@ -250,6 +253,84 @@ mod tests {
         text.finished = true;
         assert_eq!(text.ready(now), ["tail"]);
         assert_eq!(text.compacted_bytes, "tail".len());
+        Ok(())
+    }
+
+    #[test]
+    fn streaming_titles_initials_and_decimals_stay_with_their_phrases() -> Result<(), &'static str>
+    {
+        let now = Instant::now();
+        let mut text = Text::default();
+        text.append("Dr. ", now)?;
+        assert!(text.ready(now).is_empty());
+        text.append(
+            "Smith met J. R. Tolkien in the U.S. at 3.14 p.m., e.g. today, i.e. Tuesday. Next",
+            now,
+        )?;
+        assert_eq!(
+            text.ready(now),
+            ["Dr. Smith met J. R. Tolkien in the U.S. at 3.14 p.m., e.g. today, i.e. Tuesday."]
+        );
+        text.finished = true;
+        assert_eq!(text.ready(now), ["Next"]);
+        Ok(())
+    }
+
+    #[test]
+    fn streaming_cjk_punctuation_releases_without_whitespace_and_keeps_closing_quotes()
+    -> Result<(), &'static str> {
+        let now = Instant::now();
+        let mut text = Text::default();
+        text.append("「你好。」世界！下一句", now)?;
+        assert_eq!(text.ready(now), ["「你好。」", "世界！"]);
+        text.finished = true;
+        assert_eq!(text.ready(now), ["下一句"]);
+        Ok(())
+    }
+
+    #[test]
+    fn completed_speech_groups_sentences_without_changing_internal_whitespace()
+    -> Result<(), &'static str> {
+        let now = Instant::now();
+        let input = "First.  Second!\n\"Third?\"\tFourth. Last unfinished phrase";
+        assert_eq!(segments(input).ok_or("Expected speech segments")?, [input]);
+        let mut text = Text::default();
+        text.append(input, now)?;
+        text.finished = true;
+        assert_eq!(text.ready(now), [input]);
+        assert!(text.ready(now).is_empty());
+        Ok(())
+    }
+
+    #[test]
+    fn completed_speech_groups_many_sentences_within_the_unicode_clip_limit()
+    -> Result<(), &'static str> {
+        let now = Instant::now();
+        let sentence = "A short 🙂 sentence.  ";
+        let input = sentence.repeat(40);
+        let pieces = segments(&input).ok_or("Expected speech segments")?;
+        assert!(pieces.len() > 1);
+        assert!(pieces.len() < 40);
+        assert!(
+            pieces
+                .iter()
+                .all(|piece| piece.chars().count() <= MAX_SEGMENT)
+        );
+        let original: String = input
+            .chars()
+            .filter(|character| !character.is_whitespace())
+            .collect();
+        let rebuilt: String = pieces
+            .iter()
+            .flat_map(|piece| piece.chars())
+            .filter(|character| !character.is_whitespace())
+            .collect();
+        assert_eq!(rebuilt, original);
+        let mut text = Text::default();
+        text.append(&input, now)?;
+        text.finished = true;
+        assert_eq!(text.ready(now), pieces);
+        assert!(text.ready(now).is_empty());
         Ok(())
     }
 }
