@@ -14,6 +14,28 @@ function Assert-FoundationPlannerGuard([string]$Job) {
     $continuation=[regex]::Match($guard,'(?m)^        continue-on-error:[ \t]*(.*)$')
     if ($continuation.Success) { Assert-Ci ($continuation.Groups[1].Value.Trim() -cmatch '^false(?:[ \t]+#.*)?$') 'Planner rejection cannot permit failure.' }
 }
+function Assert-FoundationPlannerCache([string]$Planner) {
+    $steps=@([regex]::Split($Planner,'(?m)^      - ') | Select-Object -Skip 1)
+    $restore=@($steps | Where-Object { $_ -cmatch '(?m)^        id: cargo-cache\s*$' })
+    $checks=@($steps | Where-Object { $_ -cmatch '(?m)^        id: ci-regressions\s*$' })
+    $save=@($steps | Where-Object { $_ -cmatch '^name: Preserve planner compiler outputs after checks' })
+    Assert-CiEqual $restore.Count 1; Assert-CiEqual $checks.Count 1; Assert-CiEqual $save.Count 1
+    Assert-Ci ($restore[0] -cmatch 'uses: actions/cache/restore@')
+    Assert-Ci ($checks[0].Contains('cargo +nightly-2026-11-12 test --locked'))
+    Assert-Ci (-not $checks[0].Contains('pwsh -NoProfile')) 'Fixture failures must precede and skip the Cargo step.'
+    foreach ($step in @($steps | Where-Object { $_ -cnotmatch '^name: Preserve planner compiler outputs after checks' })) {
+        Assert-Ci ($step -cnotmatch '(?m)^        if:') 'A cache hit must never skip planner checks, selection or publication.'
+    }
+    # Match the complete recovery condition: extra OR arms could bypass a guard.
+    $expected='        if: ${{ !cancelled() && steps.cargo-cache.outcome == ''success'' && steps.cargo-cache.outputs.cache-primary-key != '''' && steps.cargo-cache.outputs.cache-hit != ''true'' && (steps.ci-regressions.outcome == ''success'' || steps.ci-regressions.outcome == ''failure'') }}'
+    Assert-Ci ($save[0].Contains($expected)) 'Save only after Cargo ran, with a usable non-exact restore and no cancellation.'
+    Assert-Ci ($save[0] -cmatch '(?m)^        continue-on-error: true\s*$') 'Optional cache publication cannot change the check verdict.'
+    Assert-Ci ($save[0] -cmatch 'uses: actions/cache/save@')
+    Assert-Ci ($save[0].Contains('key: ${{ steps.cargo-cache.outputs.cache-primary-key }}'))
+    $restorePaths=([regex]::Match($restore[0],'(?s)          path: \|\r?\n(.*?)          key:')).Groups[1].Value
+    $savePaths=([regex]::Match($save[0],'(?s)          path: \|\r?\n(.*?)          key:')).Groups[1].Value
+    Assert-Ci ($restorePaths.Trim().Length -gt 0); Assert-CiEqual $savePaths $restorePaths
+}
 $cases=[ordered]@{
  planner_failure_is_reported_before_artifact_intake={
     Assert-FoundationPlannerGuard $jobs.foundation
@@ -57,10 +79,20 @@ $cases=[ordered]@{
     $release=[IO.File]::ReadAllText((Join-Path $repository '.github/workflows/release.yml')); Assert-Ci ($release -cmatch 'uses: \$/\.github/actions/bonsai-tools\r?\n\s+if: matrix.lane == ''asr''\r?\n'); Assert-Ci ([IO.File]::ReadAllText((Join-Path $repository 'tools/ci/src/checks/mod.rs')).Contains('--all-targets'))
  }
  planner_reuses_build_but_runs_regressions={
-    $planner=$jobs.changes; foreach ($fragment in @('restore-keys:','ci-tool-v2-${{ runner.os }}-${{ runner.arch }}-${{ env.ImageOS }}-${{ env.ImageVersion }}','~/.cargo/registry/cache',"'rust-toolchain.toml', '.cargo/**'",'cargo +nightly-2026-11-12 test --locked','test_native_ci_cache.ps1','test_tools_cache_inputs.ps1','test_rust_toolchain.ps1')) { Assert-Ci ($planner.Contains($fragment)) $fragment }; Assert-Ci (-not $planner.Contains('cache-hit'))
+    $planner=$jobs.changes; foreach ($fragment in @('restore-keys:','ci-tool-v2-${{ runner.os }}-${{ runner.arch }}-${{ env.ImageOS }}-${{ env.ImageVersion }}','~/.cargo/registry/cache',"'rust-toolchain.toml', '.cargo/**'",'cargo +nightly-2026-11-12 test --locked','test_native_ci_cache.ps1','test_tools_cache_inputs.ps1','test_rust_toolchain.ps1')) { Assert-Ci ($planner.Contains($fragment)) $fragment }
+    Assert-FoundationPlannerCache $planner
+ }
+ planner_cache_recovery_guard_mutations_rejected={
+    foreach ($pair in @(
+        @('!cancelled()','always()'),
+        @("steps.cargo-cache.outputs.cache-hit != 'true'",'true'),
+        @("steps.cargo-cache.outcome == 'success'",'true'),
+        @("steps.ci-regressions.outcome == 'failure'","steps.ci-regressions.outcome == 'skipped'"),
+        @('        continue-on-error: true','        continue-on-error: false')
+    )) { Assert-CiReject { Assert-FoundationPlannerCache ($jobs.changes.Replace($pair[0],$pair[1])) } }
  }
  cpu_policy_fixtures_run_on_hosted_source_lane={
-    $planner=$jobs.changes; Assert-Ci ($planner.Contains('runs-on: ubuntu-24.04-arm')); Assert-Ci ($planner.Contains('pwsh -NoProfile -File "$GITHUB_WORKSPACE/tools/cpu-bundle/test_cpu_bundle.ps1"')); Assert-Ci (-not $planner.Contains('run_device')); Assert-Ci ($planner -cnotmatch 'if:.*cache-hit'); Assert-Ci ('tools/native-reference/reference_numerics.rs' -cin $config.package_inputs['bonsai-tools'])
+    $planner=$jobs.changes; Assert-Ci ($planner.Contains('runs-on: ubuntu-24.04-arm')); Assert-Ci ($planner.Contains('pwsh -NoProfile -File "$GITHUB_WORKSPACE/tools/cpu-bundle/test_cpu_bundle.ps1"')); Assert-Ci (-not $planner.Contains('run_device')); Assert-FoundationPlannerCache $planner; Assert-Ci ('tools/native-reference/reference_numerics.rs' -cin $config.package_inputs['bonsai-tools'])
  }
  independent_reference_and_pe_fixtures_are_checked_before_upload={
     $producer=$jobs['checked-tools']; $step='Check independent numerical references and static PE closure without models'
