@@ -481,7 +481,6 @@ struct BuildOptions<'a> {
 }
 
 /// Builds Rust TTS and, when selected, the separate native ASR companion.
-/// The legacy include-sources switch is accepted without staging retired TTS code.
 pub(crate) fn build_for_package(
     repo: &Path,
     data: &Path,
@@ -489,7 +488,6 @@ pub(crate) fn build_for_package(
     model: &str,
     force: bool,
     target_directory: Option<&Path>,
-    _include_sources: bool,
 ) -> crate::Result<Value> {
     build_configured(
         repo,

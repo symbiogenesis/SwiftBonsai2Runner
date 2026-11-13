@@ -37,7 +37,7 @@ function Invoke-ReleaseCommand($FilePath, $ArgumentList, $TimeoutSeconds, $Envir
         switch -Exact ($ArgumentList[0]) {
             'source-build' { $result = @{ ChatPath = 'chat'; BrokerPath = 'broker' } }
             'speech-build' {
-                if ($request.operation -cne 'build' -or $request.PSObject.Properties['includeSources']) { throw 'Unexpected retired TTS source preparation.' }
+                if ($request.operation -cne 'build') { throw 'Unexpected speech build operation.' }
                 $result = @{ AsrPath = 'asr'; TtsPath = 'tts' }
             }
             'chat-package' { $result = @{ ManifestSha256 = ('b' * 64) } }
