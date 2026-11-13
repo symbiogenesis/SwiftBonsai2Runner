@@ -1,8 +1,7 @@
 # Swift Bonsai 2 Runner TODO
 
-This is the single backlog. Keep only outstanding work here; remove completed
-items. [Technical docs](docs/README.md) own behavior, contracts, commands and
-required evidence. Git history owns completed work and trial diaries.
+This is the single backlog. [Technical docs](docs/README.md) own behavior,
+contracts, commands and required evidence. Remove completed items.
 
 Prioritize native daily use, then correctness, isolation, creative quality and
 comfort, then measured optimization. Task IDs identify related work across docs.
@@ -38,16 +37,15 @@ under [AGENTS.md](AGENTS.md).
 - [ ] Qualify Prism's Foundation scheduling and source-package/Hexagon caches
   on matching hosted images, preserving complete correctness, mutation, packaging
   and independent ABI/SDK obligations.
-- [ ] **R1 — Qualify the published Runner v0.3.0 with pinned Prism 0.1.27.**
+- [ ] **R1 — Qualify the Runner release candidate with pinned Prism 0.1.27.**
   Complete actual-model, state, resource, quality and device acceptance using
-  the immutable identities in the [release guide](docs/releases.md).
+  the source-bound package identities in the [distribution guide](docs/releases.md).
   Model-free release checks leave these development-runtime gates pending.
 - [ ] Qualify the single-executable builder from a checkout and on a clean
   Windows ARM64 installation: double-click launch, visible native startup errors,
   stored/deflated package compatibility, malformed compression and expansion limits.
   Verify no separately installed VC runtime or TTS inference DLL is required.
-- [ ] **D1 — Qualify portable setup, repair and updates.** Exercise the published
-  v0.2.2 baseline and the new release after publication: fresh/custom data folders,
+- [ ] **D1 — Qualify portable setup, repair and updates.** Cover fresh/custom data folders,
   automatic model/adapter/runtime setup, interruption/resume, corruption repair,
   pause/retry, disk/network/permission failures and independent speech retry.
 - [ ] Qualify automatic startup/15-minute release discovery, conditional metadata
@@ -59,9 +57,6 @@ under [AGENTS.md](AGENTS.md).
   or generation, renamed executables, original options, read-only targets, sharing
   exhaustion, restart failure, data preservation and rollback; source and preview
   launches must stay silent. See [update behavior](docs/releases.md#update-and-remove).
-- [ ] If installer distribution is selected again, qualify the retained MSI
-  updater's discovery, verified handoff, post-exit publication checks, failure
-  recovery, data preservation and installed upgrade/rollback paths.
 
 ## Tooling implementation
 
@@ -313,7 +308,7 @@ under [AGENTS.md](AGENTS.md).
   replay retained comparisons with the schema-2 scalar auditor. Separately obtain
   authenticated original checkpoint/conversion/invocation/toolchain inputs and
   verify native writer mappings through [authoring intake](docs/adapter-authoring-intake.md).
-- [ ] Qualify active-release PTQ1 scalar/explicit-NEON logits and complete live
+- [ ] Qualify candidate PTQ1 scalar/explicit-NEON logits and complete live
   state for the selected worker policy, including loaded-zero identity, nonzero
   effect, scale/history changes and prefix reuse.
 - [ ] Prepare a newly source-bound PTQ1 service/rollback packet for the selected
@@ -439,7 +434,7 @@ under [AGENTS.md](AGENTS.md).
 - [ ] Publish and qualify [provisional GDN and prepared current-token KV](docs/cpu-kernels.md#provisional-gdn-and-prepared-current-token-kv):
   native/portable exact arithmetic, late-failure rollback, stale-record rejection,
   selected-cache and FP16 state/adapter/cancellation parity, codegen/resources and
-  matched CPU-only complete-request benefit. Retain the released runtime as rollback.
+  matched CPU-only complete-request benefit. Retain the pinned runtime as rollback.
 - [ ] Qualify [prepared packed-KV queries and CPU preparation reuse](docs/cpu-kernels.md#prepared-packed-kv-queries-and-cpu-preparation-reuse).
 - [ ] Qualify [X1-oriented candidates](docs/cpu-kernels.md#x1-oriented-source-candidates),
   [next candidates](docs/cpu-kernels.md#next-cpu-candidates) and
