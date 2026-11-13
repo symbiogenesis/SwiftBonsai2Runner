@@ -180,56 +180,72 @@ const PQ2_ADAPTER_LIFECYCLE_PROFILE: AdapterProfile = AdapterProfile {
     required_scale_history: true,
 };
 
-fn native_four_worker_release(version: Option<&str>) -> bool {
-    matches!(
-        version,
-        Some(
-            "0.1.9"
-                | "0.1.10"
-                | "0.1.11"
-                | "0.1.12"
-                | "0.1.13"
-                | "0.1.14"
-                | "0.1.15"
-                | "0.1.16"
-                | "0.1.17"
-                | "0.1.18"
-                | "0.1.19"
-                | "0.1.20"
-                | "0.1.21"
-                | "0.1.22"
-                | "0.1.23"
-                | "0.1.25"
-        )
-    )
+// This delivery needs its independently reviewed source as well as its version.
+// Historical fixed-source workloads retain their original release identities.
+const MEMORY_CONTEXT_REVISION: &str = "ac941f2668ae93dba9824002b4597081457aa09f";
+
+fn reviewed_memory_context_release(version: Option<&str>, revision: Option<&str>) -> bool {
+    version == Some("0.1.26") && revision == Some(MEMORY_CONTEXT_REVISION)
 }
 
-fn worker_readiness_receipt(version: Option<&str>, expected: u8, verified: bool) -> Value {
+fn native_four_worker_release(version: Option<&str>, revision: Option<&str>) -> bool {
+    reviewed_memory_context_release(version, revision)
+        || matches!(
+            version,
+            Some(
+                "0.1.9"
+                    | "0.1.10"
+                    | "0.1.11"
+                    | "0.1.12"
+                    | "0.1.13"
+                    | "0.1.14"
+                    | "0.1.15"
+                    | "0.1.16"
+                    | "0.1.17"
+                    | "0.1.18"
+                    | "0.1.19"
+                    | "0.1.20"
+                    | "0.1.21"
+                    | "0.1.22"
+                    | "0.1.23"
+                    | "0.1.25"
+            )
+        )
+}
+
+fn worker_readiness_receipt(
+    version: Option<&str>,
+    revision: Option<&str>,
+    expected: u8,
+    verified: bool,
+) -> Value {
     // These reviewed owners require a matching field from the instantiated graph.
     // Historical versions may omit it, and later versions need another review.
     // A configured argument or a receipt written before start cannot supply it.
-    let observed = matches!(
-        version,
-        Some(
-            "0.1.11"
-                | "0.1.12"
-                | "0.1.13"
-                | "0.1.14"
-                | "0.1.15"
-                | "0.1.16"
-                | "0.1.17"
-                | "0.1.18"
-                | "0.1.19"
-                | "0.1.20"
-                | "0.1.21"
-                | "0.1.22"
-                | "0.1.23"
-                | "0.1.25"
-        )
-    ) && matches!(expected, 1 | 4)
+    let observed = (reviewed_memory_context_release(version, revision)
+        || matches!(
+            version,
+            Some(
+                "0.1.11"
+                    | "0.1.12"
+                    | "0.1.13"
+                    | "0.1.14"
+                    | "0.1.15"
+                    | "0.1.16"
+                    | "0.1.17"
+                    | "0.1.18"
+                    | "0.1.19"
+                    | "0.1.20"
+                    | "0.1.21"
+                    | "0.1.22"
+                    | "0.1.23"
+                    | "0.1.25"
+            )
+        ))
+        && matches!(expected, 1 | 4)
         && verified;
     json!({"configuredNativeRowWorkers":expected, "verifiedReadinessObserved":verified,
-        "rowWorkerReadinessVersion":version,
+        "rowWorkerReadinessVersion":version,"rowWorkerReadinessRevision":revision,
         "rowWorkerCountIndependentlyObserved":observed,
         "observedNativeRowWorkers":observed.then_some(expected),
         "rowWorkerObservationScope":"effective configured graph budget verified by private readiness; no executing-thread, parallel-operation or benefit evidence"})
@@ -240,8 +256,12 @@ fn record_worker_readiness(report: &mut Value, expected: u8, verified: bool) {
     // field to turn a legacy or missing readiness result into observed identity.
     let runtime_lock: Value =
         serde_json::from_str(include_str!("../../../config/prism-inference.lock.json")).unwrap();
-    let observation =
-        worker_readiness_receipt(runtime_lock["version"].as_str(), expected, verified);
+    let observation = worker_readiness_receipt(
+        runtime_lock["version"].as_str(),
+        runtime_lock["commit"].as_str(),
+        expected,
+        verified,
+    );
     report
         .as_object_mut()
         .unwrap()
@@ -250,15 +270,17 @@ fn record_worker_readiness(report: &mut Value, expected: u8, verified: bool) {
 
 fn assert_worker_receipt_case(
     version: Option<&str>,
+    revision: Option<&str>,
     four_admitted: bool,
     worker_field_required: bool,
 ) {
-    assert_eq!(native_four_worker_release(version), four_admitted);
+    assert_eq!(native_four_worker_release(version, revision), four_admitted);
     for expected in [0, 1, 2, 4, 16] {
         for verified in [false, true] {
             let observed = worker_field_required && matches!(expected, 1 | 4) && verified;
-            let receipt = worker_readiness_receipt(version, expected, verified);
+            let receipt = worker_readiness_receipt(version, revision, expected, verified);
             assert_eq!(receipt["rowWorkerReadinessVersion"], json!(version));
+            assert_eq!(receipt["rowWorkerReadinessRevision"], json!(revision));
             assert_eq!(receipt["verifiedReadinessObserved"], verified);
             assert_eq!(receipt["configuredNativeRowWorkers"], expected);
             assert_eq!(receipt["rowWorkerCountIndependentlyObserved"], observed);
@@ -273,13 +295,13 @@ fn assert_worker_receipt_case(
 #[test]
 fn native_worker_receipts_require_exact_release_and_verified_readiness() {
     for version in ["0.1.9", "0.1.10"] {
-        assert_worker_receipt_case(Some(version), true, false);
+        assert_worker_receipt_case(Some(version), None, true, false);
     }
     for version in [
         "0.1.11", "0.1.12", "0.1.13", "0.1.14", "0.1.15", "0.1.16", "0.1.17", "0.1.18", "0.1.19",
         "0.1.20", "0.1.21", "0.1.22", "0.1.23", "0.1.25",
     ] {
-        assert_worker_receipt_case(Some(version), true, true);
+        assert_worker_receipt_case(Some(version), None, true, true);
     }
     for version in [
         "0.1.8",
@@ -334,21 +356,42 @@ fn native_worker_receipts_require_exact_release_and_verified_readiness() {
         "0.1.011",
         "",
     ] {
-        assert_worker_receipt_case(Some(version), false, false);
+        assert_worker_receipt_case(Some(version), None, false, false);
     }
-    assert_worker_receipt_case(None, false, false);
+    assert_worker_receipt_case(None, None, false, false);
+}
+
+#[test]
+fn native_worker_receipts_require_the_reviewed_memory_context_source() {
+    assert_worker_receipt_case(Some("0.1.26"), Some(MEMORY_CONTEXT_REVISION), true, true);
+    for revision in [
+        None,
+        Some("99bab71270b1e6a6fb6d47eec2e34b8097cdcd4c"),
+        Some("0000000000000000000000000000000000000000"),
+    ] {
+        assert_worker_receipt_case(Some("0.1.26"), revision, false, false);
+    }
+    assert_worker_receipt_case(Some("0.1.27"), Some(MEMORY_CONTEXT_REVISION), false, false);
+}
+
+#[test]
+fn native_worker_receipts_read_the_compiled_release_identity() {
     let runtime_lock: Value =
         serde_json::from_str(include_str!("../../../config/prism-inference.lock.json")).unwrap();
     let mut report = json!({"runtimeLock":{"version":"untrusted-report-value"},
         "rowWorkerCountIndependentlyObserved":true,"observedNativeRowWorkers":4});
     record_worker_readiness(&mut report, 4, false);
     assert_eq!(report["rowWorkerReadinessVersion"], runtime_lock["version"]);
+    assert_eq!(report["rowWorkerReadinessRevision"], runtime_lock["commit"]);
     assert_eq!(report["rowWorkerCountIndependentlyObserved"], false);
     assert_eq!(report["observedNativeRowWorkers"], Value::Null);
     record_worker_readiness(&mut report, 4, true);
     assert_eq!(
         report["rowWorkerCountIndependentlyObserved"],
-        matches!(
+        reviewed_memory_context_release(
+            runtime_lock["version"].as_str(),
+            runtime_lock["commit"].as_str(),
+        ) || matches!(
             runtime_lock["version"].as_str(),
             Some(
                 "0.1.11"
@@ -3302,7 +3345,10 @@ fn pinned_native_pq2_adapter_row4_starts_and_streams_within_device_budget() {
     let runtime_lock =
         serde_json::from_str::<Value>(include_str!("../../../config/prism-inference.lock.json"))
             .unwrap();
-    assert!(native_four_worker_release(runtime_lock["version"].as_str()));
+    assert!(native_four_worker_release(
+        runtime_lock["version"].as_str(),
+        runtime_lock["commit"].as_str(),
+    ));
     let data = env::var_os("BONSAI_NATIVE_DATA").unwrap();
     let evidence = env::var_os("BONSAI_NATIVE_EVIDENCE").unwrap();
     let evidence = Path::new(&evidence);

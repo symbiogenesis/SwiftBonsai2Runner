@@ -17,12 +17,12 @@ in sync with detailed tasks and preserve their acceptance obligations.
 | --- | --- | --- | --- |
 | C1 / owner | Runner | Reviewed local CI corrections and startup preflight | Publish through the owner and qualify Source checks and Foundation on that source; see [publication prerequisites](#publication-and-qualification-prerequisites). |
 | A1 / qualification | Runner with pinned Prism | C1 and an exact-source acceptance package | Qualify Rust/PQ2 DX12 startup, readiness, Stop/Retry, recovery and explicit publisher rollback under [actual-model acceptance](#actual-model-acceptance). |
-| R1 / owner, qualification | Runner with Prism | Published source-bound 0.1.25 prerelease and atomic runtime/source pins | Have the owner publish the reviewed Runner repin, then qualify the new active release. This is a development upgrade, not a performance promotion. Keep the fixed 0.1.23 CPU comparison baseline and all historical evidence identities unchanged. |
+| R1 / qualification | Runner with Prism | Source-bound 0.1.26 development bundle and atomic runtime/source pins | Qualify the new active release after Runner 0.3.0 publication. This is a development upgrade, not a performance promotion. Keep the fixed 0.1.23 CPU comparison baseline, registry 0.1.25 comparison candidate and all historical evidence identities unchanged. |
 | R2 / implementation, qualification | Prism, then Runner | Settled candidate, published comparison tooling and owning hosted checks | Publish and run the prepared [native CPU bundle comparison](docs/cpu-bundle-comparison.md) against registry 0.1.25; the existing X2 screen compares publisher thread counts, while one-token source timing is attribution only. Qualify the explicit exact LUT, selected-cache service tiles, packed-KV head workers, batched target verifier and integrated Swift sampled suffix consumer; integrate further selected cross-token consumers. Close CPU/prefill codegen, fallback, state/adapter/cancellation and matched selected-device benefit gates. X2 CPU benefit may promote reviewed shared CPU paths on X1 under [cross-generation CPU promotion](docs/cpu-kernels.md#cross-generation-cpu-promotion); device-specific tuning and claims retain matching-family gates. Qualify changes already consumed in 0.1.23 without another repin; follow the [inference delivery order](#lossless-inference-delivery-order). |
 | R3 / integration, qualification | Prism and Runner harnesses | Agreed execution/state identities and existing complete-state fixtures | Prepare shared state/restore and fault-control tooling independently of runtime qualification; map each prefix/prefill/speculation/accelerator path to its independent assertions and evidence. |
-| M1 / owner, qualification | Prism, then Runner | Reviewed memory-selected context source and a genuine compatible runtime release | Publish the prepared Prism 0.1.26 source as a genuine source-bound bundle with paired context/memory child arguments and the reviewed M2 accounting, review its exact identity and repin Runner to activate native memory sizing under the [context expansion roadmap](#native-context-expansion-roadmap). Qualify selected context/admission/Job limits, unknown and changing memory, retry, UI reporting and full-state/resource behavior at the selected capacities. Current native 0.1.25 remains fixed at 8K; publisher serving uses memory selection. Historical fixed-8K controls retain their identities. |
-| M2 / integration, qualification | Prism, then Runner | Published M1-compatible runtime with reviewed cache-aware accounting and exact Runner repin | Deliver the prepared cache-aware process/state/checkpoint sizing and native sequential scratch accounting through the same reviewed release; qualify staged 64K/128K capacities and all selected-profile state/resource gates. Follow the [cumulative estimates and conditional extensions](#native-context-expansion-roadmap); source projections do not reduce current release admission or qualify a larger window. |
-| K1 / owner, qualification | Prism, then Runner | Published 0.1.25 K4/V4 development runtime and matching local Runner repin | Have the owner publish the reviewed Runner repin, preserving explicit FP16 recovery and existing admission/8K bounds for this initial packet. Complete the [paired quality/memory packet](docs/quantized-kv.md#first-practical-promotion-packet) for measured qualification, independently on X1/X2; it is not a prerequisite for the development default. Follow M2 with the separately qualified K4/V3 capacity profile in the [context roadmap](#native-context-expansion-roadmap). |
+| M1 / qualification | Prism, then Runner | Reviewed 0.1.26 memory-selected context bundle and exact Runner repin | Qualify selected context/admission/Job limits, unknown and changing memory, retry, UI reporting and full-state/resource behavior at the selected capacities under the [context expansion roadmap](#native-context-expansion-roadmap). Native serving now carries paired context/memory child arguments and reviewed M2 accounting. Historical fixed-8K controls retain their identities. |
+| M2 / qualification | Prism, then Runner | Reviewed cache-aware 0.1.26 runtime and exact Runner repin | Qualify staged 64K/128K capacities and all selected-profile state/resource gates for the integrated cache-aware process/state/checkpoint sizing and native sequential scratch accounting. Follow the [cumulative estimates and conditional extensions](#native-context-expansion-roadmap); source projections do not qualify a larger window. |
+| K1 / qualification | Prism, then Runner | Source-bound 0.1.26 K4/V4 development runtime and matching Runner repin | Preserve explicit FP16 recovery and historical initial 8K packet identities. Complete the [paired quality/memory packet](docs/quantized-kv.md#first-practical-promotion-packet) for measured qualification, independently on X1/X2; it is not a prerequisite for the development default. Qualify memory-selected capacities separately and retain the closed K4/V3 gate in the [context roadmap](#native-context-expansion-roadmap). |
 | S1 / implementation, integration | Runner; Prism for shared runtime/RPC consumers | Agreed verified-loading, state, stream and transport ownership interfaces | Integrate Talker/CodePredictor, codec/speaker and signed Rust RPC through [C++ retirement](#complete-c-retirement); qualify the ordinary Q4 baseline before ternary speech and new 48 kHz artifacts. |
 | S2 / implementation, qualification | Runner | Pinned Qwen3-ASR 1.7B artifacts and replacement controls | Qualify microphone-to-Swift submission, then replace ASR's native engine and close transcript/state, cancellation, lifecycle, quality and resource gates before removing its compiler/dependency paths. |
 | P1 / external, qualification | Prism and Runner | Original authoring inputs for provenance; hosted public-pack reconstruction for its separate gate | Run the declared reconstruction and independent replay while pursuing provenance intake independently; follow the PTQ1 critical path below. Neither blocks A1. |
@@ -34,7 +34,7 @@ in sync with detailed tasks and preserve their acceptance obligations.
 After integrating reviewed commits into local `main`, freeze a qualification
 candidate's exact Runner/Prism revisions, compiler, release bytes, locks,
 model/adapter and device/driver/kernel identities. Keep the historical 0.1.23
-packet, published 0.1.25 runtime with local Runner repin, and newer source
+packet, historical 0.1.25 delivery, active 0.1.26 runtime and newer source
 candidates distinct. Reuse tools and immutable inputs only within their contracts;
 passes cannot transfer across changed identities or from historical packets.
 Continue implementation in separate worktrees. Review relevant changes for
@@ -1702,16 +1702,17 @@ The [memory contract](docs/swift-memory.md#memory-selected-serving-context),
 
 ### Delivery order and acceptance
 
-1. **M1, Prism then Runner:** publish and verify the genuine runtime implementing
-   paired `--context-tokens`/`--memory-limit-bytes`, review its exact identity and
-   repin Runner. Native 0.1.25 remains fixed at 8,192; the earlier M1-only baseline
+1. **M1, Prism then Runner:** qualify the reviewed 0.1.26 delivery implementing
+   paired `--context-tokens`/`--memory-limit-bytes` and its exact Runner repin.
+   Historical native 0.1.25 remains fixed at 8,192; the earlier M1-only baseline
    charges FP16 and has a 62,720-token ceiling. Deliver the combined cache-aware
    M1/M2 candidate below. Preserve unknown/insufficient
    memory rejection, immediate prelaunch admission and owned-Job pressure teardown.
    Activate the reviewed memory release consistently across default K4/V4 cache
    selection, four-row-worker support and latest-prefix reuse. Runner's shared
    exact-source recognition prepares those consumers; unrelated future releases
-   remain rejected, and K4/V3 and CPU placement keep separate release gates.
+   remain rejected. CPU placement is separately enabled for the same reviewed
+   source; K4/V3 retains its closed release gate.
 2. **M2, Prism and Runner:** make process, live-state and rollback/checkpoint
    allowances depend on the selected immutable cache layout, including scales,
    page/tail metadata, codec storage and scratch. Update `MAX_CONTEXT_TOKENS`,
@@ -1726,7 +1727,7 @@ The [memory contract](docs/swift-memory.md#memory-selected-serving-context),
    K4/V3 selection after M2. Runner carries the explicit trusted selection through
    launch, setup and Retry, with cache-specific planner/readiness identity and a
    separate closed exact-source release gate. Review a genuine compatible release
-   before activation; the current 0.1.25 pin rejects this option. Evaluate
+   before activation; the current 0.1.26 pin rejects this option. Evaluate
    held-out retrieval, instructions and creative continuation at the selected
    capacities, including adapter effects. Its projected 170K changes precision;
    it does not replace K4/V4 automatically or enlarge K1's initial 8K packet.
@@ -1744,7 +1745,7 @@ The [memory contract](docs/swift-memory.md#memory-selected-serving-context),
    before a fresh launch can increase selected capacity. Keep the 4 GiB host and
    256 MiB startup reserves; never expand a running session from a later snapshot.
 
-The unreleased Prism 0.1.26 candidate implements M2 steps 2 and 3 together. Runner has
+The reviewed Prism 0.1.26 delivery implements M2 steps 2 and 3 together. Runner has
 explicit publisher FP16, native FP16, native K4/V4 and native K4/V3 sizing profiles; Prism
 validates the selected cache through child parsing, worker admission and session
 construction. Native sizing retains two complete caches, charges sequential
@@ -1752,10 +1753,10 @@ scratch and scales state/checkpoint budgets with the selected layout while
 preserving the 1 GiB minimum and 4 GiB graph bound. The K4/V3 planner projects
 170,240 tokens at 20 GiB available, and reaches the 262,144-token model ceiling
 at 24 GiB without increasing that graph bound. Tiled prefill and speculative
-verification retain their separate full reservations. The publisher arithmetic,
-installed 0.1.25 bytes, fixed native 8K limit and release gate remain unchanged.
-Publish and review the combined M1/M2 contract before enabling it; a runtime
-implementing only the earlier FP16 memory protocol cannot receive a smaller
+verification retain their separate full reservations. Publisher arithmetic and
+historical 0.1.25 fixed-8K evidence remain unchanged. Runner's active exact-source
+gate enables the combined M1/M2 contract; a runtime implementing only the earlier
+FP16 memory protocol cannot receive a smaller
 K4/V4 process allowance. Source arithmetic and focused controls do not close
 64K/128K model, state, quality, resource or latency acceptance.
 
