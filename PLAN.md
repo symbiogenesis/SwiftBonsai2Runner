@@ -1157,10 +1157,11 @@ and retain the reset-every-request serving policy until reuse is qualified.
   then matched whole-prompt benefit against qualified NEON/worker execution.
   Source work reuse and the SIMD tiled candidate establish no speedup or release gate.
   Qualify the new local `SwiftSession::load_profile_with_prefill` private-service
-  consumer separately: explicit FP16, paired tile/scratch and context/process
+  consumer separately: explicit selected cache, paired tile/scratch and context/process
   allowance, full extra reserve before artifact I/O, CPU-only startup, exact
   readiness identity and compatible latest-prefix reuse. It retains sequential
-  GDN and rejects K4/V4; no published bundle or Runner default selects it yet.
+  GDN and now supports K4/V4 and K4/V3 through causal quantized attention; no
+  published bundle or Runner default selects it yet.
   Qualify the independent new packed-KV query-head worker consumer against the
   published serial control, including complete state/adapter/page-boundary
   recovery, synchronous-token cancellation, worker resources and selected-device
@@ -1206,23 +1207,32 @@ and retain the reset-every-request serving policy until reuse is qualified.
   versus incremental accounting: two 149.625 MiB recurrent/convolution snapshots already
   cost **299.25 MiB before KV/metadata**, exceeding a 256 MiB total cache. Keep that
   budget and conservative per-snapshot page charges.
-- Qualify the new local exact FP16 short-chain CPU target verifier before proposals.
+- Qualify the new local short-chain CPU target verifier and sampled suffix consumer.
   Its explicit `Qwen35::with_tiled_verification` selection charges separate
   per-position logits and shares layer/output-head packed projections across
   candidates. `Runtime::verify_draft_block` consumes that capability with complete
   checkpoint restoration, accepted-prefix replay and conservative rejected-work
   admission; ordinary graphs retain their sequential path. The candidate rejects
-  rotated KV, triangular GDN and installed external projection executors. It is
-  not in the published 0.1.25 bundle. `generate_speculative_inner` still evaluates
-  sequentially; `SwiftSession::complete_speculative` is greedy and
-  `verify_stochastic_step` remains standalone. Complete final-source native/fallback
+  triangular GDN and installed external projection executors. It is
+  not in the published 0.1.25 bundle. New local source also supports selected
+  K4/V4 and K4/V3 tiles with causal quantized attention and no FP16 expansion.
+  `generate_sampled_speculative_until` consumes deterministic suffix proposals
+  with one actual target-sampler draw per output position, accepts equal draws
+  and restores/replays complete state on rejection or stop. An explicit private
+  serving profile connects Swift's sampler and separately admits verifier logits
+  and an additional prefix checkpoint beside request rollback. It changes no
+  Runner pin/default. Legacy `generate_speculative_inner` and
+  `SwiftSession::complete_speculative` remain greedy; `verify_stochastic_step`
+  remains standalone for probabilistic proposals. Complete final-source native/fallback
   checks and actual-model per-position logits, causal attention and complete
   GDN/convolution parity. Qualify accepted-prefix recovery,
   partial acceptance, EOS/output limits, Stop, failed commit and rollback. Preserve the
   declared arithmetic boundaries or identify changed numerics separately. Establish
-  greedy parity, then integrate conditional acceptance and residual sampling for the actual
-  temperature, top-k, top-p and penalties. Distribution preservation does not promise
-  identical RNG use or seeded output. Include rejected work, checkpoints, replay and
+  greedy parity, then qualify the deterministic-proposal coupling with actual
+  temperature, top-k, top-p and penalties. For identical target logits this route
+  retains ordinary sampler RNG order; learned probabilistic proposals still need
+  their own conditional acceptance/residual integration. Distribution preservation
+  alone does not promise identical seeded output. Include rejected work, checkpoints, replay and
   output-head costs when demonstrating fewer weight passes and complete-cycle benefit.
 - After verifier qualification, try bounded prompt/history suffix proposals with a few
   short windows and no second model. Compare repetitive and creative held-out prompts,
@@ -1265,7 +1275,7 @@ this ordering grants no new model workload, default, release or device qualifica
 | --- | --- | --- |
 | 1 | Qualify explicit latest-prefix reuse and deliver settled existing CPU/prefill candidates. | Repeated-history prefill benefit, full state/adapter/lifecycle acceptance, reviewed release identities and repin only where needed. |
 | 2 | Use batch-one attribution to choose production exact activation LUTs, cross-token Vec-LUT or true multi-token projections. | Bounded source integration and matched whole-request benefit; existing tiled matvec and N=1 NPU packets do not establish these consumers. |
-| 3 | Qualify the local tiled short-chain target verifier and integrate actual Swift sampler correction. | Per-position logits, complete accepted-prefix KV/GDN/convolution recovery and full-cycle benefit, with numerical and distribution contracts kept explicit. |
+| 3 | Qualify the local tiled short-chain verifier and its explicitly integrated Swift sampled suffix consumer. | Per-position logits and sampler draws, complete accepted-prefix KV/GDN/convolution recovery, separately admitted concurrent checkpoints and full-cycle benefit, with numerical and distribution contracts kept explicit. |
 | 4 | Screen short suffix proposals, then a compatible published Bonsai drafter and bounded adaptive length. | Creative and repetitive controls, admitted total memory, artifacts/features/adapter compatibility and retained losing/no-go outcomes. |
 | Conditional | Revisit compact recurrent factors, learned tree/overlap methods and lossless weight/KV codecs. | A measured relevant bottleneck, native execution route and the specific prerequisites under [survey dispositions](#survey-ideas-outside-the-current-laptop-backlog). |
 

@@ -114,7 +114,7 @@ performance figure. The original clocks are closed without a retry.
 
 ## New local prompt and attention consumers
 
-The November 13 local Prism candidate (runtime integration `7283213`) adds two
+The November 13 local Prism candidate (source integration `b146491`) adds these
 consumers independently of the published 0.1.25 bundle and the fixed 0.1.23
 comparison control:
 
@@ -122,19 +122,26 @@ comparison control:
   query heads, preserving each head's arithmetic and complete-state transaction.
   The current release's serial compressed-attention path remains the control.
 - `SwiftSession::load_profile_with_prefill` and the private server expose explicit
-  exact 8/16/32-token CPU prompt tiles. Trusted launch arguments must pair tile
-  size and scratch, select FP16 KV, and provide context/process-memory admission.
+  8/16/32-token CPU prompt tiles with the selected FP16, K4/V4 or K4/V3 cache.
+  Trusted launch arguments must pair tile size and scratch and provide
+  context/process-memory admission.
   The entire additional reserve is charged before artifact I/O. Startup readiness
   binds the tile, reserve and graph identity; this profile skips implicit Hexagon
-  installation and can retain explicit latest-prefix reuse. K4/V4 and triangular
-  GDN are rejected rather than selected implicitly.
+  installation and can retain explicit latest-prefix reuse. Quantized attention
+  keeps its existing causal codec; triangular GDN remains a separate profile.
+- An explicitly selected sampled suffix profile connects the tiled verifier to
+  the actual Swift sampler. Matching target draws accept deterministic proposals;
+  rejection restores complete state and replays the accepted prefix. A separate
+  logits reserve and additional full-prefix checkpoint reserve are charged in
+  addition to the tile and ordinary request rollback. No second model is loaded.
 
 These are local implementation candidates, not a runtime repin, new default or
 measured speedup. Require final-source focused/native/fallback checks, complete
 model logits/state/adapter and cancellation recovery, resource accounting and
 matched selected-device whole-request benefit. The independent batched target
-verifier retains its [algorithm contract](inference-algorithms.md#hybrid-cache-reuse-and-speculative-state)
-and does not enable sampled speculation through this service profile.
+verifier and sampled suffix consumer retain their
+[algorithm contract](inference-algorithms.md#hybrid-cache-reuse-and-speculative-state).
+Runner's current bundle and launch policy do not select them.
 
 ## X1-oriented source candidates
 

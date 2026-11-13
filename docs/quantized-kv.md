@@ -112,8 +112,12 @@ position. That is exact restoration of an approximate profile, not exact recover
 of the original FP16 values. Failed append/allocation, cancellation, edited-prefix
 reuse and adapter changes must preserve transaction atomicity and provenance.
 State export must identify reconstructed quantized rows instead of labelling
-them as original FP16 observations. Tiled prefill rejects these profiles;
-ordinary cancellation-aware sequential block ingestion remains supported.
+them as original FP16 observations. New local CPU tiles support these profiles
+by sharing surrounding projections while retaining causal per-token quantized
+attention and encoded append. The same route supplies each target-verification
+position. It adds no FP16 history expansion or additional worker pool. Ordinary
+sequential ingestion remains supported, and triangular GDN stays a separate FP16
+profile. Neither tile nor sampled suffix selection is in Runner's current bundle.
 
 Full-context admission must charge packed records and scales, page tables,
 retained checkpoint pages/tails, transform/codebook storage and scratch. Keep
