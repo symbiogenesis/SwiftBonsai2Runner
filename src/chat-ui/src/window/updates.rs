@@ -471,6 +471,21 @@ impl Updates {
 mod tests {
     use super::*;
 
+    fn next_version(text: &str) -> io::Result<String> {
+        let (major, minor, patch) =
+            parse_version(text).ok_or_else(|| io::Error::other("Invalid fixture version."))?;
+        let next = if let Some(patch) = patch.checked_add(1) {
+            (major, minor, patch)
+        } else if let Some(minor) = minor.checked_add(1) {
+            (major, minor, 0)
+        } else if let Some(major) = major.checked_add(1) {
+            (major, 0, 0)
+        } else {
+            return Err(io::Error::other("No newer fixture version is available."));
+        };
+        Ok(format!("{}.{}.{}", next.0, next.1, next.2))
+    }
+
     #[test]
     fn update_results_reject_noncanonical_out_of_bounds_and_nonnewer_versions() {
         assert_eq!(parse_version("255.255.65535"), Some((255, 255, 65535)));
@@ -501,10 +516,12 @@ mod tests {
 
     #[test]
     fn update_results_bind_download_and_install_to_the_selected_version() -> io::Result<()> {
+        let candidate = next_version(env!("CARGO_PKG_VERSION"))?;
+        let mismatched = next_version(&candidate)?;
         assert!(response(r#"{"Status":"no-release"}"#, Operation::Check, None).is_ok());
         assert!(
             response(
-                r#"{"Status":"available","Version":"0.2.0"}"#,
+                &serde_json::json!({"Status": "available", "Version": &candidate}).to_string(),
                 Operation::Check,
                 None
             )
@@ -520,26 +537,27 @@ mod tests {
         );
         assert!(
             response(
-                r#"{"Status":"downloaded","Version":"0.2.0"}"#,
+                &serde_json::json!({"Status": "downloaded", "Version": &candidate}).to_string(),
                 Operation::Download,
-                Some("0.2.0")
+                Some(&candidate)
             )
             .is_ok()
         );
         assert!(
             response(
-                r#"{"Status":"queued","Version":"0.1.9"}"#,
+                &serde_json::json!({"Status": "queued", "Version": mismatched}).to_string(),
                 Operation::Install,
-                Some("0.2.0")
+                Some(&candidate)
             )
             .is_err()
         );
         let selected = response(
-            r#"{"Status":"queued","Version":"0.2.0"}"#,
+            &serde_json::json!({"Status": "queued", "Version": &candidate}).to_string(),
             Operation::Install,
-            Some("0.2.0"),
+            Some(&candidate),
         )?;
         assert_eq!(selected.status, "queued");
+        assert_eq!(selected.version.as_deref(), Some(candidate.as_str()));
         Ok(())
     }
 
