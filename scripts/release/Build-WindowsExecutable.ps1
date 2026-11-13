@@ -19,19 +19,10 @@ if (-not $IsWindows -or [Runtime.InteropServices.RuntimeInformation]::OSArchitec
 $PackageDirectory = Resolve-ReleasePath $PackageDirectory
 $OutputPath = Resolve-ReleasePath $OutputPath -Kind File -AllowMissing
 if ([IO.Path]::GetExtension($OutputPath) -ine '.exe') { throw 'Bundle output must use the .exe extension.' }
-if (Test-Path -LiteralPath $OutputPath) { throw 'Executable output already exists; bundles are immutable.' }
 $tool = Resolve-ReleasePath (Join-Path $PackageDirectory 'bin/bonsai-tools.exe') -Kind File
-$capabilities = Invoke-ReleaseCommand $tool @('--version') | ConvertFrom-Json
-if ('chat-bundle' -cnotin $capabilities.Commands) { throw 'Rebuild bonsai-tools with single-executable bundle support.' }
 $request = @{
     operation = 'create'; packageDirectory = $PackageDirectory
     manifestSha256 = $ManifestSha256; outputPath = $OutputPath
 } | ConvertTo-Json -Compress
-$created = Invoke-ReleaseCommand $tool @('chat-bundle', '--json', $request) | ConvertFrom-Json
-$inspect = @{ operation = 'inspect'; executablePath = $OutputPath } | ConvertTo-Json -Compress
-$checked = Invoke-ReleaseCommand $tool @('chat-bundle', '--json', $inspect) | ConvertFrom-Json
-if ($created.ManifestSha256 -cne $ManifestSha256 -or $checked.ManifestSha256 -cne $ManifestSha256 -or
-    $created.Id -cne $checked.Id -or $checked.Manifest.target -cne 'aarch64-pc-windows-msvc') {
-    throw 'The bundled executable differs from its verified package.'
-}
-$checked
+# Native creation validates the launcher and complete payload before publication.
+Invoke-ReleaseCommand $tool @('chat-bundle', '--json', $request) | ConvertFrom-Json

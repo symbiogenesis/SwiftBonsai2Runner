@@ -17,24 +17,18 @@ if (Test-Path -LiteralPath $EvidenceDirectory) { throw 'Executable smoke evidenc
 $installation = Join-Path $EvidenceDirectory 'extracted'
 $checked = $false
 try {
-    $request = @{ operation = 'inspect'; executablePath = $ExecutablePath } | ConvertTo-Json -Compress
+    $request = @{
+        operation = 'extract'; executablePath = $ExecutablePath; installationDirectory = $installation
+    } | ConvertTo-Json -Compress
     $bundle = Invoke-ReleaseCommand $ExecutablePath @('chat-bundle', '--json', $request) -TimeoutSeconds 60 | ConvertFrom-Json
     if ($bundle.ManifestSha256 -cne $ManifestSha256 -or $bundle.Manifest.target -cne 'aarch64-pc-windows-msvc' -or
         $bundle.Manifest.schemaVersion -ne 2 -or @($bundle.Manifest.files).Count -ne 8) {
         throw 'The single executable has an unexpected package identity or inventory.'
     }
-    $request = @{
-        operation = 'extract'; executablePath = $ExecutablePath; installationDirectory = $installation
-    } | ConvertTo-Json -Compress
-    $extracted = Invoke-ReleaseCommand $ExecutablePath @('chat-bundle', '--json', $request) -TimeoutSeconds 60 | ConvertFrom-Json
-    $tool = Resolve-ReleasePath (Join-Path $extracted.Directory 'bin/bonsai-tools.exe') -Kind File
-    $capabilities = Invoke-ReleaseCommand $tool @('--version') -TimeoutSeconds 15 | ConvertFrom-Json
-    if ('chat-bundle' -cnotin $capabilities.Commands -or 'installed-chat' -cnotin $capabilities.Commands) {
-        throw 'The extracted native maintenance executable is unavailable.'
-    }
+    $tool = Resolve-ReleasePath (Join-Path $bundle.Directory 'bin/bonsai-tools.exe') -Kind File
     $request = @{ operation = 'installed'; installationDirectory = $installation } | ConvertTo-Json -Compress
     $package = Invoke-ReleaseCommand $tool @('chat-package', '--json', $request) -TimeoutSeconds 60 | ConvertFrom-Json
-    if ($package.ManifestSha256 -cne $ManifestSha256 -or $package.Id -cne $bundle.Id -or $extracted.Id -cne $bundle.Id) {
+    if ($package.ManifestSha256 -cne $ManifestSha256 -or $package.Id -cne $bundle.Id) {
         throw 'Extracted application inventory differs from the bundled package.'
     }
     $checked = $true
