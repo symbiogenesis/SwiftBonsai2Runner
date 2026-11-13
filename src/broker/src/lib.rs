@@ -47,6 +47,7 @@ use subtle::ConstantTimeEq;
 mod chat_controls;
 
 /// Largest accepted client or canonical backend request body in bytes.
+///
 /// The native UI matches this bound. The pinned native runtime also limits
 /// worker frames and tokenizer input independently; a larger selected token
 /// capacity does not authorize larger serialized requests.

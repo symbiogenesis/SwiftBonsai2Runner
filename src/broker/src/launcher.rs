@@ -157,10 +157,8 @@ impl LaunchConfig {
         let (mut launch, mut unisolated, mut require_native_sandbox) = (false, false, false);
         let mut check_only = false;
         let mut native_engine = None;
-        let mut native_row_workers = None;
-        let mut latest_prompt_reuse = None;
-        let mut kv_cache = None;
-        let mut placement = None;
+        let (mut native_row_workers, mut latest_prompt_reuse) = (None, None);
+        let (mut kv_cache, mut placement) = (None, None);
         let mut use_abliterate_lora = false;
         let mut use_repacked_ptq1 = None;
         let mut profile = None;

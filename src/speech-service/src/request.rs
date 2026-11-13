@@ -308,7 +308,7 @@ mod tests {
                 transcribe(media, &body, &mut samples).err(),
                 Some(Error::bad("invalid_multipart"))
             );
-            assert!(samples.is_empty());
+            assert_eq!(samples, [] as [f32; 0]);
             // A rejected MIME body must not poison the next request or expose
             // samples retained before the malformed upload.
             assert_eq!(
