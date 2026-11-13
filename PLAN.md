@@ -1590,6 +1590,13 @@ not close pending hosted integration or full-model acceptance.
   generated PCM from audible output, supply gaps and underruns; use [existing resource
   evidence](docs/performance-expectations.md#q4-speech-resource-comparison) and reuse
   contracts to choose remaining work.
+- Qualify punctuation pacing in manual read-aloud and live response reading on the
+  pinned speech models. Include short consecutive sentences, titles/initials,
+  decimals, ellipses, quoted endings, CJK text and a final short clip. Check audible
+  continuity, natural pauses, complete text delivery and Stop during synthesis and
+  buffering; distinguish model supply gaps from playback stalls. Sentence batching
+  and callback-stable boundary smoothing need independent listening and device
+  acceptance; model-free controls alone cannot establish smoother voices.
 - Evaluate and qualify the mixed-precision ternary `Talker` candidate (`PQ2_0` / lossless
   `PTQ1_0` repack) against the verified `Q8_0` and `Q4_K_M` speech locks once the
   pure-Rust `Talker` runtime and offline Hadamard-folded artifact are prepared. Pin exact
