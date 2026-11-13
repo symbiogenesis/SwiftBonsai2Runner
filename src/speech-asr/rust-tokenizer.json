@@ -1,0 +1,44 @@
+{
+  "schemaVersion": 1,
+  "provider": "rust-symbolic-byte-and-miniature-bpe-controls",
+  "scope": "qwen2-pretokenization-ranked-bpe-and-literal-gpt2-byte-decoding",
+  "nativeSource": {
+    "package": "transcribe-cpp-sys",
+    "version": "0.4.1",
+    "repository": "https://github.com/handy-computer/transcribe.cpp",
+    "commit": "4d7c1ccefd39e5a9ea36cca5f8fefc6dcc14b99b",
+    "license": "MIT",
+    "files": [
+      {"path": "src/transcribe-tokenizer.cpp", "sha256": "2d971710f3fbf8fe54ed9ceee1e019028df5e7c568cbecd4f3db9e936a50c775"},
+      {"path": "src/transcribe-unicode.cpp", "sha256": "27e9982fb67e8cd5169a99c5fa1af465dde719394fbc8fa7618fe878dd89d327"},
+      {"path": "src/transcribe-unicode-data.cpp", "sha256": "9bdaeed0cb077a174bb2d14965eb35dfda8b4311c21a16f9b44aa0a8c3b2f05b"}
+    ]
+  },
+  "controls": {
+    "provider": "independent-literal-unicode-splits-byte-answers-and-hand-calculated-miniature-merge-order",
+    "freshNativeExecution": false,
+    "modelInputs": false,
+    "testFilter": "rust_asr_tokenizer_",
+    "unicodeTable": "translated-pinned-definition-not-independent-observation"
+  },
+  "limits": {
+    "pretokenizer": "absent-empty-or-qwen2-only",
+    "maximumInputAndDecodedBytes": 32768,
+    "maximumTokenIds": 8192,
+    "maximumVocabularyAndMergeEntries": 262144,
+    "maximumSpellingBytes": 4096,
+    "maximumTableSpellingBytes": 67108864,
+    "maximumChargedMergeBytes": 67108864,
+    "duplicateVocabularyAndMergePolicy": "first-occurrence",
+    "encodingSpecialTokenPolicy": "ordinary-text-no-special-scan",
+    "decodingSpecialTokenPolicy": "literal-preserved",
+    "invalidDecodeIdPolicy": "skip-as-native",
+    "missingMergedVocabularyPolicy": "decompose-into-byte-glyphs-as-native"
+  },
+  "pending": [
+    "independent tokenizer observations for complete pinned vocabulary and multilingual inputs",
+    "owning-crate build/link and hosted acceptance",
+    "CNN/transformer encoder and causal decoder with complete session reset",
+    "actual-model transcript/state, cancellation, microphone integration, quality and resources"
+  ]
+}

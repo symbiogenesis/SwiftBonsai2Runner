@@ -303,6 +303,10 @@ fn layout(kind: u32) -> io::Result<(u64, u64)> {
 }
 
 pub(super) fn validate(source: &mut (impl Read + Seek), length: u64) -> io::Result<()> {
+    model::validate(&read_index(source, length)?)
+}
+
+fn read_index(source: &mut (impl Read + Seek), length: u64) -> io::Result<Index> {
     if !(24..=MAX_FILE_BYTES).contains(&length) {
         return Err(invalid());
     }
@@ -312,7 +316,36 @@ pub(super) fn validate(source: &mut (impl Read + Seek), length: u64) -> io::Resu
         length,
         remaining: MAX_METADATA,
     };
-    model::validate(&reader.index()?)
+    reader.index()
+}
+
+pub(super) fn tokenizer(
+    source: &mut (impl Read + Seek),
+    length: u64,
+) -> io::Result<crate::tokenizer::Tokenizer> {
+    let mut index = read_index(source, length)?;
+    model::validate(&index)?;
+    if let Some(Value::Text(pre)) = index.metadata.get("tokenizer.ggml.pre")
+        && !matches!(pre.as_str(), "" | "qwen2")
+    {
+        return Err(invalid());
+    }
+    let Some(Value::Strings(tokens)) = index.metadata.remove("tokenizer.ggml.tokens") else {
+        return Err(invalid());
+    };
+    let Some(Value::Strings(merges)) = index.metadata.remove("tokenizer.ggml.merges") else {
+        return Err(invalid());
+    };
+    let Some(Value::Integer { value: eos, .. }) =
+        index.metadata.remove("tokenizer.ggml.eos_token_id")
+    else {
+        return Err(invalid());
+    };
+    crate::tokenizer::Tokenizer::from_tables(
+        tokens,
+        merges,
+        u32::try_from(eos).map_err(|_| invalid())?,
+    )
 }
 
 #[cfg(test)]

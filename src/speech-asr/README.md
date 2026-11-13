@@ -85,7 +85,20 @@ closure remains separate. A failed local Cargo-lock control exposed the use of a
 TOML value parser for a document; the document-parser correction compiles under
 strict Release Clippy, with runtime recheck and actual package verification pending.
 
-Complete Rust tokenizer encoding/decoding, CNN/transformer encoder, causal decoder,
+`tokenizer.rs` now provides bounded Qwen2 pretokenization, ranked byte-level BPE
+and literal GPT-2 byte decoding, with a GGUF extraction entry point that first
+admits the complete model index. It preserves first-occurrence duplicate entries,
+leftmost merge ties, missing-merged-piece byte fallback and split UTF-8 bytes.
+It does not recognize special-looking input as prompt controls; decoding retains
+their literal spellings. The pinned Unicode category table is part of the
+tokenizer definition and does not change with the host Rust Unicode version.
+Only absent/empty/`qwen2` pretokenizer metadata is admitted by this replacement.
+Seven `rust_asr_tokenizer_` controls use literal Unicode splits, byte answers and
+hand-calculated miniature merge schedules; `rust-tokenizer.json` binds their
+source and scope. Native serving still owns tokenization and inference. Complete
+pinned-vocabulary observations and owning-crate acceptance remain necessary.
+
+Complete CNN/transformer encoder, causal decoder,
 KV/session reset, independent numerical observations and actual-model comparisons
 remain necessary before replacing the engine or removing native dependencies.
 Standalone source-module checks do not establish owning-crate native build/link,
