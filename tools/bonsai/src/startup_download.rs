@@ -231,6 +231,257 @@ pub(crate) fn receive(
     receive_with(uri, path, bytes, sha256, working, transfer)
 }
 
+/// Repairs a missing or invalid pinned artifact without discarding the old file
+/// until its complete replacement has passed verification.
+pub(crate) fn receive_repair(
+    uri: &str,
+    path: &Path,
+    bytes: u64,
+    sha256: &str,
+    working: &Path,
+) -> crate::Result<()> {
+    receive_repair_with(uri, path, bytes, sha256, working, transfer)
+}
+
+enum CachedArtifact {
+    Missing,
+    Verified,
+    Invalid(File),
+}
+
+fn cached_artifact(path: &Path, bytes: u64, sha256: &str) -> crate::Result<CachedArtifact> {
+    match fs::symlink_metadata(path) {
+        Ok(metadata) if metadata.is_file() && !is_redirect(&metadata) => {}
+        Ok(_) => return Err("The model download location is not an ordinary file.".into()),
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => {
+            return Ok(CachedArtifact::Missing);
+        }
+        Err(error) => return Err(format!("Cannot inspect the model download: {error}")),
+    }
+    let mut file = open_read(path).map_err(|error| {
+        format!(
+            "Cannot read the downloaded file at {}. Close other apps using it and check this folder's permissions: {error}",
+            path.display()
+        )
+    })?;
+    if file.metadata().map_err(|error| error.to_string())?.len() == bytes
+        && digest_matches(&mut file, bytes, sha256)?
+    {
+        Ok(CachedArtifact::Verified)
+    } else {
+        // Only a successful read with a length/hash mismatch permits repair.
+        // Access, cancellation and hashing I/O errors have already propagated.
+        Ok(CachedArtifact::Invalid(file))
+    }
+}
+
+fn repair_parents(path: &Path) -> crate::Result<Vec<File>> {
+    #[cfg(windows)]
+    let mut guards = Vec::new();
+    #[cfg(not(windows))]
+    let guards = Vec::new();
+    #[cfg(windows)]
+    {
+        use std::os::windows::fs::OpenOptionsExt as _;
+        for parent in path.ancestors().skip(1) {
+            let directory = OpenOptions::new()
+                .read(true)
+                .access_mode(0x81)
+                .share_mode(3)
+                .custom_flags(0x0220_0000)
+                .open(parent)
+                .map_err(|error| format!("Cannot protect the download folder: {error}"))?;
+            let metadata = directory.metadata().map_err(|error| error.to_string())?;
+            if !metadata.is_dir() || is_redirect(&metadata) {
+                return Err("The download folder is redirected or is not a directory.".into());
+            }
+            guards.push(directory);
+        }
+    }
+    #[cfg(not(windows))]
+    let _ = path;
+    Ok(guards)
+}
+
+fn repair_file(path: &Path) -> crate::Result<File> {
+    validate_external_path(path).map_err(|error| error.to_string())?;
+    let mut options = OpenOptions::new();
+    options.read(true).write(true);
+    #[cfg(windows)]
+    {
+        use std::os::windows::fs::OpenOptionsExt as _;
+        // Retain read/write/delete authority and exclusive ownership from the
+        // final hash through handle-based publication, without reopening a name.
+        options
+            .access_mode(0xc001_0000)
+            .share_mode(0)
+            .custom_flags(0x0820_0000);
+    }
+    let file = options
+        .open(path)
+        .map_err(|error| format!("Cannot open the partial download for verification: {error}"))?;
+    let metadata = file.metadata().map_err(|error| error.to_string())?;
+    if !metadata.is_file() || is_redirect(&metadata) {
+        return Err("The partial download is not an ordinary file.".into());
+    }
+    Ok(file)
+}
+
+fn repair_partial_offset(path: &Path, bytes: u64) -> crate::Result<u64> {
+    crate::startup_cancel::checkpoint()?;
+    match fs::symlink_metadata(path) {
+        Ok(metadata) if metadata.is_file() && !is_redirect(&metadata) => {
+            let file = repair_file(path)?;
+            let length = file.metadata().map_err(|error| error.to_string())?.len();
+            if length > bytes {
+                // A larger file cannot match the selected pin. Restart this
+                // one owned partial instead of accumulating quarantine copies.
+                crate::startup_cancel::checkpoint()?;
+                file.set_len(0).map_err(|error| error.to_string())?;
+                Ok(0)
+            } else {
+                Ok(length)
+            }
+        }
+        Ok(_) => Err("The partial download is not an ordinary file.".into()),
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => Ok(0),
+        Err(error) => Err(error.to_string()),
+    }
+}
+
+fn repair_disk_required(bytes: u64, offset: u64) -> crate::Result<u64> {
+    bytes
+        .checked_sub(offset)
+        .and_then(|remaining| remaining.checked_add(16 * 1024 * 1024))
+        .ok_or_else(|| "Invalid partial download or disk-space requirement.".into())
+}
+
+fn require_repair_disk(partial: &Path, bytes: u64, offset: u64) -> crate::Result<()> {
+    let required = repair_disk_required(bytes, offset)?;
+    #[cfg(windows)]
+    {
+        let parent = partial
+            .parent()
+            .ok_or("Download has no parent directory.")?;
+        let available = bonsai_windows_process::available_disk_bytes(parent)
+            .map_err(|error| format!("Cannot check free space in the download folder: {error}"))?;
+        if available < required {
+            return Err(format!(
+                "Not enough free disk space to finish setup. Free at least {} more bytes on the drive containing {} and select Retry setup. Existing model and partial download bytes were kept.",
+                required - available,
+                parent.display()
+            ));
+        }
+    }
+    #[cfg(not(windows))]
+    let _ = (partial, required);
+    Ok(())
+}
+
+fn verified_repair_partial(
+    uri: &str,
+    partial: &Path,
+    bytes: u64,
+    sha256: &str,
+    working: &Path,
+    mut transfer: impl FnMut(&str, &Path, u64, u64, &Path) -> crate::Result<()>,
+) -> crate::Result<File> {
+    let mut offset = repair_partial_offset(partial, bytes)?;
+    let mut restart_resumed = offset > 0;
+    loop {
+        crate::startup_cancel::checkpoint()?;
+        if offset < bytes {
+            // Free space already excludes the old file and any resumed bytes.
+            // Publication renames this file, so no full-size copy is needed.
+            require_repair_disk(partial, bytes, offset)?;
+            transfer(uri, partial, offset, bytes, working).map_err(|error| {
+                format!(
+                    "Setup could not finish the download. Check the internet connection, free disk space and folder permissions, then select Retry setup. Partial downloads resume automatically. {error}"
+                )
+            })?;
+        }
+        let mut completed = repair_file(partial)?;
+        if completed
+            .metadata()
+            .map_err(|error| error.to_string())?
+            .len()
+            == bytes
+            && digest_matches(&mut completed, bytes, sha256)?
+        {
+            return Ok(completed);
+        }
+        if !restart_resumed {
+            return Err(format!(
+                "The downloaded file failed verification. Your existing file was kept. Check the connection and select Retry setup; downloaded bytes remain at {}.",
+                partial.display()
+            ));
+        }
+        // Resume can expose an old corrupt prefix. Permit one fresh transfer;
+        // a newly downloaded mismatch is never retried in an endless loop.
+        crate::startup_cancel::checkpoint()?;
+        completed.set_len(0).map_err(|error| error.to_string())?;
+        drop(completed);
+        offset = 0;
+        restart_resumed = false;
+    }
+}
+
+fn publish_repair(file: &File, partial: &Path, path: &Path) -> crate::Result<()> {
+    crate::startup_cancel::checkpoint()?;
+    validate_external_path(path).map_err(|error| error.to_string())?;
+    #[cfg(windows)]
+    let result = bonsai_windows_process::replace_open_file(file, path);
+    #[cfg(not(windows))]
+    let result = {
+        // Production setup is Windows-only; keep tiny offline fixtures usable
+        // on other hosts without adding an unsupported native launch path.
+        let _ = file;
+        fs::rename(partial, path)
+    };
+    #[cfg(windows)]
+    let _ = partial;
+    result.map_err(|error| {
+        format!(
+            "The replacement passed verification but could not be saved. Close other apps using the model, check free disk space and folder permissions, then select Retry setup. The existing file and completed download were kept: {error}"
+        )
+    })
+}
+
+fn receive_repair_with(
+    uri: &str,
+    path: &Path,
+    bytes: u64,
+    sha256: &str,
+    working: &Path,
+    transfer: impl FnMut(&str, &Path, u64, u64, &Path) -> crate::Result<()>,
+) -> crate::Result<()> {
+    crate::startup_cancel::checkpoint()?;
+    expected(bytes, sha256)?;
+    download_uri(uri)?;
+    validate_external_path(path).map_err(|error| error.to_string())?;
+    validate_external_path(working).map_err(|error| error.to_string())?;
+    fs::create_dir_all(path.parent().ok_or("Artifact has no parent directory.")?)
+        .map_err(|error| format!("Cannot create the model download folder: {error}"))?;
+    fs::create_dir_all(working).map_err(|error| error.to_string())?;
+    validate_external_path(path).map_err(|error| error.to_string())?;
+    let _parents = repair_parents(path)?;
+    let filename = path.file_name().ok_or("Artifact has no filename.")?;
+    let lock = path.with_file_name(format!("{}.download.lock", filename.to_string_lossy()));
+    let _guard = crate::startup_cache::lock_file(&lock)?;
+    let original = match cached_artifact(path, bytes, sha256)? {
+        CachedArtifact::Verified => return Ok(()),
+        CachedArtifact::Invalid(file) => Some(file),
+        CachedArtifact::Missing => None,
+    };
+    let partial = path.with_file_name(format!("{}.partial", filename.to_string_lossy()));
+    validate_external_path(&partial).map_err(|error| error.to_string())?;
+    let completed = verified_repair_partial(uri, &partial, bytes, sha256, working, transfer)?;
+    // Windows denies replacing an open read-locked original. The verified new
+    // handle and all destination ancestors remain owned during publication.
+    drop(original);
+    publish_repair(&completed, &partial, path)
+}
+
 /// Retains one aggregate transfer allowance across resume/restart attempts.
 pub(crate) fn receive_with_timeout(
     uri: &str,
@@ -431,6 +682,402 @@ mod tests {
                 Err(error) => Some(Err(error.to_string())),
             })
             .collect()
+    }
+
+    #[test]
+    fn setup_repair_reuses_verified_files_without_downloading() -> crate::Result<()> {
+        let (working, path, partial, hash) = recovery_fixture()?;
+        fs::write(&path, b"right").map_err(|error| error.to_string())?;
+        receive_repair_with(
+            "https://example.invalid/artifact",
+            &path,
+            5,
+            &hash,
+            &working,
+            |_, _, _, _, _| Err("Verified model must not trigger a download.".into()),
+        )?;
+        assert_eq!(
+            fs::read(&path).map_err(|error| error.to_string())?,
+            b"right"
+        );
+        assert_eq!(
+            fs::read(&partial).map_err(|error| error.to_string())?,
+            b"wrong"
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn setup_repair_keeps_invalid_original_until_verified_replacement() -> crate::Result<()> {
+        for previous in [b"bad".as_slice(), b"wrong"] {
+            let (working, path, partial, hash) = recovery_fixture()?;
+            fs::remove_file(&partial).map_err(|error| error.to_string())?;
+            fs::write(&path, previous).map_err(|error| error.to_string())?;
+            let mut transfers = 0;
+            receive_repair_with(
+                "https://example.invalid/artifact",
+                &path,
+                5,
+                &hash,
+                &working,
+                |_, destination, offset, bytes, _| {
+                    transfers += 1;
+                    assert_eq!((offset, bytes), (0, 5));
+                    assert_eq!(
+                        fs::read(&path).map_err(|error| error.to_string())?,
+                        previous
+                    );
+                    fs::write(destination, b"right").map_err(|error| error.to_string())
+                },
+            )?;
+            assert_eq!(transfers, 1);
+            verify(&path, 5, &hash)?;
+            assert!(!partial.exists());
+            assert!(quarantine_files(&working)?.is_empty());
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn setup_repair_retains_original_and_partial_on_transfer_or_identity_failure()
+    -> crate::Result<()> {
+        for fail_transfer in [true, false] {
+            let (working, path, partial, hash) = recovery_fixture()?;
+            fs::remove_file(&partial).map_err(|error| error.to_string())?;
+            fs::write(&path, b"old").map_err(|error| error.to_string())?;
+            let mut transfers = 0;
+            assert!(
+                receive_repair_with(
+                    "https://example.invalid/artifact",
+                    &path,
+                    5,
+                    &hash,
+                    &working,
+                    |_, destination, _, _, _| {
+                        transfers += 1;
+                        fs::write(destination, b"wrong").map_err(|error| error.to_string())?;
+                        if fail_transfer {
+                            Err("Synthetic interrupted connection.".into())
+                        } else {
+                            Ok(())
+                        }
+                    },
+                )
+                .is_err()
+            );
+            assert_eq!(transfers, 1);
+            assert_eq!(fs::read(&path).map_err(|error| error.to_string())?, b"old");
+            assert_eq!(
+                fs::read(&partial).map_err(|error| error.to_string())?,
+                b"wrong"
+            );
+            assert!(quarantine_files(&working)?.is_empty());
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn setup_repair_resumes_partial_then_restarts_corrupt_prefix_once() -> crate::Result<()> {
+        let (working, path, partial, hash) = recovery_fixture()?;
+        fs::write(&partial, b"wr").map_err(|error| error.to_string())?;
+        let mut offsets = Vec::new();
+        receive_repair_with(
+            "https://example.invalid/artifact",
+            &path,
+            5,
+            &hash,
+            &working,
+            |_, destination, offset, _, _| {
+                offsets.push(offset);
+                let content: &[u8] = if offset == 2 { b"wrong" } else { b"right" };
+                fs::write(destination, content).map_err(|error| error.to_string())
+            },
+        )?;
+        assert_eq!(offsets, [2, 0]);
+        verify(&path, 5, &hash)?;
+        assert!(!partial.exists());
+        assert!(quarantine_files(&working)?.is_empty());
+        Ok(())
+    }
+
+    #[test]
+    fn setup_repair_complete_corrupt_partial_retries_once_then_stops() -> crate::Result<()> {
+        let (working, path, partial, hash) = recovery_fixture()?;
+        fs::write(&path, b"old").map_err(|error| error.to_string())?;
+        let mut transfers = 0;
+        assert!(
+            receive_repair_with(
+                "https://example.invalid/artifact",
+                &path,
+                5,
+                &hash,
+                &working,
+                |_, destination, offset, _, _| {
+                    transfers += 1;
+                    assert_eq!(offset, 0);
+                    fs::write(destination, b"again").map_err(|error| error.to_string())
+                },
+            )
+            .is_err()
+        );
+        assert_eq!(transfers, 1);
+        assert_eq!(fs::read(&path).map_err(|error| error.to_string())?, b"old");
+        assert_eq!(
+            fs::read(&partial).map_err(|error| error.to_string())?,
+            b"again"
+        );
+        assert!(quarantine_files(&working)?.is_empty());
+        Ok(())
+    }
+
+    #[test]
+    fn setup_repair_handles_oversized_and_complete_partials_without_extra_copies()
+    -> crate::Result<()> {
+        for previous in [b"too long".as_slice(), b"right"] {
+            let (working, path, partial, hash) = recovery_fixture()?;
+            fs::write(&partial, previous).map_err(|error| error.to_string())?;
+            let mut transfers = 0;
+            receive_repair_with(
+                "https://example.invalid/artifact",
+                &path,
+                5,
+                &hash,
+                &working,
+                |_, destination, offset, _, _| {
+                    transfers += 1;
+                    assert_eq!(offset, 0);
+                    assert_eq!(
+                        fs::metadata(destination)
+                            .map_err(|error| error.to_string())?
+                            .len(),
+                        0
+                    );
+                    fs::write(destination, b"right").map_err(|error| error.to_string())
+                },
+            )?;
+            assert_eq!(transfers, usize::from(previous.len() > 5));
+            verify(&path, 5, &hash)?;
+            assert!(!partial.exists());
+            assert!(quarantine_files(&working)?.is_empty());
+        }
+        assert_eq!(repair_disk_required(11, 7)?, 16 * 1024 * 1024 + 4);
+        assert!(repair_disk_required(5, 6).is_err());
+        Ok(())
+    }
+
+    #[test]
+    fn setup_repair_rejects_nonfiles_and_download_lock_contention() -> crate::Result<()> {
+        let (working, path, _, hash) = recovery_fixture()?;
+        fs::create_dir(&path).map_err(|error| error.to_string())?;
+        let mut transfers = 0;
+        assert!(
+            receive_repair_with(
+                "https://example.invalid/artifact",
+                &path,
+                5,
+                &hash,
+                &working,
+                |_, _, _, _, _| {
+                    transfers += 1;
+                    Ok(())
+                },
+            )
+            .is_err()
+        );
+        assert!(path.is_dir());
+        fs::remove_dir(&path).map_err(|error| error.to_string())?;
+        let _guard = crate::startup_cache::lock_file(&working.join("artifact.bin.download.lock"))?;
+        assert!(
+            receive_repair_with(
+                "https://example.invalid/artifact",
+                &path,
+                5,
+                &hash,
+                &working,
+                |_, _, _, _, _| {
+                    transfers += 1;
+                    Ok(())
+                },
+            )
+            .is_err()
+        );
+        assert_eq!(transfers, 0);
+        assert!(!path.exists());
+        Ok(())
+    }
+
+    #[test]
+    fn setup_repair_rejects_unsafe_paths_and_cancellation_without_mutation() -> crate::Result<()> {
+        use std::sync::{
+            Arc,
+            atomic::{AtomicBool, Ordering},
+        };
+        let (working, path, partial, hash) = recovery_fixture()?;
+        fs::write(&path, b"old").map_err(|error| error.to_string())?;
+        let cancelled = Arc::new(AtomicBool::new(true));
+        let mut transfers = 0;
+        crate::startup_cancel::with_peer_cancellation(&cancelled, || {
+            assert!(
+                receive_repair_with(
+                    "https://example.invalid/artifact",
+                    &path,
+                    5,
+                    &hash,
+                    &working,
+                    |_, _, _, _, _| {
+                        transfers += 1;
+                        Ok(())
+                    },
+                )
+                .is_err()
+            );
+        });
+        cancelled.store(false, Ordering::Release);
+        fs::remove_file(&partial).map_err(|error| error.to_string())?;
+        crate::startup_cancel::with_peer_cancellation(&cancelled, || {
+            assert!(
+                receive_repair_with(
+                    "https://example.invalid/artifact",
+                    &path,
+                    5,
+                    &hash,
+                    &working,
+                    |_, destination, _, _, _| {
+                        transfers += 1;
+                        fs::write(destination, b"right").map_err(|error| error.to_string())?;
+                        cancelled.store(true, Ordering::Release);
+                        Ok(())
+                    },
+                )
+                .is_err()
+            );
+        });
+        assert_eq!(transfers, 1);
+        assert_eq!(fs::read(&path).map_err(|error| error.to_string())?, b"old");
+        assert_eq!(
+            fs::read(&partial).map_err(|error| error.to_string())?,
+            b"right"
+        );
+        assert!(
+            receive_repair_with(
+                "https://example.invalid/artifact",
+                Path::new("relative-model.bin"),
+                5,
+                &hash,
+                &working,
+                |_, _, _, _, _| Err("Unsafe paths must not download.".into()),
+            )
+            .is_err()
+        );
+        fs::create_dir(working.join(".git")).map_err(|error| error.to_string())?;
+        assert!(
+            receive_repair_with(
+                "https://example.invalid/artifact",
+                &path,
+                5,
+                &hash,
+                &working,
+                |_, _, _, _, _| Err("Git storage must not download.".into()),
+            )
+            .is_err()
+        );
+        assert_eq!(fs::read(&path).map_err(|error| error.to_string())?, b"old");
+        Ok(())
+    }
+
+    #[cfg(windows)]
+    #[test]
+    fn setup_repair_rejects_writer_owned_files_without_download() -> crate::Result<()> {
+        use std::os::windows::fs::OpenOptionsExt as _;
+        let (working, path, _, hash) = recovery_fixture()?;
+        fs::write(&path, b"old").map_err(|error| error.to_string())?;
+        let writer = OpenOptions::new()
+            .read(true)
+            .write(true)
+            .share_mode(0)
+            .open(&path)
+            .map_err(|error| error.to_string())?;
+        let mut transfers = 0;
+        assert!(
+            receive_repair_with(
+                "https://example.invalid/artifact",
+                &path,
+                5,
+                &hash,
+                &working,
+                |_, _, _, _, _| {
+                    transfers += 1;
+                    Ok(())
+                },
+            )
+            .is_err()
+        );
+        assert_eq!(transfers, 0);
+        drop(writer);
+        assert_eq!(fs::read(&path).map_err(|error| error.to_string())?, b"old");
+        Ok(())
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn setup_repair_rejects_redirected_files_and_ancestors() -> crate::Result<()> {
+        use std::os::unix::fs::symlink;
+        let (working, path, _, hash) = recovery_fixture()?;
+        let actual = working.join("actual.bin");
+        fs::write(&actual, b"old").map_err(|error| error.to_string())?;
+        symlink(&actual, &path).map_err(|error| error.to_string())?;
+        let alias = working.join("redirected-folder");
+        symlink(&working, &alias).map_err(|error| error.to_string())?;
+        for redirected in [path, alias.join("actual.bin")] {
+            assert!(
+                receive_repair_with(
+                    "https://example.invalid/artifact",
+                    &redirected,
+                    5,
+                    &hash,
+                    &working,
+                    |_, _, _, _, _| Err("Redirected paths must not download.".into()),
+                )
+                .is_err()
+            );
+        }
+        assert_eq!(fs::read(actual).map_err(|error| error.to_string())?, b"old");
+        Ok(())
+    }
+
+    #[cfg(windows)]
+    #[test]
+    fn setup_repair_keeps_completed_download_when_existing_reader_blocks_publication()
+    -> crate::Result<()> {
+        let (working, path, partial, hash) = recovery_fixture()?;
+        fs::write(&path, b"old").map_err(|error| error.to_string())?;
+        fs::write(&partial, b"right").map_err(|error| error.to_string())?;
+        let reader = open_read(&path)?;
+        assert!(
+            receive_repair_with(
+                "https://example.invalid/artifact",
+                &path,
+                5,
+                &hash,
+                &working,
+                |_, _, _, _, _| Err("Completed verified bytes must not download again.".into()),
+            )
+            .is_err()
+        );
+        assert_eq!(fs::read(&path).map_err(|error| error.to_string())?, b"old");
+        verify(&partial, 5, &hash)?;
+        drop(reader);
+        receive_repair_with(
+            "https://example.invalid/artifact",
+            &path,
+            5,
+            &hash,
+            &working,
+            |_, _, _, _, _| Err("Retry must reuse the completed verified download.".into()),
+        )?;
+        verify(&path, 5, &hash)?;
+        assert!(!partial.exists());
+        Ok(())
     }
 
     #[test]
