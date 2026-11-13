@@ -187,6 +187,18 @@ jobs:
           & tools/hexagon/verify_operation_traffic.ps1
           & tools/hexagon/verify_operation_budget.ps1
           & tools/hexagon/verify_resident_traffic.ps1
+      - uses: $/.github/actions/rust-toolchain
+        with:
+          toolchain: nightly-2026-11-12-aarch64-pc-windows-msvc
+      - name: Check bounded SDK archive decoding and metadata review without SDK execution
+        shell: pwsh
+        working-directory: ${{ runner.temp }}
+        run: |
+          Set-StrictMode -Version Latest
+          $ErrorActionPreference = 'Stop'
+          $PSNativeCommandUseErrorActionPreference = $true
+          cargo +nightly-2026-11-12-aarch64-pc-windows-msvc test --locked --release --manifest-path (Join-Path $env:GITHUB_WORKSPACE 'tools/hexagon/sdk-reader/Cargo.toml') --target-dir (Join-Path $env:RUNNER_TEMP 'Bonsai-Sdk-Reader-Checks')
+          & (Join-Path $env:GITHUB_WORKSPACE 'tools/hexagon/test_sdk_functional_review.ps1')
   ranking-controls:
     runs-on: windows-11-arm
     timeout-minutes: 10
