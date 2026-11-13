@@ -440,6 +440,12 @@ under [AGENTS.md](AGENTS.md).
   exhaustive-search record identity, rounded first-code ties, atomic rejection,
   native/portable and feature-disabled controls, complete-model state/adapters/
   cancellation and matched CPU-only complete-request benefit before repinning.
+- [ ] Publish and qualify [head-scoped GDN decode and packed value result checks](docs/cpu-kernels.md#head-scoped-gdn-decode-and-packed-value-result-checks):
+  compiled native/portable arithmetic and failure controls, feature-disabled
+  fallback, strict ARM64/x64 Release analysis/linking, codegen/resources,
+  complete-model parity and matched X2 CPU-only request benefit. Resolve the
+  supervised Cargo startup failure before claiming a local compiled-check pass;
+  retain the current released runtime as rollback.
 - [ ] Publish and qualify [provisional GDN and prepared current-token KV](docs/cpu-kernels.md#provisional-gdn-and-prepared-current-token-kv):
   native/portable exact arithmetic, late-failure rollback, stale-record rejection,
   selected-cache and FP16 state/adapter/cancellation parity, codegen/resources and

@@ -467,6 +467,39 @@ resources or matched CPU-only complete-request benefit. Publication requires
 a genuine source-bound runtime bundle and reviewed Runner locks under the
 [cross-generation promotion gates](#cross-generation-cpu-promotion).
 
+### Head-scoped GDN decode and packed value result checks
+
+Two further local Prism candidates remove repeated work from ordinary CPU decode:
+
+- Eligible pinned GDN decode admits a complete head before traversing its
+  eight-row groups. Geometry and baseline-NEON selection happen once per head;
+  the existing four-row arithmetic phases, immutable committed source and
+  defensive failure replay remain unchanged. At Swift's 128-row head geometry,
+  this replaces sixteen admissions/selections with one, omitting 34,560 repeated
+  selections across 48 recurrent layers and 48 value heads per token. Completed
+  groups alone publish their output into provisional scratch; the graph retains
+  its complete-state transaction. Unsupported shapes, arithmetic profiles and
+  feature-disabled builds retain their existing grouping.
+- Packed value accumulation checks finite results during its existing update
+  loop. Native execution combines exponent-bit predicates while the four results
+  remain in NEON registers; portable execution checks each updated scalar. This
+  omits the separate scan of 256 stored results for every accumulated value row.
+  Separate binary32 multiply/add rounding, codebook/record validation, poisoned
+  scan rejection and the public single-row helper's unchanged-output failure
+  contract remain intact. No cache payload or retained scratch is added.
+
+These are source work reductions, not measured X2 speedups. Focused controls
+cover scalar-bit agreement, complete-head geometry and fallback, late failure
+and recovery, each SIMD lane's overflow detection and public failure atomicity.
+Compiled controls, strict native/x64 Release analysis and linking, feature-disabled
+execution, ARM64 codegen/resources, full-model state/logit/adapter/cancellation
+parity and matched CPU-only complete-request benefit remain pending. Apply the
+[cross-generation promotion gates](#cross-generation-cpu-promotion); X1 deployment
+and performance claims retain their applicability and measurement boundaries.
+Publish the changed NEON helper before a dependent runtime release, then prepare
+a genuine source-bound bundle and reviewed Runner repin. Runner's active 0.1.27
+bundle does not consume these local candidates.
+
 ## Execution and dispatch
 
 The default `experimental-neon` feature uses [`fearless_simd` 1.1.0][fearless]'s safe core API under
