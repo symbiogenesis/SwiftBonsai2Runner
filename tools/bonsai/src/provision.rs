@@ -588,6 +588,55 @@ fn publish_repaired_runtime(
     Ok(Some(previous))
 }
 
+fn runtime_staging_required(expanded: u64) -> crate::Result<u64> {
+    expanded
+        .checked_add(16 * 1024 * 1024)
+        .ok_or_else(|| "Runtime staging disk-space requirement overflowed.".into())
+}
+
+fn require_runtime_staging_space(parent: &Path, expanded: u64) -> crate::Result<()> {
+    crate::startup_cancel::checkpoint()?;
+    let required = runtime_staging_required(expanded)?;
+    #[cfg(windows)]
+    {
+        let available = bonsai_windows_process::available_disk_bytes(parent).map_err(|error| {
+            format!(
+                "Cannot check storage for runtime setup in {}: {error}",
+                parent.display()
+            )
+        })?;
+        if available < required {
+            return Err(format!(
+                "Runtime setup needs at least {} MiB of free storage in {} to unpack its verified files; {} MiB is available. Free space and select Retry setup. Existing downloads and runtime files were kept.",
+                required.div_ceil(1024 * 1024),
+                parent.display(),
+                available / (1024 * 1024),
+            ));
+        }
+    }
+    #[cfg(not(windows))]
+    let _ = (parent, required);
+    Ok(())
+}
+
+#[cfg(windows)]
+fn runtime_archive_expanded_bytes(path: &Path) -> crate::Result<u64> {
+    let file = open_locked_file(path).map_err(|error| error.to_string())?;
+    let mut archive = ZipArchive::new(file).map_err(|error| error.to_string())?;
+    if archive.len() > 4096 {
+        return Err("Runtime archive inventory exceeds its staging bound.".into());
+    }
+    let mut expanded = 0_u64;
+    for index in 0..archive.len() {
+        crate::startup_cancel::checkpoint()?;
+        let entry = archive.by_index(index).map_err(|error| error.to_string())?;
+        expanded = expanded
+            .checked_add(entry.size())
+            .ok_or("Runtime archive expanded length overflowed.")?;
+    }
+    Ok(expanded)
+}
+
 fn repair_inference(request: &Request, working: &Path) -> crate::Result<Value> {
     let lock = read_lock(request.lock_path.as_deref(), INFERENCE)?;
     let files = inference_lock(&lock)?;
@@ -631,6 +680,9 @@ fn repair_inference(request: &Request, working: &Path) -> crate::Result<Value> {
         text(pin, "sha256")?,
         working,
     )?;
+    // Available space already excludes the retained invalid installation and
+    // the downloaded archive. Only the fresh expanded staging files are added.
+    require_runtime_staging_space(parent, files.iter().map(|file| file.bytes).sum())?;
     let staging = parent.join(format!(".staging-{}", crate::startup_process::unique()));
     extract_inference(&archive, pin, &files, &staging)?;
     verify_inference(&lock, &files, &staging)?;
@@ -656,6 +708,7 @@ fn stage_publisher_repair(spec: &bonsai_artifacts::RuntimeSpec) -> crate::Result
         ".chat-runtime-candidate-{}",
         crate::startup_process::unique()
     ));
+    require_runtime_staging_space(parent, runtime_archive_expanded_bytes(&spec.archive_path)?)?;
     let staged = crate::install::run(json!({"schemaVersion":1,"runtime":candidate}))?;
     let staging = Path::new(text(&staged, "StagingDirectory")?);
     let expected = staged["RuntimeFiles"]
@@ -1398,6 +1451,17 @@ mod tests {
             archive_bytes: u64::try_from(bytes.len()).map_err(|error| error.to_string())?,
             archive_sha256: crate::identity::hex(&Sha256::digest(&bytes)),
         };
+        let expanded = u64::try_from(image.len() + b"fixture license".len())
+            .map_err(|error| error.to_string())?;
+        assert_eq!(
+            runtime_archive_expanded_bytes(&spec.archive_path)?,
+            expanded
+        );
+        assert_eq!(
+            runtime_staging_required(expanded)?,
+            expanded + 16 * 1024 * 1024
+        );
+        assert!(runtime_staging_required(u64::MAX).is_err());
         // Exercise the shared installer's real absent-destination requirement,
         // so passing the existing final directory to staging regresses this test.
         assert!(crate::install::run(json!({"schemaVersion":1,"runtime":spec})).is_err());
