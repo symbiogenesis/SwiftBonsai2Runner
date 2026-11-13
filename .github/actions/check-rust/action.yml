@@ -10,6 +10,9 @@ inputs:
   affected:
     description: JSON array of affected packages selected by the planner.
     required: true
+  github-release:
+    description: Use GitHub's execution cap only in the hosted Windows Release workflow.
+    default: 'false'
 outputs:
   has-packages:
     description: Whether this lane selected packages.
@@ -90,6 +93,7 @@ runs:
     - name: Format, analyze, document, test and build the selected crates
       env:
         RUNNER_ENVIRONMENT: ${{ runner.environment }}
+        GITHUB_RELEASE_BUILD: ${{ inputs.github-release }}
       if: steps.packages.outputs.has-packages == 'true'
       shell: pwsh
       working-directory: ${{ runner.temp }}
@@ -99,7 +103,8 @@ runs:
         $PSNativeCommandUseErrorActionPreference = $true
         $evidence = Join-Path $env:RUNNER_TEMP ('SwiftBonsai-BrokerChecks-' + [guid]::NewGuid().ToString('N'))
         "BROKER_CHECK_EVIDENCE=$evidence" >> $env:GITHUB_ENV
-        & $env:BONSAI_CI_PATH rust-check --root $env:GITHUB_WORKSPACE --group Broker --packages-json $env:BROKER_PACKAGES --target $env:CARGO_TARGET_DIR --evidence $evidence --timeout-seconds 1800 --full-tests --build
+        $deadlineArguments = if ($env:GITHUB_RELEASE_BUILD -ceq 'true') { @('--github-release') } else { @('--timeout-seconds', '1800') }
+        & $env:BONSAI_CI_PATH rust-check --root $env:GITHUB_WORKSPACE --group Broker --packages-json $env:BROKER_PACKAGES --target $env:CARGO_TARGET_DIR --evidence $evidence @deadlineArguments --full-tests --build
     - name: Retain this lane's correctness and analyzer evidence
       if: always() && env.BROKER_CHECK_EVIDENCE != ''
       uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2

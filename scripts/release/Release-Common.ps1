@@ -109,8 +109,15 @@ function Invoke-ReleaseCommand {
         [Parameter(Mandatory)][string]$FilePath,
         [string[]]$ArgumentList = @(),
         [ValidateRange(1, 600)][int]$TimeoutSeconds = 180,
+        [switch]$BuildCommand,
         [hashtable]$Environment = @{}
     )
+    $githubBuild = $BuildCommand -and $env:BONSAI_RELEASE_BUILD -ceq 'true' -and
+        $env:GITHUB_ACTIONS -ceq 'true' -and $env:RUNNER_ENVIRONMENT -ceq 'github-hosted' -and
+        $env:RUNNER_OS -ceq 'Windows' -and $env:RUNNER_ARCH -ceq 'ARM64' -and
+        $env:GITHUB_REPOSITORY -ceq 'symbiogenesis/SwiftBonsai2Runner' -and
+        $env:GITHUB_REF -ceq 'refs/heads/main' -and
+        $env:GITHUB_WORKFLOW_REF -ceq 'symbiogenesis/SwiftBonsai2Runner/.github/workflows/release.yml@refs/heads/main'
     # ArgumentList preserves JSON, spaces and quotes on every supported PS 7
     # version; explicit exit checks do not depend on a preference added later.
     $executable = if ([IO.Path]::IsPathFullyQualified($FilePath)) {
@@ -139,7 +146,8 @@ function Invoke-ReleaseCommand {
         if (-not $process.Start()) { throw "Could not start release command: $FilePath" }
         $output = $process.StandardOutput.ReadToEndAsync()
         $errorOutput = $process.StandardError.ReadToEndAsync()
-        if (-not $process.WaitForExit($TimeoutSeconds * 1000)) {
+        if ($githubBuild) { $process.WaitForExit() }
+        elseif (-not $process.WaitForExit($TimeoutSeconds * 1000)) {
             $process.Kill($true)
             [void]$process.WaitForExit(5000)
             throw "Release command exceeded its deadline: $FilePath"

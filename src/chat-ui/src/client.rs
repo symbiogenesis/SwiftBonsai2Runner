@@ -1413,9 +1413,8 @@ mod tests {
         startup_failure, wait_for_retry,
     };
 
-    #[test]
-    fn kv_cache_and_runtime_choices_preserve_model_adapter_and_publisher_rollback() {
-        let mut config = Config {
+    fn publisher_runtime_config() -> Config {
+        Config {
             broker: "broker.exe".into(),
             data: "data".into(),
             evidence: "evidence".into(),
@@ -1430,7 +1429,12 @@ mod tests {
             placement: None,
             canary: None,
             qwen_tts: None,
-        };
+        }
+    }
+
+    #[test]
+    fn kv_cache_and_runtime_choices_preserve_model_adapter_and_publisher_rollback() {
+        let mut config = publisher_runtime_config();
         assert_eq!(
             runtime_arguments(&config),
             [

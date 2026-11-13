@@ -11,6 +11,8 @@ runs:
       if: inputs.lane == 'asr'
       shell: pwsh
       working-directory: ${{ runner.temp }}
+      env:
+        RUNNER_ENVIRONMENT: ${{ runner.environment }}
       run: |
         Set-StrictMode -Version Latest
         $ErrorActionPreference = 'Stop'

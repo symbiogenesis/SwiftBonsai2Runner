@@ -1687,10 +1687,7 @@ mod tests {
         assert_eq!(LaunchConfig::parse(selected)?.placement, Placement::Auto);
         selected = native.clone();
         selected.extend(["--placement", "cpu"].map(OsString::from));
-        assert_eq!(
-            LaunchConfig::parse(selected).err(),
-            Some(LaunchError::NativeRuntime)
-        );
+        assert_eq!(LaunchConfig::parse(selected)?.placement, Placement::Cpu);
         for suffix in [
             vec!["--placement"],
             vec!["--placement", "CPU"],
@@ -1728,7 +1725,7 @@ mod tests {
         .map_err(|_| LaunchError::Policy)?;
         let admitted = config.swift_context_plan(20 * 1024 * 1024 * 1024)?;
         for placement in [Placement::Auto, Placement::Cpu] {
-            // Model-free routing control; the immutable published pin remains gated.
+            // Model-free routing control for the exact reviewed source-bound release.
             config.placement = placement;
             let child = config.native_arguments(&plan, &key);
             assert_eq!(
@@ -1753,16 +1750,16 @@ mod tests {
         let mut args = arguments();
         args.extend(["--profile", "swift-pq2-assessment"].map(OsString::from));
         let mut config = LaunchConfig::parse(args.clone())?;
-        // The current immutable release has neither the paired launch flags nor
-        // this accounting contract. Implementing a planner cannot enlarge it.
-        assert!(!config.memory_context_supported()?);
+        // The exact reviewed release implements paired launch flags and the
+        // selected-cache accounting contract. Other identities remain rejected.
+        assert!(config.memory_context_supported()?);
         let available = 20 * 1024 * 1024 * 1024;
         let packed = config.swift_context_plan(available)?;
         assert_eq!(packed.context_tokens, 149_760);
         config.kv_cache = Some(KvCache::Rsq4K3v);
         let capacity = config.swift_context_plan(available)?;
         assert_eq!(capacity.context_tokens, 170_240);
-        assert!(!config.memory_context_supported()?);
+        assert!(config.memory_context_supported()?);
         config.kv_cache = Some(KvCache::F16);
         let f16 = config.swift_context_plan(available)?;
         assert!(f16.context_tokens < packed.context_tokens);

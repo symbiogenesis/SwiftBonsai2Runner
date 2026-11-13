@@ -256,22 +256,27 @@ fn pinned_native_row4_captures_separated_token_timings() {
     assert!(revision.bytes().all(|byte| byte.is_ascii_hexdigit()));
     let runtime_lock: Value =
         serde_json::from_str(include_str!("../../../../config/prism-inference.lock.json")).unwrap();
-    assert!(matches!(
-        (
+    assert!(
+        reviewed_memory_context_release(
             runtime_lock["version"].as_str(),
-            runtime_lock["commit"].as_str()
-        ),
-        (
-            Some("0.1.22"),
-            Some("6b4f4520b465e5feb665a71af64e7b0e21eb750a")
-        ) | (
-            Some("0.1.23"),
-            Some("055c7430cb4771dfddb24ddaa30494af6ad182da")
-        ) | (
-            Some("0.1.25"),
-            Some("99bab71270b1e6a6fb6d47eec2e34b8097cdcd4c")
+            runtime_lock["commit"].as_str(),
+        ) || matches!(
+            (
+                runtime_lock["version"].as_str(),
+                runtime_lock["commit"].as_str()
+            ),
+            (
+                Some("0.1.22"),
+                Some("6b4f4520b465e5feb665a71af64e7b0e21eb750a")
+            ) | (
+                Some("0.1.23"),
+                Some("055c7430cb4771dfddb24ddaa30494af6ad182da")
+            ) | (
+                Some("0.1.25"),
+                Some("99bab71270b1e6a6fb6d47eec2e34b8097cdcd4c")
+            )
         )
-    ));
+    );
     let budget = case_budget();
     let data = env::var_os("BONSAI_NATIVE_DATA").unwrap();
     let evidence = env::var_os("BONSAI_NATIVE_EVIDENCE").unwrap();

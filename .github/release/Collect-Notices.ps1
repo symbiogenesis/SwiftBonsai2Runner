@@ -16,7 +16,7 @@ $OutputPath = Resolve-ReleasePath $OutputPath -Kind File -AllowMissing
 # Read exact resolved package sources, including build dependencies. Retaining
 # extra source notices is intentional; an SPDX name alone is not a license text.
 $metadata = Invoke-ReleaseCommand 'cargo' @('+nightly-2026-11-12-aarch64-pc-windows-msvc', 'metadata', '--locked', '--format-version', '1',
-    '--filter-platform', 'aarch64-pc-windows-msvc', '--manifest-path', (Join-Path $RepositoryRoot 'Cargo.toml')) | ConvertFrom-Json
+    '--filter-platform', 'aarch64-pc-windows-msvc', '--manifest-path', (Join-Path $RepositoryRoot 'Cargo.toml')) -BuildCommand | ConvertFrom-Json
 $resolved = [Collections.Generic.HashSet[string]]::new([StringComparer]::Ordinal)
 foreach ($node in $metadata.resolve.nodes) { [void]$resolved.Add($node.id) }
 $text = [Text.StringBuilder]::new()

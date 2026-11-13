@@ -52,7 +52,8 @@ impl Placement {
 // CPU placement must skip accelerator initialization and report both its
 // requested placement and effective CPU backend in a genuine reviewed release.
 // Source omission alone does not justify a smaller fixed memory allowance.
-const CPU_PLACEMENT_RELEASE: Option<(&str, &str)> = None;
+const CPU_PLACEMENT_RELEASE: Option<(&str, &str)> =
+    Some(("0.1.26", "ac941f2668ae93dba9824002b4597081457aa09f"));
 
 fn select_placement(release: &ReleasePin, requested: Placement) -> Result<Placement, LaunchError> {
     if requested == Placement::Auto || reviewed_release_matches(release, CPU_PLACEMENT_RELEASE) {
@@ -289,7 +290,8 @@ fn row_workers_supported(
 // not activate smaller process allowances. A version number alone attests neither.
 // This combined review also retains four row workers, K4/V4 and latest reuse;
 // a later repin cannot silently lose those existing serving capabilities.
-const MEMORY_CONTEXT_RELEASE: Option<(&str, &str)> = None;
+const MEMORY_CONTEXT_RELEASE: Option<(&str, &str)> =
+    Some(("0.1.26", "ac941f2668ae93dba9824002b4597081457aa09f"));
 
 // K4/V3 changes precision and needs its own reviewed capacity/quality release.
 // Both gates must identify the same genuine released source before this profile
@@ -375,6 +377,7 @@ mod tests {
     #[test]
     fn cpu_placement_waits_for_an_exact_reviewed_release() -> Result<(), LaunchError> {
         let mut pin = release(LOCK)?;
+        assert_eq!(select_placement(&pin, Placement::Cpu)?, Placement::Cpu);
         for (version, commit) in [
             ("0.1.25", TURBOQUANT_REVISION),
             ("0.1.26", TURBOQUANT_REVISION),
@@ -403,8 +406,12 @@ mod tests {
     fn kv_cache_default_and_recovery_require_the_exact_reviewed_source() -> Result<(), LaunchError>
     {
         let mut pin = release(LOCK)?;
-        assert_eq!(pin.version, "0.1.25");
-        assert_eq!(pin.commit, TURBOQUANT_REVISION);
+        assert_eq!(
+            MEMORY_CONTEXT_RELEASE,
+            Some((pin.version.as_str(), pin.commit.as_str()))
+        );
+        assert!(memory_context_supported()?);
+        assert!(row_workers_supported(&pin, 4, MEMORY_CONTEXT_RELEASE).is_ok());
         assert_eq!(select_kv_cache(&pin, None)?, Some(KvCache::Rsq4));
         assert_eq!(
             select_kv_cache(&pin, Some(KvCache::F16))?,
@@ -441,6 +448,11 @@ mod tests {
     fn k4v3_capacity_selection_waits_for_a_separately_reviewed_memory_release()
     -> Result<(), LaunchError> {
         let mut pin = release(LOCK)?;
+        assert!(!k4v3_context_supported(&pin));
+        assert_eq!(
+            select_kv_cache(&pin, Some(KvCache::Rsq4K3v)),
+            Err(LaunchError::NativeRuntime)
+        );
         assert_eq!(
             KvCache::parse(Some(std::ffi::OsStr::new("rsq4k3v")))?,
             KvCache::Rsq4K3v
@@ -596,6 +608,9 @@ mod tests {
                 );
             }
         }
+        pin.version = "0.1.26".into();
+        assert!(row_workers_supported(&pin, 4, MEMORY_CONTEXT_RELEASE).is_ok());
+        pin.commit = "0".repeat(40);
         for version in [
             "0.1.8",
             "0.1.26",

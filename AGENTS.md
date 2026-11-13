@@ -86,21 +86,21 @@ before integrating into local Prism `main` and leave them local.
 # CI ownership and completion
 
 The owner handles Host CI and Guest CI, including dispatch, monitoring and verdicts,
-except for the bounded Foundation release-bundle operation below. Other CI needs
+except for the Foundation release-bundle operation below. Other CI needs
 the owner's explicit direction. Fan-out scripts complete locally without pushing,
 dispatching, querying, polling or waiting for CI. Record local checks and pending
 CI acceptance accurately; pending CI does not block local completion.
 
 Agents may dispatch, monitor, download and verify artifacts from, and cancel a
-Foundation run needed to produce a release bundle. Predeclare one fixed operation
-with a maximum of five minutes aggregate wall time, including setup, queue time,
-dispatch, monitoring, artifact verification, cancellation and evidence retention.
-Prefer a dedicated bundle-only lane; its result does not qualify the complete
-Foundation suite. Reserve time to cancel the run before the aggregate deadline if
-it fails or cannot finish. Stop early when done or infeasible. Do not restart the
-clock, retry a failed operation or split a longer run into repeated allowances.
-Existing owner-device power and execution-budget rules still apply. This exception
-does not authorize Git pushes or other CI workflows.
+Foundation run needed to produce a release bundle. Hosted release builds use only
+GitHub's own execution cap: do not impose job, compiler, build-command or aggregate
+operator timeouts, or cancel a valid build because a local wall-clock deadline
+elapsed. Prefer a dedicated bundle-only lane; its result does not qualify the
+complete Foundation suite. Bind each operation to reviewed source, retain failed
+and cancelled outcomes, and verify the resulting artifacts before publication.
+Owner-device diagnostics, model trials and benchmarks retain their separate
+power and execution-budget rules. This exception does not authorize Git pushes
+or other CI workflows.
 
 # UI architecture
 

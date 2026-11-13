@@ -70,7 +70,7 @@ through deferred setup and Retry. The current pin rejects it before model launch
 activation requires a separate exact-source release review of K4/V3 and the paired
 context/memory accounting. Request bodies cannot select this profile.
 
-Native Prism 0.1.26, source `3d735627df43056d3bf569002af2c23af30a3e6a`, activates
+Native Prism 0.1.26, source `ac941f2668ae93dba9824002b4597081457aa09f`, activates
 reviewed memory-selected context through paired context/memory child arguments.
 The broker selects context and Job/admission budgets once from available RAM,
 charges the immutable selected cache and sequential scratch, and retains the

@@ -1,5 +1,9 @@
 name: Reuse packaged Bonsai tools
 description: Reuse an exact native Windows ARM64 CLI; build it only when its inputs change.
+inputs:
+  github-release:
+    description: Use GitHub's execution cap only in the hosted Windows Release workflow.
+    default: 'false'
 runs:
   using: composite
   steps:
@@ -58,11 +62,13 @@ runs:
         CARGO_UNSTABLE_CHECKSUM_FRESHNESS: 'true'
         CARGO_BUILD_FINGERPRINT: content
         RUNNER_ENVIRONMENT: ${{ runner.environment }}
+        GITHUB_RELEASE_BUILD: ${{ inputs.github-release }}
       run: |
         Set-StrictMode -Version Latest
         $ErrorActionPreference = 'Stop'
         $PSNativeCommandUseErrorActionPreference = $true
-        & $env:BONSAI_CI_PATH rust-check --root $env:GITHUB_WORKSPACE --package bonsai-tools --phase build --target $env:BONSAI_TOOLS_TARGET --evidence $env:BONSAI_TOOLS_BUILD_EVIDENCE
+        $deadlineArguments = if ($env:GITHUB_RELEASE_BUILD -ceq 'true') { @('--github-release') } else { @() }
+        & $env:BONSAI_CI_PATH rust-check --root $env:GITHUB_WORKSPACE --package bonsai-tools --phase build --target $env:BONSAI_TOOLS_TARGET --evidence $env:BONSAI_TOOLS_BUILD_EVIDENCE @deadlineArguments
         $builtTool = Join-Path $env:BONSAI_TOOLS_TARGET 'release/bonsai-tools.exe'
         if (-not [IO.File]::Exists($builtTool)) { throw 'Packaged maintenance CLI build output is missing.' }
         [void][IO.Directory]::CreateDirectory($env:BONSAI_TOOLS_PACKAGE)

@@ -577,7 +577,13 @@ fn pinned_native_ptq1_service_and_original_pq2_rollback_row4() {
     report["runtimeLock"] =
         serde_json::from_str::<Value>(include_str!("../../../../config/prism-inference.lock.json"))
             .unwrap();
-    assert_eq!(report["runtimeLock"]["version"], "0.1.25");
+    assert!(
+        reviewed_memory_context_release(
+            report["runtimeLock"]["version"].as_str(),
+            report["runtimeLock"]["commit"].as_str(),
+        ) || (report["runtimeLock"]["version"] == "0.1.25"
+            && report["runtimeLock"]["commit"] == "99bab71270b1e6a6fb6d47eec2e34b8097cdcd4c")
+    );
     report["adapterLock"] =
         serde_json::from_str::<Value>(include_str!("../../../../config/swift-lora.lock.json"))
             .unwrap();

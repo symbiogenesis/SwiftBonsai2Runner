@@ -170,8 +170,13 @@ Job; stdout and stderr each have a 16 MiB bound. Nonzero checks are retained
 while later planned checks continue. Process/timeout errors stop the plan.
 
 Complete suites require `GITHUB_ACTIONS=true` and `GITHUB_REF=refs/heads/main`
-before creating outputs. Hosted checks retain per-command timeouts (1-3600
-seconds). Other executions share a 290-second maximum, reserving time within
+before creating outputs. Ordinary hosted checks retain per-command timeouts
+(1-3600 seconds). Windows Release explicitly selects `--github-release` for its
+Cargo checks/builds and preparation: these inherit GitHub's execution cap without
+a project deadline. That flag requires this repository's exact main release
+workflow on hosted Windows ARM64 and its explicit build marker; other contexts
+are rejected. Network, model, output-size and owned-cleanup safeguards retain
+their bounds. Other executions share a 290-second maximum, reserving time within
 the owner's five-minute aggregate allowance for teardown; setup before this
 command still consumes that allowance. The caller must select a feasible
 smaller workload and timeout. This command never runs benchmarks.

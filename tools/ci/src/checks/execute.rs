@@ -72,8 +72,12 @@ fn read_log(path: &Path) -> Result<Vec<u8>> {
     Ok(bytes)
 }
 
-fn command(spec: &ToolProcessSpec, allowance: Duration, log: &Path) -> Result<(u32, String)> {
-    if allowance.is_zero() {
+fn command(
+    spec: &ToolProcessSpec,
+    allowance: Option<Duration>,
+    log: &Path,
+) -> Result<(u32, String)> {
+    if allowance.is_some_and(|duration| duration.is_zero()) {
         return Err("Rust check aggregate deadline expired.".into());
     }
     let child = OwnedProcess::start_tool(spec).map_err(|error| error.to_string())?;
@@ -82,7 +86,7 @@ fn command(spec: &ToolProcessSpec, allowance: Duration, log: &Path) -> Result<(u
         if let Some(code) = child.try_wait().map_err(|error| error.to_string())? {
             break code;
         }
-        if started.elapsed() >= allowance
+        if allowance.is_some_and(|duration| started.elapsed() >= duration)
             || [&spec.stdout, &spec.stderr].into_iter().any(|path| {
                 !fs::metadata(path).is_ok_and(|metadata| metadata.len() <= MAX_LOG_BYTES)
             })
@@ -129,13 +133,16 @@ struct Execution<'a> {
 }
 
 impl Execution<'_> {
-    fn allowance(&self, seconds: u64) -> Duration {
+    fn allowance(&self, seconds: u64) -> Option<Duration> {
+        if self.options.github_release {
+            return None;
+        }
         let per_command = Duration::from_secs(seconds);
-        if self.owner {
+        Some(if self.owner {
             per_command.min(Duration::from_secs(290).saturating_sub(self.started.elapsed()))
         } else {
             per_command
-        }
+        })
     }
 
     fn spec(
@@ -263,6 +270,7 @@ pub(super) fn run(
         "Packages": packages.iter().map(|package| &package.name).collect::<Vec<_>>(), "TargetDirectory": target,
         "WorkingDirectory": work, "CompilerIdentity": null, "Checks": [], "Success": false, "Error": null,
         "PerformanceMeasured": false, "PlannedCargoInvocations": plan.len(), "UnbatchedCargoInvocations": packages.len() * options.phases.len(),
+        "GitHubReleaseDeadline": options.github_release,
         "WorkspaceSha256": workspace_hash, "LockSha256": lock_hash, "RegistrySha256": registry_hash
     });
     let path = evidence.join("rust-checks.json");

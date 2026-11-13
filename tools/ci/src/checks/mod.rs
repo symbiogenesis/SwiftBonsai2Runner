@@ -14,7 +14,7 @@ mod execute;
 #[cfg(test)]
 mod tests;
 
-const USAGE: &str = "bonsai-ci rust-select [--root PATH]\n       bonsai-ci rust-plan|rust-check [--root PATH] [--package NAME] [--packages-json JSON] [--group All|Broker] [--profile Foundation|Compatibility|Native] [--phase fmt|clippy|doc|test|build] [--toolchain NAME] [--offline] [--full-tests] [--build] [--target PATH --evidence PATH --timeout-seconds N]";
+const USAGE: &str = "bonsai-ci rust-select [--root PATH]\n       bonsai-ci rust-plan|rust-check [--root PATH] [--package NAME] [--packages-json JSON] [--group All|Broker] [--profile Foundation|Compatibility|Native] [--phase fmt|clippy|doc|test|build] [--toolchain NAME] [--offline] [--full-tests] [--build] [--target PATH --evidence PATH --timeout-seconds N] [--github-release]";
 const PHASES: &[&str] = &["fmt", "clippy", "doc", "test", "build"];
 
 #[derive(Clone, Deserialize)]
@@ -46,6 +46,7 @@ struct Options {
     target: Option<PathBuf>,
     evidence: Option<PathBuf>,
     timeout_seconds: u64,
+    github_release: bool,
 }
 
 #[derive(Serialize)]
@@ -77,6 +78,7 @@ fn parse(arguments: &[OsString]) -> Result<Options> {
         target: None,
         evidence: None,
         timeout_seconds: 900,
+        github_release: false,
     };
     let mut extra_phases = Vec::new();
     while let Some(option) = values.next() {
@@ -88,6 +90,7 @@ fn parse(arguments: &[OsString]) -> Result<Options> {
             "--offline" => options.offline = true,
             "--full-tests" => extra_phases.push("test".into()),
             "--build" => extra_phases.push("build".into()),
+            "--github-release" => options.github_release = true,
             _ => {
                 let value = values.next().ok_or(USAGE)?;
                 match option {
@@ -385,6 +388,18 @@ fn suite_allowed(phases: &[String], actions: &str, reference: &str) -> Result<()
     Ok(())
 }
 
+fn github_release_context(value: impl Fn(&str) -> String) -> bool {
+    value("BONSAI_RELEASE_BUILD") == "true"
+        && value("GITHUB_ACTIONS") == "true"
+        && value("RUNNER_ENVIRONMENT") == "github-hosted"
+        && value("RUNNER_OS") == "Windows"
+        && value("RUNNER_ARCH") == "ARM64"
+        && value("GITHUB_REPOSITORY") == "symbiogenesis/SwiftBonsai2Runner"
+        && value("GITHUB_REF") == "refs/heads/main"
+        && value("GITHUB_WORKFLOW_REF")
+            == "symbiogenesis/SwiftBonsai2Runner/.github/workflows/release.yml@refs/heads/main"
+}
+
 fn select_lane(
     packages: &[Package],
     affected: &[String],
@@ -410,6 +425,14 @@ fn select_lane(
 
 pub(super) fn run(arguments: &[OsString]) -> Result<String> {
     let options = parse(arguments)?;
+    if options.github_release
+        && (options.command != "rust-check"
+            || !github_release_context(|name| std::env::var(name).unwrap_or_default()))
+    {
+        return Err(
+            "GitHub-only build deadlines require the hosted Windows Release workflow.".into(),
+        );
+    }
     if options.command == "rust-check" {
         suite_allowed(
             &options.phases,

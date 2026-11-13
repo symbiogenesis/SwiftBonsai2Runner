@@ -127,12 +127,17 @@ fn sample_pending_reason(sample: &Value, repacked: bool, row_workers: u8) -> Opt
     }
     let runtime_lock: Value =
         serde_json::from_str(include_str!("../../../../config/prism-inference.lock.json")).unwrap();
-    let worker_identity =
-        worker_readiness_receipt(runtime_lock["version"].as_str(), row_workers, true);
+    let worker_identity = worker_readiness_receipt(
+        runtime_lock["version"].as_str(),
+        runtime_lock["commit"].as_str(),
+        row_workers,
+        true,
+    );
     let stream = &sample["stream"];
     let content = stream["visibleContent"].as_str().unwrap_or("");
     if [
         "rowWorkerReadinessVersion",
+        "rowWorkerReadinessRevision",
         "rowWorkerCountIndependentlyObserved",
         "observedNativeRowWorkers",
     ]
@@ -641,6 +646,7 @@ fn native_representation_comparison_requires_released_worker_observation() {
         ];
         for (field, mismatched) in [
             ("rowWorkerReadinessVersion", json!("unreviewed-release")),
+            ("rowWorkerReadinessRevision", json!("0".repeat(40))),
             (
                 "rowWorkerCountIndependentlyObserved",
                 json!(

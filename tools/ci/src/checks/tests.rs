@@ -229,3 +229,33 @@ fn invalid_phases_profiles_and_execution_flags_are_rejected() {
         assert!(parse(&values.into_iter().map(Into::into).collect::<Vec<_>>()).is_err());
     }
 }
+
+#[test]
+fn release_deadlines_require_the_explicit_exact_hosted_workflow() {
+    let environment = std::collections::BTreeMap::from([
+        ("BONSAI_RELEASE_BUILD", "true"),
+        ("GITHUB_ACTIONS", "true"),
+        ("RUNNER_ENVIRONMENT", "github-hosted"),
+        ("RUNNER_OS", "Windows"),
+        ("RUNNER_ARCH", "ARM64"),
+        ("GITHUB_REPOSITORY", "symbiogenesis/SwiftBonsai2Runner"),
+        ("GITHUB_REF", "refs/heads/main"),
+        (
+            "GITHUB_WORKFLOW_REF",
+            "symbiogenesis/SwiftBonsai2Runner/.github/workflows/release.yml@refs/heads/main",
+        ),
+    ]);
+    assert!(github_release_context(|name| environment[name].into()));
+    for key in environment.keys() {
+        for replacement in ["", "false", "self-hosted", "refs/heads/release"] {
+            assert!(!github_release_context(|name| {
+                if name == *key {
+                    replacement.into()
+                } else {
+                    environment[name].into()
+                }
+            }));
+        }
+    }
+    assert!(!github_release_context(|_| String::new()));
+}
