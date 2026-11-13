@@ -2585,6 +2585,16 @@ fn prepare_startup_directory(data: &std::path::Path) -> io::Result<()> {
     bonsai_windows_credentials::validate_external_path(data)
 }
 
+fn startup_exit_result(update_approved: bool, failure: Option<String>) -> io::Result<bool> {
+    // Approval is published only after a verified queue and acknowledged owned
+    // teardown. A historical, safely stopped setup failure cannot suppress that
+    // dedicated exit, while ordinary shutdown must still report the failure.
+    if update_approved {
+        return Ok(true);
+    }
+    failure.map_or_else(|| Ok(false), |error| Err(io::Error::other(error)))
+}
+
 pub(super) fn run_startup(request: crate::startup::Request) -> io::Result<bool> {
     prepare_startup_directory(&request.data)?;
     // Retain the established recovery ordering: restore before accepting a draft.
@@ -2619,9 +2629,9 @@ pub(super) fn run_startup(request: crate::startup::Request) -> io::Result<bool> 
         .lock()
         .map_err(|_| io::Error::other("Cannot read native preparation result."))?
         .take();
-    error.map_or_else(
-        || Ok(update_exit.load(std::sync::atomic::Ordering::Acquire)),
-        |error| Err(io::Error::other(error)),
+    startup_exit_result(
+        update_exit.load(std::sync::atomic::Ordering::Acquire),
+        error,
     )
 }
 /// Opens only a seeded interface; no backend, credential or audio operation runs.
@@ -2650,6 +2660,21 @@ pub(super) fn show_error(message: &str) {
 mod startup_tests {
     use super::*;
     use std::{ffi::OsString, fs, path::PathBuf};
+
+    #[test]
+    fn approved_update_exit_takes_precedence_over_historical_setup_failure() -> io::Result<()> {
+        assert!(startup_exit_result(
+            true,
+            Some("Safely stopped setup failure".into())
+        )?);
+        assert!(startup_exit_result(true, None)?);
+        assert!(!startup_exit_result(false, None)?);
+        let failure = startup_exit_result(false, Some("Setup download failed".into()))
+            .err()
+            .ok_or_else(|| io::Error::other("Ordinary close lost the setup failure"))?;
+        assert_eq!(failure.to_string(), "Setup download failed");
+        Ok(())
+    }
 
     #[test]
     fn first_launch_custom_data_directory_opens_persistence_before_setup() -> io::Result<()> {
