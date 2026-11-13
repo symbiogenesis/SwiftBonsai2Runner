@@ -630,8 +630,14 @@ closing also cancel it and discard late results. Unsupported, empty or failed au
 leaves the existing draft intact.
 
 Each completed response's lower-right **speaker button** reads it independently,
-including while a newer response generates. The active button becomes **Stop**;
-selecting another response switches playback. Empty/streaming responses cannot
+including while a newer response generates. While speech loads or waits for audio,
+the active button shows a spinner and remains available to cancel. Once audio
+plays, it becomes **Stop**. Normal preparation, playback and explicit cancellation
+do not open the error panel; only an observed failure does. After a failure,
+**Settings > Voice** offers in-app speech setup repair. The app retains service
+paths and failure categories in **Settings > Application > Diagnostics**;
+request text, voice descriptions and server error bodies are excluded.
+Selecting another response switches playback. Empty/streaming responses cannot
 start manual playback. Only visible answer text is spoken, excluding reasoning.
 Describe the **Voice profile** in **Settings > Voice**, for example "A warm,
 low-pitched narrator with a calm pace and clear consonants." No preset or
