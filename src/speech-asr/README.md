@@ -24,6 +24,12 @@ owns that explicit child environment. Upstream build scripts were reviewed:
 they compile/install vendored C++ sources and create a verified short build
 junction outside Git, without downloading or executing speech models.
 
+Host-bound source builds explicitly enable DOTPROD and I8MM independently when
+Windows reports support, retaining ARMv8-A for unavailable observations. The
+selected architecture partitions the native build cache. Portable ASR candidates
+keep ARMv8-A regardless of their build host. This selects existing quantized CPU
+kernels; actual-model transcript parity and latency still require qualification.
+
 The original Qwen model and converted GGUF are **Apache-2.0** licensed; their
 immutable source and conversion revisions are recorded in the lock.
 The selected Q8_0 file is 2,185,030,624 bytes. Its revision, size and SHA-256

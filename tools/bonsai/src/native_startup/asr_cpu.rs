@@ -22,7 +22,7 @@ impl AsrBuildTarget {
     }
 }
 
-/// ASR-only CMake options; clang-cl receives its ISA through the explicit escape.
+/// ASR-only `CMake` options; clang-cl receives its ISA through the explicit escape.
 pub(crate) fn cmake_args(architecture: &str) -> String {
     format!(
         "-DGGML_NATIVE=OFF -DCMAKE_C_FLAGS=/clang:-march={architecture} -DCMAKE_CXX_FLAGS=/clang:-march={architecture} -DGGML_OPENMP=OFF -DTRANSCRIBE_USE_OPENMP=OFF -DTRANSCRIBE_USE_SYSTEM_BLAS=OFF -DCMAKE_C_COMPILER_TARGET=aarch64-pc-windows-msvc -DCMAKE_CXX_COMPILER_TARGET=aarch64-pc-windows-msvc"
