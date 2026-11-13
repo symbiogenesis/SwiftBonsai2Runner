@@ -129,11 +129,7 @@ fn preparation(request: &Request, now_tick: u64, frequency: u64) -> crate::Resul
 fn calculate(request: &Request) -> crate::Result<Budget> {
     let (maximum_work, maximum_case) = declared_limits(request.whole_job_maximum_seconds)?;
     if !canonical_decimal(&request.run_id, 20)
-        || request.revision.len() != 40
-        || !request
-            .revision
-            .bytes()
-            .all(|byte| byte.is_ascii_digit() || (b'a'..=b'f').contains(&byte))
+        || !crate::identity::is_lower_hex(&request.revision, 40)
     {
         return Err("Acceptance requires a canonical run ID and source revision.".into());
     }

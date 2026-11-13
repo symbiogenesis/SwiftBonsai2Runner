@@ -4,6 +4,7 @@ use serde::Deserialize;
 use serde_json::{Value, json};
 
 use crate::Result;
+use crate::identity::is_lower_hex;
 
 mod dispatch;
 mod json;
@@ -167,7 +168,7 @@ impl<'a> Record<'a> {
     }
     fn digest(&self, name: &str) -> Result<()> {
         require(
-            hex(self.string(name)?, 64),
+            is_lower_hex(self.string(name)?, 64),
             "Invalid Hexagon source digest.",
         )
     }
@@ -192,12 +193,6 @@ fn require(condition: bool, message: &str) -> Result<()> {
     } else {
         Err(message.into())
     }
-}
-fn hex(value: &str, length: usize) -> bool {
-    value.len() == length
-        && value
-            .bytes()
-            .all(|byte| byte.is_ascii_digit() || (b'a'..=b'f').contains(&byte))
 }
 fn label(value: &str, maximum: usize) -> bool {
     !value.is_empty()
@@ -241,7 +236,7 @@ fn driver_identity(value: &Value) -> Result<()> {
     )?;
     let thumbprint = r.string("SignerThumbprint")?;
     require(
-        (40..=64).contains(&thumbprint.len()) && hex(thumbprint, thumbprint.len()),
+        (40..=64).contains(&thumbprint.len()) && is_lower_hex(thumbprint, thumbprint.len()),
         "Invalid FastRPC signer thumbprint.",
     )?;
     r.flags(&["FileHeldAgainstMutation"], true)
@@ -255,7 +250,7 @@ fn build(
     executable: &str,
 ) -> Result<()> {
     require(
-        hex(revision, 40) && hex(manifest, 64) && hex(lock, 64),
+        is_lower_hex(revision, 40) && is_lower_hex(manifest, 64) && is_lower_hex(lock, 64),
         "Invalid Hexagon build source binding.",
     )?;
     let r = Record(value);
@@ -289,9 +284,11 @@ fn session_build(
         .ok_or("Invalid Hexagon source digest set.")?;
     require(
         sources.len() == SOURCE_NAMES.len()
-            && sources
-                .values()
-                .all(|value| value.as_str().is_some_and(|digest| hex(digest, 64))),
+            && sources.values().all(|value| {
+                value
+                    .as_str()
+                    .is_some_and(|digest| is_lower_hex(digest, 64))
+            }),
         "Invalid Hexagon source digest set.",
     )?;
     let r = Record(value);
@@ -402,7 +399,10 @@ pub fn run(request: Value) -> Result<Value> {
                 &lock_sha256,
                 "hexagon-dispatch-fixture.exe",
             )?;
-            require(hex(&source_sha256, 64), "Invalid dispatch source identity.")?;
+            require(
+                is_lower_hex(&source_sha256, 64),
+                "Invalid dispatch source identity.",
+            )?;
             Record(&value).equal("SourceSha256", &source_sha256)?;
             Ok(json!({"Valid":true}))
         }
