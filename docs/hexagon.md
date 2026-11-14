@@ -24,8 +24,15 @@ for this fixed development policy. Full-model X1/X2 qualification and the
 with interactive/battery objectives remain separate work in [PLAN.md](../PLAN.md#hexagon-npu).
 `native-q2` uses
 bounded floating-point tolerance; it does not promise the bitwise PQ2/Q8_K
-parity of the independent block-preserving controls. Authenticated serving readiness does not report
-effective NPU placement.
+parity of the independent block-preserving controls. The published runtime's
+authenticated serving readiness does not report effective NPU placement.
+Reviewed local Prism source adds a model-thread initialization handshake and a
+versioned `startup_projection` observation. Runner accepts that optional object
+only with consistent requested/effective placement, the fixed
+168-tensor/2,888,663,040-byte resident layout and bounded host metadata; CPU and
+external observations cannot assert resident weights. Missing observations remain
+compatible with the published 0.1.27 pin. This closes no device, performance or
+release gate; requiring the new object awaits a verified source-bound repin.
 Multi-token prefill packets batch independent `N = 1` operations; a true
 `N > 1` matrix solver remains separate work.
 

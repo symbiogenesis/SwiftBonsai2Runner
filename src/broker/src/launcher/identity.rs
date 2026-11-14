@@ -94,6 +94,12 @@ fn present<'de, D: Deserializer<'de>, T: Deserialize<'de>>(
     T::deserialize(input).map(Some)
 }
 
+fn nullable<'de, D: Deserializer<'de>, T: Deserialize<'de>>(
+    input: D,
+) -> Result<Option<T>, D::Error> {
+    Option::<T>::deserialize(input)
+}
+
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
 struct NativeModel<'a> {
@@ -129,6 +135,69 @@ struct NativeModel<'a> {
     placement: Option<Text<'a>>,
     #[serde(default, borrow, deserialize_with = "present")]
     projection_backend: Option<Text<'a>>,
+    #[serde(default, borrow, deserialize_with = "present")]
+    startup_projection: Option<StartupProjection<'a>>,
+}
+
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct StartupProjection<'a> {
+    schema_version: u8,
+    #[serde(borrow)]
+    requested: Text<'a>,
+    #[serde(borrow)]
+    effective: Text<'a>,
+    #[serde(borrow, deserialize_with = "nullable")]
+    identity: Option<Text<'a>>,
+    resident_tensors: u64,
+    resident_weight_bytes: u64,
+    host_metadata_bytes: u64,
+}
+
+fn startup_projection_matches(
+    model: &NativeModel<'_>,
+    workers: WorkerReadiness,
+    repacked: bool,
+) -> bool {
+    let Some(startup) = &model.startup_projection else {
+        // The published 0.1.27 protocol predates this optional observation.
+        // Requiring it belongs to the exact-source release repin, not a local
+        // source change that would refuse the currently pinned executable.
+        return true;
+    };
+    let requested = if workers.placement == crate::inference::Placement::Cpu {
+        "cpu"
+    } else {
+        "auto"
+    };
+    if startup.schema_version != 1 || &*startup.requested != requested {
+        return false;
+    }
+    let no_residency = startup.resident_tensors == 0
+        && startup.resident_weight_bytes == 0
+        && startup.host_metadata_bytes == 0;
+    match &*startup.effective {
+        "cpu" => startup.identity.is_none() && no_residency,
+        "hexagon-native-q2" => {
+            requested == "auto"
+                && !repacked
+                && startup.identity.as_deref()
+                    == Some("hexagon-hvx-native-q2-resident-v1-experimental")
+                && startup.resident_tensors == 168
+                && startup.resident_weight_bytes == 2_888_663_040
+                && (1..=524_288).contains(&startup.host_metadata_bytes)
+        }
+        "external" => {
+            requested == "auto"
+                && no_residency
+                && startup.identity.as_deref().is_some_and(|identity| {
+                    !identity.trim().is_empty()
+                        && identity.len() <= 256
+                        && identity.bytes().all(|byte| byte.is_ascii_graphic())
+                })
+        }
+        _ => false,
+    }
 }
 
 fn cache_identity_matches(
@@ -211,6 +280,7 @@ pub(super) fn validate_native_identity(
         || !cache_identity_matches(model, workers, adapter)
         || model.placement.as_deref() != placement
         || model.projection_backend.as_deref() != placement
+        || !startup_projection_matches(model, workers, repacked)
         || !extensions_match
     {
         return Err(io::Error::other("native model readiness identity mismatch"));
@@ -267,6 +337,139 @@ mod tests {
             body.len()
         )
         .into_bytes())
+    }
+
+    fn projection_startup(effective: &str) -> serde_json::Value {
+        serde_json::json!({"schema_version":1,"requested":"auto","effective":effective,
+            "identity": if effective == "hexagon-native-q2" {
+                Some("hexagon-hvx-native-q2-resident-v1-experimental")
+            } else { None },
+            "resident_tensors": if effective == "hexagon-native-q2" {168} else {0},
+            "resident_weight_bytes": if effective == "hexagon-native-q2" {2_888_663_040_u64} else {0},
+            "host_metadata_bytes": if effective == "hexagon-native-q2" {4096} else {0}})
+    }
+
+    #[test]
+    fn projection_startup_binds_completed_residency_and_requested_policy()
+    -> Result<(), serde_json::Error> {
+        use crate::inference::{KvCache, Placement};
+        let (mut model, _) = kv_cache_model(false, true);
+        let auto = WorkerReadiness::for_version("0.1.27", 4).with_kv_cache(Some(KvCache::Rsq4));
+        // The currently published pin omits the optional startup observation.
+        assert!(validate_native_identity(&model_response(&model)?, false, true, auto).is_ok());
+        for effective in ["cpu", "hexagon-native-q2"] {
+            model["startup_projection"] = projection_startup(effective);
+            assert!(validate_native_identity(&model_response(&model)?, false, true, auto).is_ok());
+        }
+        let cpu = auto.with_placement(Placement::Cpu);
+        model["placement"] = serde_json::json!("cpu");
+        model["projection_backend"] = serde_json::json!("cpu");
+        assert!(validate_native_identity(&model_response(&model)?, false, true, cpu).is_err());
+        model["startup_projection"] = projection_startup("cpu");
+        model["startup_projection"]["requested"] = serde_json::json!("cpu");
+        assert!(validate_native_identity(&model_response(&model)?, false, true, cpu).is_ok());
+        let (mut ptq1, _) = kv_cache_model(true, true);
+        ptq1["startup_projection"] = projection_startup("hexagon-native-q2");
+        assert!(validate_native_identity(&model_response(&ptq1)?, true, true, auto).is_err());
+        Ok(())
+    }
+
+    #[test]
+    fn projection_startup_rejects_inconsistent_unknown_and_ambiguous_facts()
+    -> Result<(), serde_json::Error> {
+        use crate::inference::KvCache;
+        use serde_json::json;
+        let (model, _) = kv_cache_model(false, false);
+        let auto = WorkerReadiness::for_version("0.1.27", 4).with_kv_cache(Some(KvCache::Rsq4));
+        for (field, value) in [
+            ("schema_version", json!(2)),
+            ("schema_version", json!(true)),
+            ("requested", json!("cpu")),
+            ("effective", json!("hexagon")),
+            ("identity", json!(null)),
+            ("identity", json!("changed")),
+            ("resident_tensors", json!(167)),
+            ("resident_tensors", json!(169)),
+            ("resident_weight_bytes", json!(2_888_663_041_u64)),
+            ("host_metadata_bytes", json!(0)),
+            ("host_metadata_bytes", json!(524_289)),
+            ("unreviewed_field", json!(true)),
+        ] {
+            let mut candidate = model.clone();
+            candidate["startup_projection"] = projection_startup("hexagon-native-q2");
+            candidate["startup_projection"][field] = value;
+            assert!(
+                validate_native_identity(&model_response(&candidate)?, false, false, auto).is_err(),
+                "{field}"
+            );
+        }
+        for invalid in [json!(null), json!({}), json!("cpu"), json!([])] {
+            let mut candidate = model.clone();
+            candidate["startup_projection"] = invalid;
+            assert!(
+                validate_native_identity(&model_response(&candidate)?, false, false, auto).is_err()
+            );
+        }
+        for field in [
+            "schema_version",
+            "requested",
+            "effective",
+            "identity",
+            "resident_tensors",
+            "resident_weight_bytes",
+            "host_metadata_bytes",
+        ] {
+            let mut candidate = model.clone();
+            candidate["startup_projection"] = projection_startup("cpu");
+            if let Some(object) = candidate["startup_projection"].as_object_mut() {
+                object.remove(field);
+            }
+            assert!(
+                validate_native_identity(&model_response(&candidate)?, false, false, auto).is_err(),
+                "missing {field}"
+            );
+        }
+        let mut candidate = model;
+        candidate["startup_projection"] = projection_startup("cpu");
+        candidate["startup_projection"]["resident_weight_bytes"] = json!(1);
+        assert!(
+            validate_native_identity(&model_response(&candidate)?, false, false, auto).is_err()
+        );
+        // Check duplicate names before a Value map could erase the ambiguity.
+        let mut candidate = candidate;
+        candidate["startup_projection"] = projection_startup("cpu");
+        let body = json!({"data":[candidate]}).to_string().replace(
+            "\"schema_version\":1",
+            "\"schema_version\":1,\"schema_version\":1",
+        );
+        let bytes = format!(
+            "HTTP/1.1 200 OK\r\nContent-Length: {}\r\n\r\n{body}",
+            body.len()
+        )
+        .into_bytes();
+        assert!(validate_native_identity(&bytes, false, false, auto).is_err());
+        Ok(())
+    }
+
+    #[test]
+    fn projection_startup_external_identity_never_asserts_residency()
+    -> Result<(), serde_json::Error> {
+        use crate::inference::KvCache;
+        use serde_json::json;
+        let (mut model, _) = kv_cache_model(false, false);
+        let auto = WorkerReadiness::for_version("0.1.27", 4).with_kv_cache(Some(KvCache::Rsq4));
+        model["startup_projection"] = projection_startup("external");
+        for identity in ["", " ", "bad\nidentity", &"x".repeat(257)] {
+            model["startup_projection"]["identity"] = json!(identity);
+            assert!(
+                validate_native_identity(&model_response(&model)?, false, false, auto).is_err()
+            );
+        }
+        model["startup_projection"]["identity"] = json!("reviewed-external-executor-v1");
+        assert!(validate_native_identity(&model_response(&model)?, false, false, auto).is_ok());
+        model["startup_projection"]["resident_tensors"] = json!(168);
+        assert!(validate_native_identity(&model_response(&model)?, false, false, auto).is_err());
+        Ok(())
     }
 
     #[test]
