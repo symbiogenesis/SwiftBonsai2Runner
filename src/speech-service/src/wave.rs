@@ -13,7 +13,7 @@ pub(super) fn decode<'a>(bytes: &[u8], samples: &'a mut Vec<f32>) -> Result<&'a 
         pcm.as_chunks::<2>()
             .0
             .iter()
-            .map(|sample| f32::from(i16::from_le_bytes([sample[0], sample[1]])) / 32768.0),
+            .map(|&sample| f32::from(i16::from_le_bytes(sample)) / 32768.0),
     );
     Ok(samples)
 }
