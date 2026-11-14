@@ -192,7 +192,6 @@ impl Transcript {
     }
 
     pub(super) fn remove_empty_response(&mut self) {
-        self.search.invalidate();
         let removed = self.messages.pop_if(|message| {
             message.pending = false;
             message.role == Role::Assistant
@@ -201,6 +200,7 @@ impl Transcript {
         });
         if removed.is_some() {
             self.history_revision = self.history_revision.wrapping_add(1);
+            self.search.invalidate();
         }
     }
 

@@ -3,6 +3,51 @@ use super::*;
 use crate::window::transcript::{Role, Transcript};
 
 #[test]
+fn completing_nonempty_response_keeps_find_results_without_copying_the_prefix() {
+    let mut transcript = Transcript::default();
+    transcript.push(Role::User, "hit ".repeat(1000));
+    transcript.push(Role::Assistant, "A final hit".to_owned());
+    transcript.search.query = "hit".to_owned();
+    transcript.search.refresh(&transcript.messages);
+    transcript.search.navigate(true);
+    let target = transcript.search.target.clone();
+    let scanned = transcript.search.scanned_bytes;
+    let rebuilt = transcript.search.rebuilt_cache_entries;
+    let copied = transcript.search.copied_matches;
+    let revision = transcript.search.revision;
+    let history_revision = transcript.history_revision();
+
+    transcript.remove_empty_response();
+    transcript.search.refresh(&transcript.messages);
+    assert_eq!(transcript.messages.len(), 2);
+    assert!(!transcript.messages[1].pending);
+    assert_eq!(transcript.search.matches.len(), 1001);
+    assert_eq!(transcript.search.active, 1000);
+    assert!(transcript.search.target == target);
+    assert_eq!(transcript.search.scanned_bytes, scanned);
+    assert_eq!(transcript.search.rebuilt_cache_entries, rebuilt);
+    assert_eq!(transcript.search.copied_matches, copied);
+    assert_eq!(transcript.search.revision, revision);
+    assert_eq!(transcript.history_revision(), history_revision);
+
+    // Actually removing an empty response still invalidates the structural
+    // cache so its tail continuation cannot survive under a missing owner.
+    transcript.push(Role::Assistant, String::new());
+    transcript.search.refresh(&transcript.messages);
+    assert_eq!(transcript.search.cached_messages.len(), 3);
+    let history_revision = transcript.history_revision();
+    transcript.remove_empty_response();
+    transcript.search.refresh(&transcript.messages);
+    assert_eq!(transcript.messages.len(), 2);
+    assert_eq!(transcript.search.cached_messages.len(), 2);
+    assert_eq!(
+        transcript.history_revision(),
+        history_revision.wrapping_add(1)
+    );
+    assert!(transcript.search.target == target);
+}
+
+#[test]
 fn full_find_refresh_reuses_entries_and_prunes_unvisited_saturated_suffix() {
     let mut transcript = Transcript::default();
     transcript.push(Role::User, "hit".to_owned());
