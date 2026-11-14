@@ -377,7 +377,7 @@ fn input_value(input: &Input) -> serde_json::Value {
 
 fn verify_envelope(schema: u32) -> TestResult {
     let scratch = Scratch::new()?;
-    let mut unit = if schema == 2 {
+    let mut unit = if schema >= 2 {
         recursive_unit(&scratch)?
     } else {
         scratch.unit()?
@@ -386,7 +386,7 @@ fn verify_envelope(schema: u32) -> TestResult {
     unit.arguments[0].clone_from(&compiler.path);
     unit.preprocessing_arguments[0].clone_from(&compiler.path);
     let inputs = unit.inputs.iter().map(input_value).collect::<Vec<_>>();
-    let document = serde_json::json!({"schemaVersion": schema,
+    let mut document = serde_json::json!({"schemaVersion": schema,
         "kind": "selected-clang-native-source-closure", "sourceRevision": "a".repeat(40),
         "target": "aarch64-pc-windows-msvc", "configuration": "Release CPU",
         "compiler": identity(&compiler), "units": [{"source": unit.source,
@@ -396,6 +396,13 @@ fn verify_envelope(schema: u32) -> TestResult {
             "dependencies": identity(&unit.dependencies), "preprocessed": identity(&unit.preprocessed),
             "object": identity(&unit.object), "inputs": inputs}]
     });
+    if schema >= 3 {
+        let database = scratch.file(
+            "compile_commands.json",
+            &serde_json::to_vec(&[compilation(&unit)])?,
+        )?;
+        document["compilationDatabase"] = identity(&database);
+    }
     let manifest = scratch.file("manifest.json", &serde_json::to_vec(&document)?)?;
     let receipt: serde_json::Value = serde_json::from_str(&super::run(&[
         "native-closure-verify".into(),
@@ -405,9 +412,14 @@ fn verify_envelope(schema: u32) -> TestResult {
         manifest.sha256.into(),
     ])?)?;
     assert_eq!(receipt["translationUnits"], 1);
-    assert_eq!(receipt["generatedInputs"], schema);
+    assert_eq!(receipt["generatedInputs"], if schema >= 2 { 2 } else { 1 });
     assert_eq!(receipt["manifestSchemaVersion"], schema);
-    assert_eq!(receipt["recursiveGenerationProvenanceChecked"], schema == 2);
+    assert_eq!(receipt["recursiveGenerationProvenanceChecked"], schema >= 2);
+    assert_eq!(receipt["selectedBuildInventoryChecked"], schema >= 3);
+    assert_eq!(
+        receipt["compilationDatabaseSha256"].is_string(),
+        schema >= 3
+    );
     assert_eq!(receipt["freshCompilerExecution"], false);
     assert_eq!(receipt["completeBuildClosureQualified"], false);
     assert_eq!(receipt["nativeRetirementQualified"], false);
@@ -422,6 +434,128 @@ fn native_source_closure_verified_envelope_keeps_retirement_unqualified() -> Tes
 #[test]
 fn native_source_closure_recursive_envelope_keeps_retirement_unqualified() -> TestResult {
     verify_envelope(2)
+}
+
+#[test]
+fn native_source_closure_inventory_envelope_keeps_retirement_unqualified() -> TestResult {
+    verify_envelope(3)
+}
+
+fn compilation(unit: &Unit) -> serde_json::Value {
+    serde_json::json!({"directory": unit.working_directory, "file": unit.source,
+        "arguments": unit.arguments, "output": unit.object.path})
+}
+
+fn inventory_manifest(scratch: &Scratch) -> Result<super::Manifest, Box<dyn std::error::Error>> {
+    let compiler = scratch.file("clang", b"independent compiler identity")?;
+    let mut unit = recursive_unit(scratch)?;
+    unit.arguments[0].clone_from(&compiler.path);
+    unit.preprocessing_arguments[0].clone_from(&compiler.path);
+    Ok(super::Manifest {
+        schema_version: 3,
+        kind: "selected-clang-native-source-closure".into(),
+        source_revision: "a".repeat(40),
+        target: "aarch64-pc-windows-msvc".into(),
+        configuration: "Release CPU".into(),
+        compiler,
+        compilation_database: None,
+        units: vec![unit],
+    })
+}
+
+fn database(
+    scratch: &Scratch,
+    manifest: &mut super::Manifest,
+    value: &serde_json::Value,
+) -> TestResult {
+    manifest.compilation_database =
+        Some(scratch.file("compile_commands.json", &serde_json::to_vec(value)?)?);
+    Ok(())
+}
+
+#[test]
+fn native_source_closure_inventory_rejects_omitted_extra_changed_and_duplicate_units() -> TestResult
+{
+    let scratch = Scratch::new()?;
+    let mut manifest = inventory_manifest(&scratch)?;
+    assert!(super::verify_compilation_database(&manifest, &mut 0).is_err());
+    let entry = compilation(&manifest.units[0]);
+    database(&scratch, &mut manifest, &serde_json::json!([entry]))?;
+    super::verify_compilation_database(&manifest, &mut 0)?;
+    database(&scratch, &mut manifest, &serde_json::json!([]))?;
+    assert!(super::verify_compilation_database(&manifest, &mut 0).is_err());
+    database(&scratch, &mut manifest, &serde_json::json!([entry, entry]))?;
+    assert!(super::verify_compilation_database(&manifest, &mut 0).is_err());
+    let mut changed = entry.clone();
+    changed["arguments"]
+        .as_array_mut()
+        .ok_or("Missing arguments")?
+        .push("-DOTHER_CONFIGURATION=1".into());
+    database(&scratch, &mut manifest, &serde_json::json!([changed]))?;
+    assert!(super::verify_compilation_database(&manifest, &mut 0).is_err());
+    database(&scratch, &mut manifest, &serde_json::json!([entry]))?;
+    // The count alone is insufficient: repeated invocations cannot fill a
+    // missing distinct configuration even when the translation unit is shared.
+    let mut second = recursive_unit(&scratch)?;
+    second.arguments[0].clone_from(&manifest.compiler.path);
+    second.preprocessing_arguments[0].clone_from(&manifest.compiler.path);
+    second.object = scratch.file("source-alt.obj", b"independent alternative object identity")?;
+    second.preprocessed = scratch.file("source-alt.i", b"int value = 7;\n")?;
+    second.dependencies = scratch.file(
+        "source-alt.d",
+        format!(
+            "{}: {} {}\n",
+            escape(&second.object.path),
+            escape(&second.source),
+            escape(&second.inputs[1].identity.path)
+        )
+        .as_bytes(),
+    )?;
+    second.arguments[5].clone_from(&second.dependencies.path);
+    second.arguments[7].clone_from(&second.object.path);
+    second.preprocessing_arguments[4].clone_from(&second.preprocessed.path);
+    second.arguments.push("-DOTHER_CONFIGURATION=1".into());
+    second
+        .preprocessing_arguments
+        .push("-DOTHER_CONFIGURATION=1".into());
+    verify_unit(&second, &manifest.compiler.path, 3, &mut 0)?;
+    manifest.units.push(second);
+    database(&scratch, &mut manifest, &serde_json::json!([entry, entry]))?;
+    assert!(super::verify_compilation_database(&manifest, &mut 0).is_err());
+    let second_entry = compilation(&manifest.units[1]);
+    database(
+        &scratch,
+        &mut manifest,
+        &serde_json::json!([second_entry, entry]),
+    )?;
+    super::verify_compilation_database(&manifest, &mut 0)?;
+    Ok(())
+}
+
+#[test]
+fn native_source_closure_inventory_rejects_shell_output_tamper_and_legacy_claims() -> TestResult {
+    let scratch = Scratch::new()?;
+    let mut manifest = inventory_manifest(&scratch)?;
+    let entry = compilation(&manifest.units[0]);
+    let mut changed = entry.clone();
+    changed["output"] = manifest.units[0].preprocessed.path.clone().into();
+    database(&scratch, &mut manifest, &serde_json::json!([changed]))?;
+    assert!(super::verify_compilation_database(&manifest, &mut 0).is_err());
+    let mut changed = entry.clone();
+    changed
+        .as_object_mut()
+        .ok_or("Missing entry object")?
+        .remove("arguments");
+    changed["command"] = "clang source.c -o source.obj".into();
+    database(&scratch, &mut manifest, &serde_json::json!([changed]))?;
+    assert!(super::verify_compilation_database(&manifest, &mut 0).is_err());
+    database(&scratch, &mut manifest, &serde_json::json!([entry]))?;
+    manifest.schema_version = 2;
+    assert!(super::verify_compilation_database(&manifest, &mut 0).is_err());
+    manifest.schema_version = 3;
+    fs::write(scratch.0.join("compile_commands.json"), b"[]")?;
+    assert!(super::verify_compilation_database(&manifest, &mut 0).is_err());
+    Ok(())
 }
 
 use std::ffi::OsString;

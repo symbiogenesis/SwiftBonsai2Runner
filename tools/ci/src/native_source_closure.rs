@@ -1,6 +1,11 @@
 //! Verify selected compiler dependency closures without executing inspected code.
 
-use std::{collections::BTreeSet, ffi::OsString, fs, path::Path};
+use std::{
+    collections::{BTreeMap, BTreeSet},
+    ffi::OsString,
+    fs,
+    path::Path,
+};
 
 use serde::Deserialize;
 use sha2::{Digest as _, Sha256};
@@ -81,7 +86,19 @@ struct Manifest {
     target: String,
     configuration: String,
     compiler: Identity,
+    compilation_database: Option<Identity>,
     units: Vec<Unit>,
+}
+
+// Only the unambiguous argument-array form is admitted. Shell command strings
+// and implicit output selection cannot establish an exact reviewed invocation.
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+struct Compilation {
+    directory: String,
+    file: String,
+    arguments: Vec<String>,
+    output: Option<String>,
 }
 
 fn path_key(path: &str) -> Result<String> {
@@ -356,7 +373,7 @@ fn verify_generation(
     {
         return Err("Native generated source lacks a generator/input identity.".into());
     }
-    if schema_version == 2 {
+    if schema_version >= 2 {
         let directory = generation
             .working_directory
             .as_ref()
@@ -382,7 +399,7 @@ fn verify_generation(
             }
             GenerationInput::Legacy(_) => {
                 return Err(
-                    "Native generation schema 2 requires classified transitive inputs.".into(),
+                    "Recursive native generation requires classified transitive inputs.".into(),
                 );
             }
         };
@@ -396,6 +413,63 @@ fn verify_generation(
         count += nested;
     }
     Ok(count)
+}
+
+fn verify_compilation_database(manifest: &Manifest, total: &mut u64) -> Result<()> {
+    let Some(identity) = &manifest.compilation_database else {
+        return if manifest.schema_version >= 3 {
+            Err("Native closure schema 3 requires its complete compilation database.".into())
+        } else {
+            Ok(())
+        };
+    };
+    if manifest.schema_version < 3 {
+        return Err("Legacy native closures cannot acquire a new build-inventory claim.".into());
+    }
+    if identity.bytes > MAX_DOCUMENT {
+        return Err("Native compilation database exceeds its document bound.".into());
+    }
+    verify_identity(identity, total)?;
+    let bytes = read_bounded(Path::new(&identity.path), MAX_DOCUMENT)?;
+    if u64::try_from(bytes.len()).map_err(|error| error.to_string())? != identity.bytes
+        || hex(&Sha256::digest(&bytes)) != identity.sha256
+    {
+        return Err("Native compilation database changed before parsing.".into());
+    }
+    let entries: Vec<Compilation> =
+        serde_json::from_slice(&bytes).map_err(|error| error.to_string())?;
+    if entries.len() != manifest.units.len() {
+        return Err("Native closure omits or adds selected build translation units.".into());
+    }
+    let mut remaining = BTreeMap::new();
+    for unit in &manifest.units {
+        let key = (
+            path_key(&unit.working_directory)?,
+            path_key(&unit.source)?,
+            unit.arguments.clone(),
+        );
+        if remaining.insert(key, unit).is_some() {
+            return Err("Native closure repeats a selected build invocation.".into());
+        }
+    }
+    for entry in entries {
+        let directory = path_key(&entry.directory)?;
+        let source = path_key(&entry.file)?;
+        if !arguments_valid(&entry.arguments, &manifest.compiler.path) {
+            return Err("Native compilation database requires explicit compiler arguments.".into());
+        }
+        let Some(unit) = remaining.remove(&(directory, source, entry.arguments)) else {
+            return Err(
+                "Native compilation database has a changed, extra or duplicate invocation.".into(),
+            );
+        };
+        if let Some(output) = entry.output
+            && path_key(&output)? != path_key(&unit.object.path)?
+        {
+            return Err("Native compilation database has a different output identity.".into());
+        }
+    }
+    Ok(())
 }
 
 fn verify_unit(unit: &Unit, compiler: &str, schema_version: u32, total: &mut u64) -> Result<usize> {
@@ -473,7 +547,7 @@ pub(super) fn run(arguments: &[OsString]) -> Result<String> {
         return Err("Native closure manifest differs from its reviewed SHA-256.".into());
     }
     let manifest: Manifest = serde_json::from_slice(&bytes).map_err(|error| error.to_string())?;
-    if ![1, 2].contains(&manifest.schema_version)
+    if ![1, 2, 3].contains(&manifest.schema_version)
         || manifest.kind != "selected-clang-native-source-closure"
         || !lower_hex(&manifest.source_revision, 40)
         || manifest.target.is_empty()
@@ -494,6 +568,7 @@ pub(super) fn run(arguments: &[OsString]) -> Result<String> {
     }
     let mut total = 0;
     verify_identity(&manifest.compiler, &mut total)?;
+    verify_compilation_database(&manifest, &mut total)?;
     let mut generated = 0;
     let mut objects = BTreeSet::new();
     for unit in &manifest.units {
@@ -513,7 +588,9 @@ pub(super) fn run(arguments: &[OsString]) -> Result<String> {
         "target": manifest.target, "configuration": manifest.configuration,
         "compilerSha256": manifest.compiler.sha256, "translationUnits": manifest.units.len(),
         "manifestSchemaVersion": manifest.schema_version,
-        "recursiveGenerationProvenanceChecked": manifest.schema_version == 2,
+        "recursiveGenerationProvenanceChecked": manifest.schema_version >= 2,
+        "selectedBuildInventoryChecked": manifest.schema_version >= 3,
+        "compilationDatabaseSha256": manifest.compilation_database.map(|identity| identity.sha256),
         "generatedInputs": generated, "checkedBytesIncludingRepeatedInputs": total,
         "freshCompilerExecution": false, "completeBuildClosureQualified": false,
         "binaryLinkageQualified": false, "inferenceParityQualified": false,

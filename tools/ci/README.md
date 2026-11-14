@@ -168,7 +168,7 @@ omits system headers. The supported subset excludes response files, Make
 variables/comments, multiple/phony rules, NMake format and relative dependencies;
 unsupported captures reject rather than silently dropping inputs.
 
-The strict schema-2 manifest has `kind: selected-clang-native-source-closure`,
+The strict schema-2/3 manifest has `kind: selected-clang-native-source-closure`,
 `sourceRevision` (40 lowercase hex characters), `target`, `configuration`,
 `compiler` and a nonempty `units` array. Every file identity is an object with
 absolute `path`, `bytes` and lowercase `sha256` fields. The compiler is one such
@@ -200,6 +200,26 @@ the additional provenance rejects. A schema-2 receipt sets that field true only
 after checking every classified input. `generatedInputs` counts all verified
 generation records, including repeated transitive records.
 
+Schema 3 additionally requires `compilationDatabase`, an identity for the original
+selected build's complete JSON compilation database. Every entry must contain
+absolute `directory` and `file` paths and the original `arguments` array beginning
+with the exact compiler path; an optional absolute `output` must match the unit's
+object. Shell `command` strings, unknown fields, response files and relative paths
+are outside this supported subset. Retain an argument-array database from the
+owning capture; rewriting a shell command string is not an independent original
+invocation. Its entries must match every unit's complete compile arguments,
+working directory and translation unit exactly, once each. Multiple configurations
+of one source are allowed with distinct invocations and object outputs; omission,
+extra/duplicate entries, changed flags and output aliases reject. Entry order is
+irrelevant. Recursive generation rules remain mandatory.
+
+Only schema 3 sets `selectedBuildInventoryChecked: true` and records
+`compilationDatabaseSha256`. Earlier schemas leave that claim false and cannot
+attach a database without upgrading and satisfying schema 3. This verifies
+coverage of the retained database, not whether the producer exported every build
+configuration, runtime dependency or generated compilation. The owning build
+still establishes that the database is the complete selected original inventory.
+
 The verifier rejects omitted/extra/aliased inputs, changed bytes, unsafe paths,
 reparse ancestors and absent generated-input provenance. It binds dependency
 parsing to the verified report bytes. Bounds are 4,096 units, 8,192 inputs per
@@ -208,7 +228,7 @@ including repeated inputs. `native_source_closure_` controls use literal miniatu
 fixtures; they are not captures of a compiler execution.
 
 This verifies the declared selection and its retained bytes. A trusted owning
-build must independently establish the complete unit selection, generated-file
+build must independently establish the original inventory's completeness, generated-file
 classification, effective compiler/environment configuration, matching
 preprocessing/compilation and linker/library closure. The receipt explicitly
 leaves complete-build, linkage, inference and retirement qualification false.
