@@ -564,9 +564,14 @@ cannot promote a pin; follow the
 
 The [ggml execution references](research-register.md#ggml-10-execution-and-regression-references)
 also inform the existing CPU/Hexagon paths. Select Prism's `few_token_` controls
-for shared decoding and odd tiles, its fusion/precision controls for actual path
-execution and capability rejection, and the native resident controls for unused
-arenas and imported-arena sealing. Runner's exact
+for shared decoding and odd tiles, `fusion_verification_` for actual path execution
+and fallback, and `projection_precision_` for capability rejection and pinned
+operand rounding. The exact native controls are
+`windows::compute_native::projection_native::tests::resident_native_q2_scopes_queue_buffer_flush_after_initial_dirty_submission`
+and
+`windows::compute_native::projection_native::tests::resident_native_q2_multi_arena_populates_secondary_buffer_and_batches_across_arenas`
+in `bonsai-hexagon-native --lib`; they cover unused arenas and imported-arena
+sealing. Runner's exact
 `engine::packed::tests::packed_half_precision_preserves_f32_operands_and_accumulation`
 uses literal F32 range, sub-half-minimum, long-sum and cancellation answers through
 the production speech projection, including four-row groups and scalar tails.

@@ -66,9 +66,7 @@ Ordinary online softmax changes that intermediate and therefore has a distinct n
 lifecycle requirements after any scheduling or reduction change. Approximation and speculation have
 separate qualification scopes.
 
-## Resources, failure and acceptance
-
-### Decomposed attention candidate
+## Decomposed attention candidate
 
 The ggml 1.0 [Adreno decomposition][ggml-adreno-decomposition] is a resource-pressure
 reference for the future Rust backend. Splitting a fused attention kernel can
@@ -105,6 +103,8 @@ Moving packet boundaries or adding unused work must not silently change arithmet
 or upload unread inputs. Adapters, native policy access and complete-request
 benefit retain their separate gates. No attention kernel or GPU dispatch is added
 by this design; those tasks remain explicit in PLAN.
+
+## Resources, failure and acceptance
 
 Follow [profile eligibility](hardware-capabilities.md#automatic-profile-selection),
 [accelerator storage/lifetimes](hardware-capabilities.md#accelerator-storage-and-lifetime)
