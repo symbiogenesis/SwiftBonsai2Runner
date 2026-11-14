@@ -188,6 +188,107 @@ impl TextBuffer for Buffer<'_> {
 mod tests {
     use super::*;
 
+    fn edit_history(
+        ctx: &egui::Context,
+        id: egui::Id,
+        text: &mut String,
+        limit: usize,
+        modifiers: egui::Modifiers,
+    ) -> (bool, Option<egui::text::CCursorRange>) {
+        let mut rejected = false;
+        let mut cursor = None;
+        let _ = ctx.run_ui(
+            egui::RawInput {
+                events: [true, false]
+                    .map(|pressed| egui::Event::Key {
+                        key: egui::Key::Z,
+                        physical_key: None,
+                        pressed,
+                        repeat: false,
+                        modifiers,
+                    })
+                    .into(),
+                ..Default::default()
+            },
+            |ui| {
+                egui::CentralPanel::default().show(ui, |ui| {
+                    let mut buffer = Buffer::new(text, ui.ctx(), id, limit);
+                    let mut output = egui::TextEdit::multiline(&mut buffer).id(id).show(ui);
+                    rejected = buffer.finish(&mut output);
+                    cursor = output.cursor_range;
+                });
+            },
+        );
+        (rejected, cursor)
+    }
+
+    #[test]
+    fn rejected_whole_value_undo_and_redo_restore_selection_and_history() -> std::io::Result<()> {
+        for redo in [false, true] {
+            let ctx = egui::Context::default();
+            let id = egui::Id::unique("whole-value-history");
+            let selection = egui::text::CCursorRange::two(
+                egui::text::CCursor::new(0),
+                egui::text::CCursor::new(3),
+            );
+            let current = (selection, "e\u{301} 🌱".to_owned());
+            let target = (
+                egui::text::CCursorRange::one(egui::text::CCursor::new(6)),
+                "日本語🌱e\u{301}".to_owned(),
+            );
+            // Deliberately inject an out-of-limit history point to exercise
+            // whole-value rejection while egui holds its undo mutex.
+            let mut history = TextEditUndoer::default();
+            if redo {
+                history.add_undo(&current);
+                history.add_undo(&target);
+                assert_eq!(history.undo(&target), Some(&current));
+            } else {
+                history.add_undo(&target);
+                history.add_undo(&current);
+            }
+            let mut state = TextEditState::default();
+            state.cursor.set_char_range(Some(selection));
+            state.set_undoer(history);
+            state.store(&ctx, id);
+            ctx.memory_mut(|memory| memory.request_focus(id));
+
+            let forward = if redo {
+                egui::Modifiers::COMMAND | egui::Modifiers::SHIFT
+            } else {
+                egui::Modifiers::COMMAND
+            };
+            let backward = if redo {
+                egui::Modifiers::COMMAND
+            } else {
+                egui::Modifiers::COMMAND | egui::Modifiers::SHIFT
+            };
+            let mut text = current.1.clone();
+            assert_eq!(
+                edit_history(&ctx, id, &mut text, 5, forward),
+                (true, Some(selection))
+            );
+            assert_eq!(text, current.1);
+            let restored = TextEditState::load(&ctx, id)
+                .ok_or_else(|| std::io::Error::other("Restored editor state missing"))?;
+            assert_eq!(restored.cursor.char_range(), Some(selection));
+
+            // Relax only the fixture's limit. The rejected action must remain
+            // available, and its reverse must still restore the exact selection.
+            assert_eq!(
+                edit_history(&ctx, id, &mut text, 6, forward),
+                (false, Some(target.0))
+            );
+            assert_eq!(text, target.1);
+            assert_eq!(
+                edit_history(&ctx, id, &mut text, 6, backward),
+                (false, Some(selection))
+            );
+            assert_eq!(text, current.1);
+        }
+        Ok(())
+    }
+
     #[test]
     fn draft_whole_replacements_keep_unicode_limits_and_atomic_rollback_bytes() {
         let ctx = egui::Context::default();
