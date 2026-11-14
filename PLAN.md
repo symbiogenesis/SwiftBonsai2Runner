@@ -637,6 +637,75 @@ nor editing the available Abliteration factors.
 
 ## Bounded calibration and optional precision
 
+Use the [Unsloth principle review](docs/research-register.md#unsloth-calibration-sensitivity-and-evaluation-principles)
+to refine W1/W8, Q1 and K1 without switching models or importing an upstream-Qwen
+quantization recipe. Keep Swift's packed base and existing defaults fixed; its
+unchanged current graph supplies the teacher for execution approximations.
+The tasks below do not displace native daily-use acceptance or reopen past trials.
+
+- [ ] **U1 — Prepare representative, source-bound Swift calibration.** Reuse W1/W2
+  and W8 capture intake to define a bounded native manifest with canonical rendered
+  token/template identities, adapter/scale, effective Thinking/effort, activation
+  basis, graph/profile, token positions and content-group ownership. Cover dialogue,
+  creative prose, instructions, Unicode and selected history lengths; keep fit,
+  development and untouched complete-answer evaluation groups separate. Reject
+  exact duplicate inputs crossing splits regardless of declared IDs, and review
+  semantic overlap separately. Retain finite second moments/counts, coverage,
+  outliers and explicit missing observations only when a selected consumer needs
+  them; choose and budget one capture before device work. Do not use upstream
+  Qwen's imatrix as Swift calibration or retain private prompt text unnecessarily.
+- [ ] **U2 — Allocate approximation and recovery by measured sensitivity.** Extend
+  W8.1 with a bounded one-site-at-a-time screen using U1 and the same normalized
+  inputs: activation-weighted branch error, local output/logit effects and
+  changed-prefix drift. Keep comparative site/rank/policy screens in owner-operated
+  CI; device capture selects one predeclared site within its original aggregate
+  allowance. Review FFN/projection roles, embeddings/output and
+  attention/recurrent boundaries separately. Compare magnitude/uniform choices
+  against measured choices before allocating omission groups or recovery rank
+  under a fixed net RAM/work budget. Freeze the selection on development data,
+  then qualify multi-site composition and complete held-out answers through W8.4;
+  stop at a failed local gate. No wider decode of ternary weights can recover
+  unavailable original precision, and local sensitivity is no quality guarantee.
+- [ ] **U3 — Screen heterogeneous execution precision only after K1 attribution.**
+  For a measured cache/activation bottleneck, compare one explicit static
+  per-layer/per-role policy with uniform K4/V4 and FP16 controls; reuse K1's
+  fitted-scale candidate where applicable. Protect F32 recurrent/convolution
+  state and existing norm/accumulation contracts initially. Preserve packed base
+  weights; charge scales, exception paths, retained copies, scratch and recovery
+  factors against net resources. Add native kernels only for an admitted format;
+  bind the complete policy to discovery, admission, prefix/checkpoint identity,
+  reset/rollback and release gates. Consider runtime adaptation only after a
+  static policy establishes useful benefit and its state-transition costs fit.
+- [ ] **U4 — Add multi-token diagnostics without replacing complete-task review.**
+  Extend W2/Q1/K1 with bounded teacher-forced top-1 agreement and distribution
+  error on common current-Swift prefixes, plus separately identified free-running
+  divergence and complete sampled continuations. Bind prompts, rendered tokens,
+  numerical profile, sampler/seed, reasoning-inclusive caps and termination.
+  Keep per-domain/site failures and long-prefix accumulation visible; short
+  greedy agreement or a lower mean KLD cannot qualify creativity, instructions
+  or a changed sampler. Freeze candidates before held-out review and use the
+  owning CI for repeated/counterbalanced scoring, preserving truncated/no-go
+  outcomes and source-bound useful-answer latency/resources.
+- [ ] **U5 — Validate evaluation machinery independently of candidates.** Extend
+  W2/Q1's native evaluator with known-pass, known-fail, malformed, truncated,
+  reasoning-only and infrastructure-failure controls for each selected scoring
+  path. Bind extraction/tokenization, reference answers/rubrics and scorer source;
+  retain original responses when required for independent replay. Keep model
+  failures, incomplete outputs and invalid infrastructure distinct, report fixed
+  planned/completed/scored denominators and missing outcomes, and cross-check
+  selected frozen outputs independently before trusting a score change. Do not
+  silently turn parser/timeouts or host contention into answer failures, discard
+  losing candidates, or retry a closed owner-device trial.
+- [ ] **U6 — Evaluate explicit reasoning/sampling profiles on unchanged Swift.**
+  Use Q1's held-out tasks to compare enabled Thinking at `low`/`medium` against
+  current `xhigh`, and assess publisher non-thinking sampler guidance separately
+  from effort. Qualify any exposed control through native Settings, persistence,
+  broker canonical count/generation bodies, exact context reservation and runtime
+  effective-setting confirmation; preserve current defaults. Review reasoning
+  replay policy as a separate context/quality tradeoff rather than dropping it
+  silently. Count complete answers, truncation, useful-answer latency and RAM;
+  shorter reasoning or fewer tokens alone cannot establish a win. No automatic
+  penalty, forced-thinking, early-exit or model-switch heuristic is selected.
 - [ ] **K1 — Qualify K4/V4 independently on X1/X2.** Complete the
   [three-task paired packet](docs/quantized-kv.md#first-practical-promotion-packet)
   for held-out retrieval, instructions and creative continuation: at least 65%

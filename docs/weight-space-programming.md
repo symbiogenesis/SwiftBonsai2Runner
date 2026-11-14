@@ -312,9 +312,10 @@ the basis and coefficients. Development groups assess reconstruction after
 export to F32, both with algebraic F64 reductions and the replay consumer's
 source-order F32 application; final held-out rows are deliberately unsupported
 by this command.
-Group IDs cannot prove semantic independence, so content grouping still needs
-review. This is algebraic calibration, not a claim that direct behavioral
-weight-space reasoning discovered a correction.
+Both schemas reject identical F32 input bytes crossing fit/development splits,
+even when sample/group IDs differ. This detects exact vector reuse, not semantic
+independence; content grouping still needs review. This is algebraic calibration,
+not a claim that direct behavioral weight-space reasoning discovered a correction.
 
 Freeze source/runtime/base/adapter/scale, graph and capture identities, selected
 site, groups, rank, ridge and rejection limits before capture. Use exact

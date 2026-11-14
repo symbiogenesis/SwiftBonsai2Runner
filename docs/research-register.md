@@ -220,6 +220,43 @@ Keep research scoped to a selected usability need or demonstrated bottleneck.
 These are references for selected design questions, not a proposed implementation
 backlog or a performance ranking.
 
+### Unsloth calibration, sensitivity and evaluation principles
+
+The [Dynamic 4-bit analysis](https://unsloth.ai/blog/dynamic-4bit),
+[Dynamic 2.0 report](https://unsloth.ai/blog/dynamic-v2),
+[Dynamic 3.x documentation](https://unsloth.ai/docs/basics/dynamic-3.0-ggufs) and
+[3.1 evaluation notes](https://unsloth.ai/docs/basics/dynamic-3.0-ggufs/dynamic-3.1-ggufs)
+describe useful principles: model-specific sensitivity, representative calibration,
+multi-token evaluation and verified graders. These are author reports, not an
+authenticated complete V3.1 recipe or Swift quality evidence. No model switch,
+Unsloth runtime dependency or change to Swift's packed base is selected.
+
+| Evidence | Transfer to current Swift and boundary |
+| --- | --- |
+| **Report:** Dynamic 4-bit compares weight and activation error and selectively protects sensitive components; Dynamic 2.0 describes model-specific precision allocation. | Measure per-site output/trajectory sensitivity before allocating W8 omissions, recovery rank or cache precision. Parameter magnitude and layer position alone do not establish importance. Swift's ternary weights cannot regain lost precision by decoding them into a wider type. |
+| **Implementation:** the pinned [importance collector][unsloth-imatrix] accumulates activation second moments and counts, checks finite observations and supports rendered special tokens. Its [usage guide][unsloth-imatrix-guide] discusses coverage and output-head handling. | Build bounded native Swift statistics on the actual template, reasoning mode, adapter and activation basis. Include chat/prose, constraints, Unicode and long-history groups; retain coverage, counts, outliers and provenance. Unsloth's upstream-Qwen imatrix is not calibrated for the Swift derivative or its changed execution profiles. |
+| **Implementation:** a pinned [export preset][unsloth-preset] assigns different formats to FFN-down, embeddings and output; the [quantizer][unsloth-quantizer] validates importance data. | This demonstrates explicit tensor-role policies, not the V3.1 search algorithm. Investigate role-specific activation/cache/recovery budgets with immutable base weights. Keep embeddings/output, norms and recurrent state explicit in sensitivity review; no preset bit widths or GPU assumptions transfer automatically. |
+| **Report:** Dynamic 3.x separates calibration from evaluation and compares short trajectories; 3.1 documents grader, extraction, timeout and CPU-contention corrections. | Extend W1/W8/K1 and Q1 controls with independent splits, teacher-forced distribution checks, separate free-running continuations and complete task review. Distinguish invalid infrastructure from model outcomes. Greedy agreement, KLD and local reconstruction error cannot substitute for sampled-answer or creative quality. |
+
+Applying these principles to W8 recovery and heterogeneous cache/activation
+precision is a local inference, not an Unsloth implementation claim. Compare the
+unchanged current Swift graph against the selected approximation, then its frozen
+compensation. F32 recurrent/convolution state remains protected initially. Count
+factor payload, cached originals, scratch and all failed/rejected work in actual
+process resources and useful-answer latency. Generic Qwen, CUDA and agentic scores
+do not establish a Swift/Snapdragon benefit. Existing artifact guards, canonical
+count/generation requests, terminal framing and held-out review remain authoritative;
+[PLAN](../PLAN.md#bounded-calibration-and-optional-precision) owns further work.
+
+[unsloth-imatrix]: https://github.com/unslothai/llama.cpp/blob/a1e6855b3c714d2938bd32a1d559928e804177c3/tools/imatrix/imatrix.cpp
+[unsloth-imatrix-guide]: https://github.com/unslothai/llama.cpp/blob/a1e6855b3c714d2938bd32a1d559928e804177c3/tools/imatrix/README.md
+[unsloth-preset]: https://github.com/unslothai/unsloth-zoo/blob/dcc56b55295b617397bc815a99ce971490bb7694/unsloth_zoo/llama_cpp.py
+[unsloth-quantizer]: https://github.com/unslothai/llama.cpp/blob/a1e6855b3c714d2938bd32a1d559928e804177c3/src/llama-quant.cpp
+
+The inspected llama.cpp fork declares MIT; the inspected unsloth-zoo revision
+declares LGPL-3.0. They are source references only; no code is copied or executed.
+Verify selected file licenses/notices before any later implementation reuse.
+
 ### Packed projections, CPU kernels and compression
 
 | Reference | Useful question and boundary |
