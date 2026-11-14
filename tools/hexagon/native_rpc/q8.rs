@@ -122,6 +122,10 @@ impl Q8Matmul {
         self.allocation
     }
 
+    pub(crate) const fn output_offset(self) -> usize {
+        self.output
+    }
+
     /// Source-derived total VTCM scratch requirement, including raw conversion.
     #[must_use]
     pub const fn vtcm_bytes(self) -> usize {

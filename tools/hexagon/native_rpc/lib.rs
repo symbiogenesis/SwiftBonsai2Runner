@@ -18,6 +18,7 @@ mod compute;
 mod dispatch;
 mod projection;
 mod q8;
+mod q8_dispatch;
 mod session;
 mod session_mapping;
 pub use compute::{
@@ -30,6 +31,7 @@ pub use projection::{
     Q2ProjectionReport,
 };
 pub use q8::{Q8_MAX_MAPPED_BYTES, Q8Matmul};
+pub use q8_dispatch::{Q8Buffer, Q8Completion, Q8Dispatcher, Q8Request};
 pub use session::{
     GET_EFFECTIVE_DOMAIN_ID, GET_URI, MAP_FD, MAP_FD_DELAYED, SessionPreparationReport,
 };

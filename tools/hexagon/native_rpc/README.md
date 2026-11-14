@@ -111,9 +111,29 @@ correlated buffer/cache/numeric result is required before reusing mapped bytes.
 Refusal, cancellation, stale replies or changed mapping identities poison the
 tracker permanently without replenishing its original operation budget.
 
+`Q8Dispatcher` adds a transport-independent host transaction for one tensor in
+that immutable plan. It binds the complete FD/address/extent/cache descriptor,
+consumes monotonic sequences before writes and inherits the original absolute
+deadline with a three-second cleanup reserve. One owner admits at most 24,000
+preparations; it has no reset, placement mutation, retry or fallback API. Every
+write result is recorded once, separately from the read, so a refused write
+cannot become successful after a later numeric reply. Complete response wire,
+sequence, descriptor/count/cache checks and an independent numerical oracle
+precede output publication. Cancellation, invalid output, oracle refusal and
+unwind leave the owner terminal. The transport must call `abandon` on uncertain
+native work or descriptor decoding failure and keep all uncertain native owners
+through supervised exit. The dispatcher never dereferences a recorded address,
+maps/frees memory or acknowledges native teardown.
+
+The named `q8_dispatch_` controls use simulated transport responses and literal
+wire fields. They cover successful single-flight reuse and budget exhaustion,
+write refusal, stale or malformed replies, descriptor changes, late nonfinite
+output, independent-oracle refusal/unwind, cancellation and deadline expiry.
+They execute no driver or DSP and are not observations of Q8 arithmetic.
+
 The Q8 packet/solver controls are mathematical/layout checks, not native captures.
-No Q8 native submission API, TTS integration or serving admission follows from
-packet construction. Independent signed-package/device execution, exact loaded
+The host transaction grants no native submission API, TTS integration or serving
+admission. Independent signed-package/device execution, exact loaded
 DSP identity, contained HTP0 supervision, Q8 activation quantization/arithmetic,
 correlated completions and teardown remain required. Q8 preparation does not
 qualify TTS prefill, shared KV, quality, listening or performance.
