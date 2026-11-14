@@ -61,6 +61,7 @@ pub const COMMANDS: &[&str] = &[
     "pe-closure",
     "native-link-verify",
     "release-tool",
+    "native-reference",
 ];
 
 /// Returns the native maintenance protocol capabilities without reading a request.
@@ -201,6 +202,9 @@ pub mod native_link;
 
 /// Contributor release validation, native process supervision and notice policy.
 pub mod release_tool;
+
+/// Bounded independent reference format readers and complete-state comparisons.
+pub mod native_reference;
 
 /// Retained caller identity for cancellation of native startup work.
 pub mod startup_cancel;

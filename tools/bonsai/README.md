@@ -215,6 +215,28 @@ The source verifier must have run independently; digest binding of its reviewed
 receipt is not a fresh source-verification result. See the
 [link/package capture contract](#selected-native-link-and-package-capture).
 
+`native-reference` owns the model-free reference readers and comparison/replay
+policy. `operation: "native-compare"` takes absolute `native` and `rust` capture
+directories, `backend: "auto"|"scalar"|"neon"`, `rowWorkers: 1|4` and
+`adapterCondition: "standard"|"loaded-zero"|"no-adapter"`. `row-compare` takes
+`serial` and `parallel` directories. Both accept a fresh `output` path; omitted
+output returns the complete receipt on stdout. They preserve fixed input tokens,
+complete-state inventory, finite-value checks, original tolerances and explicit
+no-promotion results. Owner qualification calls this command under its existing
+remaining deadline and process containment.
+
+`public-reference` takes `repository`, `dataDirectory`, `evidenceDirectory` and
+the prebuilt numerical `toolPath`; hosted-only admission and the original
+forty-minute aggregate deadline apply. `public-replay` takes `repository`,
+`evidenceDirectory`, `adapter`, `direction`, `expectedSourceRevision`,
+`expectedRunId` and `expectedRunAttempt`, and independently checks scalar A/B
+metrics and exact historical or native source inventories without executing
+archived code. `retained-audit` takes `repository`, `comparator` and a fresh
+`outputDirectory` for the one fixed historical artifact. It authenticates the
+original producer and ZIP bytes before replay. See the
+[reference guide](../native-reference/README.md) for source selections, focused
+controls and the public arithmetic contract. No command here runs model inference.
+
 `pe-closure` audits ARM64 PE files without loading them. Supply `bundleDirectory`
 and `systemDirectory`; omitted/null `aliases` reads `apisetschema.dll`. It follows
 candidate normal/delay imports and recursive system normal imports, rejects GUI

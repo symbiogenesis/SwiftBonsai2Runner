@@ -191,6 +191,7 @@ fn dispatch(command: &str, request: serde_json::Value) -> bonsai_tools::Result<s
         "pe-closure" => bonsai_tools::pe_closure::run(request),
         "native-link-verify" => bonsai_tools::native_link::run(request),
         "release-tool" => bonsai_tools::release_tool::run(&request),
+        "native-reference" => bonsai_tools::native_reference::run(&request),
         "startup-diagnostics" => bonsai_tools::startup_diagnostics::run(request),
         _ => Err("Unknown maintenance command.".into()),
     }

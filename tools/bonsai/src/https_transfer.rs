@@ -387,6 +387,19 @@ fn download_with(
     until: Instant,
     cancelled: &AtomicBool,
 ) -> crate::Result<()> {
+    download_with_mode(agent, uri, file, (offset, false), bytes, until, cancelled)
+}
+
+fn download_with_mode(
+    agent: &Agent,
+    uri: &str,
+    file: &mut File,
+    mode: (u64, bool),
+    bytes: u64,
+    until: Instant,
+    cancelled: &AtomicBool,
+) -> crate::Result<()> {
+    let (offset, fresh) = mode;
     if bytes == 0 || offset >= bytes || file.metadata().map_err(|e| e.to_string())?.len() != offset
     {
         return Err("Invalid pinned download length or changed partial offset.".into());
@@ -395,7 +408,26 @@ fn download_with(
     if offset != 0 {
         headers.push(("Range".into(), format!("bytes={offset}-")));
     }
-    let mut response = get(agent, uri, &headers, until, 10)?;
+    let mut response = if fresh {
+        let mut request = agent
+            .get(uri)
+            .config()
+            .timeout_global(Some(remaining(until)?))
+            .timeout_recv_response(Some(Duration::from_secs(30)))
+            .timeout_per_read(Some(Duration::from_secs(30)))
+            .max_redirects(10)
+            .build();
+        for (name, value) in &headers {
+            request = request.header(name, value);
+        }
+        let response = request.call().map_err(|error| error.to_string())?;
+        if response.status() != 200 {
+            return Err("Fresh reference intake requires HTTP 200.".into());
+        }
+        response
+    } else {
+        get(agent, uri, &headers, until, 10)?
+    };
     active(until, cancelled)?;
     let headers = response_headers(&response)?;
     let start = response_offset(response.status().as_u16(), &headers, offset, bytes)?;
@@ -443,6 +475,20 @@ pub(crate) fn download(
     validate_uri(uri)?;
     owned(agent(), until, checkpoint, |agent, cancelled| {
         download_with(agent, uri, file, offset, bytes, until, cancelled)
+    })
+}
+
+/// Fresh-only public-reference intake retains its original HTTP-200 and 30-second idle bounds.
+pub(crate) fn download_fresh(
+    uri: &str,
+    file: &mut File,
+    bytes: u64,
+    until: Instant,
+    checkpoint: &mut dyn FnMut() -> crate::Result<()>,
+) -> crate::Result<()> {
+    validate_uri(uri)?;
+    owned(agent(), until, checkpoint, |agent, cancelled| {
+        download_with_mode(agent, uri, file, (0, true), bytes, until, cancelled)
     })
 }
 
@@ -602,6 +648,20 @@ mod tests {
             assert_eq!(result.is_ok(), success, "{result:?}");
             assert!(request.to_ascii_lowercase().contains("range: bytes=5-"));
             assert_eq!(partial.bytes()?, expected);
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn fresh_reference_download_rejects_partial_status_before_writing() -> crate::Result<()> {
+        for (response,success) in [
+            (b"HTTP/1.1 200 OK\r\nContent-Length: 4\r\nConnection: close\r\n\r\ndata".as_slice(),true),
+            (b"HTTP/1.1 206 Partial Content\r\nContent-Length: 4\r\nContent-Range: bytes 0-3/4\r\nConnection: close\r\n\r\ndata".as_slice(),false),
+        ] {
+            let mut partial=Partial::new(b"")?;
+            let (result,_) = fixture(response,|agent,uri|Ok(download_with_mode(&agent,uri,&mut partial.file,(0,true),4,Instant::now()+Duration::from_secs(5),&AtomicBool::new(false))))?;
+            assert_eq!(result.is_ok(),success);
+            assert_eq!(partial.bytes()?,if success{b"data".as_slice()}else{b"".as_slice()});
         }
         Ok(())
     }

@@ -303,63 +303,33 @@ impl Context<'_> {
         }] = Value::Null;
         self.phase("logits-and-complete-state-comparison")?;
         let output = self.evidence.join("comparison.json");
-        let repo = &self.request.repository_directory;
-        let arguments: Vec<std::ffi::OsString> = if self.request.kind == Kind::Ptq1 {
-            vec![
-                "-NoLogo".into(),
-                "-NoProfile".into(),
-                "-File".into(),
-                repo.join("tools/native-reference/compare.ps1")
-                    .into_os_string(),
-                "-Native".into(),
-                self.evidence.join("native").into_os_string(),
-                "-Rust".into(),
-                self.evidence
-                    .join(&self.request.rust_backend)
-                    .into_os_string(),
-                "-Backend".into(),
-                self.request.rust_backend.clone().into(),
-                "-RowWorkers".into(),
-                self.request.row_workers.to_string().into(),
-                "-AdapterCondition".into(),
-                self.request.adapter_condition.name().into(),
-                "-Output".into(),
-                output.as_os_str().to_owned(),
-            ]
+        let request = if self.request.kind == Kind::Ptq1 {
+            json!({"operation":"native-compare", "native":self.evidence.join("native"),
+                "rust":self.evidence.join(&self.request.rust_backend),
+                "backend":self.request.rust_backend,"rowWorkers":self.request.row_workers,
+                "adapterCondition":self.request.adapter_condition.name(),"output":output})
         } else {
-            vec![
-                "-NoLogo".into(),
-                "-NoProfile".into(),
-                "-File".into(),
-                repo.join("tools/row-parallel/compare.ps1").into_os_string(),
-                "-Serial".into(),
-                self.evidence.join("serial").into_os_string(),
-                "-Parallel".into(),
-                self.evidence.join("parallel").into_os_string(),
-                "-Output".into(),
-                output.as_os_str().to_owned(),
-            ]
+            json!({"operation":"row-compare", "serial":self.evidence.join("serial"),
+                "parallel":self.evidence.join("parallel"),"output":output})
         };
+        let arguments = vec![
+            "native-reference".into(),
+            "--json".into(),
+            serde_json::to_string(&request)
+                .map_err(|error| error.to_string())?
+                .into(),
+        ];
         let remaining = self
             .remaining()?
             .checked_sub(5)
             .filter(|value| *value > 0)
             .ok_or("No comparison/cleanup allowance remains.")?;
-        let numeric_tool = std::env::current_exe()
-            .map_err(|error| error.to_string())?
-            .with_file_name("bonsai-reference-numerics.exe");
-        let environment = BTreeMap::from([(
-            "BONSAI_REFERENCE_NUMERIC_TOOL".to_owned(),
-            numeric_tool
-                .to_str()
-                .ok_or("Numeric helper path must be Unicode.")?
-                .to_owned(),
-        )]);
+        let executable = std::env::current_exe().map_err(|error| error.to_string())?;
         let result = crate::startup_process::run_with_checkpoint(
-            std::ffi::OsStr::new("pwsh.exe"),
+            executable.as_os_str(),
             &arguments,
             &self.evidence,
-            &environment,
+            &BTreeMap::new(),
             Duration::from_secs(remaining),
             &self.evidence.join("comparison.txt"),
             || self.checkpoint(),

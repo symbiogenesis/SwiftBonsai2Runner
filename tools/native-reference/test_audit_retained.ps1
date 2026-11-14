@@ -42,7 +42,7 @@ $tests=[ordered]@{
     test_redirect_strips_credentials_and_rejects_unapproved_hosts={
         Assert-RetainedRedirect ([uri]'https://test.blob.core.windows.net/evidence?signature=synthetic')
         foreach($target in 'http://test.blob.core.windows.net/evidence','https://example.com/evidence','https://user:password@test.blob.core.windows.net/evidence'){Assert-Rejected {Assert-RetainedRedirect ([uri]$target)}}
-        $source=[IO.File]::ReadAllText((Join-Path $PSScriptRoot 'audit_retained.ps1'));Assert-Reference ($source.Contains('AllowAutoRedirect=$false') -and $source.Contains("New request contains no token")) 'explicit credential-free redirect boundary missing'
+        $source=[IO.File]::ReadAllText((Join-Path $PSScriptRoot '../../tools/bonsai/src/native_reference/retained.rs'));Assert-Reference ($source.Contains('max_redirects(0)') -and $source.Contains('fresh credential-free request')) 'explicit credential-free redirect boundary missing'
     }
 }
 try{$selected=if($Name.Count){@($Name|ForEach-Object{($_ -split '\.')[-1]})}elseif($env:GITHUB_ACTIONS -ceq 'true'){@($tests.Keys)}else{throw 'Select a named focused regression locally; complete tests are CI-only.'};foreach($case in $selected){Assert-Reference ($tests.Contains($case)) 'unknown focused regression';& $tests[$case];Write-Output "PASS $case"}}finally{[IO.Directory]::Delete($scratch,$true)}

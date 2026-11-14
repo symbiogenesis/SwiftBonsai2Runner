@@ -10,7 +10,7 @@ and says that the [unfolded checkpoint is not shipped](https://github.com/Contin
 Those facts permit an independent public reconstruction attempt; they do not
 authenticate the author's original checkpoint bytes or conversion invocation.
 
-`tools/native-reference/public_pack_reference.ps1` and the dependency-free Rust
+The native `bonsai-tools native-reference` command and dependency-free Rust
 `bonsai-reference-numerics` helper implement exactly one declared recipe,
 `public-mlx-f16-inverse1024-f16-rust-scalar-f32-dot-v2`, before seeing payload results.
 Schema-2 packets bind this exact arithmetic identity.
@@ -57,29 +57,54 @@ absolute 40-minute deadline between bounded operations. It imports no downloaded
 instantiates no model, executes no inference and writes no full checkpoint.
 Weights stay in external runner-temp storage and are excluded from uploads.
 
-Retained evidence includes exact source/input identities, PowerShell/compiler
-and helper source/executable identities, the declared normalization/reduction,
+Retained evidence includes exact source/input identities, compiler and native
+policy/helper source/executable identities, the declared normalization/reduction,
 per-site input and candidate-F16 matrix
 hashes, the bounded raw model header, actual per-site dtype/shape/absolute byte
 extents, all 48 independently produced little-endian F32 A files, shipped-factor
 hashes and complete metrics. A failure retains its stage and partial results.
 Archive and independently review the exact raw output before artifact expiration.
 
-The producer also retains `replay-source/source-manifest.json` and seven selected
-raw source files: the producer, format reader, independent auditor, recipe pins
-and approved adapter/direction locks, plus the Rust numerical source. Its terminal
+The producer also retains `replay-source/source-manifest.json`. New schema-2 source
+manifests seal the original seven selected source files plus the six native Rust
+reference modules. Historical schema-1 manifests retain their exact seven-file
+selection: producer, format adapter, independent auditor, recipe pins, approved
+adapter/direction locks and the unchanged Rust numerical source. Its terminal
 report binds the manifest's SHA-256. The upload includes that finite source subtree,
 so later checkout line endings do not destroy replayability. Validation failures retain a bounded fixed
 reason; arbitrary HTTP, OS and library exception text is excluded.
 
-`tools/native-reference/audit_public_reference.ps1` independently replays the
-retained comparisons with PowerShell 7.6. It verifies the complete
+`bonsai-tools native-reference` with `operation: public-replay` independently
+replays the retained comparisons in Rust. The PowerShell entry point forwards
+parameters to that command. It verifies the complete
 approved adapter and direction bytes, producer scripts, selected source/run,
 raw configuration/header, exact all-48 inventory and source tensor descriptors,
 every retained A file and all 129 B factors. Its separate GGUF reader and scalar
 comparison loop check every reported metric under the unchanged bounds. Valid
 losing results remain losing results. A missing complete result cannot pass.
 The hosted workflow retains this replay after a complete match or disagreement.
+
+The hosted producer keeps its original forty-minute aggregate allowance,
+HTTP-200-only fresh intake and thirty-second transfer idle bound. It holds the
+fully rehashed model through a read-only, non-share-write handle during all 48
+sites. Native parsing and orchestration do not change the scalar-v2 arithmetic
+or relabel historical source/executable identities. Archived producer code is
+always data; replay executes the current independently selected Rust auditor.
+
+Focused local controls, after building the native tools outside any device
+qualification allowance:
+
+```powershell
+cargo test --offline -p bonsai-tools --lib native_reference::
+$env:BONSAI_TOOLS_PATH = (Resolve-Path target/debug/bonsai-tools.exe).Path
+$env:BONSAI_REFERENCE_NUMERIC_TOOL = (Resolve-Path target/debug/bonsai-reference-numerics.exe).Path
+pwsh -NoProfile -File tools/native-reference/test_public_pack_reference.ps1 -Name test_safetensors_checks_every_extent_dtype_and_payload_tail
+pwsh -NoProfile -File tools/native-reference/test_audit_public_reference.ps1 -Name test_complete_scalar_replay_retains_qualification_boundaries
+pwsh -NoProfile -File tools/native-reference/test_audit_public_reference.ps1 -Name test_sealed_source_preserves_a_verified_losing_result
+```
+
+The compatibility fixtures create finite synthetic inputs and call native policy;
+complete inventories and the public reconstruction remain in their hosted lane.
 
 An independent reviewer can repeat it without a Python runtime, a model download or another
 model workload. The current trusted auditor automatically checks the retained

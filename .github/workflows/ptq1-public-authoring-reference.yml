@@ -9,6 +9,8 @@ on:
       - tools/native-reference/audit_public_reference.ps1
       - tools/native-reference/test_audit_public_reference.ps1
       - tools/native-reference/reference_numerics.rs
+      - tools/bonsai/src/native_reference.rs
+      - tools/bonsai/src/native_reference/**
       - tools/native-reference/public-authoring-pins.json
       - .github/workflows/ptq1-public-authoring-reference.yml
   workflow_dispatch:
@@ -47,6 +49,8 @@ jobs:
         with:
           toolchain: nightly-2026-11-12-aarch64-pc-windows-msvc
           components: ''
+      - name: Reuse the source-bound native reference policy command
+        uses: $/.github/actions/bonsai-tools
       - name: Build the dependency-free independent numerical helper
         shell: pwsh
         run: |
@@ -98,7 +102,7 @@ jobs:
         run: |
           pwsh -NoLogo -NoProfile -File tools/native-reference/public_pack_reference.ps1 -DataDirectory "$env:RUNNER_TEMP/public-authoring-input" -EvidenceDirectory "$env:RUNNER_TEMP/public-authoring-evidence"
           exit $LASTEXITCODE
-      - name: Independently replay every retained A and B comparison with PowerShell
+      - name: Independently replay every retained A and B comparison with Rust
         if: always() && steps.source.outcome == 'success' && (steps.reconstruct.outcome == 'success' || steps.reconstruct.outcome == 'failure')
         shell: pwsh
         run: |

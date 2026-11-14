@@ -147,7 +147,17 @@ not qualify later numerical captures.
 
 The [public reference contract](../../docs/adapter-public-reference.md) owns the
 schema-2 all-48 A-vector reconstruction, arithmetic identity, hosted execution
-and independent replay. Its PowerShell 7.6 readers use the dependency-free Rust
-`bonsai-reference-numerics` helper; owner trials require its source-bound prebuilt
-executable. Select a focused control with `BONSAI_REFERENCE_NUMERIC_TOOL` or
-`-ToolPath`; unselected complete suites run only under GitHub Actions.
+and independent replay. `bonsai-tools native-reference` owns strict safetensors,
+GGUF and serialized-state decoding, complete-state comparison, hosted intake,
+independent replay and historical ZIP/producer admission. PowerShell entry points
+forward parameters; their compatibility helpers serve the existing synthetic
+fixtures. The dependency-free `bonsai-reference-numerics` arithmetic source stays
+unchanged. Owner trials consume source-bound prebuilt native tools and call the
+comparison command directly, without a PowerShell process between Rust tools.
+
+Set `BONSAI_TOOLS_PATH` to the checked maintenance command and
+`BONSAI_REFERENCE_NUMERIC_TOOL` to its numerical companion, or pass `-ToolPath`
+for a sibling checked numerical executable. Select named focused controls locally;
+unselected complete suites run only under GitHub Actions. See the
+[public-reference contract](../../docs/adapter-public-reference.md) for exact
+focused parser/replay commands and the distinct old/new source-manifest selections.
