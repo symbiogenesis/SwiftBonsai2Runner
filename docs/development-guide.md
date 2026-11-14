@@ -39,7 +39,7 @@ actual-model and broker-only/same-user isolation limits still apply.
 [PLAN.md](../PLAN.md) owns outstanding work. Identify whether the next action is
 implementation, integration, qualification or an owner/external dependency.
 Use [AGENTS.md](../AGENTS.md) for worktrees, commits, local-main integration,
-owner-only pushes and CI ownership; local completion need not wait for CI.
+push authorization and CI ownership; local completion need not wait for CI.
 
 ### Candidate and worker ownership
 

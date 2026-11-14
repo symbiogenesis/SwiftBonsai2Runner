@@ -569,7 +569,7 @@ When changing an action, use a disposable worktree and the same verified tool:
 
 Do not use `--accept-moved` in automation. Investigate moved references before
 accepting them. Local verification does not establish a hosted CI verdict, and
-the owner retains pushes and CI dispatch.
+push authorization and CI ownership follow [AGENTS.md](../../AGENTS.md).
 
 ### Local commit guard
 

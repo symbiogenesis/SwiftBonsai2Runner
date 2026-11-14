@@ -16,8 +16,8 @@ comfort, then measured optimization. Task IDs identify related work across docs.
 Follow [delivery ownership](docs/development-guide.md#implementation-delivery),
 [execution budgets](docs/validation.md) and
 [promotion criteria](docs/validation.md#promotion-criteria). Local checks leave
-hosted, device and human acceptance pending; the owner handles pushes and CI
-under [AGENTS.md](AGENTS.md).
+hosted, device and human acceptance pending; push authorization and CI ownership
+follow [AGENTS.md](AGENTS.md).
 
 The [repository research catalog](docs/research-register.md#research-catalog)
 records candidate sources, overlap and reuse limits. Its references are not

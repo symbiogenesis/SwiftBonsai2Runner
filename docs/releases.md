@@ -77,8 +77,8 @@ data directory until explicitly deleted. Developer
 
 ## Publish a release
 
-The owner handles pushes and release dispatch under [AGENTS.md](../AGENTS.md).
-After source review, publish local `main` and dispatch `release.yml` with
+Follow push authorization and CI ownership under [AGENTS.md](../AGENTS.md).
+When the user requests a release, review source, publish `main` and dispatch `release.yml` with
 `prerelease=true`. An omitted `tag` uses `workspace.package.version` from
 `Cargo.toml`; an explicit tag must match it. The publication body links to the
 README at that immutable source revision. No per-version notes are required.

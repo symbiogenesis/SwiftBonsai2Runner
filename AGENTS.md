@@ -92,18 +92,18 @@ compiling them inside its allowance.
 
 # Runner repository workflow
 
-Never push anything, including `main`, branches or tags, directly or through
-scripts. The owner handles every push. Keep the primary checkout on local `main`,
-review and integrate completed Runner changes there, and leave them local.
+Push Runner commits and tags when requested by the user. Keep the primary
+checkout on `main`, and review and integrate completed Runner changes there
+before publication.
 Do not create Runner pull requests as the routine delivery workflow. Parallel
 workers must still use individual Git worktrees and one commit per logical change.
 
 # Prism repository workflow
 
-The same no-push rule applies to the sibling `..\prism-inference` clone. The owner
-handles every Prism push. Do not create Prism pull requests as the routine delivery
+Push commits and tags in the sibling `..\prism-inference` clone when requested by
+the user. Do not create Prism pull requests as the routine delivery
 workflow. Keep parallel changes in individual worktrees and commits; review them
-before integrating into local Prism `main` and leave them local.
+before integrating into Prism `main` and publishing.
 
 # CI ownership and completion
 
