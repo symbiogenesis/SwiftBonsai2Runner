@@ -1,6 +1,8 @@
 //! Independent dependency syntax and closure omission/tamper controls.
 
-use super::{Generation, Identity, Input, Origin, Unit, dependency_rule, verify_unit};
+use super::{
+    Generation, GenerationInput, Identity, Input, Origin, Unit, dependency_rule, verify_unit,
+};
 use std::{
     fs,
     path::PathBuf,
@@ -88,7 +90,9 @@ impl Scratch {
                     generation: Some(Generation {
                         arguments: vec![generator.path.clone(), generator_input.path.clone()],
                         generator,
-                        inputs: vec![generator_input],
+                        inputs: vec![GenerationInput::Legacy(generator_input)],
+                        working_directory: None,
+                        exit_code: None,
                     }),
                 },
             ],
@@ -156,19 +160,19 @@ fn native_source_closure_rejects_ambiguous_or_multiple_make_rules() {
 fn native_source_closure_exact_generated_inputs_and_tampering() -> TestResult {
     let scratch = Scratch::new()?;
     let mut unit = scratch.unit()?;
-    assert_eq!(verify_unit(&unit, "clang", &mut 0)?, 1);
+    assert_eq!(verify_unit(&unit, "clang", 1, &mut 0)?, 1);
     let header = unit.inputs.pop().ok_or("Missing header fixture")?;
-    assert!(verify_unit(&unit, "clang", &mut 0).is_err());
+    assert!(verify_unit(&unit, "clang", 1, &mut 0).is_err());
     unit.inputs.push(header);
     unit.inputs.push(Input {
         identity: scratch.file("unused.h", b"unused")?,
         origin: Origin::Source,
         generation: None,
     });
-    assert!(verify_unit(&unit, "clang", &mut 0).is_err());
+    assert!(verify_unit(&unit, "clang", 1, &mut 0).is_err());
     unit.inputs.pop();
     fs::write(&unit.inputs[1].identity.path, b"#define VALUE 8\n")?;
-    assert!(verify_unit(&unit, "clang", &mut 0).is_err());
+    assert!(verify_unit(&unit, "clang", 1, &mut 0).is_err());
     Ok(())
 }
 
@@ -177,24 +181,151 @@ fn native_source_closure_rejects_partial_flags_and_lost_generation() -> TestResu
     let scratch = Scratch::new()?;
     let mut unit = scratch.unit()?;
     unit.arguments.push("-MMD".into());
-    assert!(verify_unit(&unit, "clang", &mut 0).is_err());
+    assert!(verify_unit(&unit, "clang", 1, &mut 0).is_err());
     unit.arguments.pop();
     unit.arguments.push("@hidden.rsp".into());
-    assert!(verify_unit(&unit, "clang", &mut 0).is_err());
+    assert!(verify_unit(&unit, "clang", 1, &mut 0).is_err());
     unit.arguments.pop();
     unit.arguments.push("-o".into());
     unit.arguments.push(unit.object.path.clone());
-    assert!(verify_unit(&unit, "clang", &mut 0).is_err());
+    assert!(verify_unit(&unit, "clang", 1, &mut 0).is_err());
     unit.arguments.pop();
     unit.arguments.pop();
     unit.preprocessing_arguments.push("-DCHANGED=1".into());
-    assert!(verify_unit(&unit, "clang", &mut 0).is_err());
+    assert!(verify_unit(&unit, "clang", 1, &mut 0).is_err());
     unit.preprocessing_arguments.pop();
     unit.arguments[1] = "-E".into();
-    assert!(verify_unit(&unit, "clang", &mut 0).is_err());
+    assert!(verify_unit(&unit, "clang", 1, &mut 0).is_err());
     unit.arguments[1] = "-c".into();
     unit.inputs[1].generation = None;
-    assert!(verify_unit(&unit, "clang", &mut 0).is_err());
+    assert!(verify_unit(&unit, "clang", 1, &mut 0).is_err());
+    Ok(())
+}
+
+fn recursive_unit(scratch: &Scratch) -> Result<Unit, Box<dyn std::error::Error>> {
+    let mut unit = scratch.unit()?;
+    let intermediate = scratch.file("intermediate.txt", b"7\n")?;
+    let original_input = scratch.file("value.txt", b"7\n")?;
+    let generator = scratch.file("generator", b"independent-generator-identity")?;
+    let generation = unit.inputs[1]
+        .generation
+        .as_mut()
+        .ok_or("Missing generation")?;
+    generation.arguments[1].clone_from(&intermediate.path);
+    generation.working_directory = Some(unit.working_directory.clone());
+    generation.exit_code = Some(0);
+    generation.inputs = vec![GenerationInput::Classified(Input {
+        identity: intermediate,
+        origin: Origin::Generated,
+        generation: Some(Generation {
+            arguments: vec![generator.path.clone(), original_input.path.clone()],
+            generator,
+            inputs: vec![GenerationInput::Classified(Input {
+                identity: original_input,
+                origin: Origin::Source,
+                generation: None,
+            })],
+            working_directory: Some(unit.working_directory.clone()),
+            exit_code: Some(0),
+        }),
+    })];
+    Ok(unit)
+}
+
+#[test]
+fn native_source_closure_recursive_generation_binds_transitive_bytes() -> TestResult {
+    let scratch = Scratch::new()?;
+    let unit = recursive_unit(&scratch)?;
+    assert_eq!(verify_unit(&unit, "clang", 2, &mut 0)?, 2);
+    // This source is not a compiler dependency or direct generator input. Its
+    // bytes still determine the intermediate that produced the included header.
+    fs::write(scratch.0.join("value.txt"), b"8\n")?;
+    assert!(verify_unit(&unit, "clang", 2, &mut 0).is_err());
+    Ok(())
+}
+
+#[test]
+fn native_source_closure_recursive_generation_rejects_missing_or_failed_steps() -> TestResult {
+    let scratch = Scratch::new()?;
+    let unit = scratch.unit()?;
+    // Legacy immediate-input captures retain their old scope; they cannot stand
+    // in for the stricter recursive schema merely by changing the version.
+    assert!(verify_unit(&unit, "clang", 2, &mut 0).is_err());
+    let mut unit = recursive_unit(&scratch)?;
+    let generation = unit.inputs[1]
+        .generation
+        .as_mut()
+        .ok_or("Missing generation")?;
+    let GenerationInput::Classified(intermediate) = &mut generation.inputs[0] else {
+        return Err("Missing intermediate fixture".into());
+    };
+    intermediate
+        .generation
+        .as_mut()
+        .ok_or("Missing nested generation")?
+        .exit_code = Some(1);
+    assert!(verify_unit(&unit, "clang", 2, &mut 0).is_err());
+    let mut unit = recursive_unit(&scratch)?;
+    let generation = unit.inputs[1]
+        .generation
+        .as_mut()
+        .ok_or("Missing generation")?;
+    let GenerationInput::Classified(intermediate) = &mut generation.inputs[0] else {
+        return Err("Missing intermediate fixture".into());
+    };
+    intermediate.generation = None;
+    assert!(verify_unit(&unit, "clang", 2, &mut 0).is_err());
+    let mut unit = recursive_unit(&scratch)?;
+    unit.inputs[1]
+        .generation
+        .as_mut()
+        .ok_or("Missing generation")?
+        .working_directory = None;
+    assert!(verify_unit(&unit, "clang", 2, &mut 0).is_err());
+    Ok(())
+}
+
+#[test]
+fn native_source_closure_recursive_generation_rejects_ancestor_aliases() -> TestResult {
+    let scratch = Scratch::new()?;
+    let mut unit = recursive_unit(&scratch)?;
+    let ancestor = scratch.file("generated.h", b"#define VALUE 7\n")?;
+    let generation = unit.inputs[1]
+        .generation
+        .as_mut()
+        .ok_or("Missing generation")?;
+    let GenerationInput::Classified(intermediate) = &mut generation.inputs[0] else {
+        return Err("Missing intermediate fixture".into());
+    };
+    intermediate
+        .generation
+        .as_mut()
+        .ok_or("Missing nested generation")?
+        .inputs = vec![GenerationInput::Classified(Input {
+        identity: ancestor,
+        origin: Origin::Source,
+        generation: None,
+    })];
+    assert!(verify_unit(&unit, "clang", 2, &mut 0).is_err());
+    let mut unit = recursive_unit(&scratch)?;
+    let object = scratch.file("source.obj", b"independent object identity")?;
+    let generation = unit.inputs[1]
+        .generation
+        .as_mut()
+        .ok_or("Missing generation")?;
+    let GenerationInput::Classified(intermediate) = &mut generation.inputs[0] else {
+        return Err("Missing intermediate fixture".into());
+    };
+    intermediate
+        .generation
+        .as_mut()
+        .ok_or("Missing nested generation")?
+        .inputs = vec![GenerationInput::Classified(Input {
+        identity: object,
+        origin: Origin::Source,
+        generation: None,
+    })];
+    assert!(verify_unit(&unit, "clang", 2, &mut 0).is_err());
     Ok(())
 }
 
@@ -217,25 +348,45 @@ fn native_source_closure_manifest_digest_and_unknown_fields() -> TestResult {
     Ok(())
 }
 
-#[test]
-fn native_source_closure_verified_envelope_keeps_retirement_unqualified() -> TestResult {
-    fn identity(value: &Identity) -> serde_json::Value {
-        serde_json::json!({"path": value.path, "bytes": value.bytes, "sha256": value.sha256})
-    }
+fn identity(value: &Identity) -> serde_json::Value {
+    serde_json::json!({"path": value.path, "bytes": value.bytes, "sha256": value.sha256})
+}
+
+fn input_value(input: &Input) -> serde_json::Value {
+    let generation = input.generation.as_ref().map(|generation| {
+        let mut document = serde_json::json!({
+            "generator": identity(&generation.generator), "arguments": generation.arguments,
+            "inputs": generation.inputs.iter().map(|input| match input {
+                GenerationInput::Legacy(value) => identity(value),
+                GenerationInput::Classified(value) => input_value(value),
+            }).collect::<Vec<_>>()
+        });
+        if let Some(directory) = &generation.working_directory {
+            document["workingDirectory"] = directory.clone().into();
+        }
+        if let Some(code) = generation.exit_code {
+            document["exitCode"] = code.into();
+        }
+        document
+    });
+    serde_json::json!({"identity": identity(&input.identity),
+        "origin": match input.origin {
+            Origin::Source => "source", Origin::Toolchain => "toolchain", Origin::Generated => "generated",
+        }, "generation": generation})
+}
+
+fn verify_envelope(schema: u32) -> TestResult {
     let scratch = Scratch::new()?;
-    let mut unit = scratch.unit()?;
+    let mut unit = if schema == 2 {
+        recursive_unit(&scratch)?
+    } else {
+        scratch.unit()?
+    };
     let compiler = scratch.file("clang", b"independent compiler identity")?;
     unit.arguments[0].clone_from(&compiler.path);
     unit.preprocessing_arguments[0].clone_from(&compiler.path);
-    let inputs = unit.inputs.iter().map(|input| {
-        let generation = input.generation.as_ref().map(|generation| serde_json::json!({
-            "generator": identity(&generation.generator), "arguments": generation.arguments,
-            "inputs": generation.inputs.iter().map(identity).collect::<Vec<_>>()
-        }));
-        serde_json::json!({"identity": identity(&input.identity),
-            "origin": if generation.is_some() {"generated"} else {"source"}, "generation": generation})
-    }).collect::<Vec<_>>();
-    let document = serde_json::json!({"schemaVersion": 1,
+    let inputs = unit.inputs.iter().map(input_value).collect::<Vec<_>>();
+    let document = serde_json::json!({"schemaVersion": schema,
         "kind": "selected-clang-native-source-closure", "sourceRevision": "a".repeat(40),
         "target": "aarch64-pc-windows-msvc", "configuration": "Release CPU",
         "compiler": identity(&compiler), "units": [{"source": unit.source,
@@ -254,11 +405,23 @@ fn native_source_closure_verified_envelope_keeps_retirement_unqualified() -> Tes
         manifest.sha256.into(),
     ])?)?;
     assert_eq!(receipt["translationUnits"], 1);
-    assert_eq!(receipt["generatedInputs"], 1);
+    assert_eq!(receipt["generatedInputs"], schema);
+    assert_eq!(receipt["manifestSchemaVersion"], schema);
+    assert_eq!(receipt["recursiveGenerationProvenanceChecked"], schema == 2);
     assert_eq!(receipt["freshCompilerExecution"], false);
     assert_eq!(receipt["completeBuildClosureQualified"], false);
     assert_eq!(receipt["nativeRetirementQualified"], false);
     Ok(())
+}
+
+#[test]
+fn native_source_closure_verified_envelope_keeps_retirement_unqualified() -> TestResult {
+    verify_envelope(1)
+}
+
+#[test]
+fn native_source_closure_recursive_envelope_keeps_retirement_unqualified() -> TestResult {
+    verify_envelope(2)
 }
 
 use std::ffi::OsString;

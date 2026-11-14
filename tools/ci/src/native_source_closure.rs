@@ -27,7 +27,18 @@ struct Identity {
 struct Generation {
     generator: Identity,
     arguments: Vec<String>,
-    inputs: Vec<Identity>,
+    inputs: Vec<GenerationInput>,
+    working_directory: Option<String>,
+    exit_code: Option<i32>,
+}
+
+// Schema 1 captured only immediate generator inputs. Schema 2 classifies each
+// input recursively so a generated intermediate cannot lose its own provenance.
+#[derive(Deserialize)]
+#[serde(untagged)]
+enum GenerationInput {
+    Classified(Input),
+    Legacy(Identity),
 }
 
 #[derive(Deserialize)]
@@ -297,7 +308,97 @@ fn verify_command(unit: &Unit, compiler: &str) -> Result<()> {
     Ok(())
 }
 
-fn verify_unit(unit: &Unit, compiler: &str, total: &mut u64) -> Result<usize> {
+fn verify_input(
+    input: &Input,
+    schema_version: u32,
+    total: &mut u64,
+    ancestors: &mut BTreeSet<String>,
+    compiler_outputs: &[&str],
+) -> Result<(String, usize)> {
+    if (input.origin == Origin::Generated) != input.generation.is_some() {
+        return Err("Only generated inputs require generator provenance.".into());
+    }
+    let key = verify_identity(&input.identity, total)?;
+    if compiler_outputs.contains(&key.as_str()) {
+        return Err("Native generation depends on an output of its own compilation.".into());
+    }
+    if ancestors.len() >= 64 || !ancestors.insert(key.clone()) {
+        return Err("Native generation provenance is cyclic or exceeds its depth bound.".into());
+    }
+    let result = verify_generation(
+        input,
+        &key,
+        schema_version,
+        total,
+        ancestors,
+        compiler_outputs,
+    );
+    ancestors.remove(&key);
+    result.map(|count| (key, count))
+}
+
+fn verify_generation(
+    input: &Input,
+    output: &str,
+    schema_version: u32,
+    total: &mut u64,
+    ancestors: &mut BTreeSet<String>,
+    compiler_outputs: &[&str],
+) -> Result<usize> {
+    let Some(generation) = &input.generation else {
+        return Ok(0);
+    };
+    let generator = verify_identity(&generation.generator, total)?;
+    if !(1..=8192).contains(&generation.inputs.len())
+        || !arguments_valid(&generation.arguments, &generation.generator.path)
+        || ancestors.contains(&generator)
+        || compiler_outputs.contains(&generator.as_str())
+    {
+        return Err("Native generated source lacks a generator/input identity.".into());
+    }
+    if schema_version == 2 {
+        let directory = generation
+            .working_directory
+            .as_ref()
+            .ok_or("Native generation requires its original working directory.")?;
+        path_key(directory)?;
+        if !Path::new(directory).is_dir() || generation.exit_code != Some(0) {
+            return Err("Native generation requires a successful original invocation.".into());
+        }
+    }
+    let mut inputs = BTreeSet::new();
+    let mut count = 1;
+    for dependency in &generation.inputs {
+        let (key, nested) = match dependency {
+            GenerationInput::Classified(dependency) => verify_input(
+                dependency,
+                schema_version,
+                total,
+                ancestors,
+                compiler_outputs,
+            )?,
+            GenerationInput::Legacy(identity) if schema_version == 1 => {
+                (verify_identity(identity, total)?, 0)
+            }
+            GenerationInput::Legacy(_) => {
+                return Err(
+                    "Native generation schema 2 requires classified transitive inputs.".into(),
+                );
+            }
+        };
+        if key == output
+            || ancestors.contains(&key)
+            || compiler_outputs.contains(&key.as_str())
+            || !inputs.insert(key)
+        {
+            return Err("Native generation inputs contain an alias or cycle.".into());
+        }
+        count += nested;
+    }
+    Ok(count)
+}
+
+fn verify_unit(unit: &Unit, compiler: &str, schema_version: u32, total: &mut u64) -> Result<usize> {
     verify_command(unit, compiler)?;
     path_key(&unit.working_directory)?;
     if !Path::new(&unit.working_directory).is_dir() {
@@ -339,30 +440,16 @@ fn verify_unit(unit: &Unit, compiler: &str, total: &mut u64) -> Result<usize> {
     let mut actual = BTreeSet::new();
     let mut generated = 0;
     for input in &unit.inputs {
-        if (input.origin == Origin::Generated) != input.generation.is_some() {
-            return Err("Only generated inputs require generator provenance.".into());
-        }
-        let key = verify_identity(&input.identity, total)?;
-        if [&object, &report, &preprocessed].contains(&&key) || !actual.insert(key.clone()) {
+        let (key, generation_count) = verify_input(
+            input,
+            schema_version,
+            total,
+            &mut BTreeSet::new(),
+            &[&object, &report, &preprocessed],
+        )?;
+        generated += generation_count;
+        if [&object, &report, &preprocessed].contains(&&key) || !actual.insert(key) {
             return Err("Native closure contains colliding input/output identities.".into());
-        }
-        if let Some(generation) = &input.generation {
-            generated += 1;
-            if !(1..=8192).contains(&generation.inputs.len())
-                || !arguments_valid(&generation.arguments, &generation.generator.path)
-                || verify_identity(&generation.generator, total)? == key
-            {
-                return Err("Native generated source lacks a generator/input identity.".into());
-            }
-            let mut generation_inputs = BTreeSet::new();
-            for input in &generation.inputs {
-                let dependency = verify_identity(input, total)?;
-                if dependency == key || !generation_inputs.insert(dependency) {
-                    return Err(
-                        "Native generation inputs contain an alias or self-reference.".into(),
-                    );
-                }
-            }
         }
     }
     if expected != actual {
@@ -386,7 +473,7 @@ pub(super) fn run(arguments: &[OsString]) -> Result<String> {
         return Err("Native closure manifest differs from its reviewed SHA-256.".into());
     }
     let manifest: Manifest = serde_json::from_slice(&bytes).map_err(|error| error.to_string())?;
-    if manifest.schema_version != 1
+    if ![1, 2].contains(&manifest.schema_version)
         || manifest.kind != "selected-clang-native-source-closure"
         || !lower_hex(&manifest.source_revision, 40)
         || manifest.target.is_empty()
@@ -413,13 +500,20 @@ pub(super) fn run(arguments: &[OsString]) -> Result<String> {
         if !objects.insert(path_key(&unit.object.path)?) {
             return Err("Native closure has duplicate compiled objects.".into());
         }
-        generated += verify_unit(unit, &manifest.compiler.path, &mut total)?;
+        generated += verify_unit(
+            unit,
+            &manifest.compiler.path,
+            manifest.schema_version,
+            &mut total,
+        )?;
     }
     Ok(serde_json::json!({
         "schemaVersion": 1, "kind": "selected-native-source-closure-verification", "passed": true,
         "manifestSha256": expected, "sourceRevision": manifest.source_revision,
         "target": manifest.target, "configuration": manifest.configuration,
         "compilerSha256": manifest.compiler.sha256, "translationUnits": manifest.units.len(),
+        "manifestSchemaVersion": manifest.schema_version,
+        "recursiveGenerationProvenanceChecked": manifest.schema_version == 2,
         "generatedInputs": generated, "checkedBytesIncludingRepeatedInputs": total,
         "freshCompilerExecution": false, "completeBuildClosureQualified": false,
         "binaryLinkageQualified": false, "inferenceParityQualified": false,

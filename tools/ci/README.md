@@ -130,7 +130,7 @@ omits system headers. The supported subset excludes response files, Make
 variables/comments, multiple/phony rules, NMake format and relative dependencies;
 unsupported captures reject rather than silently dropping inputs.
 
-The strict schema-1 manifest has `kind: selected-clang-native-source-closure`,
+The strict schema-2 manifest has `kind: selected-clang-native-source-closure`,
 `sourceRevision` (40 lowercase hex characters), `target`, `configuration`,
 `compiler` and a nonempty `units` array. Every file identity is an object with
 absolute `path`, `bytes` and lowercase `sha256` fields. The compiler is one such
@@ -143,7 +143,24 @@ identity. Each unit supplies:
 | `compilerExitCode`, `preprocessorExitCode` | Both must be zero. |
 | `dependencies`, `preprocessed`, `object` | Distinct file identities for the original dependency report, nonempty preprocessed output and nonempty object. |
 | `inputs` | Exact source/header identities from the dependency report, each as `{identity, origin, generation}`. `origin` is `source`, `toolchain` or `generated`. |
-| `generation` | Null for source/toolchain inputs; generated inputs require `{generator, arguments, inputs}`, binding the generator executable, original arguments and nonempty input file identities. |
+| `generation` | Null for source/toolchain inputs; generated inputs require `{generator, arguments, workingDirectory, exitCode, inputs}`, binding the generator executable, original arguments, absolute original working directory and successful exit code (zero). |
+
+Each schema-2 generation input is another complete `{identity, origin, generation}`
+record. Follow generated intermediates recursively until every leaf is classified
+as source or toolchain input. This retains the original bytes and invocations
+behind generated headers, rather than recording only the final intermediate.
+All generator executables and source/intermediate inputs retain their own byte
+lengths and SHA-256 identities; generator executable build/link closure remains
+a separate owning-build obligation. Ancestor cycles, duplicate/aliased sibling
+inputs, missing provenance and failed generation reject. Generation depth is
+bounded at 64 records (the JSON parser's own nesting bound also applies).
+
+Schema 1 remains readable for historical captures with direct identity-only
+generation inputs. Its receipt has `manifestSchemaVersion: 1` and
+`recursiveGenerationProvenanceChecked: false`; changing its version to 2 without
+the additional provenance rejects. A schema-2 receipt sets that field true only
+after checking every classified input. `generatedInputs` counts all verified
+generation records, including repeated transitive records.
 
 The verifier rejects omitted/extra/aliased inputs, changed bytes, unsafe paths,
 reparse ancestors and absent generated-input provenance. It binds dependency

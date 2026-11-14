@@ -81,7 +81,10 @@ closure, inference parity or permission to delete native files.
 The Rust [`native-closure-verify` command](../tools/ci/README.md#selected-compiler-source-closure)
 separately checks a reviewed selection of compiled translation units against
 original Clang dependency reports, preprocessed/object identities and generated
-input provenance. Owning builds must still establish complete selection,
+input provenance. Schema-2 captures recursively classify and verify generated
+intermediates, including each original successful invocation and working directory;
+schema-1 replay retains its direct-input scope. Owning builds must still establish
+complete selection,
 configuration and linked-library closure; passing a selected capture does not
 qualify native retirement.
 
