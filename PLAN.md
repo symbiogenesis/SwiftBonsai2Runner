@@ -603,8 +603,10 @@ nor editing the available Abliteration factors.
   with independent fallback and source-bound code generation.
 - [ ] Measure event waits versus polling and valid energy telemetry before
   selecting idle/active power policy or claiming energy benefit.
-- [ ] Implement the reviewed deterministic profile catalog, ranking and resource
-  admission against independently verified common evidence.
+- [ ] Qualify the bounded deterministic profile catalog and live-resource
+  admission against independently verified common evidence. Populate reviewed
+  profiles and connect serving only after exact-source backend acceptance;
+  the current catalog is an offline policy, not an execution permit.
 - [ ] Connect truthful requested/effective diagnostics and native Auto controls
   only to qualified profiles and explicit supported subsets.
 - [ ] Qualify request-boundary invalidation, complete state migration, driver/
@@ -657,6 +659,11 @@ nor editing the available Abliteration factors.
   selected-cache and FP16 state/adapter/cancellation parity, codegen/resources and
   matched CPU-only complete-request benefit. Retain the pinned runtime as rollback.
 - [ ] Qualify [prepared packed-KV queries and CPU preparation reuse](docs/cpu-kernels.md#prepared-packed-kv-queries-and-cpu-preparation-reuse).
+- [ ] Publish and qualify [parallel packed-cache prompt attention](docs/cpu-kernels.md#parallel-packed-cache-prompt-attention):
+  serial/tiled causal logits and complete-state parity, sealed-page boundaries,
+  raw-row identity, cancellation/late-failure rollback, strict Release analysis,
+  worker/score-scratch bounds and matched X2 complete-request benefit. Preserve
+  the explicit tiled-prefill opt-in and published runtime rollback.
 - [ ] Publish and qualify [zero-weight packed values, temporal GDN heads and joined Q8 tiles](docs/cpu-kernels.md#zero-weight-packed-values-temporal-gdn-heads-and-joined-q8-tiles):
   exact native/portable and feature-disabled controls, strict ARM64/x64 Release
   analysis/linking, codegen/stack and resource review, complete-model
@@ -710,9 +717,11 @@ nor editing the available Abliteration factors.
 
 - [ ] Diagnose X2 `VK_ERROR_INCOMPATIBLE_DRIVER` and the separate GDI32 lookup
   error 126; establish their causes before further inference claims.
-- [ ] Prepare one native ARM64 OpenCL Swift packed-projection pilot under
-  unchanged mitigations, plus a separately locked Vulkan candidate under the
-  [Adreno contract](docs/adreno.md).
+- [ ] Qualify the opt-in native ARM64 OpenCL original-PQ2/Q8_K projection
+  pilot under unchanged mitigations, including owning hosted analysis/linking,
+  exact input/kernel/device identities, every-block scalar replay and terminal
+  cleanup. Prepare a separately locked Vulkan candidate under the
+  [Adreno contract](docs/adreno.md); neither path admits GPU serving yet.
 - [ ] Bind operation support, effective placement, fallback and transfer ledgers
   to selected graph shapes. Qualify PQ2/PTQ1 and no-/approved-LoRA independently,
   including full-state lifecycle and resources.
@@ -730,6 +739,11 @@ nor editing the available Abliteration factors.
 - [ ] Qualify the implemented six-arena/168-projection `native-q2` placement:
   exact selected tensors, adapter/full-state parity, arena admission, load costs,
   fallback, persistent lifecycle and complete-request benefit under [Hexagon policy](docs/hexagon.md).
+- [ ] Publish and qualify the model-thread initialization/readiness handshake
+  and `startup_projection` facts, including failed initialization, CPU/external
+  executors, actual resident counts/bytes and Runner's bounded observation
+  parser. Require the new observation only after verified release repinning;
+  published 0.1.27 retains its legacy readiness contract.
 - [ ] Qualify existing full-FFN chains, sibling packets, multi-tile N=1 and
   tile-major reuse independently. Implement true N>1 prefill only with a supported
   signed solver, causal state, bounded VTCM/DMA and measured total-cost benefit.

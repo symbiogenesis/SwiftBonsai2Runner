@@ -790,6 +790,23 @@ cannot combine different families. The [shared CPU promotion rule](#cross-genera
 reuses a reviewed deployment decision, without relabeling or mixing those records.
 Identity observations alone do not qualify an X2 profile.
 
+## Parallel packed-cache prompt attention
+
+Reviewed local Prism source parallelizes token attention in the existing explicit
+tiled-prefill path for K4/V4, fitted-value K4/V4 and K4/V3 caches. Each token uses
+its own causal history and one bounded score row; immutable packed history is
+shared across row workers without expanding the cache. Serial head order, codec,
+softmax, reduction and current-token arithmetic remain unchanged. Provisional
+outputs clear on failure, and request checkpoints retain complete-state rollback.
+
+Tiled scratch now charges `tile_tokens * context_tokens * 4` score bytes in
+addition to ordinary graph/worker/checkpoint charges. The explicit opt-in and
+published runtime remain unchanged. Source controls compare serial and tiled
+causal results across page boundaries, raw packed rows, cancellation and late
+failure. Owning hosted analysis, production linking, complete-model parity,
+ARM64 code generation/resources and matched X2 complete-request benefit remain
+pending; source parallelism supplies no measured acceleration verdict.
+
 [fearless]: https://docs.rs/fearless_simd/1.1.0/fearless_simd/
 [target-feature]: https://doc.rust-lang.org/reference/attributes/codegen.html#the-target_feature-attribute
 [detection]: https://doc.rust-lang.org/std/arch/macro.is_aarch64_feature_detected.html
