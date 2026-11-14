@@ -367,6 +367,12 @@ fn validate_configuration(
 #[cfg(windows)]
 fn main() -> std::process::ExitCode {
     let args: Vec<_> = std::env::args_os().skip(1).collect();
+    if args
+        .first()
+        .is_some_and(|argument| argument == "--audio-import-worker")
+    {
+        return audio_import::run_worker(&args);
+    }
     let result = if args.len() == 1 && args[0] == "--preview" {
         window::run_preview().map(|()| false)
     } else if args

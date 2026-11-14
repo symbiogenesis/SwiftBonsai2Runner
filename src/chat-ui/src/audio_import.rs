@@ -48,6 +48,7 @@ use windows_sys::Win32::{
 };
 
 mod decoder;
+mod isolated;
 mod segments;
 use decoder::Decoder;
 use segments::{
@@ -58,8 +59,10 @@ use segments::{
 const CANCELLED: &str = "Audio import cancelled.";
 const MAX_CONVERTED_BYTES: u64 = 16_000 * 2 * 30 + 65_536;
 // Budget the callback sample/copy, one retained decoder frame, readback PCM,
-// pause suffix and canonical WAV, plus the preceding WAV being transcribed
-// while this segment is decoded. No complete-file audio allocation is made.
+// pause suffix and canonical WAV, plus the preceding WAV being transcribed.
+// The isolated launcher additionally reserves the helper's complete Job commit
+// allowance and pipe buffers; the parent receives directly into its final WAV.
+// No complete-file audio allocation is made.
 const CHUNK_WORKING_BYTES: u64 = 6 * MAX_CONVERTED_BYTES;
 const CONVERSION_LIMIT: Duration = Duration::from_secs(45);
 const POLL: Duration = Duration::from_millis(10);
@@ -318,13 +321,9 @@ fn import(
     if !supported_path(&path) {
         return Err("Choose an MP3, WAV, M4A, AAC, FLAC or WMA audio file. Your draft was kept.");
     }
-    let metadata = path
-        .metadata()
-        .map_err(|_| "The selected audio file could not be opened. Your draft was kept.")?;
-    if !metadata.is_file() || metadata.len() == 0 {
-        return Err("Choose a nonempty regular audio file. Your draft was kept.");
-    }
-    convert(&path, shared, sender, next)
+    // The isolated boundary validates and retains the exact local file before
+    // any codec sees it; do not follow a pathname for a preliminary metadata read.
+    isolated::convert(&path, shared, sender, next)
 }
 fn supported_path(path: &Path) -> bool {
     path.extension()
@@ -457,30 +456,54 @@ impl Drop for Apartment {
         unsafe { RoUninitialize() };
     }
 }
-fn convert(
+pub(crate) fn run_worker(arguments: &[OsString]) -> std::process::ExitCode {
+    isolated::run_worker(arguments)
+}
+
+fn convert_with(
     path: &Path,
     shared: &Shared,
-    sender: &SyncSender<ImportResult>,
-    next: &Receiver<()>,
+    deliver: &mut impl FnMut(Chunk) -> Result<bool, &'static str>,
 ) -> Result<(), &'static str> {
     let _apartment = Apartment::initialize(false)?;
     check_memory(CHUNK_WORKING_BYTES)?;
     let mut decoder = Decoder::open(path, shared, Instant::now() + CONVERSION_LIMIT)?;
     let total = decoder.total();
-    decode_chunks(
+    decode_with(
         &mut |capacity| decoder.read(capacity, shared, Instant::now() + CONVERSION_LIMIT),
         shared,
-        sender,
-        next,
+        deliver,
         total,
     )
 }
 
+#[cfg(test)]
 fn decode_chunks(
     read: &mut impl FnMut(usize) -> Result<(Vec<u8>, bool), &'static str>,
     shared: &Shared,
     sender: &SyncSender<ImportResult>,
     next: &Receiver<()>,
+    total: Duration,
+) -> Result<(), &'static str> {
+    decode_with(
+        read,
+        shared,
+        &mut |chunk| {
+            let last = chunk.last;
+            if sender.send(Ok(Some(chunk))).is_err() || last {
+                return Ok(false);
+            }
+            await_advance(shared, next)?;
+            Ok(true)
+        },
+        total,
+    )
+}
+
+fn decode_with(
+    read: &mut impl FnMut(usize) -> Result<(Vec<u8>, bool), &'static str>,
+    shared: &Shared,
+    deliver: &mut impl FnMut(Chunk) -> Result<bool, &'static str>,
     total: Duration,
 ) -> Result<(), &'static str> {
     let mut pending = Vec::new();
@@ -516,10 +539,9 @@ fn decode_chunks(
         if shared.cancelled.load(Ordering::Acquire) {
             return Err(CANCELLED);
         }
-        if sender.send(Ok(Some(chunk))).is_err() || last {
+        if !deliver(chunk)? || last {
             return Ok(());
         }
-        await_advance(shared, next)?;
         emitted_samples = next_sample;
     }
 }
