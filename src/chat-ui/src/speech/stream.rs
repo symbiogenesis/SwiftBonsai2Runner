@@ -1,6 +1,6 @@
 //! Unicode-safe incremental speech segmentation with a bounded text lifetime.
 
-use super::segmentation;
+use super::segmentation::{self, horizontal_whitespace};
 use super::{Duration, Instant, MAX_TEXT, VecDeque};
 
 const LATENCY: Duration = Duration::from_millis(700);
@@ -114,14 +114,67 @@ impl Text {
     }
 }
 
-const fn horizontal_whitespace(character: char) -> bool {
-    character.is_whitespace() && !matches!(character, '\r' | '\n')
-}
-
 #[cfg(test)]
 mod tests {
     use super::{Instant, LATENCY, MAX_TEXT, Text};
     use crate::speech::{MAX_SEGMENT, segments};
+
+    #[test]
+    fn unicode_line_breaks_survive_every_stream_fragment_boundary() -> Result<(), &'static str> {
+        let now = Instant::now();
+        for separator in [
+            "\r", "\n", "\r\n", "\u{b}", "\u{c}", "\u{85}", "\u{2028}", "\u{2029}",
+        ] {
+            let input = format!("First{separator}{separator}Second{separator}tail");
+            for split in input
+                .char_indices()
+                .map(|(offset, _)| offset)
+                .chain([input.len()])
+            {
+                let mut text = Text::default();
+                text.append(&input[..split], now)?;
+                let mut ready = text.ready(now);
+                text.append(&input[split..], now)?;
+                ready.extend(text.ready(now));
+                text.finished = true;
+                ready.extend(text.ready(now));
+                assert_eq!(ready.into_iter().collect::<String>(), input);
+                assert!(text.ready(now).is_empty());
+            }
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn unicode_line_breaks_are_retained_without_exceeding_the_scalar_clip_limit()
+    -> Result<(), &'static str> {
+        let now = Instant::now();
+        for separator in [
+            "\r", "\n", "\r\n", "\u{b}", "\u{c}", "\u{85}", "\u{2028}", "\u{2029}",
+        ] {
+            let input = format!("{}{separator}{separator}tail", "界".repeat(MAX_SEGMENT - 1));
+            let mut text = Text::default();
+            text.append(&input, now)?;
+            let mut ready = text.ready(now);
+            text.finished = true;
+            ready.extend(text.ready(now));
+            let complete = segments(&input).ok_or("Expected complete speech segments")?;
+            assert_eq!(ready, complete);
+            assert!(
+                ready
+                    .iter()
+                    .all(|piece| piece.chars().count() <= MAX_SEGMENT)
+            );
+            assert_eq!(ready.into_iter().collect::<String>(), input);
+
+            let mut text = Text::default();
+            text.append(separator, now)?;
+            assert!(text.ready(now).is_empty());
+            text.finished = true;
+            assert!(text.ready(now).is_empty());
+        }
+        Ok(())
+    }
 
     #[test]
     fn complete_and_streaming_speech_share_hard_clip_boundaries() -> Result<(), &'static str> {

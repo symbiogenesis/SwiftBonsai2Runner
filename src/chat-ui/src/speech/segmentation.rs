@@ -17,9 +17,9 @@ pub(super) fn segments_iter(text: &str) -> Option<impl Iterator<Item = &str>> {
     Some(std::iter::from_fn(move || {
         while !remaining.is_empty() {
             let boundary = clip_boundary(remaining);
-            let piece = remaining[..boundary].trim();
-            remaining = remaining[boundary..].trim_start();
-            if !piece.is_empty() {
+            let piece = remaining[..boundary].trim_matches(horizontal_whitespace);
+            remaining = remaining[boundary..].trim_start_matches(horizontal_whitespace);
+            if !piece.trim().is_empty() {
                 return Some(piece);
             }
         }
@@ -103,9 +103,13 @@ pub(super) fn sentence_boundary(text: &str, limit: usize, complete: bool) -> Opt
             }
             continue;
         }
-        if character == '\n' {
+        if line_break(character) {
             if speakable {
-                let end = index + character.len_utf8();
+                let mut end = index + character.len_utf8();
+                // CRLF is one line ending when both scalars fit the clip.
+                if character == '\r' && end < limit && text.as_bytes()[end] == b'\n' {
+                    end += 1;
+                }
                 return Some(include_non_speakable_tail(text, limit, end, complete));
             }
             continue;
@@ -140,6 +144,19 @@ pub(super) fn sentence_boundary(text: &str, limit: usize, complete: bool) -> Opt
         }
     }
     None
+}
+
+/// Unicode mandatory line breaks (UAX #14 classes BK, CR, LF and NL).
+const fn line_break(character: char) -> bool {
+    matches!(
+        character,
+        '\n' | '\r' | '\u{b}' | '\u{c}' | '\u{85}' | '\u{2028}' | '\u{2029}'
+    )
+}
+
+/// Whitespace that can be trimmed without removing a mandatory line break.
+pub(super) const fn horizontal_whitespace(character: char) -> bool {
+    character.is_whitespace() && !line_break(character)
 }
 
 fn abbreviation(prefix: &str) -> bool {
@@ -196,6 +213,23 @@ const fn is_closing_delimiter(character: char) -> bool {
 #[cfg(test)]
 mod tests {
     use super::{clip_boundary, maximum, phrase_boundary};
+
+    #[test]
+    fn unicode_line_breaks_release_sentences_and_keep_crlf_within_the_clip() {
+        for separator in [
+            "\r", "\n", "\r\n", "\u{b}", "\u{c}", "\u{85}", "\u{2028}", "\u{2029}",
+        ] {
+            let text = format!("First{separator}Second");
+            assert_eq!(
+                super::sentence_boundary(&text, text.len(), false),
+                Some("First".len() + separator.len())
+            );
+        }
+        assert_eq!(
+            super::sentence_boundary("First\r\nSecond", 6, false),
+            Some(6)
+        );
+    }
 
     #[test]
     fn hard_clip_prefers_clauses_and_keeps_their_closing_quotes() {
