@@ -85,9 +85,12 @@ fn native_path(path: &Path) -> bool {
 }
 
 fn excluded(path: &str, exclusions: &[Exclusion]) -> bool {
-    exclusions
-        .iter()
-        .any(|entry| path == entry.path || path.starts_with(&format!("{}/", entry.path)))
+    exclusions.iter().any(|entry| {
+        path == entry.path
+            || path
+                .strip_prefix(&entry.path)
+                .is_some_and(|suffix| suffix.starts_with('/'))
+    })
 }
 
 fn discover(root: &Path, exclusions: &[Exclusion]) -> Result<BTreeSet<String>> {
@@ -214,7 +217,8 @@ fn verify(root: &Path, manifest: &Manifest) -> Result<serde_json::Value> {
                 .checked_add(entry.bytes)
                 .filter(|bytes| *bytes <= MAX_TOTAL)
                 .ok_or("Native boundary exceeded its aggregate byte bound.")?;
-            if digest(&path, MAX_FILE)? != (entry.bytes, entry.sha256.clone()) {
+            let (bytes, sha256) = digest(&path, MAX_FILE)?;
+            if bytes != entry.bytes || sha256 != entry.sha256 {
                 return Err(format!("Native boundary identity changed: {}", entry.path));
             }
             represented.insert(entry.family.as_str());

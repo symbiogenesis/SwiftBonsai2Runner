@@ -136,7 +136,8 @@ fn verify_identity(identity: &Identity, total: &mut u64) -> Result<String> {
         .filter(|bytes| *bytes <= MAX_TOTAL)
         .ok_or("Native closure exceeded its aggregate byte bound.")?;
     let key = path_key(&identity.path)?;
-    if digest(Path::new(&identity.path), MAX_FILE)? != (identity.bytes, identity.sha256.clone()) {
+    let (bytes, sha256) = digest(Path::new(&identity.path), MAX_FILE)?;
+    if bytes != identity.bytes || sha256 != identity.sha256 {
         return Err(format!(
             "Native closure file identity changed: {}",
             identity.path
@@ -446,7 +447,7 @@ fn verify_compilation_database(manifest: &Manifest, total: &mut u64) -> Result<(
         let key = (
             path_key(&unit.working_directory)?,
             path_key(&unit.source)?,
-            unit.arguments.clone(),
+            unit.arguments.as_slice(),
         );
         if remaining.insert(key, unit).is_some() {
             return Err("Native closure repeats a selected build invocation.".into());
@@ -458,7 +459,7 @@ fn verify_compilation_database(manifest: &Manifest, total: &mut u64) -> Result<(
         if !arguments_valid(&entry.arguments, &manifest.compiler.path) {
             return Err("Native compilation database requires explicit compiler arguments.".into());
         }
-        let Some(unit) = remaining.remove(&(directory, source, entry.arguments)) else {
+        let Some(unit) = remaining.remove(&(directory, source, entry.arguments.as_slice())) else {
             return Err(
                 "Native compilation database has a changed, extra or duplicate invocation.".into(),
             );
