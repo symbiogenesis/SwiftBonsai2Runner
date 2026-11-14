@@ -684,17 +684,17 @@ fn forward(
         *value = cache_value(*value, c.cache_precision)?;
     }
     let attention = attend(&query, &keys, &values, state, c, position, cancel)?;
-    let projected = block.attention_out.multiply(&attention, cancel)?;
-    let mut output: Vec<_> = input.iter().zip(&projected).map(|(a, b)| *a + *b).collect();
+    let mut output = block.attention_out.multiply(&attention, cancel)?;
+    for (value, input) in output.iter_mut().zip(input) {
+        *value = *input + *value;
+    }
     finite(&output)?;
     let norm = rms(&output, &block.ffn_norm, c.epsilon)?;
-    let gate = block.gate.multiply(&norm, cancel)?;
+    let mut activated = block.gate.multiply(&norm, cancel)?;
     let up = block.up.multiply(&norm, cancel)?;
-    let activated: Vec<_> = gate
-        .iter()
-        .zip(up)
-        .map(|(gate, up)| (*gate / (1.0 + (-*gate).exp())) * up)
-        .collect();
+    for (gate, up) in activated.iter_mut().zip(up) {
+        *gate = (*gate / (1.0 + (-*gate).exp())) * up;
+    }
     finite(&activated)?;
     let feed_forward = block.down.multiply(&activated, cancel)?;
     for (out, value) in output.iter_mut().zip(feed_forward) {

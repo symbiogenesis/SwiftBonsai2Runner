@@ -475,8 +475,10 @@ fn transform(
         .map_err(io::Error::other)?;
     for (index, row) in rows.iter().enumerate() {
         let context = attention(&queries[index], &keys, &values, c.heads, cancel)?;
-        let projected = block.attention_out.apply(&context, cancel)?;
-        let mut residual: Vec<_> = row.iter().zip(projected).map(|(a, b)| *a + b).collect();
+        let mut residual = block.attention_out.apply(&context, cancel)?;
+        for (value, input) in residual.iter_mut().zip(row) {
+            *value = *input + *value;
+        }
         finite(&residual)?;
         let norm = block.ffn_norm.apply(&residual)?;
         let mut intermediate = block.ffn_in.apply(&norm, cancel)?;
