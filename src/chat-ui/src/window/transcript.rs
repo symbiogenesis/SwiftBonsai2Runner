@@ -634,9 +634,13 @@ impl Message {
                     && (matches.is_empty()
                         || (cache.highlight_fill == highlight_fill
                             && cache.highlight_color == highlight_color));
-                let reasoning_unchanged = same_geometry
-                    && cache.reasoning_bytes == self.reasoning.len()
-                    && cache.reasoning_color == reasoning_color;
+                // Hidden reasoning has no galley. Its streamed bytes and weak
+                // color cannot invalidate the visible body or Find geometry;
+                // opening it still checks the complete current text below.
+                let reasoning_unchanged = !reasoning_visible
+                    || (same_geometry
+                        && cache.reasoning_bytes == self.reasoning.len()
+                        && cache.reasoning_color == reasoning_color);
                 let underline_unchanged = body_unchanged && cache.selected.as_ref() == selected;
                 if body_unchanged
                     && reasoning_unchanged

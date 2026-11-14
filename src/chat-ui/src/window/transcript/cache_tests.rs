@@ -63,6 +63,65 @@ fn unchanged_layouts_reuse_cache_and_reasoning_visibility_invalidates_it() {
 }
 
 #[test]
+fn hidden_reasoning_streams_without_cache_updates_and_expands_complete_text() {
+    let mut transcript = Transcript::default();
+    transcript.push(Role::Assistant, "A visible hit".to_owned());
+    transcript.search.query = "hit".to_owned();
+    let mut chat = harness(transcript);
+    chat.run();
+    let initial_height = chat.state().messages[0].height();
+    let initial_updates = chat.state().messages[0].cache_updates;
+    let initial_underlines = chat.state().messages[0].underline_layouts;
+
+    for fragment in ["Private", " reasoning", " 界", " 🌱"] {
+        chat.state_mut().append(fragment, true);
+        chat.run();
+        let message = &chat.state().messages[0];
+        assert_eq!(message.cache_updates, initial_updates);
+        assert_eq!(message.body_layouts, 1);
+        assert_eq!(message.underline_layouts, initial_underlines);
+        assert!(message.height() > initial_height);
+        assert!(
+            message
+                .cache
+                .as_ref()
+                .is_some_and(|cache| cache.reasoning.is_none())
+        );
+        assert_active_underline_matches_glyphs(message);
+    }
+
+    chat.state_mut().messages[0].show_reasoning = true;
+    chat.run();
+    let message = &chat.state().messages[0];
+    assert_eq!(message.cache_updates, initial_updates + 1);
+    assert_eq!(message.body_layouts, 1);
+    assert!(message.cache.as_ref().is_some_and(|cache| {
+        cache
+            .reasoning
+            .as_ref()
+            .is_some_and(|reasoning| reasoning.job.text == "Private reasoning 界 🌱")
+    }));
+
+    chat.state_mut().messages[0].show_reasoning = false;
+    chat.run();
+    let hidden_updates = chat.state().messages[0].cache_updates;
+    chat.state_mut().append(" later text", true);
+    chat.run();
+    assert_eq!(chat.state().messages[0].cache_updates, hidden_updates);
+    chat.state_mut().messages[0].show_reasoning = true;
+    chat.run();
+    let message = &chat.state().messages[0];
+    assert_eq!(message.cache_updates, hidden_updates + 1);
+    assert!(message.cache.as_ref().is_some_and(|cache| {
+        cache
+            .reasoning
+            .as_ref()
+            .is_some_and(|reasoning| reasoning.job.text == "Private reasoning 界 🌱 later text")
+    }));
+    assert_active_underline_matches_glyphs(message);
+}
+
+#[test]
 fn reader_size_reflows_styled_text_reasoning_and_find_once() {
     let body = "# Heading 界\nUse `needle` here.\n```rust\nlet x = 1;\n```";
     let mut transcript = Transcript::default();
