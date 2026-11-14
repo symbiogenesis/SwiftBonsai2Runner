@@ -12,7 +12,7 @@ use crate::{OpenClDevice, OpenClInventory, OpenClPlatform};
 
 mod projection;
 
-pub(super) fn kernel_source() -> &'static str {
+pub(super) const fn kernel_source() -> &'static str {
     projection::SOURCE
 }
 

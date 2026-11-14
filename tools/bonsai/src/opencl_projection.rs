@@ -1,4 +1,4 @@
-//! Opt-in, fixed-shape original-PQ2 OpenCL pilot; never a serving backend.
+//! Opt-in, fixed-shape original-PQ2 `OpenCL` pilot; never a serving backend.
 
 use std::path::PathBuf;
 
@@ -127,7 +127,7 @@ pub fn run(value: &Value) -> crate::Result<Value> {
 /// are published only after every original block agrees with the scalar control.
 ///
 /// # Errors
-/// Rejects changed input/kernel/device identity, invalid prepared Q8_K records,
+/// Rejects changed input/kernel/device identity, invalid prepared `Q8_K` records,
 /// nonfinite scales/reductions, failed native execution and output publication.
 pub fn worker(value: &Value) -> crate::Result<Value> {
     let request = Request::parse(value)?;
@@ -447,7 +447,7 @@ mod windows {
             arguments: vec![
                 "opencl-projection-worker".into(),
                 "--request".into(),
-                input.clone().into_os_string(),
+                input.into_os_string(),
             ],
             working_directory: request.output_directory.clone(),
             stdout: request.output_directory.join("stdout.json"),

@@ -84,7 +84,7 @@ pub(super) fn opencl_inventory() -> io::Result<crate::OpenClInventory> {
     opencl::query()
 }
 
-pub(super) fn opencl_pq2_kernel_source() -> &'static str {
+pub(super) const fn opencl_pq2_kernel_source() -> &'static str {
     opencl::kernel_source()
 }
 

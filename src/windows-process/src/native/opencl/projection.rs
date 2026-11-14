@@ -239,6 +239,10 @@ fn selected(api: &Api, selection: &OpenClProjectionSelection) -> io::Result<(Id,
     })
 }
 
+#[expect(
+    clippy::too_many_lines,
+    reason = "Keep the single audited creation, submission, readback and terminal-fence sequence together so object ownership remains reviewable."
+)]
 pub(super) fn run(
     selection: &OpenClProjectionSelection,
     weights: &[u8],
@@ -389,7 +393,7 @@ pub(super) fn run(
     check(read)?;
     let cleanup_codes = owner.close();
     Ok(OpenClPq2Projection {
-        loader_path: api.path.clone(),
+        loader_path: api.path,
         device,
         integer_dots: dots,
         cleanup_codes,

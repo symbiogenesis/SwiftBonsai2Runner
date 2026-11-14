@@ -388,7 +388,7 @@ pub fn opencl_inventory() -> io::Result<OpenClInventory> {
     native::opencl_inventory()
 }
 
-/// Exact operator-selected OpenCL platform, GPU and driver for the fixed pilot.
+/// Exact operator-selected `OpenCL` platform, GPU and driver for the fixed pilot.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct OpenClProjectionSelection {
     /// Exact platform name, without a first-device or alternate-driver fallback.
@@ -414,18 +414,18 @@ pub struct OpenClPq2Projection {
     pub cleanup_codes: [i32; 7],
 }
 
-/// Fixed OpenCL C 1.2 source whose digest must be reviewed before pilot execution.
+/// Fixed `OpenCL` C 1.2 source whose digest must be reviewed before pilot execution.
 #[must_use]
-pub fn opencl_pq2_kernel_source() -> &'static str {
+pub const fn opencl_pq2_kernel_source() -> &'static str {
     native::opencl_pq2_kernel_source()
 }
 
-/// Execute one fixed K=5120, M=17408 PQ2/Q8_K integer projection on Adreno X2.
+/// Execute one fixed K=5120, M=17408 `PQ2/Q8_K` integer projection on Adreno X2.
 ///
 /// The original 34-byte PQ2 blocks remain unchanged. `codes` contains 5120
-/// already-prepared signed Q8_K codes represented as two's-complement bytes.
-/// Original half scales, Q8_K scales and ordered FMA reduction stay with the
-/// caller. This opens a context, compiles the fixed OpenCL C 1.2 kernel and
+/// already-prepared signed `Q8_K` codes represented as two's-complement bytes.
+/// Original half scales, `Q8_K` scales and ordered FMA reduction stay with the
+/// caller. This opens a context, compiles the fixed `OpenCL` C 1.2 kernel and
 /// allocates at most 26,465,280 explicit device-buffer bytes. Driver/compiler
 /// resources are additional and have no verified native memory budget.
 ///
