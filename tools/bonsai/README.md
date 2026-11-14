@@ -1003,3 +1003,13 @@ inventory check in native owned Jobs. Its receipt requires confirmed extraction
 cleanup and leaves model and clean-machine acceptance pending. Packaging and
 smoke PowerShell scripts only forward parameters; native package commands are
 called directly from Rust without a shell round trip.
+
+Its `source-build` operation reads the selected checkout's workspace version and
+compiler pin, observes the Git revision, builds the GUI launcher and native
+companions, collects notices and creates the executable. The PowerShell source
+entry retains only compiler selection/bootstrap and argument forwarding. Native
+orchestration preserves the data-folder default and explicit/environment Cargo
+cache choices; the package version comes from the requested checkout rather than
+the already-running helper. `collect-notices` uses the shared Rust provenance,
+source selection and blob checks with direct read-only `gh` transport and a
+per-invocation immutable-source cache. Neither path calls PowerShell from Rust.

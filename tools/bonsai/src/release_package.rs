@@ -13,6 +13,7 @@ use std::{
     path::{Path, PathBuf},
 };
 
+mod source;
 #[cfg(test)]
 mod tests;
 
@@ -28,6 +29,18 @@ const FILES: [(&str, &str); 5] = [
 #[derive(Deserialize)]
 #[serde(tag = "operation", rename_all = "kebab-case", deny_unknown_fields)]
 enum Request {
+    #[serde(rename_all = "camelCase")]
+    SourceBuild {
+        repository_root: PathBuf,
+        data_directory: PathBuf,
+        target_directory: Option<PathBuf>,
+        output_path: Option<PathBuf>,
+    },
+    #[serde(rename_all = "camelCase")]
+    CollectNotices {
+        repository_root: PathBuf,
+        output_path: PathBuf,
+    },
     #[serde(rename_all = "camelCase")]
     Package {
         repository_root: PathBuf,
@@ -291,6 +304,21 @@ fn package(
 pub fn run(value: Value) -> Result<Value> {
     let request: Request = serde_json::from_value(value).map_err(|error| error.to_string())?;
     match request {
+        Request::SourceBuild {
+            repository_root,
+            data_directory,
+            target_directory,
+            output_path,
+        } => source::build(
+            &repository_root,
+            &data_directory,
+            target_directory.as_deref(),
+            output_path.as_deref(),
+        ),
+        Request::CollectNotices {
+            repository_root,
+            output_path,
+        } => source::notices(&repository_root, &output_path),
         Request::Package {
             repository_root,
             input_directory,

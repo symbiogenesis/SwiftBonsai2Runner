@@ -195,6 +195,12 @@ fn inspect(executable: &Path) -> crate::Result<Value> {
 }
 
 fn create(directory: &Path, digest: &str, output: &Path) -> crate::Result<Value> {
+    if !output
+        .extension()
+        .is_some_and(|extension| extension.eq_ignore_ascii_case("exe"))
+    {
+        return Err("Bundle output must use the .exe extension.".into());
+    }
     let package = super::checked(directory, digest)?;
     if package["Manifest"]["schemaVersion"] != 2 {
         return Err("Bundling requires a schema-2 package.".into());
