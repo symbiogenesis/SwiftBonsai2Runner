@@ -49,7 +49,9 @@ fn validate(request: &Request) -> Result<()> {
         || request.keep_numerator > request.keep_denominator
         || request.keep_denominator > 1024
     {
-        return Err("Use schema 1 and a positive keep fraction at most one, denominator <=1024.".into());
+        return Err(
+            "Use schema 1 and a positive keep fraction at most one, denominator <=1024.".into(),
+        );
     }
     bonsai_artifacts::validate_external_path(&request.adapter_path)
         .map_err(|error| error.to_string())?;
@@ -113,7 +115,10 @@ fn prune(bytes: &[u8], numerator: usize, denominator: usize) -> Result<Pruned> {
     if chunks.is_empty() || !tail.is_empty() || chunks.len() > 65_536 {
         return Err("Linear A factors require 1..65536 F32 coefficients.".into());
     }
-    let values: Vec<_> = chunks.iter().map(|chunk| f32::from_le_bytes(*chunk)).collect();
+    let values: Vec<_> = chunks
+        .iter()
+        .map(|chunk| f32::from_le_bytes(*chunk))
+        .collect();
     if values.iter().any(|value| !value.is_finite()) {
         return Err("Adapter coefficients must be finite.".into());
     }
@@ -155,7 +160,11 @@ fn prune(bytes: &[u8], numerator: usize, denominator: usize) -> Result<Pruned> {
 }
 
 fn retained_energy(original: f64, removed: f64) -> f64 {
-    if original == 0.0 { 1.0 } else { ((original - removed) / original).clamp(0.0, 1.0) }
+    if original == 0.0 {
+        1.0
+    } else {
+        ((original - removed) / original).clamp(0.0, 1.0)
+    }
 }
 
 fn edited(source: &[u8], numerator: usize, denominator: usize) -> Result<(Vec<u8>, Value)> {
@@ -201,12 +210,15 @@ fn edited(source: &[u8], numerator: usize, denominator: usize) -> Result<(Vec<u8
             "relativeRankOneFrobeniusError":(1.0-fraction).sqrt(),
             "originalASha256":digest(factors)?,"candidateASha256":digest(&pruned.bytes)?}));
     }
-    let families: Vec<_> = families.into_iter().map(|(name, family)| {
-        let fraction = retained_energy(family.original_energy, family.removed_energy);
-        json!({"family":name,"sites":family.sites,"coefficients":family.coefficients,
+    let families: Vec<_> = families
+        .into_iter()
+        .map(|(name, family)| {
+            let fraction = retained_energy(family.original_energy, family.removed_energy);
+            json!({"family":name,"sites":family.sites,"coefficients":family.coefficients,
             "retainedNonzero":family.retained_nonzero,"retainedSquaredL2Fraction":fraction,
             "relativeAggregateAFactorL2Error":(1.0-fraction).sqrt()})
-    }).collect();
+        })
+        .collect();
     let fraction = retained_energy(original_energy, removed_energy);
     let summary = json!({"linearSites":sites.len(),"coefficients":coefficients,
         "originalNonzero":original_nonzero,"retainedNonzero":retained_nonzero,
@@ -220,21 +232,33 @@ fn edited(source: &[u8], numerator: usize, denominator: usize) -> Result<(Vec<u8
 }
 
 fn publish(path: &Path, bytes: &[u8]) -> Result<()> {
-    let mut staging_name = path.file_name().ok_or("Output requires a file name.")?.to_os_string();
+    let mut staging_name = path
+        .file_name()
+        .ok_or("Output requires a file name.")?
+        .to_os_string();
     staging_name.push(format!(".pending-{}", std::process::id()));
     let staging = path.with_file_name(staging_name);
     bonsai_artifacts::validate_external_path(&staging).map_err(|error| error.to_string())?;
-    let mut file = OpenOptions::new().write(true).create_new(true).open(&staging)
+    let mut file = OpenOptions::new()
+        .write(true)
+        .create_new(true)
+        .open(&staging)
         .map_err(|error| format!("Cannot create adapter staging file: {error}"))?;
-    let published = file.write_all(bytes).and_then(|()| file.sync_all())
+    let published = file
+        .write_all(bytes)
+        .and_then(|()| file.sync_all())
         .and_then(|()| fs::hard_link(&staging, path));
     drop(file);
     let cleanup = fs::remove_file(&staging);
     match (published, cleanup) {
         (Ok(()), Ok(())) => Ok(()),
-        (Ok(()), Err(error)) => Err(format!("Adapter published; staging cleanup failed: {error}")),
+        (Ok(()), Err(error)) => Err(format!(
+            "Adapter published; staging cleanup failed: {error}"
+        )),
         (Err(error), Ok(())) => Err(format!("Cannot publish new adapter: {error}")),
-        (Err(error), Err(cleanup)) => Err(format!("Cannot publish new adapter: {error}; staging cleanup failed: {cleanup}")),
+        (Err(error), Err(cleanup)) => Err(format!(
+            "Cannot publish new adapter: {error}; staging cleanup failed: {cleanup}"
+        )),
     }
 }
 
@@ -255,7 +279,8 @@ pub fn run(request: Value) -> Result<Value> {
     if let Some(output) = &request.output_path {
         publish(output, &candidate)?;
     }
-    Ok(json!({"schemaVersion":1,"kind":"experimental-edited-rank-one-adapter",
+    Ok(
+        json!({"schemaVersion":1,"kind":"experimental-edited-rank-one-adapter",
         "algorithm":ALGORITHM,"sourceAdapterSha256":ADAPTER_SHA256,
         "candidateSha256":candidate_sha256,"candidateBytes":candidate.len(),
         "sourceAdapterPath":request.adapter_path,"outputPath":request.output_path,
@@ -264,5 +289,6 @@ pub fn run(request: Value) -> Result<Value> {
         "all129SitesRetained":true,"bFactorsUnchanged":true,"embeddingFactorsUnchanged":true,
         "metadataAndLayoutUnchanged":true,"diskSizeReduced":false,
         "behaviorQualified":false,"performanceQualified":false,"installed":false,
-        "scope":"Edits only the existing adapter's linear F32 A coefficients; retains its rank, directions, embedding, metadata and all sites. Sparse payload estimates exclude container, allocator and runtime overhead. Weight-space error is not an accuracy bound."}))
+        "scope":"Edits only the existing adapter's linear F32 A coefficients; retains its rank, directions, embedding, metadata and all sites. Sparse payload estimates exclude container, allocator and runtime overhead. Weight-space error is not an accuracy bound."}),
+    )
 }

@@ -231,6 +231,10 @@ pub(super) fn direction_vectors(bytes: &[u8]) -> Result<BTreeMap<String, &[u8]>>
 }
 
 /// Exact byte ranges for the verified inventory's linear A factors.
+#[expect(
+    clippy::redundant_pub_crate,
+    reason = "The crate-only re-export serves adapter editing without exposing qualification internals publicly."
+)]
 pub(crate) fn linear_a_ranges(bytes: &[u8]) -> Result<Vec<(String, std::ops::Range<usize>)>> {
     direction_vectors(bytes)?;
     Ok(ranges(bytes)?
