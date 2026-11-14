@@ -654,6 +654,12 @@ under [AGENTS.md](AGENTS.md).
 
 ## Deferred dependency experiments
 
+- [ ] Re-evaluate [Wild linker](https://github.com/wild-linker/wild) only after
+  an upstream release provides full Windows support, including native
+  `aarch64-pc-windows-msvc` linking. Verify MSVC/PE-COFF, static CRT and debug-symbol
+  compatibility, then compare final-link and end-to-end build times against the
+  current MSVC/LLD paths under [source, power and budget controls](docs/validation.md).
+  Require correctness, packaging acceptance and measured build-time benefit before adoption.
 - [ ] Reopen MXC supervisor, wgpu backend removal or archive splitting only for
   demonstrated need and support/device/fallback/build-size acceptance under the
   [dependency audit](docs/dependency-audit.md).
