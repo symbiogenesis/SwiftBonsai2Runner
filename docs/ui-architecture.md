@@ -367,10 +367,18 @@ current egui version; native Rust presentation and broker policy remain binding.
 
 For long transcripts, hello_egui's variable-height list is a reference for lazy row
 measurement, bounded layout work and preserving the first visible item through
-width, display-scale and font changes. Runner already caches layouts and culls
-painting. A candidate must bound invalidation work without losing exact source
-offsets, Find targets, selection or streamed-tail updates; estimated heights must
-not silently relocate the active result.
+width, display-scale and font changes. Runner's focused Rust implementation works
+with the pinned egui without adding a list dependency. It retains measured row
+heights as estimates, prioritizes the exact queued Find target and visible rows,
+and admits at most eight changed-message layout jobs per egui frame, shared across
+additional passes. A 256 KiB text target admits one oversized existing bounded
+message alone; whole selectable galleys mean this is not a hard per-frame glyph
+or elapsed-time limit. Spare work measures offscreen rows without keeping an idle
+window awake solely to complete them. Identity-based reading and visible active
+Find anchors compensate estimated-height changes while user scrolling chooses a
+new anchor. Exact Find navigation waits for current geometry. Native selection,
+streaming, conversation switches and width/DPI/font changes retain independent
+device acceptance under [validation](validation.md).
 
 Ferrite's grouped edit operations suggest a byte-bounded undo log in place of
 complete draft snapshots. Any change must preserve whole-edit rejection, cursor

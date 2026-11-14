@@ -58,7 +58,9 @@ adoption decisions without displacing native daily-use acceptance.
   operand/range/long-sum controls and invalid sampler distribution rejection;
   and tools bounded intake, selected nonblank startup
   diagnostics, PE probing, release/Hexagon validation, target-family evidence
-  and startup admission, and Qwen-only reference-snapshot selection.
+  and startup admission, and Qwen-only reference-snapshot selection;
+  native startup exit/descendant fixtures, transcript reflow/selection/anchors,
+  and cancellable HTTPS raw reads with CONNECT tunnel passthrough.
   The Hexagon inventory alias correction and pinned-linker
   process-tree regression still need compiled owning-lane verification, including
   cold Cargo host/target links; the local direct diagnostic compile/self-test and
@@ -87,9 +89,9 @@ adoption decisions without displacing native daily-use acceptance.
   proxies, CI baseline lookup with Windows system trust, patched-client address
   fallback, HTTPS-only credential-free redirects, interrupted and ignored-Range
   transfers, strict length/range bounds, cancellation and aggregate deadlines
-  through actual provisioning and updates. Diagnose the Windows loopback
-  stalled-body cancellation that joined only at its operation deadline; cached
-  owner isolation coverage does not qualify prompt cancellation. Local checks
+  through actual provisioning and updates. Qualify prompt stalled-body
+  cancellation and worker joining with real Schannel and proxy connections;
+  cached owner isolation coverage does not qualify these paths. Local checks
   establish no measured binary-size, latency or throughput improvement.
 - [ ] Qualify automatic startup/15-minute release discovery, conditional metadata
   requests, compression, server-directed backoff and manual checks. Cover paginated
@@ -218,17 +220,14 @@ adoption decisions without displacing native daily-use acceptance.
   `bounded_history` and `stalled_consumer` workloads under the acceptance contract.
 - [ ] Extend [transcript/Find](docs/streaming-resources.md#native-chat-and-transcript)
   device acceptance through appends, replacements, switches, eviction, Unicode
-  wrapping, saturated results, selection and queued navigation.
+  wrapping, saturated results, selection and queued navigation. Qualify bounded
+  variable-height reflow and stable reading/Find anchors through width, DPI and
+  font changes, including one oversized selectable message and deferred layouts.
 - [ ] Complete signed-distribution acceptance: binary provenance, dependency and
   license notices, clean-machine prerequisites, installation, upgrades and rollback.
 
 ### Native application improvements
 
-- [ ] Implement bounded variable-height transcript layout and stable viewport
-  anchoring using the [hello_egui reference](docs/research-register.md#native-application-and-writing-references).
-  Bound relayout after width/DPI/font changes and preserve streaming, selection,
-  exact Find navigation and conversation switching. Review compatibility with
-  the pinned egui before choosing a crate or a focused Rust implementation.
 - [ ] After long-draft resource attribution, evaluate Ferrite-style operation
   undo against the current full-draft snapshots under the
   [native candidate contract](docs/ui-architecture.md#candidate-native-improvements).
@@ -306,8 +305,6 @@ adoption decisions without displacing native daily-use acceptance.
 - [ ] Run actual-PQ2 `swift_model_check rollback`: compare every token/logit and
   complete KV/GDN/convolution bits before reset, then continuation against fresh
   computation under the [runtime contract](docs/native-rust-engine.md).
-- [ ] Publish the reviewed Windows read-consumer registry API, replace Prism
-  server's Git dependency and validate the package before re-enabling publication.
 - [ ] Qualify full-context/output scalar/NEON behavior, rank-one zero/nonzero
   adapter application and writer basis, sampling, termination and full-state
   lifecycle at the declared numerical tolerance.
@@ -388,8 +385,9 @@ adoption decisions without displacing native daily-use acceptance.
 
 ### Quality and speech
 
-- [ ] **Q1 — Prepare independent creative/speech review packets.** Use complete
-  answers/audio and declared writing/art-direction rubrics, including Thinking,
+- [ ] **Q1 — Complete independent creative/speech review.** Use the
+  [fixed daily-use packets](docs/daily-use-review.md), complete answers/audio
+  and declared writing/art-direction rubrics, including Thinking,
   output settings and Extra effort. Reuse applicable retained captures without
   transferring their verdicts to changed source. Adapt the
   [Longform Writing Bench rubric split](docs/performance-expectations.md#creative-review-packets)

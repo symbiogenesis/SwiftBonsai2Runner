@@ -50,6 +50,12 @@ Do not retry, reopen a closed clock or split an infeasible matrix across repeate
 
 ## Creative review packets
 
+The [daily-use review packet](daily-use-review.md#creative-writing-packet) supplies
+fixed original writing tasks, objective checks and independent prose/continuity
+rubrics. Its [speech packet](daily-use-review.md#speech-listening-packet) defines
+complete synthetic listening texts and sample/reviewer identities. These are
+capture specifications; missing captures or human reviews remain pending.
+
 The [Longform Writing Bench rubric organization](https://github.com/EQ-bench/longform-writing-bench/tree/main/data)
 is a candidate source for independent creative review. Separate scene/chapter prose
 quality from whole-narrative coherence: character consistency, chronology, world

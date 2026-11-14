@@ -83,6 +83,16 @@ its container or cloning galley owners. Partial updates move reusable owners int
 the replacement cache. Reasoning visibility and active selection participate in
 reuse; widgets still acquire the owned galley references their APIs require.
 
+Transcript geometry invalidation keeps measured heights as estimates and admits
+at most eight changed-message layout jobs per egui frame, including additional
+passes. Exact queued Find, the reading anchor and visible rows take priority;
+remaining capacity may measure offscreen rows without an idle repaint loop.
+The 256 KiB admission target allows one oversized bounded message alone because
+native selection uses whole galleys; it supplies no hard glyph-work or frame-time
+cap. Reading and visible active Find anchors use stable message/source identities
+through reflow and prefix eviction. Exact Find scrolling waits for current layout;
+stale source text is never a substitute for a changed response.
+
 ## Recovery and startup
 
 | Boundary | Storage and work contract |

@@ -14,6 +14,7 @@ updates and publication. [PLAN.md](../PLAN.md) is the single backlog.
 | [Windows sandboxing](sandboxing.md) | Worker authority, Jobs, handles, files and containment limits |
 | [Portable packages](chat-packages.md) | Developer assembly, checked-directory activation and rollback |
 | [Validation](validation.md) | Checks, acceptance, promotion and evidence retention |
+| [Daily-use review](daily-use-review.md) | Owner acceptance handoff and fixed creative/speech review tasks |
 | [Dependencies](dependency-audit.md) | Dependency selection and security checks |
 | [Licensing](licensing.md) | Code, model, font and redistribution terms |
 
