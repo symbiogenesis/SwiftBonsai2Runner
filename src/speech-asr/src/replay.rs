@@ -136,6 +136,13 @@ fn invalid() -> io::Error {
     )
 }
 
+fn check_cancel(cancel: &mut impl FnMut() -> bool) -> io::Result<()> {
+    if cancel() {
+        return Err(io::ErrorKind::Interrupted.into());
+    }
+    Ok(())
+}
+
 impl<R: Read> Replay<R> {
     /// Bind the original packet header to caller-reviewed identities and tolerances.
     ///
@@ -228,7 +235,7 @@ impl<R: Read> Replay<R> {
             &mut || (*cancel.borrow_mut())(),
             &mut |event| self.observe(event, &mut || (*cancel.borrow_mut())()),
         )?;
-        self.finish(&transcript)?;
+        self.finish(&transcript, &mut || (*cancel.borrow_mut())())?;
         Ok(transcript)
     }
 
@@ -396,16 +403,23 @@ impl<R: Read> Replay<R> {
         Ok(())
     }
 
-    fn finish(mut self, transcript: &str) -> io::Result<()> {
+    fn finish(mut self, transcript: &str, cancel: &mut impl FnMut() -> bool) -> io::Result<()> {
+        check_cancel(cancel)?;
         if self.stage != Stage::Decoder || self.generation == 0 || transcript.len() > MAX_TEXT {
             return Err(invalid());
         }
         self.bytes(&[5])?;
         self.number(self.generation)?;
         self.number(transcript.len())?;
-        self.bytes(transcript.as_bytes())?;
+        check_cancel(cancel)?;
+        for chunk in transcript.as_bytes().chunks(1024) {
+            self.bytes(chunk)?;
+            check_cancel(cancel)?;
+        }
         let mut tail = [0];
-        if self.input.read(&mut tail)? != 0 {
+        let tail_bytes = self.input.read(&mut tail)?;
+        check_cancel(cancel)?;
+        if tail_bytes != 0 {
             return Err(invalid());
         }
         Ok(())

@@ -259,7 +259,7 @@ fn rust_asr_replay_tolerance_exception_bits_and_sticky_failed_schedule() -> io::
             .observe(Observation::Frontend(&mel), &mut || false)
             .is_err()
     );
-    assert!(replay.finish("").is_err());
+    assert!(replay.finish("", &mut || false).is_err());
     Ok(())
 }
 
@@ -345,6 +345,32 @@ fn rust_asr_replay_stream_cancellation_and_unwind_reset_active_decoder() -> io::
                 Some(io::ErrorKind::Interrupted)
             );
         }
+        assert_cleared(&recognizer);
+        assert_eq!(recognizer.transcribe(&[0.0; 201])?, "");
+    }
+    Ok(())
+}
+
+#[test]
+fn rust_asr_replay_terminal_and_eof_cancellation_cannot_complete() -> io::Result<()> {
+    let packet = packet();
+    for boundary in [packet.terminal, packet.bytes.len()] {
+        let cancelled = std::cell::Cell::new(false);
+        let input = InterruptedInput {
+            bytes: &packet.bytes,
+            offset: 0,
+            boundary,
+            cancel: &cancelled,
+            panic: false,
+        };
+        let replay = Replay::new(input, &binding(), Tolerances::BITS)?;
+        let mut recognizer = recognizer(0)?;
+        let result = replay.transcribe(&mut recognizer, &[0.0; 201], &mut || cancelled.get());
+        assert_eq!(
+            result.err().map(|error| error.kind()),
+            Some(io::ErrorKind::Interrupted)
+        );
+        assert!(cancelled.get());
         assert_cleared(&recognizer);
         assert_eq!(recognizer.transcribe(&[0.0; 201])?, "");
     }

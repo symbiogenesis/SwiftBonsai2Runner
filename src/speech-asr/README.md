@@ -253,15 +253,17 @@ matching terminal transcript and EOF complete a comparison. Reordered/duplicate,
 missing/truncated, mismatched or extra records fail; failure is sticky. Engine
 failure, cancellation, observer I/O failure and unwind retain the engine's complete
 reset contract and cannot turn a partial stream into success. Cancellation checks
-occur between records and every 4,096 numerical values. Supply a trusted regular
-file or another externally bounded reader: a blocking `Read` implementation
-cannot be interrupted cooperatively. Comparison and retained bytes share the
-original workload/deadline and evidence-retention rules.
+occur between records, every 4,096 numerical values, during terminal transcript
+intake and after the final EOF probe. Supply a trusted regular file or another
+reader with caller-bounded I/O and an absolute deadline: a blocking `Read`
+implementation cannot be interrupted cooperatively. Comparison and retained
+bytes share the original workload/deadline and evidence-retention rules.
 
-Six named `rust_asr_replay_` controls use literal mathematical miniature-graph
+Seven named `rust_asr_replay_` controls use literal mathematical miniature-graph
 answers, including distinct two-layer F16 caches and known RoPE zero signs. They
 cover complete/fresh replay, identity/PCM/tolerance changes, every record boundary,
 cache bits, truncation/trailing bytes, sticky ordering failures and cancellation/
-unwind while the decoder is active. They establish streaming comparison behavior;
-they provide no full-model or native-engine observation. Independent complete
+unwind while the decoder is active, and cancellation during terminal/EOF intake.
+They establish streaming comparison behavior; they provide no full-model or
+native-engine observation. Independent complete
 native captures and owning hosted/model/device qualification remain pending.
