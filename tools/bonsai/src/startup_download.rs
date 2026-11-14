@@ -509,10 +509,10 @@ fn receive_repair_observed_with(
     fs::create_dir_all(working).map_err(|error| error.to_string())?;
     validate_external_path(path).map_err(|error| error.to_string())?;
     let _parents = repair_parents(path)?;
-    let filename = path.file_name().ok_or("Artifact has no filename.")?;
-    let lock = path.with_file_name(format!("{}.download.lock", filename.to_string_lossy()));
+    path.file_name().ok_or("Artifact has no filename.")?;
+    let lock = path.with_added_extension("download.lock");
     let _guard = crate::startup_cache::lock_file(&lock)?;
-    let partial = path.with_file_name(format!("{}.partial", filename.to_string_lossy()));
+    let partial = path.with_added_extension("partial");
     observe(RepairActivity::VerifyingExisting)?;
     let original = match cached_artifact(path, bytes, sha256)? {
         CachedArtifact::Verified => return remove_redundant_download(&partial),
@@ -569,19 +569,10 @@ fn receive_with(
     fs::create_dir_all(path.parent().ok_or("Artifact has no parent directory.")?)
         .map_err(|error| error.to_string())?;
     fs::create_dir_all(working).map_err(|error| error.to_string())?;
-    let lock = path.with_file_name(format!(
-        "{}.download.lock",
-        path.file_name()
-            .ok_or("Artifact has no filename.")?
-            .to_string_lossy()
-    ));
+    path.file_name().ok_or("Artifact has no filename.")?;
+    let lock = path.with_added_extension("download.lock");
     let _guard = crate::startup_cache::lock_file(&lock)?;
-    let partial = path.with_file_name(format!(
-        "{}.partial",
-        path.file_name()
-            .ok_or("Artifact has no filename.")?
-            .to_string_lossy()
-    ));
+    let partial = path.with_added_extension("partial");
     if path.exists() {
         verify(path, bytes, sha256)?;
         return remove_redundant_download(&partial);
@@ -666,6 +657,60 @@ mod tests {
         fs::write(&partial, b"wrong").map_err(|error| error.to_string())?;
         let hash = crate::identity::hex(&Sha256::digest(b"right"));
         Ok((working, path, partial, hash))
+    }
+
+    #[test]
+    fn download_sidecars_preserve_unicode_filenames() -> crate::Result<()> {
+        let (working, _, initial_partial, hash) = recovery_fixture()?;
+        fs::remove_file(initial_partial).map_err(|error| error.to_string())?;
+        for (index, name) in [
+            "mod\u{e8}le-\u{6a21}\u{578b}-\u{1f331}.bin",
+            "mode\u{300}le-\u{6a21}\u{578b}-\u{1f331}.bin",
+        ]
+        .into_iter()
+        .enumerate()
+        {
+            let path = working.join(name);
+            let partial = working.join(format!("{name}.partial"));
+            let lock = working.join(format!("{name}.download.lock"));
+            let mut transfers = 0;
+            let transfer = |_: &str, destination: &Path, offset, bytes, _: &Path| {
+                transfers += 1;
+                assert_eq!(destination, partial);
+                assert_eq!((offset, bytes), (0, 5));
+                fs::write(destination, b"right").map_err(|error| error.to_string())
+            };
+            if index == 0 {
+                receive_repair_with(
+                    "https://example.invalid/artifact",
+                    &path,
+                    5,
+                    &hash,
+                    &working,
+                    transfer,
+                )?;
+            } else {
+                receive_with(
+                    "https://example.invalid/artifact",
+                    &path,
+                    5,
+                    &hash,
+                    &working,
+                    transfer,
+                )?;
+            }
+            assert_eq!(transfers, 1);
+            verify(&path, 5, &hash)?;
+            assert!(lock.is_file());
+            assert!(!partial.exists());
+        }
+        assert_eq!(
+            fs::read_dir(&working)
+                .map_err(|error| error.to_string())?
+                .count(),
+            4
+        );
+        fs::remove_dir_all(working).map_err(|error| error.to_string())
     }
 
     fn quarantine_files(working: &Path) -> crate::Result<Vec<PathBuf>> {
