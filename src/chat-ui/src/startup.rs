@@ -296,14 +296,38 @@ fn capture(
     })?;
     let status = outcome?;
     if status != 0 {
-        return Err(io::Error::other(format!(
-            "Setup could not finish. {} Diagnostics: {}",
-            bounded_text(&spec.stderr)?.trim(),
-            spec.working_directory.display()
-        )));
+        return Err(preparation_failure(
+            status,
+            bounded_text(&spec.stderr),
+            &spec.working_directory,
+        ));
     }
     bounded_text(&spec.stdout)
 }
+
+fn preparation_failure(
+    status: u32,
+    diagnostic: io::Result<String>,
+    working_directory: &Path,
+) -> io::Error {
+    // Diagnostic intake must never erase the observed process exit. In
+    // particular, Windows loader failures may produce no stderr at all.
+    // Stdout contains the preparation protocol, including credential paths;
+    // it is deliberately not used as a fallback diagnostic.
+    let detail = match diagnostic {
+        Ok(text) if !text.trim().is_empty() => text.trim().to_owned(),
+        Ok(_) => "The preparation process wrote no standard-error diagnostics.".to_owned(),
+        Err(error) => format!(
+            "The preparation diagnostics could not be read ({:?}).",
+            error.kind()
+        ),
+    };
+    io::Error::other(format!(
+        "Setup could not finish (process exited {status}, 0x{status:08X}). {detail} Diagnostics: {}",
+        working_directory.display()
+    ))
+}
+
 pub(crate) struct Session {
     incoming: Receiver<io::Result<Progress>>,
     cancelled: Arc<AtomicBool>,
@@ -465,6 +489,40 @@ impl Drop for Session {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn preparation_failure_preserves_unsigned_exit_with_empty_or_unreadable_stderr() {
+        let directory = Path::new("C:\\startup-diagnostics");
+        for diagnostic in [
+            Ok(String::new()),
+            Ok(" \r\n\t ".to_owned()),
+            Err(io::Error::new(
+                io::ErrorKind::InvalidData,
+                "private diagnostic read detail",
+            )),
+            Err(io::Error::new(
+                io::ErrorKind::PermissionDenied,
+                "private diagnostic read detail",
+            )),
+        ] {
+            let readable = diagnostic.is_ok();
+            let error = preparation_failure(0xC000_0142, diagnostic, directory);
+            let message = error.to_string();
+            assert!(message.contains("process exited 3221225794, 0xC0000142"));
+            assert!(message.contains("Diagnostics: C:\\startup-diagnostics"));
+            assert!(!message.contains("private diagnostic read detail"));
+            if readable {
+                assert!(message.contains("wrote no standard-error diagnostics"));
+            } else {
+                assert!(message.contains("diagnostics could not be read"));
+            }
+        }
+        let error = preparation_failure(7, Ok("\r\nSynthetic failure\r\n".into()), directory);
+        assert_eq!(
+            error.to_string(),
+            "Setup could not finish (process exited 7, 0x00000007). Synthetic failure Diagnostics: C:\\startup-diagnostics"
+        );
+    }
 
     #[test]
     fn unexpected_setup_worker_exit_requires_close_before_retry() -> io::Result<()> {
