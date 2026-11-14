@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "kind": "checked-in-native-retirement-boundary",
   "repository": "runner",
-  "sourceRevision": "c08d0e027e38927cdf9a9f24a892e9bc71439f34",
+  "sourceRevision": "2c8f57b99234c07c474442fb1cedfac3677dfd46",
   "exclusions": [
     {
       "path": ".git",
@@ -213,8 +213,8 @@
     },
     {
       "path": "tools/bonsai/src/speech_build.rs",
-      "bytes": 35239,
-      "sha256": "5a3ce68cfe8f45d48d046ddae199894b220c95a48cf673899ea674762c2a6047",
+      "bytes": 11264,
+      "sha256": "57caecc96d553b6221bb8d22f054f981ba38a355a472167db6f58808b9aae075",
       "family": "compiler-provisioning"
     },
     {

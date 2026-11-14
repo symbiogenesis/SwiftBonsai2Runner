@@ -84,6 +84,12 @@ Preserve assertions when removing their build paths. TTS's Rust build and scalar
 tokenizer and graph-lifetime fixtures have no live source-overlay generator or
 native Qwen/GGML registration dependency.
 
+The obsolete `speech-build stage-source` command and its Qwen/GGML ZIP extraction,
+source-copy verification and cache-publication machinery are removed. It has no
+serving, build or notice consumer after the Rust TTS port. Retired requests fail
+before intake. Native ASR's compiler provisioning and LLVM archive-name guard
+remain operative; this deletion grants no ASR or whole-application retirement.
+
 ASR's [registry-package inventory](../src/speech-asr/native-sources.json) binds
 all 1,718 files in `transcribe-cpp-sys` 0.4.1 to byte lengths and SHA-256 identities,
 including GGML, platform sources, generators, build inputs and notices. It retains
@@ -106,6 +112,16 @@ duplicate or changed invocations and preserving distinct configurations of one
 source file. Five focused controls and strict Release analysis passed. Owning
 builds must still establish complete selection, effective configuration and
 linked-library closure; a selected capture does not qualify native retirement.
+
+The separate Rust [`native-link-verify` command](../tools/bonsai/README.md#selected-native-link-and-package-capture)
+binds the independently reviewed schema-3 source-verifier manifest/receipt to
+every selected object, an explicit successful ARM64 lld-link invocation, original
+linker/object/library bytes, actual normal/delay PE imports and exact flat package
+contents. Packaged images must match linked outputs byte for byte. Response files,
+library search and implicit default-library inputs are outside its supported
+subset. It neither reexecutes the source verifier/linker nor establishes static
+library source ancestry, system dependency closure or absence of embedded C++.
+Actual owning capture and hosted no-project-C++ builds remain separate gates.
 
 The Rust [`native-archive-inventory` command](../tools/ci/README.md#immutable-external-source-archives)
 also expands pinned external source ZIPs into complete sorted member identities,
@@ -147,6 +163,21 @@ a no-op observer. Six focused controls, strict Release analysis/docs and service
 linking passed. These observations execute Rust only. Independent pinned-model
 codec/speaker controls, complete parity, listening and resource gates remain open.
 
+The [TTS replay comparator](../src/speech-tts/README.md#streaming-independent-replay)
+binds both providers, all model/lock digests, actual text/voice bytes, worker count
+and retained-voice state. It compares every ordered prompt, hidden/logit/cache,
+decision/code/conditioning and PCM event through a fixed 16 KiB buffer. Complete
+and terminal EOF are checked inside synthesis cleanup ownership; only successful
+engine return grants success. Literal miniature controls and independent review
+cover the comparator, without supplying original native observations.
+
+Six `speaker_reference_` mathematical controls additionally exercise production
+Slaney linear/logarithmic anchors, eight-point Hann/DFT and channel-major mel,
+signed TDNN/reflection/dilation, SE gates, Res2Net carry/residual and channel-specific
+attentive moments. Expected values use closed forms and literal answers rather
+than candidate helper outputs. These establish primitive behavior, not complete
+pinned-weight x-vectors, native parity, voice identity or listening acceptance.
+
 The [native Q8 projection adapter](../tools/hexagon/native_rpc/README.md#q8-matrix-preparation-and-immutable-placement)
 connects immutable host dispatch to signed-queue ABI calls, exact FD mapping,
 correlated completions and mandatory independent output review. Failed or
@@ -164,7 +195,27 @@ binary-linkage assessment, clean hosted consumer builds without a project C++
 toolchain, preserved qualification contracts and no operative retired controls.
 Keep historical fixture metadata and legally required notices as data.
 
-### MSVC startup and panic runtime
+## Speech acceptance
+
+S1 requires the pinned Q8 and Q4 model paths, complete independent expected
+observations and the original tokenizer, Philox/MSVC tie and graph/cache/compute-lease
+controls. Exercise cold, repeated, edited, voice-changed and failed utterances
+through packed projections/worker teams, codec transformer/output tiles,
+convolution/ConvNeXt and exact Base-prefix reuse. Include single-pass tensor
+validation, metadata scratch reuse and short-frame convolution channel tiling.
+Qualify Design teardown before Base extraction and the retained reference's voice
+identity; primitive checks or synthetic PCM cannot supply these model verdicts.
+
+Predeclare feasible matched-power workloads for cold loading, first audible
+output and sustained readout/listening, including 400 ms playback pre-roll,
+queued-PCM underrun recovery, slow supply and chat overlap. Diagnose the observed
+latency regression before claiming benefit. Cancellation, recovery, resources,
+full-model numerical/audio parity and human listening remain independent gates.
+Source checks, literal replay controls and a source/cache-path deletion do not
+close them. S2 independently retains its native numerical/transcript controls and
+microphone-to-Swift, quality, lifecycle and resource requirements.
+
+## MSVC startup and panic runtime
 
 [Static CRT linkage](https://doc.rust-lang.org/reference/linkage.html#static-and-dynamic-c-runtimes)
 removes separately installed Visual C++ DLL requirements by embedding Microsoft

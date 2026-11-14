@@ -339,7 +339,7 @@ fn tts_replay_rejects_truncation_mutation_reordering_and_trailing_data() -> io::
                 .is_err()
         );
     }
-    // Mutations cover every original record byte, including cache bits and IDs.
+    // Sample mutations across original record bytes, including cache bits and IDs.
     for index in (header_len..original.len()).step_by(37) {
         let mut changed = original.clone();
         changed[index] ^= 1;

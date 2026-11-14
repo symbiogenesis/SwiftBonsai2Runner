@@ -282,16 +282,11 @@ under [AGENTS.md](AGENTS.md).
 ## Complete C++ retirement
 
 - [ ] **S1 — Qualify Rust TTS.** Compare pinned Q8/Q4 models against independent
-  controls: tokenizer, Philox/MSVC tie behavior, graph/cache/compute leases,
-  Design teardown/Base extraction, voice identity, audio/listening, cancellation,
-  recovery and resources under [retirement rules](docs/cpp-retirement.md).
-- [ ] Qualify TTS packed projections/worker teams, codec transformer/output tiles,
-  convolution/ConvNeXt and exact Base-prefix reuse for cold/repeated/edited,
-  voice-changed and failed utterances; diagnose the observed latency regression.
-- [ ] Qualify single-pass TTS tensor validation and metadata scratch reuse,
-  short-frame convolution channel tiling, 400 ms playback pre-roll and queued-PCM
-  underrun recovery. Measure cold load, first audible output and sustained
-  readout/listening with matched power, including slow supply and chat overlap.
+  complete graph/cache/code/PCM observations using the
+  [speech acceptance workloads](docs/cpp-retirement.md#speech-acceptance).
+  Close tokenizer/sampler, voice identity, Design/Base lifetime, cancellation,
+  recovery, listening and resources; diagnose the latency regression with matched
+  power. Mathematical controls and replay tooling do not close model acceptance.
 - [ ] Qualify the [native Q8 transport](tools/hexagon/native_rpc/README.md#q8-matrix-preparation-and-immutable-placement)
   under contained HTP0 execution and owning hosted compilation. Bind Q8
   tensor/solver mapping and exact source/model/package/catalog/driver/VTCM/
@@ -313,7 +308,8 @@ under [AGENTS.md](AGENTS.md).
   Retain required replay data and qualify owning hosted builds without a project
   C++ toolchain. Capture original selected compiled/preprocessed/generated inputs
   and the complete schema-3 compilation database beyond ASR's registry inventory;
-  qualify both source verifiers and actual package/link verification in owning CI.
+  run source and [link/package verification](tools/bonsai/README.md#selected-native-link-and-package-capture)
+  on those actual captures in owning CI.
   Resolve authenticated intake of the exact publisher source archive before
   expanding its file inventory; retain the failed HTTP 404 outcome and do not
   substitute changed source or reopen the completed intake workload.
