@@ -82,13 +82,12 @@ impl Text {
             };
             // Carry immediately available paragraph separators with their
             // sentence. Charge them to the same character cap as spoken text.
-            let mut characters = pending[..boundary].chars().count();
-            for character in pending[boundary..].chars() {
-                if !character.is_whitespace() || characters == super::MAX_SEGMENT {
+            let available = super::MAX_SEGMENT - pending[..boundary].chars().count();
+            for character in pending[boundary..].chars().take(available) {
+                if !character.is_whitespace() {
                     break;
                 }
                 boundary += character.len_utf8();
-                characters += 1;
             }
             let piece = pending[..boundary].trim_matches(horizontal_whitespace);
             if !piece.trim().is_empty() {

@@ -274,7 +274,8 @@ fn append_segment(text: &mut String, characters: &mut usize, next: &str) -> bool
     // Preserve paragraph cues supplied by segmentation and charge only the
     // separator actually needed. An extra space can otherwise force a new
     // model request even when the original two pieces fit exactly.
-    let needs_space = !text.ends_with(char::is_whitespace) && !next.starts_with(char::is_whitespace);
+    let needs_space =
+        !text.ends_with(char::is_whitespace) && !next.starts_with(char::is_whitespace);
     let added = usize::from(needs_space) + next.chars().count();
     if *characters + added > super::MAX_SEGMENT {
         return false;
@@ -420,8 +421,10 @@ impl SegmentFrames {
         if onset_bytes > 0 {
             let mut onset = [0; MAX_EDGE_BYTES];
             for (input, output) in pcm[..onset_bytes]
-                .chunks_exact(2)
-                .zip(onset[..onset_bytes].chunks_exact_mut(2))
+                .as_chunks::<2>()
+                .0
+                .iter()
+                .zip(onset[..onset_bytes].as_chunks_mut::<2>().0.iter_mut())
             {
                 let sample = f32::from(i16::from_le_bytes([input[0], input[1]]));
                 output.copy_from_slice(
@@ -461,7 +464,12 @@ impl SegmentFrames {
             return Err(AUDIO_FAILURE);
         }
         let count = self.tail_len / 2;
-        for (index, sample) in self.tail[..self.tail_len].chunks_exact_mut(2).enumerate() {
+        for (index, sample) in self.tail[..self.tail_len]
+            .as_chunks_mut::<2>()
+            .0
+            .iter_mut()
+            .enumerate()
+        {
             let value = f32::from(i16::from_le_bytes([sample[0], sample[1]]));
             sample.copy_from_slice(
                 &float_to_i16(value * edge_gain(count - index - 1, count)).to_le_bytes(),
@@ -1141,7 +1149,7 @@ mod tests {
             Ok(())
         })?;
         assert_eq!(output.len(), PACKET_BYTES);
-        assert!(frames.frames.pending.is_empty());
+        assert_eq!(frames.frames.pending, Vec::<u8>::new());
         assert_eq!(frames.tail_len, PACKET_BYTES / 20);
         frames.push(&[7], |_| Err(super::AUDIO_FAILURE))?;
         assert_eq!(frames.finish_segment(|_| Ok(())), Err(super::AUDIO_FAILURE));
