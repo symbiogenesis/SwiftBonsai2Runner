@@ -792,7 +792,7 @@ fn unconfirmed_start_cleanup(error: io::Error) -> io::Error {
 pub fn process_start_cleanup_unconfirmed(error: &io::Error) -> bool {
     error
         .get_ref()
-        .is_some_and(|source| source.is::<UnconfirmedStartCleanup>())
+        .is_some_and(<dyn std::error::Error + Send + Sync>::is::<UnconfirmedStartCleanup>)
 }
 
 /// Retained identity of the caller whose lifetime bounds a supervised operation.

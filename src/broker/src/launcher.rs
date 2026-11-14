@@ -386,6 +386,15 @@ impl LaunchConfig {
         Ok(())
     }
 
+    fn check_launch_environment(&self) -> Result<(), LaunchError> {
+        if self.requires_native_sandbox() {
+            // Real launch admits the complete policy without a throwaway PSEC.
+            validate_sandbox_environment()
+                .map_err(|error| Self::sandbox_support_error(error.kind()))?;
+        }
+        Ok(())
+    }
+
     const fn sandbox_support_error(kind: io::ErrorKind) -> LaunchError {
         if matches!(kind, io::ErrorKind::InvalidInput) {
             LaunchError::SandboxEnvironment
@@ -619,13 +628,7 @@ impl LaunchConfig {
         if self.check_only {
             return Err(LaunchError::Arguments);
         }
-        if self.requires_native_sandbox() {
-            // Keep early credential rejection, then admit the actual complete
-            // PSEC policy in start_process. Creating a throwaway environment
-            // here duplicates admission without qualifying the later launch.
-            validate_sandbox_environment()
-                .map_err(|error| Self::sandbox_support_error(error.kind()))?;
-        }
+        self.check_launch_environment()?;
         self.validate_paths()?;
         // Resolve policy before creating secrets or loading any native code.
         let pending_key = self.evidence_parent.join("not-created.key");

@@ -455,42 +455,7 @@ impl NativeProcess {
                 win_size::<JOBOBJECT_EXTENDED_LIMIT_INFORMATION>(),
             )
         })?;
-        let piped = pipes.is_some();
-        let (input, output) = if let Some(pipes) = pipes {
-            pipes
-        } else {
-            (
-                standard_file(
-                    OsStr::new("NUL"),
-                    0x8000_0000,
-                    FILE_SHARE_READ | FILE_SHARE_WRITE,
-                    OPEN_EXISTING,
-                )?,
-                standard_file(
-                    spec.stdout.as_os_str(),
-                    0x4000_0000,
-                    FILE_SHARE_READ,
-                    CREATE_NEW,
-                )?,
-            )
-        };
-        // Binary pipe workers return bounded errors in their protocol. A NUL
-        // handle avoids giving untrusted codecs an unbounded disk-log sink.
-        let error = if piped {
-            standard_file(
-                OsStr::new("NUL"),
-                0x4000_0000,
-                FILE_SHARE_READ | FILE_SHARE_WRITE,
-                OPEN_EXISTING,
-            )?
-        } else {
-            standard_file(
-                spec.stderr.as_os_str(),
-                0x4000_0000,
-                FILE_SHARE_READ,
-                CREATE_NEW,
-            )?
-        };
+        let [input, output, error] = standard_streams(spec, pipes)?;
         let attributes = CreationAttributes::new(
             job.as_raw_handle(),
             [
@@ -1192,12 +1157,49 @@ mod pipe_tests {
             send.join()
                 .map_err(|_| io::Error::other("pipe sender failed"))??;
             assert_eq!(bytes.len(), 8 * 16_384);
-            for (byte, chunk) in (0..8_u8).zip(bytes.chunks_exact(16_384)) {
+            for (byte, chunk) in (0..8_u8).zip(bytes.as_chunks::<16_384>().0) {
                 assert!(chunk.iter().all(|value| *value == byte));
             }
         }
         Ok(())
     }
+}
+
+fn standard_streams(
+    spec: &LaunchSpec<'_>,
+    pipes: Option<(OwnedHandle, OwnedHandle)>,
+) -> io::Result<[OwnedHandle; 3]> {
+    if let Some((input, output)) = pipes {
+        // Binary pipe workers report bounded errors in their protocol. A NUL
+        // handle avoids granting codecs an unbounded disk-log sink.
+        let error = standard_file(
+            OsStr::new("NUL"),
+            0x4000_0000,
+            FILE_SHARE_READ | FILE_SHARE_WRITE,
+            OPEN_EXISTING,
+        )?;
+        return Ok([input, output, error]);
+    }
+    Ok([
+        standard_file(
+            OsStr::new("NUL"),
+            0x8000_0000,
+            FILE_SHARE_READ | FILE_SHARE_WRITE,
+            OPEN_EXISTING,
+        )?,
+        standard_file(
+            spec.stdout.as_os_str(),
+            0x4000_0000,
+            FILE_SHARE_READ,
+            CREATE_NEW,
+        )?,
+        standard_file(
+            spec.stderr.as_os_str(),
+            0x4000_0000,
+            FILE_SHARE_READ,
+            CREATE_NEW,
+        )?,
+    ])
 }
 
 fn standard_file(

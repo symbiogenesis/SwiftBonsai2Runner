@@ -270,20 +270,17 @@ pub(super) fn convert(
         };
     let (frames, received) = mpsc::sync_channel(1);
     let (advance, permits) = mpsc::sync_channel(1);
-    let reader = match thread::Builder::new()
+    let Ok(reader) = thread::Builder::new()
         .name("bonsai-audio-decoder-pipe".to_owned())
         .spawn(move || read_frames(input, output, &frames, &permits))
-    {
-        Ok(reader) => reader,
-        Err(_) => {
-            if process.stop(CLEANUP_LIMIT).is_err() {
-                quarantine(source, executable_guard, scratch, None);
-                drop(process);
-                return Err(CLEANUP_FAILURE);
-            }
+    else {
+        if process.stop(CLEANUP_LIMIT).is_err() {
+            quarantine(source, executable_guard, scratch, None);
             drop(process);
-            return Err(ISOLATION_FAILURE);
+            return Err(CLEANUP_FAILURE);
         }
+        drop(process);
+        return Err(ISOLATION_FAILURE);
     };
     let result = relay(&advance, &received, shared, sender, next, deadline);
     // A compromised helper cannot keep a pipe reader blocked on channel delivery
@@ -344,13 +341,10 @@ fn read_frames(
             }
             Ok(chunk)
         });
-        let terminal = match &result {
-            Ok(chunk) => {
-                expected_start = chunk.end;
-                chunk.last
-            }
-            Err(_) => true,
-        };
+        let terminal = result.as_ref().map_or(true, |chunk| {
+            expected_start = chunk.end;
+            chunk.last
+        });
         if frames.send(result).is_err() || terminal {
             break;
         }
@@ -631,7 +625,7 @@ mod tests {
         let mut output = io::BufWriter::with_capacity(4_096, Vec::new());
         let expected = chunk(false)?;
         write_frame(&mut output, &expected).map_err(io::Error::other)?;
-        assert!(output.buffer().is_empty());
+        assert_eq!(output.buffer(), b"");
         assert_eq!(output.get_ref().len(), HEADER_BYTES + expected.wav.len());
         Ok(())
     }
