@@ -91,6 +91,25 @@ or the next response can start a fresh stream; failure never silently replays
 queued text. Superseding commands discard obsolete work through generation
 cancellation.
 
+## Candidate ASR boundary selection
+
+File import retains its current sequential Media Foundation decoder, RMS pause
+chooser and 30-second recognizer request contract under the
+[audio input contract](ui-architecture.md). A future comparison may use Rust
+[Earshot](https://github.com/pykeio/earshot) frame scores to rank cut points within
+the existing search region. Its detector consumes 256 samples per 16 kHz frame;
+define final partial-frame handling without changing the retained input samples.
+Speech detection would guide boundaries only: preserve every PCM sample in order,
+with no silence trimming, dropped samples or duplication between requests.
+
+Before adoption, compare boundary-word accuracy and complete transcript quality
+against the current RMS control. Charge sample conversion, detector state/work,
+buffering and inference to the complete import; preserve admission, per-segment
+deadlines, cancellation and decoder cleanup. Upstream detector claims establish
+no Runner latency, accuracy or memory benefit. The
+[speech research references](research-register.md#speech-and-creative-review-references)
+record source/reuse limits; [PLAN.md](../PLAN.md) owns selection and qualification.
+
 ## Native speech generation and streaming
 
 | Boundary | Storage and work contract |

@@ -48,6 +48,23 @@ predeclared allowance across setup, intake, loading, every arm, power, cleanup a
 retention under [AGENTS.md](../AGENTS.md#owner-device-execution-budgets).
 Do not retry, reopen a closed clock or split an infeasible matrix across repeated runs.
 
+## Creative review packets
+
+The [Longform Writing Bench rubric organization](https://github.com/EQ-bench/longform-writing-bench/tree/main/data)
+is a candidate source for independent creative review. Separate scene/chapter prose
+quality from whole-narrative coherence: character consistency, chronology, world
+rules and unresolved plot promises need the complete relevant story. Declare the
+criteria, weights, negative criteria and review scope before comparing complete
+held-out answers, including Thinking and Extra effort settings. Retain independent
+human review and distinguish prose quality from token count or completion speed.
+
+Adapted short packets are not leaderboard-equivalent. Its Python harness and
+automatic external judging are outside this proposal; private prompts and prose
+stay local unless the owner separately authorizes an external review. Source and
+reuse limits live in the [speech and creative review references](research-register.md#speech-and-creative-review-references).
+Existing trial budgets, per-arm power eligibility and evidence retention still
+govern any selected capture.
+
 ## X1/X2 configuration evidence
 
 [Hardware policy](hardware-capabilities.md#automatic-profile-selection) owns
@@ -75,3 +92,15 @@ Include chunk supply gaps/underruns, long-read memory and simultaneous chat/spee
 Average faster-than-real-time synthesis can still stall playback. Framing/ownership
 checks cannot replace real-device audio or independent listening for timbre,
 continuity, timing and prosody. See [speech controls](../tools/qwen-tts/README.md).
+
+The Rust [ebur128 analyzer](https://github.com/sdroege/ebur128) is a candidate
+review helper for integrated/short-term loudness, loudness range and true peak.
+If loudness matching is used for listening, apply the declared gain only to
+separately identified listening copies and record their relationship to the
+original samples. Original generated PCM remains the authority for numerical,
+streaming and continuity comparisons. Record unavailable measurements explicitly;
+this proposal sets no loudness threshold and changes no serving PCM. Matched
+loudness controls a listening confound, but establishes neither numerical equality
+nor intelligibility, voice identity or audible quality. Follow the
+[source and adoption limits](research-register.md#speech-and-creative-review-references)
+before introducing the helper.
