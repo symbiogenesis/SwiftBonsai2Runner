@@ -160,7 +160,11 @@ fn burst_limit_rejects_authenticated_headers_before_body_or_backend_and_refills(
                 .await
                 .is_err()
         );
-        tokio::time::sleep(Duration::from_secs(1)).await;
+        // No socket work is pending; advance only the refill clock, then
+        // restore real time before the next loopback exchange.
+        tokio::time::pause();
+        tokio::time::advance(Duration::from_secs(1)).await;
+        tokio::time::resume();
         let (wire, result) = burst_probe(&service, true, false).await;
         assert!(wire.starts_with("HTTP/1.1 400 Bad Request\r\n"));
         assert!(wire.ends_with(r#"{"error":{"code":"invalid_chat_request"}}"#));
