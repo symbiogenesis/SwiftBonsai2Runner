@@ -48,8 +48,13 @@ impl Text {
         let mut consumed = 0;
         let mut emitted = false;
         loop {
-            let pending = self.pending[consumed..].trim_start();
+            // Keep line breaks as prosody cues, including when they arrive in
+            // the append after a sentence has already been released.
+            let pending = self.pending[consumed..].trim_start_matches(horizontal_whitespace);
             consumed = self.pending.len() - pending.len();
+            if !self.finished && pending.trim().is_empty() {
+                break;
+            }
             let maximum = segmentation::maximum(pending);
             let limit = maximum.unwrap_or(pending.len());
             let sentence = if self.finished {
@@ -59,7 +64,7 @@ impl Text {
             };
             let boundary = sentence.or_else(|| {
                 if maximum.is_some() {
-                    Some(segmentation::word_boundary(pending, limit))
+                    Some(segmentation::phrase_boundary(pending, limit))
                 } else if self.finished {
                     Some(pending.len())
                 } else if expired {
@@ -72,11 +77,21 @@ impl Text {
                     None
                 }
             });
-            let Some(boundary) = boundary.filter(|boundary| *boundary > 0) else {
+            let Some(mut boundary) = boundary.filter(|boundary| *boundary > 0) else {
                 break;
             };
-            let piece = pending[..boundary].trim();
-            if !piece.is_empty() {
+            // Carry immediately available paragraph separators with their
+            // sentence. Charge them to the same character cap as spoken text.
+            let mut characters = pending[..boundary].chars().count();
+            for character in pending[boundary..].chars() {
+                if !character.is_whitespace() || characters == super::MAX_SEGMENT {
+                    break;
+                }
+                boundary += character.len_utf8();
+                characters += 1;
+            }
+            let piece = pending[..boundary].trim_matches(horizontal_whitespace);
+            if !piece.trim().is_empty() {
                 result.push_back(piece.to_owned());
                 emitted = true;
             }
@@ -98,6 +113,10 @@ impl Text {
             }
         }
     }
+}
+
+fn horizontal_whitespace(character: char) -> bool {
+    character.is_whitespace() && !matches!(character, '\r' | '\n')
 }
 
 #[cfg(test)]
@@ -331,6 +350,89 @@ mod tests {
         text.finished = true;
         assert_eq!(text.ready(now), pieces);
         assert!(text.ready(now).is_empty());
+        Ok(())
+    }
+
+    #[test]
+    fn streaming_hard_clip_uses_the_same_clause_cut_and_preserves_text() -> Result<(), &'static str>
+    {
+        let now = Instant::now();
+        let head = format!("{};", "A measured introduction ".repeat(6));
+        let input = format!("{head} {}", "another phrase without an ending ".repeat(12));
+        let expected = segments(&input).ok_or("Expected speech segments")?;
+        assert_eq!(expected.front(), Some(&head));
+        let mut text = Text::default();
+        text.append(&input, now)?;
+        let mut ready = text.ready(now);
+        assert_eq!(ready.front(), Some(&head));
+        text.finished = true;
+        ready.extend(text.ready(now));
+        let rebuilt: String = ready
+            .iter()
+            .flat_map(|piece| piece.chars())
+            .filter(|character| !character.is_whitespace())
+            .collect();
+        let original: String = input
+            .chars()
+            .filter(|character| !character.is_whitespace())
+            .collect();
+        assert_eq!(rebuilt, original);
+        assert!(
+            ready
+                .iter()
+                .all(|piece| piece.chars().count() <= MAX_SEGMENT)
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn streaming_paragraph_breaks_survive_sentence_and_transport_boundaries()
+    -> Result<(), &'static str> {
+        let now = Instant::now();
+        let mut text = Text::default();
+        text.append("First.\r\n\r\nSecond. tail", now)?;
+        assert_eq!(text.ready(now), ["First.\r\n\r\n", "Second."]);
+        text.finished = true;
+        assert_eq!(text.ready(now), ["tail"]);
+
+        let mut text = Text::default();
+        text.append("First. ", now)?;
+        assert_eq!(text.ready(now), ["First."]);
+        text.append("\n\nSecond. tail", now)?;
+        assert_eq!(text.ready(now), ["\n\nSecond."]);
+        text.finished = true;
+        assert_eq!(text.ready(now), ["tail"]);
+
+        let mut text = Text::default();
+        text.append("First. ", now)?;
+        assert_eq!(text.ready(now), ["First."]);
+        text.append("\n\n", now)?;
+        assert!(text.ready(now + LATENCY).is_empty());
+        text.append("Second. tail", now + LATENCY)?;
+        assert_eq!(text.ready(now + LATENCY), ["\n\nSecond."]);
+
+        let mut text = Text::default();
+        text.append(" \n \n ", now)?;
+        assert!(text.ready(now).is_empty());
+        text.finished = true;
+        assert!(text.ready(now).is_empty());
+        Ok(())
+    }
+
+    #[test]
+    fn streaming_paragraph_separators_share_the_clip_character_budget() -> Result<(), &'static str>
+    {
+        let now = Instant::now();
+        let head = format!("{}.", "a".repeat(MAX_SEGMENT - 2));
+        let mut text = Text::default();
+        text.append(&format!("{head}\n\nNext. tail"), now)?;
+        let ready = text.ready(now);
+        assert_eq!(ready, [format!("{head}\n"), "\nNext.".to_owned()]);
+        assert!(
+            ready
+                .iter()
+                .all(|piece| piece.chars().count() <= MAX_SEGMENT)
+        );
         Ok(())
     }
 }
