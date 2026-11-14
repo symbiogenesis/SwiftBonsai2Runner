@@ -1,0 +1,93 @@
+{
+  "schemaVersion": 1,
+  "kind": "native-source-archive-inventory-check",
+  "date": "2026-11-13",
+  "fixedWork": "Exactly one publisher/PTQ1 source archive and one Prism upstream reference archive; download once, verify original bytes and inventory every file; retain selected inventories and remove scratch.",
+  "estimateSeconds": 120,
+  "allowanceSeconds": 300,
+  "cleanupReserveSeconds": 30,
+  "checkerSourceRevision": "cb24b20d4fe85da07ceb73437e9875e9bfa28208",
+  "checkerSha256": "a0a1c203f8cd10386c5c25c54449299d4344929556d8e5f3c766964dacfa299c",
+  "powerBefore": {
+    "batteryPercent": null,
+    "batterySaver": null,
+    "reason": "No power observation before scratch setup; the later archive-intake snapshot cannot fill that interval.",
+    "acConnected": null
+  },
+  "arms": [
+    {
+      "name": "publisher",
+      "powerBefore": {
+        "observedAt": "2026-11-14T05:02:12.452116Z",
+        "source": "root/wmi BatteryStatus.PowerOnline",
+        "acConnected": false,
+        "batterySaver": null,
+        "batteryPercent": 88,
+        "error": null
+      },
+      "powerAfter": {
+        "observedAt": "2026-11-14T05:02:12.8133082Z",
+        "source": "root/wmi BatteryStatus.PowerOnline",
+        "acConnected": false,
+        "batterySaver": null,
+        "batteryPercent": 87,
+        "error": null
+      },
+      "sourceLock": "tools/native-reference/pins.json",
+      "sourceLockSha256": "e5ee0d99e0062e62dbc6680381d3d4060946c2353756d9499aaa9c1b691fcbb7",
+      "status": "failed",
+      "error": "Original source archive download failed with exit 22.",
+      "url": "https://github.com/PrismML-Eng/prism-engine/archive/73bfe6cc485554822f80c473a3c0c4f25e80f41b.zip",
+      "requestAuthentication": "Unauthenticated HTTPS; HTTP 404 does not distinguish absent source from unavailable access.",
+      "httpStatus": 404
+    },
+    {
+      "powerBefore": null,
+      "name": "prism-reference",
+      "powerAfter": null,
+      "reason": "Stopped after the first fixed archive returned HTTP 404; no retry or continuation.",
+      "sourceLock": "prism-inference/tools/prism/source.lock.json",
+      "revision": "b87ca7225456b06b0975b8239c66b5aecf07e37c",
+      "url": "https://codeload.github.com/PrismML-Eng/llama.cpp/zip/b87ca7225456b06b0975b8239c66b5aecf07e37c",
+      "expectedArchiveBytes": 39429253,
+      "expectedArchiveSha256": "333ab1cc57bdb1be0b52f894fe8c6822eb7da667a239d7a587dce79283782e58",
+      "status": "not-attempted"
+    }
+  ],
+  "passed": false,
+  "modelsExecuted": false,
+  "ownerDeviceQualification": false,
+  "scope": "Static source-archive intake only; no executable from a downloaded archive, native engine, driver, DSP, model, benchmark or CI operation ran.",
+  "performanceComparisonEligible": false,
+  "uninterruptedPowerObserved": false,
+  "cleanup": "Both downloaded ZIP/pin selections were removed or absent; the temporary script and empty scratch directory were removed. No archive, extracted source, placeholder inventory or build log retained.",
+  "powerAfter": {
+    "batteryPercent": 87,
+    "batterySaver": null,
+    "source": "root/wmi BatteryStatus.PowerOnline",
+    "acConnected": false,
+    "observedAt": "2026-11-14T05:04:13.3633641Z"
+  },
+  "error": "Original source archive download failed with exit 22.",
+  "elapsedSeconds": 235.0,
+  "withinAllowance": true,
+  "archiveWorkPowerBefore": {
+    "observedAt": "2026-11-14T05:02:12.3756315Z",
+    "source": "root/wmi BatteryStatus.PowerOnline",
+    "acConnected": false,
+    "batterySaver": null,
+    "batteryPercent": 88,
+    "error": null
+  },
+  "archiveWorkPowerAfter": {
+    "observedAt": "2026-11-14T05:02:12.8312827Z",
+    "source": "root/wmi BatteryStatus.PowerOnline",
+    "acConnected": false,
+    "batterySaver": null,
+    "batteryPercent": 87,
+    "error": null
+  },
+  "archiveIntakeSeconds": 0.524,
+  "aggregateStartedUtc": "2026-11-14T05:00:18.3930378Z",
+  "aggregateCompletedUtc": "2026-11-14T05:04:13.465348Z"
+}

@@ -41,10 +41,13 @@ retained observations and Rust assertions satisfy their owning contracts.
 Speech's licensed Philox, sampling, tokenizer and lifetime observations live in
 `src/speech-tts/tests/fixtures/`. Keep their provenance, replay inputs and independent
 assertions. [Speech documentation](../src/speech-tts/README.md) owns serving behavior.
-Philox, sampler and graph-lifetime replay now use safe Rust directly; their three
-obsolete C ABI adapters are removed. Historical graph-cache fixtures exercise a
-test-only cache and do not qualify the current serving graphs. Tokenizer ABI
-lifetime replay remains separately test-only.
+Philox, sampler, graph-lifetime and tokenizer replay use safe Rust directly;
+all obsolete C ABI adapters and their unsafe allowance are removed. The tokenizer
+shares serving's bounded transactional metadata loader, preserves all 1,810
+immutable native requests and checks candidate cleanup, failed replacement and
+owned result reuse. Its historical pointer/holder assertions have explicit Rust
+ownership dispositions in the retained provenance. Historical graph-cache
+fixtures exercise a test-only cache and do not qualify current serving graphs.
 
 ## Prism checked-in native files
 
@@ -92,9 +95,37 @@ complete selection,
 configuration and linked-library closure; passing a selected capture does not
 qualify native retirement.
 
-TTS has no signed RPC dispatcher. Its [signed-dispatch prerequisites](../src/speech-tts/README.md#optional-hexagon-runtime)
-require independent wire/Windows ABI controls before hybrid placement. Fixed
-F32/guarded-Q2 controls do not qualify Q8 prefill, shared KV or complete speech state.
+The Rust [`native-archive-inventory` command](../tools/ci/README.md#immutable-external-source-archives)
+also expands pinned external source ZIPs into complete sorted member identities,
+including build inputs and notices, without extraction or source execution. It
+binds original archive/pin hashes and rejects unsafe or aliased names, unsupported
+members, expansion violations and file/directory collisions. Its four focused
+controls, native strict Release analysis and tool link passed. Actual source
+intake is not qualified: the pinned publisher URL returned HTTP 404, stopping
+the fixed two-archive workload before Prism intake without retry. The
+[retained no-go](evidence/native-source-archives/summary.json) records exact
+identities, missing pre-setup power, intake/cleanup power, allowance and cleanup.
+Submodule contents and selected compiler/link closure remain separate inventories.
+
+Rust ASR exposes borrowed mel, encoder rows, prompt IDs, each full logits/greedy
+decision and all-layer committed KV through EOS, before its state resets.
+Observer refusal, cancellation and unwind clear every layer without publishing
+a partial transcript. Six focused controls, strict Rust-only Release analysis,
+docs and the qualification executable link passed. This supplies the Rust half
+of a comparison: callers still bind exact source/model/PCM and independent
+expected observations. It neither captures the native engine nor qualifies S2.
+
+The [native Q8 projection adapter](../tools/hexagon/native_rpc/README.md#q8-matrix-preparation-and-immutable-placement)
+connects immutable host dispatch to signed-queue ABI calls, exact FD mapping,
+correlated completions and mandatory independent output review. Failed or
+uncertain work, including caught callback unwinds, remains terminal and retains
+owners through supervised exit. Twelve focused model-free controls and native
+warning-denied analysis/docs passed. Actual identity admission remains the
+supervisor's obligation; simulated ABI calls authenticate no source/model/package/
+catalog/driver/VTCM/loaded-DSP tuple. Contained HTP0 execution and TTS integration
+remain pending. TTS's [signed-dispatch prerequisites](../src/speech-tts/README.md#optional-hexagon-runtime)
+still require independent wire/Windows ABI controls; neither these simulations
+nor fixed F32/guarded-Q2 controls qualify Q8 arithmetic, shared KV or speech state.
 
 Final acceptance requires source/generated-source and dependency inventories,
 binary-linkage assessment, clean hosted consumer builds without a project C++

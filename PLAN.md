@@ -277,6 +277,24 @@ under [AGENTS.md](AGENTS.md).
 
 ## Complete C++ retirement
 
+- [x] ~~Retire the final TTS tokenizer C ABI replay adapter.~~ Serving and
+  lifecycle replay share bounded safe Rust intake; all 1,810 captured requests
+  and independent ownership/failure assertions remain. Eight focused controls
+  and strict Release all-target analysis passed; actual-model gates remain below.
+- [x] ~~Expose complete Rust ASR observations for independent comparisons.~~
+  Borrowed mel, encoder, prompt, logits/greedy decisions and every layer's
+  committed KV are available through EOS; refusal, cancellation and unwind reset
+  state. Rust-only build/link, strict analysis/docs and six focused controls passed.
+- [x] ~~Connect immutable Q8 dispatch to the native signed-queue transport.~~
+  FD mapping, nonblocking writes/reads, correlated completions, mandatory oracle,
+  terminal uncertainty and inherited deadlines have compiled native controls.
+  Twelve focused controls and warning-denied analysis/docs passed; no DSP ran.
+- [x] ~~Implement bounded file-level inventories for pinned external source ZIPs.~~
+  Original archive/pin hashes, every member identity, safe paths, expansion and
+  collision checks have four focused controls and strict Release analysis.
+  Real source intake remains pending: the publisher archive returned HTTP 404;
+  the fixed workload stopped without retry before the Prism archive. See the
+  [retained no-go](docs/evidence/native-source-archives/summary.json).
 - [ ] **S1 — Qualify Rust TTS.** Compare pinned Q8/Q4 models against independent
   controls: tokenizer, Philox/MSVC tie behavior, graph/cache/compute leases,
   Design teardown/Base extraction, voice identity, audio/listening, cancellation,
@@ -288,12 +306,12 @@ under [AGENTS.md](AGENTS.md).
   short-frame convolution channel tiling, 400 ms playback pre-roll and queued-PCM
   underrun recovery. Measure cold load, first audible output and sustained
   readout/listening with matched power, including slow supply and chat overlap.
-- [ ] Connect the [Q8 host dispatcher](tools/hexagon/native_rpc/README.md#q8-matrix-preparation-and-immutable-placement)
-  to signed native submission and contained HTP0 execution; qualify its pending
-  compiled controls. Bind Q8 tensor/solver mapping and exact package/catalog/
-  driver/loaded-DSP admission; qualify correlated completions, buffers,
-  cancellation, teardown and TTS/shared-KV integration. Fixed F32/guarded-Q2
-  controls do not qualify complete speech state.
+- [ ] Qualify the [native Q8 transport](tools/hexagon/native_rpc/README.md#q8-matrix-preparation-and-immutable-placement)
+  under contained HTP0 execution and owning hosted compilation. Bind Q8
+  tensor/solver mapping and exact source/model/package/catalog/driver/VTCM/
+  loaded-DSP admission; qualify signed arithmetic, correlated completions,
+  buffers, cancellation, teardown and TTS/shared-KV integration. Simulated native
+  transport, fixed F32 and guarded-Q2 controls do not qualify speech state.
 - [ ] **S2 — Qualify Rust ASR for production.** Compare the complete Rust graph and
   explicit Rust-only service against pinned Qwen3-ASR 1.7B controls. Complete
   owning hosted build/link and native-control regressions; preserve independent
@@ -310,6 +328,9 @@ under [AGENTS.md](AGENTS.md).
   C++ toolchain. Capture complete selected compiled/preprocessed/generated-source
   closure with recursive schema-2 provenance beyond ASR's registry inventory;
   qualify that verifier and actual package verification in owning CI.
+  Resolve authenticated intake of the exact publisher source archive before
+  expanding its file inventory; retain the failed HTTP 404 outcome and do not
+  substitute changed source or reopen the completed intake workload.
 - [ ] Replace the [MSVC startup/panic runtime boundary](docs/cpp-retirement.md#msvc-startup-and-panic-runtime)
   with a qualified Rust provider while preserving preparation-peer recovery,
   worker draining and scoped cleanup. Static CRT linkage alone does not retire
