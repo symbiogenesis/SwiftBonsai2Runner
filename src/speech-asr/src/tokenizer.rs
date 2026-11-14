@@ -263,19 +263,22 @@ impl Tokenizer {
             let Some(piece) = usize::try_from(*id).ok().and_then(|id| self.tokens.get(id)) else {
                 continue;
             };
+            // Decoding never expands a spelling. Reserve once per token,
+            // bounded by the remaining output allowance; byte glyphs can
+            // still fit when their UTF-8 spelling exceeds that allowance.
+            output
+                .try_reserve(piece.len().min(MAX_INPUT - output.len()))
+                .map_err(io::Error::other)?;
             for glyph in piece.chars() {
-                let mut bytes = [0; 4];
-                let encoded = glyph.encode_utf8(&mut bytes).as_bytes();
                 let byte = raw_byte(glyph);
-                let addition = byte.map_or(encoded.len(), |_| 1);
+                let addition = byte.map_or_else(|| glyph.len_utf8(), |_| 1);
                 if output.len() + addition > MAX_INPUT {
                     return Err(invalid());
                 }
-                output.try_reserve(addition).map_err(io::Error::other)?;
                 if let Some(byte) = byte {
                     output.push(byte);
                 } else {
-                    output.extend_from_slice(encoded);
+                    output.extend_from_slice(glyph.encode_utf8(&mut [0; 4]).as_bytes());
                 }
             }
         }

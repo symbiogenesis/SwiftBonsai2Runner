@@ -107,6 +107,21 @@ fn rust_asr_tokenizer_utf8_fragments_and_unknown_glyph_passthrough() -> io::Resu
 }
 
 #[test]
+fn rust_asr_tokenizer_decoded_byte_limit_counts_bytes_not_glyph_spellings() -> io::Result<()> {
+    let spelling = "Ā".repeat(2048);
+    let tokenizer = fixture(&[&spelling, "界"], &["a b"])?;
+    assert_eq!(tokenizer.decode_bytes(&[256; 16])?, vec![0; 32768]);
+    assert!(tokenizer.decode_bytes(&[256; 17]).is_err());
+    let mut ids = vec![256; 15];
+    ids.extend([u32::from(b'x'); 2045]);
+    ids.push(257);
+    assert_eq!(tokenizer.decode_bytes(&ids)?.len(), 32768);
+    ids.push(257);
+    assert!(tokenizer.decode_bytes(&ids).is_err());
+    Ok(())
+}
+
+#[test]
 fn rust_asr_tokenizer_bounds_and_bad_tables_publish_nothing() -> io::Result<()> {
     assert!(Tokenizer::from_tables(vec!["a".into()], vec!["ab".into()], 0).is_err());
     assert!(Tokenizer::from_tables(vec!["a".into()], vec!["a b".into()], 1).is_err());
