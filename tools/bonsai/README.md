@@ -62,6 +62,28 @@ the GGUF byte length unchanged. Native sparse execution is separately required
 for memory or arithmetic savings. Neither retained weight energy nor a factual
 smoke establishes broad quality or an inference-speed improvement.
 
+`ffn-plan` screens the packed-payload envelope of an explicit structured FFN
+omission plan without reading a model or choosing important sites. Supply
+`schemaVersion: 1`, `weightRepresentation` (`PQ2_0` or
+`current-repacked-PTQ1_0`) and `sites`: 1–64 unique layers, each with `layer`
+0–63, sorted distinct `omittedGroups` 0–16 (at least one group retained), and
+`recoveryRank` 1–16. For example:
+
+```powershell
+bonsai-tools ffn-plan --json '{"schemaVersion":1,"weightRepresentation":"PQ2_0","sites":[{"layer":15,"omittedGroups":[0,8,16],"recoveryRank":16}]}'
+```
+
+The result preserves per-site choices and sums checked packed bytes, F32 factor
+bytes, their net payload opportunity, removed packed-weight MACs and added F32
+factor MACs. Those operation counts have different costs. Its fixed material
+screen asks whether net payload reaches 512 MiB before metadata, alignment,
+allocator capacity, scratch and other excluded costs. Two groups at all 64
+sites fail even before factors; three groups with rank-16 recovery reach a
+725 MiB PQ2 or 590 MiB PTQ1 envelope. These figures establish no actual process
+RAM, latency, held-out quality, bottleneck selection or viable recovery fit.
+The command changes no graph and implements no selective loading; passing this
+necessary geometry screen does not satisfy any serving or promotion gate.
+
 `ffn-surrogate` fits an offline low-rank replacement of a whole FFN branch for
 W8, or a recovery adapter for structured FFN omission. Unlike an FFN-down LoRA,
 `y = B*(A^T*x)` consumes the original normalized

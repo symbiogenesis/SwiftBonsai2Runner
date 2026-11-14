@@ -12,6 +12,28 @@ use sha2::{Digest as _, Sha256};
 const HEX: &[u8; 16] = b"0123456789abcdef";
 
 #[test]
+fn ffn_plan_dispatches_without_model_or_request_files() -> Result<(), Box<dyn std::error::Error>> {
+    let output = Command::new(env!("CARGO_BIN_EXE_bonsai-tools"))
+        .args([
+            "ffn-plan",
+            "--json",
+            r#"{"schemaVersion":1,"weightRepresentation":"PQ2_0","sites":[{"layer":15,"omittedGroups":[0,8,16],"recoveryRank":16}]}"#,
+        ])
+        .output()?;
+    assert!(output.status.success());
+    assert!(output.stderr.is_empty());
+    let plan: Value = serde_json::from_slice(&output.stdout)?;
+    assert_eq!(plan["status"], "geometry-only");
+    assert_eq!(plan["selectedSiteCount"], 1);
+    assert_eq!(
+        plan["aggregate"]["netPackedMinusFactorPayloadBytes"],
+        11_878_400
+    );
+    assert_eq!(plan["selectiveLoadingImplemented"], false);
+    Ok(())
+}
+
+#[test]
 fn version_advertises_policy_commands_and_compiled_inference_without_request_files()
 -> Result<(), Box<dyn std::error::Error>> {
     let nonce = SystemTime::now().duration_since(UNIX_EPOCH)?.as_nanos();
@@ -59,6 +81,7 @@ fn version_advertises_policy_commands_and_compiled_inference_without_request_fil
         "runtime-verify",
         "runtime-promotion",
         "weight-patch",
+        "ffn-plan",
         "ffn-surrogate",
         "adapter-edit",
         "speech-models",

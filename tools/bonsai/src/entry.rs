@@ -162,6 +162,7 @@ fn dispatch(command: &str, request: serde_json::Value) -> bonsai_tools::Result<s
         }
         "qualification" => bonsai_tools::qualification::run(request),
         "weight-patch" => bonsai_tools::weight_patch::run(request),
+        "ffn-plan" => bonsai_tools::ffn_plan::run(request),
         "ffn-surrogate" => bonsai_tools::ffn_surrogate::run(request),
         "adapter-edit" => bonsai_tools::adapter_edit::run(request),
         "runtime-promotion" => bonsai_tools::runtime_promotion::run(request),
