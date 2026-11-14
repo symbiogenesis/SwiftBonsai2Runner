@@ -926,3 +926,12 @@ capacity/quality evidence remains available; the owner must separately record
 acceptance of observed responsiveness before choosing a capacity-only default.
 X1 and X2 results stay separate. Retain FP16 recovery, the fixed 8K limit and
 existing admission reserves. Full release and hosted gates remain independent.
+
+The contributor-only `bonsai-assets icons --assets DIRECTORY` command regenerates
+`bonsai.ico` and `bonsai.png` from `bonsai.svg`. `scripts/Update-ApplicationIcon.ps1`
+only forwards to that Rust binary. The bounded SVG subset supports the native
+24-unit two-leaf mark, its green fill/stroke, absolute moves/cubic curves and
+closed paths; unsupported geometry fails visibly. Rust owns four-times
+supersampling, PNG compression/checksums and all seven ICO frames (16, 24, 32,
+48, 64, 128 and 256 pixels). Regeneration is explicit; normal builds embed the
+reviewed committed assets without rewriting them.

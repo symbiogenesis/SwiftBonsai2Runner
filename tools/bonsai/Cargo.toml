@@ -27,6 +27,10 @@ name = "bonsai-reference-numerics"
 path = "../native-reference/reference_numerics.rs"
 test = false
 
+[[bin]]
+name = "bonsai-assets"
+path = "src/application_icon.rs"
+
 [features]
 test-probe = []
 
