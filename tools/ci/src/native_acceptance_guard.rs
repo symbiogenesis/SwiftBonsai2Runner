@@ -144,7 +144,11 @@ fn analyzer(value: Value, revision: &str, compiler: &str) -> Result<()> {
     Ok(())
 }
 
-fn test_output(output: &[String], exit_code: i32, expected_passed: Option<u32>) -> Result<u32> {
+pub(super) fn test_output(
+    output: &[String],
+    exit_code: i32,
+    expected_passed: Option<u32>,
+) -> Result<u32> {
     let summaries = output
         .iter()
         .filter(|line| line.starts_with("test result:"))

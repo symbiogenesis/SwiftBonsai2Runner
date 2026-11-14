@@ -1,7 +1,7 @@
 //! Native Cargo selection, feature policy and evidence-preserving checks.
 
 use std::collections::BTreeSet;
-use std::ffi::OsString;
+use std::ffi::{OsStr, OsString};
 use std::fs;
 use std::path::{Path, PathBuf};
 
@@ -14,9 +14,23 @@ mod execute;
 #[cfg(test)]
 mod tests;
 
-const USAGE: &str = "bonsai-ci rust-select [--root PATH]\n       bonsai-ci rust-plan|rust-check [--root PATH] [--package NAME] [--packages-json JSON] [--group All|Broker] [--profile Foundation|Compatibility|Native] [--phase fmt|clippy|doc|test|build] [--toolchain NAME] [--offline] [--full-tests] [--build] [--target PATH --evidence PATH --timeout-seconds N] [--github-release]";
+const USAGE: &str = "bonsai-ci rust-select [--root PATH]\n       bonsai-ci rust-plan|rust-check [--root PATH] [--package NAME] [--packages-json JSON] [--group All|Broker] [--profile Foundation|Compatibility|Native] [--phase fmt|clippy|doc|test|build] [--toolchain NAME] [--offline] [--full-tests] [--build] [--test-case NAME --test-kind lib|bin|test --test-target NAME] [--target PATH --evidence PATH --timeout-seconds N] [--github-release]";
 const PHASES: &[&str] = &["fmt", "clippy", "doc", "test", "build"];
 const NATIVE_TARGET: &str = "aarch64-pc-windows-msvc";
+const TEST_SUFFIX: &[&str] = &[
+    "--no-fail-fast",
+    "--",
+    "-Z",
+    "unstable-options",
+    "--report-time",
+];
+
+#[derive(Default)]
+struct FocusedTests {
+    cases: Vec<String>,
+    kind: Option<String>,
+    target: Option<String>,
+}
 
 #[derive(Clone, Deserialize)]
 #[serde(rename_all = "PascalCase", deny_unknown_fields)]
@@ -48,6 +62,7 @@ struct Options {
     evidence: Option<PathBuf>,
     timeout_seconds: u64,
     github_release: bool,
+    focused: FocusedTests,
 }
 
 #[derive(Serialize)]
@@ -57,6 +72,8 @@ struct Check {
     phase: String,
     packages: Vec<String>,
     arguments: Vec<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    test_case: Option<String>,
 }
 
 fn parse(arguments: &[OsString]) -> Result<Options> {
@@ -80,8 +97,10 @@ fn parse(arguments: &[OsString]) -> Result<Options> {
         evidence: None,
         timeout_seconds: 900,
         github_release: false,
+        focused: FocusedTests::default(),
     };
     let mut extra_phases = Vec::new();
+    let mut full_tests = false;
     while let Some(option) = values.next() {
         let option = option.to_str().ok_or(USAGE)?;
         if options.command == "rust-select" && option != "--root" {
@@ -89,46 +108,29 @@ fn parse(arguments: &[OsString]) -> Result<Options> {
         }
         match option {
             "--offline" => options.offline = true,
-            "--full-tests" => extra_phases.push("test".into()),
+            "--full-tests" => {
+                full_tests = true;
+                extra_phases.push("test".into());
+            }
             "--build" => extra_phases.push("build".into()),
             "--github-release" => options.github_release = true,
             _ => {
                 let value = values.next().ok_or(USAGE)?;
-                match option {
-                    "--root" => options.root = value.into(),
-                    "--target" => options.target = Some(value.into()),
-                    "--evidence" => options.evidence = Some(value.into()),
-                    "--package" => options.packages.push(value.to_str().ok_or(USAGE)?.into()),
-                    "--packages-json" => {
-                        let selected =
-                            serde_json::from_str::<Vec<String>>(value.to_str().ok_or(USAGE)?)
-                                .map_err(|error| error.to_string())?;
-                        if selected.is_empty() {
-                            return Err(
-                                "An explicit Rust package selection must not be empty.".into()
-                            );
-                        }
-                        options.packages.extend(selected);
-                    }
-                    "--phase" => options.phases.push(value.to_str().ok_or(USAGE)?.into()),
-                    "--group" => options.group = value.to_str().ok_or(USAGE)?.into(),
-                    "--profile" => options.profile = value.to_str().ok_or(USAGE)?.into(),
-                    "--toolchain" => options.toolchain = Some(value.to_str().ok_or(USAGE)?.into()),
-                    "--timeout-seconds" => {
-                        options.timeout_seconds =
-                            value.to_str().ok_or(USAGE)?.parse().map_err(|_| USAGE)?;
-                    }
-                    _ => return Err(USAGE.into()),
-                }
+                parse_value(&mut options, option, value)?;
             }
         }
     }
     if options.phases.is_empty() {
-        options.phases = ["fmt", "clippy", "doc"].map(String::from).to_vec();
+        options.phases = if options.focused.cases.is_empty() {
+            ["fmt", "clippy", "doc"].map(String::from).to_vec()
+        } else {
+            vec!["test".into()]
+        };
     }
     options.phases.extend(extra_phases);
     let mut seen = BTreeSet::new();
     options.phases.retain(|phase| seen.insert(phase.clone()));
+    validate_focused_tests(&options, full_tests)?;
     if !["All", "Broker"].contains(&options.group.as_str())
         || !["Foundation", "Compatibility", "Native"].contains(&options.profile.as_str())
         || options
@@ -141,6 +143,73 @@ fn parse(arguments: &[OsString]) -> Result<Options> {
     }
     options.root = std::path::absolute(&options.root).map_err(|error| error.to_string())?;
     Ok(options)
+}
+
+fn parse_value(options: &mut Options, option: &str, value: &OsStr) -> Result<()> {
+    match option {
+        "--root" => options.root = value.into(),
+        "--target" => options.target = Some(value.into()),
+        "--evidence" => options.evidence = Some(value.into()),
+        "--package" => options.packages.push(value.to_str().ok_or(USAGE)?.into()),
+        "--packages-json" => {
+            let selected = serde_json::from_str::<Vec<String>>(value.to_str().ok_or(USAGE)?)
+                .map_err(|error| error.to_string())?;
+            if selected.is_empty() {
+                return Err("An explicit Rust package selection must not be empty.".into());
+            }
+            options.packages.extend(selected);
+        }
+        "--phase" => options.phases.push(value.to_str().ok_or(USAGE)?.into()),
+        "--group" => options.group = value.to_str().ok_or(USAGE)?.into(),
+        "--profile" => options.profile = value.to_str().ok_or(USAGE)?.into(),
+        "--toolchain" => options.toolchain = Some(value.to_str().ok_or(USAGE)?.into()),
+        "--test-case" => options
+            .focused
+            .cases
+            .push(value.to_str().ok_or(USAGE)?.into()),
+        "--test-kind" => options.focused.kind = Some(value.to_str().ok_or(USAGE)?.into()),
+        "--test-target" => options.focused.target = Some(value.to_str().ok_or(USAGE)?.into()),
+        "--timeout-seconds" => {
+            options.timeout_seconds = value.to_str().ok_or(USAGE)?.parse().map_err(|_| USAGE)?;
+        }
+        _ => return Err(USAGE.into()),
+    }
+    Ok(())
+}
+
+fn validate_focused_tests(options: &Options, full_tests: bool) -> Result<()> {
+    let focused = &options.focused;
+    if focused.cases.is_empty() {
+        return if focused.kind.is_none() && focused.target.is_none() {
+            Ok(())
+        } else {
+            Err("Focused target options require at least one exact --test-case.".into())
+        };
+    }
+    let mut unique = BTreeSet::new();
+    if full_tests
+        || options.packages.len() != 1
+        || !options.phases.iter().any(|phase| phase == "test")
+        || focused.cases.len() > 16
+        || focused.cases.iter().any(|case| {
+            case.len() > 1024
+                || !case.split("::").all(|part| {
+                    !part.is_empty()
+                        && (part.as_bytes()[0].is_ascii_alphabetic() || part.starts_with('_'))
+                        && part
+                            .bytes()
+                            .all(|byte| byte.is_ascii_alphanumeric() || byte == b'_')
+                })
+                || !unique.insert(case)
+        })
+    {
+        return Err("Focused checks require one explicit package and 1..16 unique exact Rust test names, without --full-tests.".into());
+    }
+    match (focused.kind.as_deref().unwrap_or("lib"), &focused.target) {
+        ("lib", None) => Ok(()),
+        ("bin" | "test", Some(target)) if identifier(target) => Ok(()),
+        _ => Err("Use lib without --test-target, or bin/test with one named --test-target.".into()),
+    }
 }
 
 fn identifier(value: &str) -> bool {
@@ -312,13 +381,7 @@ fn arguments(
             "--output-format",
             "json",
         ],
-        "test" => &[
-            "--no-fail-fast",
-            "--",
-            "-Z",
-            "unstable-options",
-            "--report-time",
-        ],
+        "test" => TEST_SUFFIX,
         _ => &[],
     };
     arguments.extend(suffix.iter().map(|value| (*value).into()));
@@ -332,6 +395,10 @@ fn plan(options: &Options, packages: &[&Package], toolchain: &str) -> Result<Vec
         .ok_or("The workspace path must be UTF-8.")?;
     let mut plan = Vec::new();
     for phase in &options.phases {
+        if phase == "test" && !options.focused.cases.is_empty() {
+            plan.extend(focused_plan(options, packages, toolchain, manifest)?);
+            continue;
+        }
         let batches = if phase == "fmt" {
             vec![packages.to_vec()]
         } else {
@@ -366,10 +433,80 @@ fn plan(options: &Options, packages: &[&Package], toolchain: &str) -> Result<Vec
                     manifest,
                     options.offline,
                 )?,
+                test_case: None,
             });
         }
     }
     Ok(plan)
+}
+
+fn focused_plan(
+    options: &Options,
+    packages: &[&Package],
+    toolchain: &str,
+    manifest: &str,
+) -> Result<Vec<Check>> {
+    if packages.len() != 1 {
+        return Err("Focused checks require one selected package.".into());
+    }
+    options
+        .focused
+        .cases
+        .iter()
+        .enumerate()
+        .map(|(index, case)| {
+            let mut arguments = arguments(
+                packages,
+                "test",
+                &options.profile,
+                toolchain,
+                manifest,
+                options.offline,
+            )?;
+            arguments.truncate(arguments.len() - TEST_SUFFIX.len());
+            match options.focused.kind.as_deref().unwrap_or("lib") {
+                "lib" => arguments.push("--lib".into()),
+                kind => arguments.extend([
+                    format!("--{kind}"),
+                    options
+                        .focused
+                        .target
+                        .clone()
+                        .ok_or("Missing focused test target.")?,
+                ]),
+            }
+            arguments.extend([
+                case.clone(),
+                "--".into(),
+                "--exact".into(),
+                "-Z".into(),
+                "unstable-options".into(),
+                "--report-time".into(),
+            ]);
+            Ok(Check {
+                name: format!("{}-test-{}", packages[0].name, index + 1),
+                phase: "test".into(),
+                packages: vec![packages[0].name.clone()],
+                arguments,
+                test_case: Some(case.clone()),
+            })
+        })
+        .collect()
+}
+
+#[cfg(any(windows, test))]
+fn focused_test_result(check: &Check, code: u32, stdout: &str) -> Result<Option<u32>> {
+    check
+        .test_case
+        .as_ref()
+        .map(|_| {
+            super::native_acceptance_guard::test_output(
+                &stdout.lines().map(String::from).collect::<Vec<_>>(),
+                i32::try_from(code).map_err(|error| error.to_string())?,
+                Some(1),
+            )
+        })
+        .transpose()
 }
 
 fn toolchain(options: &Options) -> Result<String> {
@@ -447,11 +584,13 @@ pub(super) fn run(arguments: &[OsString]) -> Result<String> {
         );
     }
     if options.command == "rust-check" {
-        suite_allowed(
-            &options.phases,
-            &std::env::var("GITHUB_ACTIONS").unwrap_or_default(),
-            &std::env::var("GITHUB_REF").unwrap_or_default(),
-        )?;
+        if options.focused.cases.is_empty() {
+            suite_allowed(
+                &options.phases,
+                &std::env::var("GITHUB_ACTIONS").unwrap_or_default(),
+                &std::env::var("GITHUB_REF").unwrap_or_default(),
+            )?;
+        }
         if options.target.is_none() || options.evidence.is_none() {
             return Err("rust-check requires --target and --evidence.".into());
         }

@@ -416,9 +416,19 @@ with its production Windows ARM64 host. Formatting shares one invocation;
 compile phases batch all-feature packages while isolating restricted features.
 Rustdoc emits JSON. Commands never widen an explicit package selection.
 
+Focused regressions use one explicit package and up to sixteen repeated
+`--test-case module::case` options. Names select exact individual tests, with no
+ignored-test override. The default target is `--test-kind lib`; `bin` and `test`
+require `--test-target NAME`. With no explicit phase these options select only
+the test phase. They cannot combine with `--full-tests`. Each invocation requires
+exactly one passing test, zero failures and zero ignored tests; zero matches fail.
+The existing aggregate deadline and source/compiler receipts apply, including the
+named case and target. Focused selections must not reconstruct a complete suite.
+
 ```powershell
 bonsai-ci rust-plan --root $PWD --package bonsai-broker --phase clippy
 bonsai-ci rust-check --root $PWD --package bonsai-broker --phase clippy --target C:\Scratch\target --evidence C:\Scratch\new-evidence --timeout-seconds 120
+bonsai-ci rust-check --root $PWD --package bonsai-chat --test-kind bin --test-target bonsai-chat --test-case audio_import::isolated::tests::isolated_frames_flush_small_recordings_before_waiting_for_permit --target C:\Scratch\target --evidence C:\Scratch\focused-evidence --timeout-seconds 120
 ```
 
 Execution requires expanded absolute external `--target` and new `--evidence`

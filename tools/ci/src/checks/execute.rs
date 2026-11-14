@@ -261,7 +261,8 @@ impl Execution<'_> {
             let started = Instant::now();
             let mut record = json!({"Name": check.name, "Phase": check.phase, "Packages": check.packages,
                 "Executable": cargo, "Arguments": check.arguments, "Log": log,
-                "ExitCode": null, "Passed": false, "ElapsedMilliseconds": null});
+                "ExitCode": null, "Passed": false, "ElapsedMilliseconds": null,
+                "TestCase": check.test_case, "TestPassed": null, "Error": null});
             let result = command(
                 &self.spec(
                     cargo.clone(),
@@ -274,9 +275,15 @@ impl Execution<'_> {
             record["ElapsedMilliseconds"] = u64::try_from(started.elapsed().as_millis())
                 .map_err(|error| error.to_string())?
                 .into();
-            if let Ok((code, _)) = &result {
+            if let Ok((code, stdout)) = &result {
                 record["ExitCode"] = (*code).into();
-                record["Passed"] = (*code == 0).into();
+                match super::focused_test_result(check, *code, stdout) {
+                    Ok(passed) => {
+                        record["Passed"] = (*code == 0).into();
+                        record["TestPassed"] = passed.into();
+                    }
+                    Err(error) => record["Error"] = error.into(),
+                }
             }
             report["Checks"]
                 .as_array_mut()
