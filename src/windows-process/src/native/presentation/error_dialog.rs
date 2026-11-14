@@ -301,6 +301,102 @@ fn template() -> Vec<u32> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::io::{Cursor, Read as _};
+
+    fn word(input: &mut Cursor<&[u8]>) -> std::io::Result<u16> {
+        let mut bytes = [0; 2];
+        input.read_exact(&mut bytes)?;
+        Ok(u16::from_le_bytes(bytes))
+    }
+
+    fn dword(input: &mut Cursor<&[u8]>) -> std::io::Result<u32> {
+        let mut bytes = [0; 4];
+        input.read_exact(&mut bytes)?;
+        Ok(u32::from_le_bytes(bytes))
+    }
+
+    fn text(input: &mut Cursor<&[u8]>) -> Result<String, Box<dyn std::error::Error>> {
+        let mut units = Vec::new();
+        loop {
+            let unit = word(input)?;
+            if unit == 0 {
+                return Ok(String::from_utf16(&units)?);
+            }
+            units.push(unit);
+        }
+    }
+
+    #[test]
+    fn startup_error_template_encodes_aligned_accessible_native_controls()
+    -> Result<(), Box<dyn std::error::Error>> {
+        // Decode the standard DLGTEMPLATE wire layout independently of the
+        // encoder. Opening a native modal would require interactive acceptance.
+        let bytes: Vec<_> = template().into_iter().flat_map(u32::to_le_bytes).collect();
+        let mut input = Cursor::new(bytes.as_slice());
+        let style = dword(&mut input)?;
+        assert_ne!(style & DS_SETFONT.cast_unsigned(), 0);
+        assert_eq!(dword(&mut input)?, 0);
+        assert_eq!(word(&mut input)?, 6);
+        assert_eq!([word(&mut input)?, word(&mut input)?], [0, 0]);
+        let width = word(&mut input)?;
+        let height = word(&mut input)?;
+        assert_eq!([word(&mut input)?, word(&mut input)?], [0, 0]);
+        assert_eq!(text(&mut input)?, "Swift Bonsai 2");
+        assert!(word(&mut input)? > 0);
+        assert_eq!(text(&mut input)?, "Segoe UI");
+
+        for (id, class, required, label) in [
+            (1003, 0x82, 0, "Swift Bonsai could not start"),
+            (1004, 0x82, 0, "Error details (preview)"),
+            (
+                1000,
+                0x81,
+                WS_TABSTOP | WS_VSCROLL | (ES_MULTILINE | ES_READONLY).cast_unsigned(),
+                "",
+            ),
+            (
+                1002,
+                0x82,
+                0,
+                "Copy error keeps the complete message. Review paths before sharing.",
+            ),
+            (1001, 0x80, WS_TABSTOP, "&Copy error"),
+            (
+                1,
+                0x80,
+                WS_TABSTOP | BS_DEFPUSHBUTTON.cast_unsigned(),
+                "Close",
+            ),
+        ] {
+            if !input.position().is_multiple_of(4) {
+                assert_eq!(word(&mut input)?, 0, "control alignment padding");
+            }
+            let style = dword(&mut input)?;
+            assert_eq!(style & (WS_CHILD | WS_VISIBLE), WS_CHILD | WS_VISIBLE);
+            assert_eq!(
+                style & required,
+                required,
+                "required flags for control {id}"
+            );
+            assert_eq!(dword(&mut input)?, 0);
+            let x = word(&mut input)?;
+            let y = word(&mut input)?;
+            let control_width = word(&mut input)?;
+            let control_height = word(&mut input)?;
+            assert!(control_width > 0 && control_height > 0);
+            assert!(u32::from(x) + u32::from(control_width) <= u32::from(width));
+            assert!(u32::from(y) + u32::from(control_height) <= u32::from(height));
+            assert_eq!(word(&mut input)?, id);
+            assert_eq!([word(&mut input)?, word(&mut input)?], [0xffff, class]);
+            assert_eq!(text(&mut input)?, label);
+            assert_eq!(word(&mut input)?, 0, "unexpected control creation data");
+        }
+        if !input.position().is_multiple_of(4) {
+            assert_eq!(word(&mut input)?, 0, "final DWORD alignment padding");
+        }
+        assert_eq!(input.position(), u64::try_from(bytes.len())?);
+        Ok(())
+    }
 
     #[test]
     fn startup_error_preview_is_bounded_without_losing_full_copy_text() {
