@@ -65,6 +65,40 @@ fn build(revision: &str) -> Value {
         "executable_bytes":100,"checks":checks})
 }
 
+fn arm_receipt(packet: &Value, role: &str, unix: u64, text: &str) -> Result<Value> {
+    let mut receipt = json!({"schema_version":2,"kind":"swift-cpu-source-candidate-arm",
+        "source_commit_declaration":packet["arms"][role]["source_revision"],
+        "model_sha256":MODEL,"model_bytes":7_206_168_928_u64,"weight_representation":"PQ2_0",
+        "adapter_sha256":ADAPTER,"observed_adapter_sha256":ADAPTER,"adapter_scale_bits":"3fa66666",
+        "row_workers":4,"effective_row_workers":4,"backend_requested":"ExperimentalNeon",
+        "execution_device":"cpu","execution_basis":"direct-session-without-projection-executor",
+        "backend_statistics":null,"kv_cache":"k4-v4","context_tokens":8192,"cpu_prefill_tokens":1,
+        "cpu_prefill_scratch_bytes":0,"legacy_f16_build":false,"prompt_reuse":"disabled","seed":42,
+        "thinking_enabled":false,"maximum_prompt_tokens":128,"output_tokens_reserved":32,
+        "original_deadline_unix_milliseconds":unix,"receipt_reserve_milliseconds":2000,
+        "sampler":"production SwiftSampler and model-declared stops",
+        "executable_sha256":"b".repeat(64),"input_sha256":packet["messages"]["sha256"]});
+    // Keep each macro expansion below the default recursion limit while
+    // retaining the collector's flat receipt schema and exact fixture values.
+    let outcome = json!({"arm_succeeded":true,"session_succeeded":true,"terminal_delivered":true,
+        "terminal_accounting_matches":true,"model_loaded":true,"output_committed":true,
+        "capture_status":"complete","stage":"complete","error":null,"prompt_tokens":20,
+        "generated_tokens":10,"reused_tokens":0,"finish":"stop","output_text":text,
+        "output_bytes":text.len(),"output_sha256":crate::identity::sha256(text.as_bytes()),
+        "load_milliseconds":10,"preparation_milliseconds":1,"request_milliseconds":20,"elapsed_milliseconds":40});
+    receipt
+        .as_object_mut()
+        .ok_or("Receipt fixture must be an object.")?
+        .extend(
+            outcome
+                .as_object()
+                .ok_or("Outcome fixture must be an object.")?
+                .iter()
+                .map(|(key, value)| (key.clone(), value.clone())),
+        );
+    Ok(receipt)
+}
+
 fn fixture() -> Result<Fixture> {
     let root = std::env::temp_dir().join(format!(
         "bonsai-cpu-source-{}",
@@ -91,24 +125,7 @@ fn fixture() -> Result<Fixture> {
         let deadline = begin + 60_000;
         let unix = 1_000_000 + deadline;
         let text = "1 2 3 4 5 6 7 8 9 10";
-        let receipt = json!({"schema_version":2,"kind":"swift-cpu-source-candidate-arm",
-            "source_commit_declaration":packet["arms"][role]["source_revision"],
-            "model_sha256":MODEL,"model_bytes":7_206_168_928_u64,"weight_representation":"PQ2_0",
-            "adapter_sha256":ADAPTER,"observed_adapter_sha256":ADAPTER,"adapter_scale_bits":"3fa66666",
-            "row_workers":4,"effective_row_workers":4,"backend_requested":"ExperimentalNeon",
-            "execution_device":"cpu","execution_basis":"direct-session-without-projection-executor",
-            "backend_statistics":null,"kv_cache":"k4-v4","context_tokens":8192,"cpu_prefill_tokens":1,
-            "cpu_prefill_scratch_bytes":0,"legacy_f16_build":false,"prompt_reuse":"disabled","seed":42,
-            "thinking_enabled":false,"maximum_prompt_tokens":128,"output_tokens_reserved":32,
-            "original_deadline_unix_milliseconds":unix,"receipt_reserve_milliseconds":2000,
-            "sampler":"production SwiftSampler and model-declared stops",
-            "executable_sha256":"b".repeat(64),"input_sha256":packet["messages"]["sha256"],
-            "arm_succeeded":true,"session_succeeded":true,"terminal_delivered":true,
-            "terminal_accounting_matches":true,"model_loaded":true,"output_committed":true,
-            "capture_status":"complete","stage":"complete","error":null,"prompt_tokens":20,
-            "generated_tokens":10,"reused_tokens":0,"finish":"stop","output_text":text,
-            "output_bytes":text.len(),"output_sha256":crate::identity::sha256(text.as_bytes()),
-            "load_milliseconds":10,"preparation_milliseconds":1,"request_milliseconds":20,"elapsed_milliseconds":40});
+        let receipt = arm_receipt(&packet, role, unix, text)?;
         let mut started = receipt.clone();
         for field in [
             "arm_succeeded",
