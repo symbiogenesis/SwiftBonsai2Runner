@@ -161,7 +161,12 @@ pub(super) fn layout_job(
     let normal =
         egui::TextFormat::simple(egui::FontId::proportional(text_size), visuals.text_color());
     let mut builder = Builder {
-        job: egui::text::LayoutJob::default(),
+        job: egui::text::LayoutJob {
+            // Styling preserves every source byte; reserve the final text size
+            // once instead of growing/copying it at successive styled spans.
+            text: String::with_capacity(body.len()),
+            ..Default::default()
+        },
         matches,
         next_match: 0,
         visuals,
