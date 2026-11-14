@@ -110,6 +110,44 @@ gates. This command is read-only and does not replace Cargo's build or introduce
 automatic CI dispatch. Its focused model-free controls use the
 `native_source_inventory_` filter.
 
+### Immutable external source archives
+
+`native-archive-inventory` expands a reviewed source ZIP into a sorted, complete
+file-identity inventory without extracting or executing its contents:
+
+```powershell
+& $reviewedCiTool native-archive-inventory --archive $originalSourceZip --pin $archivePin --expected-pin-sha256 $reviewedPinSha256
+```
+
+Both paths are absolute. The small strict JSON pin has `schemaVersion: 1`,
+`repository` (HTTPS), `revision` (40 lowercase hex characters), `archiveRoot`
+(one portable directory name), `archiveBytes` and `archiveSha256`. Copy these
+identities from the owning immutable source lock; review the pin's exact bytes
+and SHA-256 independently. Pins and manifests do not authorize downloads or CI.
+The command checks original archive length/digest before parsing the same open
+file. On Windows it denies archive writers and rename/delete until completion.
+
+The output records every regular member, including optional backends, build
+inputs, generators, binary fixtures and notices, by root-relative path, byte
+length and SHA-256. It preserves the original archive/source/pin identities.
+Missing submodule contents remain outside that archive and require their own
+pinned inventory. A source archive inventory cannot establish a selected
+compiled/preprocessed/generated-input or linked-library closure.
+
+Bounds are 256 MiB compressed, 64 MiB per expanded file, 1 GiB total expansion
+and 32,768 entries including directories. Only stored/deflated ZIP members are
+supported. CRC/length failures, encryption, symlinks/special files, prepended
+payloads, entries outside the pinned root, nonportable names, duplicate/case
+aliases and explicit/implicit file-directory collisions reject. All files are
+streamed with bounded scratch; source bytes are never written to disk.
+`native_archive_inventory_` selects its four focused synthetic controls.
+
+Retain the file inventory when it supplies a concrete retirement review; remove
+temporary downloads and pins afterward. `sourceExecuted`,
+`compiledTranslationUnitClosureQualified`, `inferenceParityQualified` and
+`nativeRetirementQualified` stay false. These records enable file-by-file
+planning and do not supply native numerical observations or retirement approval.
+
 ### Selected compiler source closure
 
 `native-closure-verify` checks a reviewed selection of Clang translation units,

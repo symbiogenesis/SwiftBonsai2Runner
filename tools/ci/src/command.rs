@@ -21,6 +21,9 @@ mod native_acceptance_guard;
 #[path = "native_source_inventory.rs"]
 mod native_source_inventory;
 
+#[path = "native_archive_inventory.rs"]
+mod native_archive_inventory;
+
 #[path = "native_source_closure.rs"]
 mod native_source_closure;
 
@@ -148,6 +151,12 @@ fn action_outputs(plan: &impact::Plan, config: &Value, serialized: &str) -> Resu
 pub fn run(arguments: &[OsString]) -> Result<String> {
     if arguments
         .first()
+        .is_some_and(|command| command == "native-archive-inventory")
+    {
+        return native_archive_inventory::run(arguments);
+    }
+    if arguments
+        .first()
         .is_some_and(|command| command == "native-closure-verify")
     {
         return native_source_closure::run(arguments);
@@ -173,7 +182,7 @@ pub fn run(arguments: &[OsString]) -> Result<String> {
     }
     if arguments.len() == 1 && arguments[0] == "--help" {
         return Ok(format!(
-            "{USAGE}\n       bonsai-ci rust-select|rust-plan|rust-check (see tools/ci/README.md)\n       bonsai-ci native-acceptance-guard --json REQUEST\n       bonsai-ci native-source-verify --root PATH --source PATH --archive PATH\n       bonsai-ci native-closure-verify --manifest PATH --expected-sha256 SHA256"
+            "{USAGE}\n       bonsai-ci rust-select|rust-plan|rust-check (see tools/ci/README.md)\n       bonsai-ci native-acceptance-guard --json REQUEST\n       bonsai-ci native-source-verify --root PATH --source PATH --archive PATH\n       bonsai-ci native-archive-inventory --archive PATH --pin PATH --expected-pin-sha256 SHA256\n       bonsai-ci native-closure-verify --manifest PATH --expected-sha256 SHA256"
         ));
     }
     let arguments = parse(arguments)?;
