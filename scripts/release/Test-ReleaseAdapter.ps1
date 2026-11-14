@@ -25,7 +25,7 @@ function cargo { Invoke-AdapterProbe }
 try {
     @'
 param([string]$Mode)
-$null = [Console]::In.ReadToEnd()
+# This stream-only fixture must not wait for inherited stdin to reach EOF.
 [Console]::Error.WriteLine('info: fixture native stderr')
 if ($Mode -ceq 'failure') {
     [Console]::Out.WriteLine('fixture failure stdout')
