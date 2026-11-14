@@ -128,7 +128,7 @@ impl TextBuffer for Buffer<'_> {
     }
 
     fn insert_text(&mut self, text: &str, index: CharIndex) -> usize {
-        if self.rejected {
+        if self.rejected || text.is_empty() {
             return 0;
         }
         let remaining = self.limit.saturating_sub(self.text.chars().count());
@@ -156,6 +156,29 @@ impl TextBuffer for Buffer<'_> {
         }
     }
 
+    fn clear(&mut self) {
+        if !self.rejected && !self.text.is_empty() {
+            self.checkpoint();
+            self.text.clear();
+        }
+    }
+
+    fn replace_with(&mut self, text: &str) {
+        if self.rejected || self.text.as_str() == text {
+            return;
+        }
+        // Undo/redo replaces the whole value. Validate its new contents before
+        // changing anything, without counting/indexing the removed characters.
+        if text.len() > self.limit.saturating_mul(4)
+            || text.chars().take(self.limit.saturating_add(1)).count() > self.limit
+        {
+            self.rejected = true;
+            return;
+        }
+        self.checkpoint();
+        text.clone_into(self.text);
+    }
+
     fn type_id(&self) -> TypeId {
         TypeId::of::<Buffer<'static>>()
     }
@@ -164,6 +187,49 @@ impl TextBuffer for Buffer<'_> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn draft_whole_replacements_keep_unicode_limits_and_atomic_rollback_bytes() {
+        let ctx = egui::Context::default();
+        let original = "e\u{301} 🌱";
+        let mut text = original.to_owned();
+        let mut buffer = Buffer::new(&mut text, &ctx, egui::Id::unique("replacement"), 5);
+
+        buffer.replace_with(original);
+        assert_eq!(buffer.insert_text("", CharIndex(0)), 0);
+        assert!(buffer.original.is_none(), "Unchanged input needs no copy");
+
+        buffer.replace_with("日本語🌱e");
+        assert_eq!(buffer.text.as_str(), "日本語🌱e");
+        assert_eq!(buffer.original.as_deref(), Some(original));
+        assert!(!buffer.rejected);
+
+        buffer.replace_with("日本語🌱e\u{301}");
+        buffer.clear();
+        assert!(buffer.rejected);
+        assert_eq!(buffer.text.as_str(), "日本語🌱e");
+        assert_eq!(buffer.original.as_deref(), Some(original));
+
+        let mut text = original.to_owned();
+        let mut buffer = Buffer::new(&mut text, &ctx, egui::Id::unique("clear"), 5);
+        buffer.clear();
+        buffer.clear();
+        assert_eq!(buffer.text, "");
+        assert_eq!(buffer.original.as_deref(), Some(original));
+        buffer.replace_with("🌱e\u{301}");
+        assert_eq!(buffer.text.as_str(), "🌱e\u{301}");
+        assert_eq!(buffer.original.as_deref(), Some(original));
+
+        let mut text = original.to_owned();
+        let mut buffer = Buffer::new(&mut text, &ctx, egui::Id::unique("rejected"), 5);
+        buffer.replace_with("日本語🌱e\u{301}");
+        assert!(buffer.rejected);
+        assert_eq!(buffer.text.as_str(), original);
+        assert!(
+            buffer.original.is_none(),
+            "Rejected replacement changed no bytes"
+        );
+    }
 
     #[test]
     fn draft_navigation_preserves_history_without_copying_undo_snapshots() -> std::io::Result<()> {
