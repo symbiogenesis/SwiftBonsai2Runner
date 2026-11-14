@@ -141,9 +141,10 @@ impl<'a> TileSource<'a> {
         continue_work: impl FnOnce() -> bool,
     ) -> Result<Option<&[u8]>, Error> {
         self.staging.clear();
+        // Polonius lets success lend staging while errors reclaim its mutable
+        // owner to clear partial output and permanently close the source.
         match self.encode(continue_work) {
-            Ok(true) => Ok(Some(&self.staging)),
-            Ok(false) => Ok(None),
+            Ok(payload) => Ok(payload),
             Err(error) => {
                 self.staging.clear();
                 self.failed = true;
@@ -152,7 +153,7 @@ impl<'a> TileSource<'a> {
         }
     }
 
-    fn encode(&mut self, continue_work: impl FnOnce() -> bool) -> Result<bool, Error> {
+    fn encode(&mut self, continue_work: impl FnOnce() -> bool) -> Result<Option<&[u8]>, Error> {
         if self.failed {
             return Err(Error::Protocol);
         }
@@ -160,7 +161,7 @@ impl<'a> TileSource<'a> {
             return Err(Error::Cancelled);
         }
         let Some(tile) = tile(self.plan, self.sequence) else {
-            return Ok(false);
+            return Ok(None);
         };
         let header = header(self.plan, self.sequence, tile)?;
         let row_bytes = tile.groups * 2 * PQ2_BYTES;
@@ -184,7 +185,7 @@ impl<'a> TileSource<'a> {
             &self.activation[tile.group * Q8K_BYTES..(tile.group + tile.groups) * Q8K_BYTES],
         );
         self.sequence += 1;
-        Ok(true)
+        Ok(Some(&self.staging))
     }
 }
 
