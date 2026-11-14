@@ -211,6 +211,34 @@ mod tests {
     use std::cell::Cell;
 
     #[test]
+    fn history_query_repeated_prefix_fallback_matches_long_unicode_reference() {
+        for block in ["ab", "İΣ", "界🌱"] {
+            for repeats in [7, 31, 127] {
+                let prefix = block.repeat(repeats);
+                let raw_query = format!("{prefix}{block}終");
+                let query = Query::new(lowercase(&raw_query));
+                let bodies = [
+                    (format!("{}終", block.repeat(repeats * 3)), true),
+                    (format!("{}違", block.repeat(repeats * 3)), false),
+                    (format!("{prefix}違{prefix}{block}終"), true),
+                    (format!("{prefix}終"), false),
+                    (String::new(), false),
+                    (raw_query, true),
+                ];
+                for (body, expected) in bodies {
+                    let folded: String = body.chars().flat_map(char::to_lowercase).collect();
+                    assert_eq!(folded.contains(&query.text), expected);
+                    assert_eq!(
+                        query.contains(&body),
+                        expected,
+                        "block {block:?}, repeats {repeats}, body {body:?}"
+                    );
+                }
+            }
+        }
+    }
+
+    #[test]
     fn history_query_matches_scalar_folding_and_stops_at_first_match() {
         let alphabet = ['A', 'a', 'Σ', 'σ', 'ς', 'İ', 'i', '\u{307}', '界', '🌱'];
         let samples: Vec<_> = std::iter::once(String::new())

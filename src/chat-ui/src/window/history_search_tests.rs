@@ -380,6 +380,67 @@ fn conversation_history_equivalent_folded_queries_reuse_scans_and_keep_raw_chang
 }
 
 #[test]
+fn conversation_history_matches_never_cross_source_boundaries() -> io::Result<()> {
+    let mut fixture = fixture();
+    let app = &mut fixture.app;
+    for (index, title, bodies) in [(0, "nee", ["dle", "nee"]), (1, "dle", ["dle", "unrelated"])] {
+        let conversation = &mut app.conversations[index];
+        title.clone_into(&mut conversation.title);
+        let saved = conversation
+            .saved
+            .as_mut()
+            .ok_or_else(|| io::Error::other("Saved conversation missing"))?;
+        saved.transcript.clear();
+        saved.transcript.push(Role::User, bodies[0].into());
+        saved.transcript.push(Role::Assistant, bodies[1].into());
+    }
+    app.transcript.clear();
+    app.transcript.push(Role::User, "nee".into());
+    app.transcript.push(Role::Assistant, "dle".into());
+
+    // No single title/body owns the whole query. Prefixes from a title, a
+    // previous message or another conversation must not carry into the next.
+    for (query, expected) in [
+        ("NEEDLE", Vec::new()),
+        ("dle", vec![0, 1, 2]),
+        ("needle", Vec::new()),
+    ] {
+        query.clone_into(&mut app.conversation_search.text);
+        app.conversation_search.update(
+            &mut app.conversations,
+            app.active_conversation,
+            &app.transcript,
+        );
+        assert_eq!(app.conversation_search.rows, expected);
+    }
+
+    // Complete matches still work after those misses, first in the active
+    // stream and then in a saved conversation and an independently renamed title.
+    app.transcript.append(" NEEDLE", false);
+    app.conversation_search.update(
+        &mut app.conversations,
+        app.active_conversation,
+        &app.transcript,
+    );
+    assert_eq!(app.conversation_search.rows, [2]);
+    app.conversations[0]
+        .saved
+        .as_mut()
+        .ok_or_else(|| io::Error::other("Saved conversation missing"))?
+        .transcript
+        .replace_response("A whole Needle", None);
+    app.conversations[1].title = "NEEDLE".into();
+    app.conversation_search.update(
+        &mut app.conversations,
+        app.active_conversation,
+        &app.transcript,
+    );
+    assert_eq!(app.conversation_search.rows, [0, 1, 2]);
+    assert!(fixture.commands.try_recv().is_err());
+    Ok(())
+}
+
+#[test]
 fn conversation_history_reuses_matches_and_refreshes_streams_renames_and_replacements() {
     let mut chat = harness([1180.0, 860.0]);
     type_query(&mut chat, "new leaf");
