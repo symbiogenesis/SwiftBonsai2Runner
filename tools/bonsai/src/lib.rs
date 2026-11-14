@@ -32,6 +32,7 @@ pub const COMMANDS: &[&str] = &[
     "completion",
     "qualification",
     "weight-patch",
+    "ffn-surrogate",
     "adapter-edit",
     "runtime-promotion",
     "kv-promotion",
@@ -105,6 +106,9 @@ pub mod qualification;
 
 /// Offline, source-bound research fitting for independent rank-one FFN patches.
 pub mod weight_patch;
+
+/// Offline bounded low-rank fitting of a complete FFN branch replacement.
+pub mod ffn_surrogate;
 
 /// Offline, separately published edits to the approved adapter's F32 A factors.
 pub mod adapter_edit;

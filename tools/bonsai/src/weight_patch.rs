@@ -399,7 +399,7 @@ fn diagnostics(request: &Request, factors: &[f32]) -> Vec<Value> {
         .collect()
 }
 
-fn publish(path: &Path, bytes: &[u8]) -> crate::Result<()> {
+pub(crate) fn publish(path: &Path, bytes: &[u8]) -> crate::Result<()> {
     let mut name = path
         .file_name()
         .ok_or("Patch output needs a file name.")?

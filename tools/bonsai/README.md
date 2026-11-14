@@ -62,6 +62,43 @@ the GGUF byte length unchanged. Native sparse execution is separately required
 for memory or arithmetic savings. Neither retained weight energy nor a factual
 smoke establishes broad quality or an inference-speed improvement.
 
+`ffn-surrogate` fits an offline low-rank replacement of a whole FFN branch for
+W8. Unlike an FFN-down LoRA, `y = B*(A^T*x)` consumes the original normalized
+5,120-wide FFN input and predicts the complete 5,120-wide branch delta, including
+the teacher's frozen adapter contribution. A future replacement must omit that
+site's original gate/up/down and adapter work; applying the skipped adapter again
+would double-count it. No runtime or application currently loads this artifact.
+
+Supply `schemaVersion: 1`, `source`, `site`, `rows`, optional `controls` and an
+optional new external `outputPath`. `source` binds `modelSha256`, `runtimeSha256`,
+`runtimeSourceCommit`, nullable `adapterSha256`, exact hex `adapterScaleBits`,
+`weightRepresentation` (`PQ2_0` or `current-repacked-PTQ1_0`), `executionProfile`
+(`experimental-ffn-cpu-scalar-unfused-v1`) and `graphIdentity`. `site` names `layer`
+0–63, `inputBasis: "original-ffn-normalized-input"`,
+`targetBasis: "complete-ffn-branch-delta"`, and `inputWidth`/`outputWidth` 5120.
+Existing post-gating FFN-down probe rows cannot substitute for these inputs.
+
+Each row supplies `sampleId`, content `groupId`, `tokenIndex`, `split` (`fit` or
+`development`), and finite F32 `input`/`target` vectors. At most 64 total rows are
+accepted, including at least two fit rows and one development row. Samples and
+content groups cannot cross splits; final held-out answer data is not accepted.
+Controls are `rank` 1–16 (default 8, no greater than fit row count), positive
+`ridge` 1e-8–1e6 (default 0.001), and `timeBudgetMilliseconds` 1–30000 (default
+5000). The same deadline covers validation, fitting, diagnostics and export
+preparation; publication I/O is not preemptible and the outer supervisor must
+retain cleanup time within the original owner-device allowance.
+
+The deterministic fitter forms a pivoted output subspace from fit targets only,
+then solves dual ridge regression with Cholesky; dependent targets can reduce
+effective rank. It exports rank-major F32 factors, hashes the candidate bytes,
+and recomputes fit/development reconstruction errors from those exported factors.
+The 300-million-cell work cap and deadline reject exhaustion without a candidate.
+Factor bytes and multiply-accumulate counts are accounting estimates: they
+establish neither actual process RAM nor latency nor complete-answer quality.
+Final held-out answers, source-authenticated capture, runtime state/rollback,
+real weight omission and the original/cheap/compensated comparison remain separate
+acceptance requirements under the [research contract](../../docs/weight-space-programming.md).
+
 `native-link-verify` binds retained native link inputs, real ARM64 PE import tables
 and an exact flat package to a separately reviewed schema-3 compiler-source
 closure. It runs no linker or inspected image. Supply `--request PATH` containing
