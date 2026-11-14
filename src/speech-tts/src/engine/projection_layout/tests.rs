@@ -4,6 +4,30 @@ use super::super::{
     LinearProjection, WeightQuantization, apply_hadamard_sign_fold, repack_pq2_to_ptq1,
 };
 
+#[test]
+fn projection_fold_reuses_borrowed_storage_and_owns_only_the_fallback() -> io::Result<()> {
+    use std::borrow::Cow;
+
+    let input = [1.0, 2.0, 3.0, 4.0];
+    let signs = [1, -1, 1, -1];
+    let cached = [-1.0_f32, 5.0, -0.0, -2.0];
+    let reused = super::folded(&input, Some(&cached), &signs, 4)?;
+    assert!(matches!(reused, Cow::Borrowed(_)));
+    assert_eq!(reused.as_ptr(), cached.as_ptr());
+    assert_eq!(reused[2].to_bits(), (-0.0_f32).to_bits());
+
+    // Missing or wrong-width cache rows must compute a new complete fold,
+    // rather than borrow input storage or reuse only part of a cached row.
+    for cached in [None, Some(&cached[..3]), Some(&[][..])] {
+        let computed = super::folded(&input, cached, &signs, 4)?;
+        assert!(matches!(computed, Cow::Owned(_)));
+        assert_eq!(computed.as_ref(), [-1.0, 5.0, 0.0, -2.0]);
+        assert_ne!(computed.as_ptr(), input.as_ptr());
+    }
+    assert_eq!(input, [1.0, 2.0, 3.0, 4.0]);
+    Ok(())
+}
+
 fn fixture() -> WeightQuantization {
     WeightQuantization::PQ2_0 {
         group_size: 8,
