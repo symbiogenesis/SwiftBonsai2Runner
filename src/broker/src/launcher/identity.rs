@@ -436,7 +436,6 @@ mod tests {
             validate_native_identity(&model_response(&candidate)?, false, false, auto).is_err()
         );
         // Check duplicate names before a Value map could erase the ambiguity.
-        let mut candidate = candidate;
         candidate["startup_projection"] = projection_startup("cpu");
         let body = json!({"data":[candidate]}).to_string().replace(
             "\"schema_version\":1",
