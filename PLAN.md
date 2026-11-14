@@ -430,6 +430,15 @@ under [AGENTS.md](AGENTS.md).
   coding, random access and decode cost against PTQ1; new codebooks/rotations/
   scales need bounded native layerwise cost and held-out quality preflight under
   [compression constraints](docs/inference-algorithms.md#compression-and-approximation-constraints).
+- [ ] Investigate multi-head latent attention (MLA) only for a measured
+  full-attention/cache bottleneck and with compatible trained/converted Swift
+  weights, quantization/adapter identities and reviewed native Rust kernels.
+  Scope conversion to the 16 GQA full-attention layers; preserve the 48
+  GDN/convolution layers. Use a separate model/graph identity and explicit rollback.
+  Compare against current GQA/K4/V4 for held-out complete-answer and long-context
+  quality, prefill/decode latency and total memory, including workspace,
+  checkpoints and retained copies, under [source, power and budget controls](docs/validation.md).
+  Require quality acceptance and measured whole-request benefit before adoption.
 
 ## Hardware selection
 
