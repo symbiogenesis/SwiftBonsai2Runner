@@ -268,6 +268,134 @@ pub(super) fn build(
 mod tests {
     use super::*;
 
+    #[cfg(all(windows, target_arch = "aarch64"))]
+    mod cargo_handoff {
+        use super::*;
+        use crate::{startup_cache, startup_process};
+        use std::time::Duration;
+
+        struct Scratch(PathBuf);
+
+        impl Drop for Scratch {
+            fn drop(&mut self) {
+                if let Ok(parent) = fs::canonicalize(std::env::temp_dir())
+                    && let Ok(target) = fs::canonicalize(&self.0)
+                    && target.parent() == Some(parent.as_path())
+                    && fs::symlink_metadata(&self.0)
+                        .is_ok_and(|metadata| !bonsai_artifacts::is_redirect(&metadata))
+                {
+                    let _ = fs::remove_dir_all(&self.0);
+                }
+            }
+        }
+
+        fn fixture() -> Result<Scratch> {
+            let path = std::env::temp_dir().join(format!(
+                "Bonsai projection Cargo {}",
+                startup_process::unique()
+            ));
+            fs::create_dir(&path).map_err(|error| error.to_string())?;
+            let scratch = Scratch(path);
+            for (name, source) in [
+                (
+                    "Cargo.toml",
+                    "[package]\nname = 'projection-link-control'\nversion = '0.0.0'\nedition = '2024'\n\n[workspace]\n\n[[bin]]\nname = 'projection-link-control'\npath = 'main.rs'\n",
+                ),
+                (
+                    "Cargo.lock",
+                    "version = 4\n\n[[package]]\nname = 'projection-link-control'\nversion = '0.0.0'\n",
+                ),
+                (
+                    "build.rs",
+                    "fn main() { println!(\"cargo:rustc-env=BONSAI_PROJECTION_CONTROL=host-linked\"); }\n",
+                ),
+                (
+                    "main.rs",
+                    "fn main() { assert_eq!(env!(\"BONSAI_PROJECTION_CONTROL\"), \"host-linked\"); }\n",
+                ),
+            ] {
+                fs::write(scratch.0.join(name), source).map_err(|error| error.to_string())?;
+            }
+            Ok(scratch)
+        }
+
+        #[test]
+        fn projection_cargo_links_build_script_and_native_target_with_pinned_environment()
+        -> Result<()> {
+            let scratch = fixture()?;
+            let rustc = super::super::super::pinned_rustc()?;
+            let cargo = rustc
+                .parent()
+                .ok_or("Missing pinned compiler directory.")?
+                .join("cargo.exe");
+            // Poison only this child's inherited build settings. The handoff
+            // must clear both wrappers and replace both rustflag channels.
+            let mut environment = BTreeMap::from([
+                ("RUSTC".into(), "missing-inherited-rustc.exe".into()),
+                ("RUSTC_WRAPPER".into(), "missing-wrapper.exe".into()),
+                (
+                    "RUSTC_WORKSPACE_WRAPPER".into(),
+                    "missing-workspace-wrapper.exe".into(),
+                ),
+                ("RUSTFLAGS".into(), "--invalid-inherited-flag".into()),
+                (
+                    "CARGO_ENCODED_RUSTFLAGS".into(),
+                    "--invalid-inherited-encoded-flag".into(),
+                ),
+            ]);
+            environment.extend(dependency_environment(&rustc)?);
+            let linker = super::super::super::pinned_linker(&rustc)?;
+            environment.insert(
+                "CARGO_TARGET_AARCH64_PC_WINDOWS_MSVC_LINKER".into(),
+                linker.to_string_lossy().into_owned(),
+            );
+            assert_eq!(
+                environment["CARGO_ENCODED_RUSTFLAGS"]
+                    .split('\u{1f}')
+                    .collect::<Vec<_>>(),
+                [
+                    "-C",
+                    &format!("linker={}", linker.display()),
+                    "-C",
+                    "linker-flavor=lld-link"
+                ]
+            );
+            let target = scratch.0.join("target");
+            let built = startup_process::run_strict(
+                cargo.as_os_str(),
+                &[
+                    "build".into(),
+                    "--locked".into(),
+                    "--offline".into(),
+                    "--release".into(),
+                    "--target".into(),
+                    TARGET.into(),
+                    "--target-dir".into(),
+                    target.clone().into_os_string(),
+                ],
+                &scratch.0,
+                &environment,
+                Duration::from_secs(45),
+                &scratch.0.join("cargo-build.txt"),
+            )?;
+            assert_eq!(built.code, 0, "{}", built.stderr);
+            let executable = target
+                .join(TARGET)
+                .join("release/projection-link-control.exe");
+            startup_cache::assert_arm64(&executable)?;
+            let checked = startup_process::run_strict(
+                executable.as_os_str(),
+                &[],
+                &scratch.0,
+                &BTreeMap::new(),
+                Duration::from_secs(5),
+                &scratch.0.join("control.txt"),
+            )?;
+            assert_eq!(checked.code, 0, "{}", checked.stderr);
+            Ok(())
+        }
+    }
+
     #[test]
     fn projection_linker_receives_both_split_metadata_and_code() {
         let library = PathBuf::from("target/release/build/serde/unit/out/libserde-unit.rlib");
