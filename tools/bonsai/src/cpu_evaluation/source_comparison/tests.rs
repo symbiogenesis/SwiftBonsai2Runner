@@ -295,6 +295,26 @@ fn source_comparison_rejects_duplicate_json_fields_and_changed_proof_bytes() -> 
 }
 
 #[test]
+fn source_comparison_rejects_non_extreme_x2_observations() -> Result<()> {
+    let mut fixture = fixture()?;
+    for index in 0..SCHEDULE.len() {
+        let reference = fixture.owner["arms"][index]["supervision"].clone();
+        let name = reference["path"].as_str().ok_or("Missing supervisor path.")?;
+        let mut supervisor = json_bytes(
+            &std::fs::read(fixture.root.join(name)).map_err(|error| error.to_string())?,
+        )?;
+        for boundary in ["Before", "After"] {
+            supervisor["CpuConditions"][boundary]["host_identity"]["processor_name"] =
+                "Snapdragon X2 Elite - X2E-88-100".into();
+        }
+        fixture.owner["arms"][index]["supervision"] = save(&fixture.root, name, &supervisor)?;
+    }
+    let result = super::super::run(fixture.request()?);
+    assert!(matches!(result, Err(error) if error.contains("X2 Elite Extreme identity")));
+    Ok(())
+}
+
+#[test]
 fn source_comparison_rejects_overflowed_and_underflowed_timing_ratios() -> Result<()> {
     for indices in [[0, 3], [1, 2]] {
         let mut fixture = fixture()?;

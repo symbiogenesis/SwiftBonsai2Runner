@@ -619,15 +619,9 @@ fn supervision_conditions(
                 .as_str()
                 .is_some_and(|name| {
                     bonsai_cpu_policy::hardware::SnapdragonFamily::from_processor_name(name)
-                        .is_some_and(|family| {
-                            matches!(
-                                family,
-                                bonsai_cpu_policy::hardware::SnapdragonFamily::X2Elite
-                                    | bonsai_cpu_policy::hardware::SnapdragonFamily::X2EliteExtreme
-                            )
-                        })
+                        == Some(bonsai_cpu_policy::hardware::SnapdragonFamily::X2EliteExtreme)
                 }),
-            "Current-source comparison requires observed X2 identity.",
+            "Current-source comparison requires observed X2 Elite Extreme identity.",
         )?;
     }
     Ok(())

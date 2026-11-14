@@ -15,19 +15,17 @@ pub mod catalog;
 const MAX_DOCUMENT_BYTES: usize = 16 * 1024;
 const MAX_CONTRACTS: usize = 16;
 
-/// Observed Snapdragon marketing family; this never implies SKU or ISA support.
+/// Target Snapdragon family; this never implies SKU or ISA support.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum SnapdragonFamily {
     /// Original Snapdragon X Elite family.
     XElite,
-    /// Snapdragon X2 Elite family without the Extreme designation.
-    X2Elite,
     /// Snapdragon X2 Elite Extreme family.
     X2EliteExtreme,
 }
 
 impl SnapdragonFamily {
-    /// Recognize a bounded processor name while keeping X1 and X2 distinct.
+    /// Recognize only Snapdragon X Elite and X2 Elite Extreme processor names.
     ///
     /// Trademark punctuation and an optional Qualcomm prefix are tolerated.
     /// The name is only an inventory observation, never execution eligibility.
@@ -55,7 +53,6 @@ impl SnapdragonFamily {
         let extreme = words.next() == Some("extreme");
         match (generation, extreme) {
             ("x" | "x1", false) => Some(Self::XElite),
-            ("x2", false) => Some(Self::X2Elite),
             ("x2", true) => Some(Self::X2EliteExtreme),
             _ => None,
         }
@@ -66,7 +63,6 @@ impl SnapdragonFamily {
     pub const fn device_model(self) -> &'static str {
         match self {
             Self::XElite => "Snapdragon X Elite",
-            Self::X2Elite => "Snapdragon X2 Elite",
             Self::X2EliteExtreme => "Snapdragon X2 Elite Extreme",
         }
     }
@@ -79,7 +75,6 @@ impl SnapdragonFamily {
     pub fn from_evidence(device_model: &str, processor_name: Option<&str>) -> Option<Self> {
         let family = match device_model {
             "Snapdragon X Elite" => Self::XElite,
-            "Snapdragon X2 Elite" => Self::X2Elite,
             "Snapdragon X2 Elite Extreme" => Self::X2EliteExtreme,
             _ => return None,
         };

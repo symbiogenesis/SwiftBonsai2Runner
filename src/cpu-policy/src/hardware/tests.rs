@@ -14,10 +14,6 @@ fn snapdragon_evidence_preserves_x2_extreme_and_rejects_family_relabeling() {
             SnapdragonFamily::XElite,
         ),
         (
-            "Snapdragon(R) X2 Elite - X2E-88-100",
-            SnapdragonFamily::X2Elite,
-        ),
-        (
             "Snapdragon(R) X2 Elite Extreme - X2E-96-100 - Qualcomm(R) Oryon(TM) CPU",
             SnapdragonFamily::X2EliteExtreme,
         ),
@@ -33,7 +29,6 @@ fn snapdragon_evidence_preserves_x2_extreme_and_rejects_family_relabeling() {
         );
         for other in [
             SnapdragonFamily::XElite,
-            SnapdragonFamily::X2Elite,
             SnapdragonFamily::X2EliteExtreme,
         ] {
             if other != family {
@@ -56,6 +51,8 @@ fn snapdragon_evidence_preserves_x2_extreme_and_rejects_family_relabeling() {
         "Snapdragon X3 Elite",
         "Snapdragon X Plus",
         "Snapdragon X Elite Extreme",
+        "Snapdragon X2 Elite",
+        "Snapdragon(R) X2 Elite - X2E-88-100",
         "unverified Snapdragon X2 Elite",
         "Snapdragon X2 Elite\n",
     ] {
@@ -69,6 +66,12 @@ fn snapdragon_evidence_preserves_x2_extreme_and_rejects_family_relabeling() {
         SnapdragonFamily::from_evidence("unknown", Some("Snapdragon X2 Elite Extreme")),
         None
     );
+    for name in ["Snapdragon X2 Elite", "Snapdragon X2 Elite Extreme"] {
+        assert_eq!(
+            SnapdragonFamily::from_evidence("Snapdragon X2 Elite", Some(name)),
+            None
+        );
+    }
 }
 
 fn key() -> Value {
