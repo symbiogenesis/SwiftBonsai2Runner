@@ -68,15 +68,16 @@ fn speaker_reference_mel_matches_eight_point_dft_and_channel_major_layout() -> s
     let root_two = 2.0_f64.sqrt();
     let a = (2.0 + root_two) / 4.0;
     let b = (2.0 - root_two) / 4.0;
-    let tail = (b * b + 1e-9).ln() / 2.0;
+    let tail = b.mul_add(b, 1e-9).ln() / 2.0;
+    let base = a.mul_add(a, 1.0);
     close(
         &actual,
         &[
-            (1.0 + a * a + root_two * a + 1e-9).ln() / 2.0,
+            (root_two.mul_add(a, base) + 1e-9).ln() / 2.0,
             tail,
-            (1.0 + a * a + 1e-9).ln() / 2.0,
+            (base + 1e-9).ln() / 2.0,
             tail,
-            (1.0 + a * a - root_two * a + 1e-9).ln() / 2.0,
+            (root_two.mul_add(-a, base) + 1e-9).ln() / 2.0,
             tail,
         ],
     );
@@ -194,9 +195,9 @@ fn speaker_reference_pooling_matches_closed_form_channel_specific_moments() -> s
         &pool.forward(&[0.0, 2.0, 1.0, 3.0], 2, 2)?,
         &[
             2.0 * p0,
-            1.0 + 2.0 * p1,
-            (4.0 * p0 * (1.0 - p0) + 1e-12).sqrt(),
-            (4.0 * p1 * (1.0 - p1) + 1e-12).sqrt(),
+            2.0_f64.mul_add(p1, 1.0),
+            (4.0 * p0).mul_add(1.0 - p0, 1e-12).sqrt(),
+            (4.0 * p1).mul_add(1.0 - p1, 1e-12).sqrt(),
         ],
     );
     assert!(pool.forward(&[], 2, 0).is_err());
