@@ -1,5 +1,6 @@
 //! Pure Rust egui desktop chat with isolated native process and speech boundaries.
-#![cfg_attr(windows, windows_subsystem = "windows")]
+// The unit-test harness needs a console for its summary and failure diagnostics.
+#![cfg_attr(all(windows, not(test)), windows_subsystem = "windows")]
 #![allow(
     clippy::multiple_crate_versions,
     reason = "The pinned native GUI, graphics and WinRT dependencies require incompatible major versions of shared implementation crates."
