@@ -368,6 +368,13 @@ under [AGENTS.md](AGENTS.md).
   The [initial CPU factual smoke](docs/evidence/weight-patch-sanity.md) passed
   four facts with and without the adapter but found no speed win from omission;
   it does not qualify a pruned/edited adapter or change the selected profile.
+- [ ] Qualify direct [LoRA weight editing](docs/weight-space-programming.md#editing-the-existing-adapter-weights):
+  preserve the packed base and adapter inventory, bind edited A-factor weights
+  and sparse arithmetic, assess representative held-out answers and intended
+  adapter behavior, and measure matched useful-answer latency and process memory.
+  Coefficient fidelity and basic factual passes do not establish accuracy gains.
+  Separate original Swift LoRA factors are unavailable in the selected artifact
+  repository; current research can edit the F32 Abliteration adapter only.
 
 ### Memory and profiles
 

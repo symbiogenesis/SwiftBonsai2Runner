@@ -1,8 +1,10 @@
 # Weight-space programming: Swift applicability
 
-Weight corrections are conditional research, not an active Swift feature. Start
-with complete-answer diagnosis and ordinary prompt/template/sampler controls.
-No beneficial Swift correction or matching reasoning-loop defect is established.
+Weight corrections and adapter compression are conditional research, not active
+Swift features. Behavioral corrections start with complete-answer diagnosis and
+ordinary prompt/template/sampler controls. Adapter compression instead starts
+with an explicit fidelity and storage objective. Neither a beneficial Swift
+behavioral correction nor a matching reasoning-loop defect is established.
 [PLAN.md](../PLAN.md) owns outstanding work; [inference defaults](inference-defaults.md)
 define the selected model, adapter, Thinking and completion limits.
 
@@ -52,6 +54,53 @@ whose reconstructed weights match. Activation arithmetic, state, resources and
 behavior still qualify independently. Folded Hadamard base columns cannot be
 edited as if they were unfolded neurons: corrections need their own original
 activation basis. FFN-only sites avoid the separate grouped-SSM authoring ambiguity.
+
+## Editing the existing adapter weights
+
+The approved Abliteration GGUF contains F32 factors, not ternary factors. It can
+be edited directly without expanding or rewriting the 27B packed model. For an
+existing correction `s * B * (A^T h)`, changing `A` to `A + v` folds a correction
+along the same `B` direction into that adapter at its existing rank. An unrelated
+output direction generally needs another rank. The LP described above can
+therefore edit an existing A factor when its direction matches B; an additional
+LoRA is not required for that case.
+
+Swift's published correction is already merged into the selected ternary model.
+Its [pinned artifact repository](https://huggingface.co/ukisai/Swift-Bonsai-2-GGUF/tree/a3bdac086bbb6b04d87d0108d18943b5f63868f7)
+does not supply separate original Swift factors. Do not call an edit to the
+available Abliteration adapter an edit to that unavailable Swift checkpoint.
+Original floating-point factors could be edited before merging and requantizing,
+but that is a different artifact pipeline. Keep the current packed base fixed.
+
+The approved adapter is already rank one, so rank truncation cannot reduce it
+while retaining a nonzero correction. Editing dense values alone normally
+changes neither storage nor executed operations. An executable sparse factor
+representation is needed to turn zeroed weights into a storage/work reduction.
+
+`bonsai-tools adapter-edit` inspects or creates a candidate from the exact
+approved adapter. It retains the largest absolute A coefficients independently
+at each of the 128 linear sites, with deterministic index ordering for ties.
+This minimizes coefficient L2 error for the chosen number of retained entries;
+it does not minimize answer loss. All B factors, the embedding A factor, alpha,
+metadata, target inventory and surviving coefficient bits remain unchanged.
+The candidate is a separate GGUF; its original dense disk layout and byte count
+are unchanged. The approved file and application defaults remain untouched.
+
+An explicit experimental Prism loader can store profitable zero-pruned A factors
+as F32 values plus U16 indices, releasing their dense copies. At 50% retained
+coefficients this reduces linear A payload by 25%; container overhead, embedding,
+shared B, packed base and state remain separate. Sparse execution accumulates
+the selected products in ascending index order with F64 arithmetic and rounds
+the rank result to F32. It has a distinct graph identity and does not promise
+bitwise parity with dense NEON reductions or a speed improvement.
+
+Freeze the candidate before factual evaluation. Retain the edited bytes and
+their digest, exact-source edit receipt, original/candidate storage accounting,
+complete factual answers and process/power observations. A four-fact smoke is
+a rejection screen, not held-out broad accuracy or preservation of the adapter's
+intended behavior. Pruning/refitting on representative activations and independent
+complete-answer evaluation remain necessary before promotion. The sparse loader
+is source-only and is not exposed through the released application.
 
 ## Existing implementation and delivery limits
 
