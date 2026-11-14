@@ -1,6 +1,9 @@
 # CPU kernels and X2 thread evaluation
 
 Baseline NEON supports PQ2, odd-group PQ2 and PTQ1 with scalar reference/fallback.
+The target profiles are native Windows ARM64 on Snapdragon X Elite (X1) and
+Snapdragon X2 Elite Extreme (X2). Portable/scalar and feature-disabled controls
+run on native ARM64 as part of target-profile acceptance.
 This guide owns arithmetic, dispatch, qualification and the
 [X2 thread screen](#x2-cpu-thread-screen). Synthetic parity qualifies neither
 whole-model parity nor device speedup. Runner's active
@@ -109,7 +112,7 @@ CPU ingestion and decode on X1 without changing weight or cache precision:
   failure publication and public helper APIs remain unchanged.
 
 These are source candidates without a measured X1 speedup. Require final-source
-native/x64 strict Release analysis, named arithmetic and failure controls,
+native ARM64 strict Release analysis, named arithmetic and failure controls,
 feature-disabled fallback, production linking and ARM64 codegen/stack review.
 In particular, inspect table-register residency and lookup/setup costs rather
 than inferring machine savings from source counts. Complete-model logits/state,
@@ -317,7 +320,7 @@ Two further local Prism candidates remove repeated work from ordinary CPU decode
 These are source work reductions, not measured X2 speedups. Focused controls
 cover scalar-bit agreement, complete-head geometry and fallback, late failure
 and recovery, each SIMD lane's overflow detection and public failure atomicity.
-Compiled controls, strict native/x64 Release analysis and linking, feature-disabled
+Compiled controls, strict native ARM64 Release analysis and linking, feature-disabled
 execution, ARM64 codegen/resources, full-model state/logit/adapter/cancellation
 parity and matched CPU-only complete-request benefit remain pending. Apply the
 [cross-generation promotion gates](#cross-generation-cpu-promotion); X1 deployment
@@ -398,7 +401,7 @@ evaluator must reject candidate receipts. See Prism's
 
 These changes have source review and pinned formatting only. The predeclared
 local source diagnostic stopped at native supervisor process creation before
-Cargo or any test started; it was not retried. Native/x64 strict Release analysis,
+Cargo or any test started; it was not retried. Native ARM64 strict Release analysis,
 helper tests, feature-disabled controls, collector linking, ARM64 codegen/stack,
 complete-model state/logit/adapter/cancellation and matched complete-request
 benefit remain pending. Publish the changed helper before its runtime, then
@@ -498,7 +501,7 @@ zero/subnormal queries; and raw/prepared convolution coefficients, untouched
 inputs and dirty-delta recovery. These source reductions add no persistent
 storage. BF16 adds `bonsai_neon_dot::dot_bf16_rows`; the other changes add no
 public helper API. Deinterleaving and row-transpose costs, codegen/stack,
-strict native/x64 analysis and linking, feature-disabled execution, complete-model
+strict native ARM64 analysis and linking, feature-disabled execution, complete-model
 state/logits/adapters/cancellation and matched CPU-only complete-request benefit
 remain independent gates. The changed NEON helper must be published before its
 dependent runtime. Retain the active 0.1.27 bundle until verified publication and
@@ -510,7 +513,7 @@ The fixed local source check at Prism
 compiler invocation and workspace formatting passed. Native Release Clippy
 rejected BF16 binding names, combined unsafe operations and an unfulfilled lint
 expectation. The follow-up source correction separates loads from reinterpretation
-and removes that expectation; it was not retried. Arithmetic tests, native/x64
+and removes that expectation; it was not retried. Arithmetic tests, native ARM64
 analysis completion, feature-disabled checks and collector linking remain pending.
 Every launched native Job reported zero remaining processes. Aggregate power
 endpoints on the X2 host observed AC connected, battery saver off and charge
@@ -543,7 +546,7 @@ Independent arithmetic/work-count and late-failure recovery controls include
 2/3/7/9/17/24-token cases and row/column tails. Decoded-block counts are source
 work observations, not latency or memory measurements.
 
-Native/feature-disabled and applicable x64 analysis, production linking,
+Native ARM64/feature-disabled analysis, scalar controls, production linking,
 full-model state/logit/adapter/cancellation acceptance and matched complete-request
 benefit remain required. Runner's published 0.1.27 pin does not consume these local
 changes. Keep its rollback until a genuine verified bundle and reviewed repin.
@@ -925,8 +928,8 @@ and verifies it in the static-library receipt. This prevents an older machine's 
 silently bypassing X2 compilation; it does not select new thread counts or qualify a speech
 performance gain.
 
-LoRA and PTQ1 captures retain the observed processor name and distinguish `Snapdragon X Elite`,
-`Snapdragon X2 Elite` and `Snapdragon X2 Elite Extreme`. X2 receipts require a matching processor
+LoRA and PTQ1 captures retain the observed processor name and distinguish the target families
+`Snapdragon X Elite` and `Snapdragon X2 Elite Extreme`. X2 receipts require a matching processor
 observation; relabeling X1 evidence rejects. Device-dependent runtime promotion gates
 cannot combine different families. The [shared CPU promotion rule](#cross-generation-cpu-promotion)
 reuses a reviewed deployment decision, without relabeling or mixing those records.

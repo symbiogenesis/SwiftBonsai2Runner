@@ -4,6 +4,13 @@ This is the single backlog. [Technical docs](docs/README.md) own behavior,
 contracts, commands and required evidence. Delete completed items and their
 completion notes instead of marking them done or applying strikethrough.
 
+Target native Windows ARM64 on **Snapdragon X Elite** (X1) and
+**Snapdragon X2 Elite Extreme** (X2). Every hardware, kernel and deferred research
+item below must serve those profiles. Qualify scalar and feature-disabled
+fallbacks on ARM64; other CPU/GPU families and their platform-specific kernels
+are outside this backlog. Prior-art references may supply general principles,
+without adding another hardware target or qualification obligation.
+
 Prioritize native daily use, then correctness, isolation, creative quality and
 comfort, then measured optimization. Task IDs identify related work across docs.
 Follow [delivery ownership](docs/development-guide.md#implementation-delivery),
@@ -671,8 +678,8 @@ nor editing the available Abliteration factors.
   upstream, qualify exact binaries with Unicode model paths, thinking,
   continuation, adapters and cancellation, then repin under the
   [candidate contract](docs/runtime-candidates/README.md).
-- [ ] Qualify scalar/NEON, optional ISA, thread topology, wait and power choices,
-  with independent fallback and source-bound code generation.
+- [ ] Qualify scalar/NEON, detected DOTPROD/I8MM, thread topology, wait and power
+  choices, with independent fallback and source-bound code generation.
 - [ ] Measure event waits versus polling and valid energy telemetry before
   selecting idle/active power policy or claiming energy benefit.
 - [ ] Qualify the bounded deterministic profile catalog and live-resource
@@ -693,9 +700,9 @@ nor editing the available Abliteration factors.
   capability rejection before callbacks, pinned BF16/F32 precision boundaries,
   portable Q4/Q8 shared weight decoding and 2/3/7/9/17/24-token tails/recovery.
   Require native/feature-disabled strict Release analysis and focused controls,
-  applicable x64 fallback, full-model state/logits/adapters and matched request
+  ARM64 scalar fallback, full-model state/logits/adapters and matched request
   benefit before a genuine source-bound runtime bundle and reviewed repin.
-- [ ] Qualify final-source exact/failure controls, strict native/x64 Release
+- [ ] Qualify final-source exact/failure controls, strict native ARM64 Release
   analysis/linking, disabled-feature fallback, ARM64 codegen/resources, complete
   model state/logits/adapters/cancellation and matched CPU-only request benefit
   under [CPU acceptance](docs/cpu-kernels.md#numerical-and-resource-acceptance).
@@ -717,7 +724,7 @@ nor editing the available Abliteration factors.
   long prefill independently; collector output alone is no packet.
 - [ ] Qualify [scan-owned values and joined prompt projections](docs/cpu-kernels.md#scan-owned-packed-values-and-joined-prompt-projections).
 - [ ] Publish and qualify [joined BF16 recurrent projections and four-bit KV lookup](docs/cpu-kernels.md#joined-bf16-recurrent-projections-and-four-bit-kv-lookup):
-  native/x64 strict Release analysis, exact arithmetic/failure and disabled-feature
+  native ARM64 strict Release analysis, exact arithmetic/failure and disabled-feature
   controls, production linking, ARM64 codegen/resources, complete-model
   state/logit/adapter/cancellation parity and matched CPU-only request benefit.
   Publish the changed helper before its dependent runtime; retain 0.1.27 rollback.
@@ -732,7 +739,7 @@ nor editing the available Abliteration factors.
   X1 benefit; the frozen X2 bundle lane and source work counts supply no verdict.
 - [ ] Publish and qualify [head-scoped GDN decode and packed value result checks](docs/cpu-kernels.md#head-scoped-gdn-decode-and-packed-value-result-checks):
   compiled native/portable arithmetic and failure controls, feature-disabled
-  fallback, strict ARM64/x64 Release analysis/linking, codegen/resources,
+  fallback, strict ARM64 Release analysis/linking, codegen/resources,
   complete-model parity and matched X2 CPU-only request benefit. Preserve the
   earlier failed Cargo diagnostic separately from source-bound tool-Job checks;
   retain the pinned runtime as rollback.
@@ -747,13 +754,13 @@ nor editing the available Abliteration factors.
   worker/score-scratch bounds and matched X2 complete-request benefit. Preserve
   the explicit tiled-prefill opt-in and published runtime rollback.
 - [ ] Publish and qualify [zero-weight packed values, temporal GDN heads and joined Q8 tiles](docs/cpu-kernels.md#zero-weight-packed-values-temporal-gdn-heads-and-joined-q8-tiles):
-  exact native/portable and feature-disabled controls, strict ARM64/x64 Release
+  exact native/portable and feature-disabled controls, strict ARM64 Release
   analysis/linking, codegen/stack and resource review, complete-model
   logits/state/adapters/cancellation and matched CPU-only complete-request benefit.
   Keep ordinary K4/V4 decode, explicit tiled prefill and PTQ1 gates separate;
   retain the pinned runtime as rollback until a verified bundle and reviewed repin.
 - [ ] Publish and qualify [compact KV rotations and joined Q8 decode siblings](docs/cpu-kernels.md#compact-kv-rotations-and-joined-q8-decode-siblings):
-  native/x64 strict Release analysis, helper/runtime arithmetic and failure
+  native ARM64 strict Release analysis, helper/runtime arithmetic and failure
   controls, feature-disabled execution, production collector linking, codegen/
   stack/resources, complete-model state/logits/adapters/cancellation and matched
   complete-request benefit. Include the independent integrated temporal GDN
@@ -762,7 +769,7 @@ nor editing the available Abliteration factors.
   and retain the pinned runtime until verified bundle delivery and reviewed repin.
 - [ ] Publish and qualify [scoped recurrent RMS weights](docs/cpu-kernels.md#scoped-recurrent-rms-weights):
   native/portable and feature-disabled arithmetic/failure controls, graph
-  recovery, strict ARM64/x64 Release analysis/linking, codegen/resources,
+  recovery, strict ARM64 Release analysis/linking, codegen/resources,
   complete-model state/logits/adapters/cancellation and matched CPU-only request
   benefit. Publish a verified source-bound bundle before reviewing Runner's pin.
 - [ ] Qualify [CPU preparation candidates](docs/cpu-kernels.md#cpu-preparation-candidates),
@@ -770,7 +777,7 @@ nor editing the available Abliteration factors.
   [tiled dispatch and adapters](docs/cpu-kernels.md#tiled-dispatch-and-adapter-preparation), retaining each
   path's independent integration, numerical, fallback and benefit gates.
 - [ ] Publish and qualify [exact rotation butterflies, BF16 row pairs and recurrent validation](docs/cpu-kernels.md#exact-rotation-butterflies-bf16-row-pairs-and-recurrent-validation):
-  final-source native/x64 strict Release analysis and linking, independent
+  final-source native ARM64 strict Release analysis and linking, independent
   scalar-bit/failure and disabled-feature controls, ARM64 codegen/stack/resources,
   complete-model state/logit/adapter/cancellation parity and matching-source
   complete-request CPU benefit. Keep singleton exact-prefill convolution separate
@@ -838,7 +845,7 @@ nor editing the available Abliteration factors.
   refusal before writer callback, byte/handle/report mutation or queue submission;
   unused arenas stay dirty/unimported and preprepared views remain usable after
   import. Verify primary append-after-warm flushes and independent shape identity,
-  native/x64 strict Release analysis, owning compiled controls and signed-device
+  native ARM64 strict Release analysis, owning compiled controls and signed-device
   coherency/lifecycle acceptance before a source-bound release and repin.
 - [ ] Close applicable [signed-runtime/SDK/Windows ABI prerequisites](docs/hexagon-source-audit.md)
   and independent raw-byte replay before expanding a selected device workload.
