@@ -48,6 +48,65 @@ fn completing_nonempty_response_keeps_find_results_without_copying_the_prefix() 
 }
 
 #[test]
+fn completion_before_find_refresh_finishes_unicode_tail_without_recopying_results() {
+    let mut transcript = Transcript::default();
+    transcript.push(Role::User, "İΣ界🌱 ".repeat(64));
+    transcript.push(Role::Assistant, "A final İΣ".to_owned());
+    transcript.search.query = "i\u{307}σ界🌱".to_owned();
+    transcript.search.refresh(&transcript.messages);
+    assert_eq!(transcript.search.matches.len(), 64);
+    transcript.search.active = 7;
+    transcript.search.navigate(false);
+    let target = transcript.search.target.clone();
+    let prefix = transcript.search.matches.clone();
+    let scanned = transcript.search.scanned_bytes;
+    let rebuilt = transcript.search.rebuilt_cache_entries;
+    let copied = transcript.search.copied_matches;
+    let revision = transcript.search.revision;
+
+    // The final text and completion can both arrive before the next UI frame.
+    // Completion must retain the pending incremental refresh and its partial
+    // Unicode match rather than converting it into a full result-prefix copy.
+    let suffix = "界🌱";
+    transcript.append(suffix, false);
+    let history_revision = transcript.history_revision();
+    transcript.remove_empty_response();
+    transcript.search.refresh(&transcript.messages);
+
+    assert_eq!(transcript.messages.len(), 2);
+    assert!(!transcript.messages[1].pending);
+    assert_eq!(transcript.search.matches.len(), 65);
+    assert!(transcript.search.matches[..prefix.len()] == prefix);
+    assert_eq!(transcript.search.active, 8);
+    assert!(transcript.search.target == target);
+    assert!(transcript.search.matches.get(transcript.search.active) == target.as_ref());
+    let found = &transcript.search.matches[64];
+    let tail = &transcript.messages[1];
+    assert_eq!(found.message, tail.id);
+    assert_eq!(&tail.body[found.range.clone()], "İΣ界🌱");
+    assert_eq!(transcript.search.scanned_bytes - scanned, suffix.len());
+    assert_eq!(transcript.search.rebuilt_cache_entries, rebuilt);
+    assert_eq!(transcript.search.copied_matches - copied, 1);
+    assert_eq!(transcript.search.revision, revision.wrapping_add(1));
+    assert_eq!(transcript.history_revision(), history_revision);
+
+    // Duplicate completion notifications must not change results, navigation,
+    // source revisions or cache work after that final append has been consumed.
+    for _ in 0..2 {
+        transcript.remove_empty_response();
+        transcript.search.refresh(&transcript.messages);
+    }
+    assert_eq!(transcript.search.matches.len(), 65);
+    assert_eq!(transcript.search.active, 8);
+    assert!(transcript.search.target == target);
+    assert_eq!(transcript.search.scanned_bytes - scanned, suffix.len());
+    assert_eq!(transcript.search.rebuilt_cache_entries, rebuilt);
+    assert_eq!(transcript.search.copied_matches - copied, 1);
+    assert_eq!(transcript.search.revision, revision.wrapping_add(1));
+    assert_eq!(transcript.history_revision(), history_revision);
+}
+
+#[test]
 fn full_find_refresh_reuses_entries_and_prunes_unvisited_saturated_suffix() {
     let mut transcript = Transcript::default();
     transcript.push(Role::User, "hit".to_owned());
