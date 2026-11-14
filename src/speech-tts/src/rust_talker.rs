@@ -605,6 +605,7 @@ impl Talker {
         rms_norm(&hidden, &self.norm, self.geometry.norm_eps)
     }
 
+    #[cfg(test)]
     pub(crate) fn generate(
         &mut self,
         text: &str,
@@ -613,11 +614,30 @@ impl Talker {
         sink: &mut dyn FnMut([i32; TOTAL_CODE_GROUPS]) -> io::Result<()>,
         cancel: &mut dyn FnMut() -> io::Result<()>,
     ) -> io::Result<()> {
+        self.generate_observed(text, instruct, reference, sink, cancel, &mut |_| Ok(()))
+    }
+
+    pub(crate) fn generate_observed(
+        &mut self,
+        text: &str,
+        instruct: Option<&str>,
+        reference: Option<&Reference>,
+        sink: &mut dyn FnMut([i32; TOTAL_CODE_GROUPS]) -> io::Result<()>,
+        cancel: &mut dyn FnMut() -> io::Result<()>,
+        observe: &mut dyn FnMut(crate::observation::TalkerObservation<'_>) -> io::Result<()>,
+    ) -> io::Result<()> {
         // Take the snapshot before prompt construction: every failure, including
         // cancelled projection or sink output, discards all reusable KV state.
         let mut prefill_cache = self.prefill_cache.take();
-        let result =
-            self.generate_inner(text, instruct, reference, sink, cancel, &mut prefill_cache);
+        let result = self.generate_inner(
+            text,
+            instruct,
+            reference,
+            sink,
+            cancel,
+            &mut prefill_cache,
+            observe,
+        );
         if result.is_ok() {
             self.prefill_cache = prefill_cache;
         }
@@ -668,6 +688,11 @@ impl Talker {
         Ok((caches, hidden))
     }
 
+    #[expect(
+        clippy::too_many_arguments,
+        clippy::too_many_lines,
+        reason = "Keep ordered serving arithmetic and observer failure inside the existing snapshot transaction."
+    )]
     fn generate_inner(
         &self,
         text: &str,
@@ -676,9 +701,17 @@ impl Talker {
         sink: &mut dyn FnMut([i32; TOTAL_CODE_GROUPS]) -> io::Result<()>,
         cancel: &mut dyn FnMut() -> io::Result<()>,
         prefill_cache: &mut Option<PrefillCache>,
+        observe: &mut dyn FnMut(crate::observation::TalkerObservation<'_>) -> io::Result<()>,
     ) -> io::Result<()> {
+        use crate::observation::TalkerObservation;
+
         cancel()?;
         let prompt = self.prompt(text, instruct, reference, cancel)?;
+        observe(TalkerObservation::Prompt {
+            rows: &prompt.rows,
+            trailing: &prompt.trailing,
+            cacheable_rows: prompt.cacheable_rows,
+        })?;
         let (mut caches, mut hidden) = self.prefill(&prompt, prefill_cache, cancel)?;
         let mut history = Vec::with_capacity(MAX_NEW_TOKENS);
         // The sampler marks vocabulary entries while applying repetition
@@ -700,6 +733,13 @@ impl Talker {
             let mut logits = self
                 .head
                 .forward_vec_parallel(&hidden, None, self.threads)?;
+            observe(TalkerObservation::Logits {
+                frame: step,
+                hidden: &hidden,
+                logits: &logits,
+                cache: &caches,
+            })?;
+            cancel()?;
             let vocab = i32::try_from(self.geometry.vocab)
                 .map_err(|_| invalid("Speech vocabulary exceeds sampler limits."))?;
             sampling::suppress(&mut logits, vocab - 1024, vocab, self.specials.eos);
@@ -722,10 +762,15 @@ impl Talker {
             .ok_or_else(|| invalid("Speech semantic sampling failed."))?;
             let token =
                 i32::try_from(token).map_err(|_| invalid("Invalid speech semantic token."))?;
+            observe(TalkerObservation::Decision {
+                frame: step,
+                token,
+                eos: token == self.specials.eos,
+            })?;
             if token == self.specials.eos {
                 return Ok(());
             }
-            let frame = self.predictor.predict_frame_reusing(
+            let frame = self.predictor.predict_frame_observed_reusing(
                 &hidden,
                 token,
                 &self.codec_embedding,
@@ -735,7 +780,17 @@ impl Talker {
                 self.threads,
                 cancel,
                 &mut predictor_workspace,
+                &mut |observation| {
+                    observe(TalkerObservation::Predictor {
+                        frame: step,
+                        observation,
+                    })
+                },
             )?;
+            observe(TalkerObservation::Frame {
+                frame: step,
+                codes: &frame,
+            })?;
             sink(frame)?;
             history.push(token);
             if step + 1 == MAX_NEW_TOKENS {
@@ -1097,9 +1152,7 @@ mod tests {
         Ok(())
     }
 
-    #[test]
-    fn reference_generation_reuses_vocabulary_workspace_through_second_sample_and_eos()
-    -> std::io::Result<()> {
+    fn reference_fixture() -> std::io::Result<Talker> {
         let mut talker = prompt_fixture(false)?;
         talker.geometry.vocab = 1026;
         talker.codec_embedding = vec![0.0; talker.geometry.vocab];
@@ -1131,6 +1184,13 @@ mod tests {
                 )
             })
             .collect::<std::io::Result<_>>()?;
+        Ok(talker)
+    }
+
+    #[test]
+    fn reference_generation_reuses_vocabulary_workspace_through_second_sample_and_eos()
+    -> std::io::Result<()> {
+        let mut talker = reference_fixture()?;
         let mut frames = Vec::new();
         talker.generate(
             REFERENCE_TEXT,
@@ -1143,6 +1203,231 @@ mod tests {
             &mut || Ok(()),
         )?;
         assert_eq!(frames, [[0; 16]]);
+        Ok(())
+    }
+
+    #[test]
+    #[expect(
+        clippy::too_many_lines,
+        reason = "Retain one complete ordered miniature graph schedule through both semantic decisions and all fifteen residual codebooks."
+    )]
+    fn tts_observer_preserves_complete_prompt_logits_caches_codes_and_eos() -> std::io::Result<()> {
+        use crate::observation::{PredictorObservation, TalkerObservation};
+
+        let mut talker = reference_fixture()?;
+        talker.layers = vec![tiny_layer()?, tiny_layer()?];
+        talker.predictor.layers = vec![tiny_layer()?, tiny_layer()?];
+        let mut schedule = Vec::new();
+        let mut prompt_len = 0;
+        let mut frames = Vec::new();
+        talker.generate_observed(
+            "x",
+            Some("i"),
+            None,
+            &mut |frame| {
+                frames.push(frame);
+                Ok(())
+            },
+            &mut || Ok(()),
+            &mut |event| {
+                match event {
+                    TalkerObservation::Prompt {
+                        rows,
+                        trailing,
+                        cacheable_rows,
+                    } => {
+                        prompt_len = rows.len();
+                        assert_eq!(prompt_len, 16);
+                        assert_eq!(rows[15], [1.0]);
+                        assert_eq!(trailing, [vec![-1.0]]);
+                        assert_eq!(cacheable_rows, 0);
+                        schedule.push((0, 0));
+                    }
+                    TalkerObservation::Logits {
+                        frame,
+                        hidden,
+                        logits,
+                        cache,
+                    } => {
+                        assert_eq!(hidden.len(), 1);
+                        assert_eq!(logits.len(), 1026);
+                        assert!(logits[0] * (if frame == 0 { 1.0 } else { -1.0 }) > 900.0);
+                        assert_eq!(logits[2].to_bits(), (-logits[0]).to_bits());
+                        assert_eq!(cache.len(), 2);
+                        for layer in cache {
+                            assert_eq!(layer.seq_len, prompt_len + frame);
+                            assert_eq!(layer.k.len(), 2 * layer.seq_len);
+                            assert_eq!(layer.v.len(), 2 * layer.seq_len);
+                            assert!(layer.k.iter().chain(&layer.v).all(|n| n.is_finite()));
+                        }
+                        // Reserved-token suppression has not yet replaced raw logits.
+                        assert_eq!(logits[1025], 0.0);
+                        schedule.push((1, frame));
+                    }
+                    TalkerObservation::Decision { frame, token, eos } => {
+                        assert_eq!(
+                            (token, eos),
+                            if frame == 0 { (0, false) } else { (2, true) }
+                        );
+                        schedule.push((2, frame));
+                    }
+                    TalkerObservation::Predictor { frame, observation } => {
+                        assert_eq!(frame, 0);
+                        match observation {
+                            PredictorObservation::Prefill { cache } => {
+                                assert_eq!(cache.len(), 2);
+                                assert!(cache.iter().all(|layer| layer.seq_len == 1
+                                    && layer.k.len() == 2
+                                    && layer.v.len() == 2));
+                                schedule.push((3, 0));
+                            }
+                            PredictorObservation::Logits {
+                                codebook,
+                                hidden,
+                                logits,
+                                cache,
+                            } => {
+                                assert_eq!(hidden.len(), 1);
+                                assert_eq!(logits, [1000.0, -1000.0]);
+                                assert!(cache.iter().all(|layer| layer.seq_len == codebook + 2
+                                    && layer.k.len() == (codebook + 2) * 2
+                                    && layer.v.len() == (codebook + 2) * 2));
+                                schedule.push((4, codebook));
+                            }
+                            PredictorObservation::Decision { codebook, token } => {
+                                assert_eq!(token, 0);
+                                schedule.push((5, codebook));
+                            }
+                        }
+                    }
+                    TalkerObservation::Frame { frame, codes } => {
+                        assert_eq!((frame, *codes), (0, [0; 16]));
+                        schedule.push((6, frame));
+                    }
+                }
+                Ok(())
+            },
+        )?;
+        let mut expected = vec![(0, 0), (1, 0), (2, 0), (3, 0)];
+        for codebook in 0..15 {
+            expected.extend([(4, codebook), (5, codebook)]);
+        }
+        expected.extend([(6, 0), (1, 1), (2, 1)]);
+        assert_eq!(schedule, expected);
+        assert_eq!(frames, [[0; 16]]);
+        Ok(())
+    }
+
+    #[test]
+    fn tts_observer_each_graph_boundary_can_refuse_or_unwind_without_partial_completion()
+    -> std::io::Result<()> {
+        use std::panic::AssertUnwindSafe;
+
+        // Prompt, first raw semantic logits/decision, predictor prefill,
+        // fifteen raw-logit/decision pairs, frame, final logits/EOS decision.
+        for stop in 1..=37 {
+            for unwind in [false, true] {
+                let mut talker = reference_fixture()?;
+                talker.layers = vec![tiny_layer()?, tiny_layer()?];
+                talker.predictor.layers = vec![tiny_layer()?, tiny_layer()?];
+                let mut seen = 0;
+                let mut delivered = 0;
+                let result = std::panic::catch_unwind(AssertUnwindSafe(|| {
+                    talker.generate_observed(
+                        "x",
+                        Some("i"),
+                        None,
+                        &mut |_| {
+                            delivered += 1;
+                            Ok(())
+                        },
+                        &mut || Ok(()),
+                        &mut |_| {
+                            seen += 1;
+                            if seen == stop {
+                                if unwind {
+                                    std::panic::resume_unwind(Box::new("observer refused"));
+                                }
+                                return Err(std::io::Error::other("observer refused"));
+                            }
+                            Ok(())
+                        },
+                    )
+                }));
+                assert_eq!(seen, stop);
+                assert!(result.map_or(unwind, |result| result.is_err()));
+                assert_eq!(delivered, usize::from(stop > 35));
+                assert!(talker.prefill_cache.is_none());
+                let mut fresh_frames = Vec::new();
+                talker.generate(
+                    "x",
+                    Some("i"),
+                    None,
+                    &mut |frame| {
+                        fresh_frames.push(frame);
+                        Ok(())
+                    },
+                    &mut || Ok(()),
+                )?;
+                assert_eq!(fresh_frames, [[0; 16]]);
+            }
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn tts_observer_refusal_and_unwind_invalidate_prefix_before_fresh_replay() -> std::io::Result<()>
+    {
+        use std::panic::AssertUnwindSafe;
+
+        let mut talker = prompt_fixture(true)?;
+        talker.geometry.vocab = 1026;
+        talker.codec_embedding.resize(1026, 0.0);
+        talker.layers = vec![tiny_layer()?, tiny_layer()?];
+        let mut bias = vec![-1000.0; 1026];
+        bias[2] = 1000.0;
+        talker.head = LinearProjection::new(
+            "fixture.semantic",
+            1,
+            1026,
+            WeightQuantization::F32(vec![0.0; 1026]),
+            Some(bias),
+        )?;
+        let reference = Reference {
+            speaker: vec![6000.0],
+            codes: vec![[1; 16]],
+        };
+        for stop in 1..=3 {
+            for unwind in [false, true] {
+                talker.generate("x", None, Some(&reference), &mut |_| Ok(()), &mut || Ok(()))?;
+                assert!(talker.prefill_cache.is_some());
+                let mut seen = 0;
+                let result = std::panic::catch_unwind(AssertUnwindSafe(|| {
+                    talker.generate_observed(
+                        "x",
+                        None,
+                        Some(&reference),
+                        &mut |_| Ok(()),
+                        &mut || Ok(()),
+                        &mut |_| {
+                            seen += 1;
+                            if seen == stop {
+                                if unwind {
+                                    std::panic::resume_unwind(Box::new("observer refused"));
+                                }
+                                return Err(std::io::Error::other("observer refused"));
+                            }
+                            Ok(())
+                        },
+                    )
+                }));
+                assert_eq!(seen, stop);
+                assert!(result.map_or(unwind, |result| result.is_err()));
+                assert!(talker.prefill_cache.is_none());
+            }
+        }
+        talker.generate("x", None, Some(&reference), &mut |_| Ok(()), &mut || Ok(()))?;
+        assert!(talker.prefill_cache.is_some());
         Ok(())
     }
 

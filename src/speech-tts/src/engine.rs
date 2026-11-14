@@ -1499,7 +1499,6 @@ impl CodePredictorModel {
 
     #[expect(
         clippy::too_many_arguments,
-        clippy::too_many_lines,
         reason = "Share request-owned capacity with Talker while retaining the explicit independent sampling and cancellation inputs."
     )]
     pub(crate) fn predict_frame_reusing(
@@ -1514,6 +1513,40 @@ impl CodePredictorModel {
         cancel: &mut dyn FnMut() -> io::Result<()>,
         workspace: &mut predictor_workspace::PredictorWorkspace,
     ) -> io::Result<[i32; TOTAL_CODE_GROUPS]> {
+        self.predict_frame_observed_reusing(
+            talker_hidden,
+            c0,
+            talker_codec_embd,
+            params,
+            seed,
+            subseq_base,
+            workers,
+            cancel,
+            workspace,
+            &mut |_| Ok(()),
+        )
+    }
+
+    #[expect(
+        clippy::too_many_arguments,
+        clippy::too_many_lines,
+        reason = "Preserve serving inputs while borrowing complete state for independent qualification."
+    )]
+    pub(crate) fn predict_frame_observed_reusing(
+        &self,
+        talker_hidden: &[f32],
+        c0: i32,
+        talker_codec_embd: &[f32],
+        params: DecoupledSamplingParams,
+        seed: i64,
+        subseq_base: i64,
+        workers: usize,
+        cancel: &mut dyn FnMut() -> io::Result<()>,
+        workspace: &mut predictor_workspace::PredictorWorkspace,
+        observe: &mut dyn FnMut(crate::observation::PredictorObservation<'_>) -> io::Result<()>,
+    ) -> io::Result<[i32; TOTAL_CODE_GROUPS]> {
+        use crate::observation::PredictorObservation;
+
         // Clear logical state even when admission below rejects. The guard also
         // clears partial frames on cancellation, numerical errors and unwind.
         let mut frame = workspace.frame(self.layers.len())?;
@@ -1567,6 +1600,7 @@ impl CodePredictorModel {
             )?);
         }
 
+        observe(PredictorObservation::Prefill { cache: kv_caches })?;
         let mut next_raw = c0_emb;
         for g in 0..NUM_ACOUSTIC_CODEBOOKS {
             cancel()?;
@@ -1587,6 +1621,13 @@ impl CodePredictorModel {
             }
             let normed = rms_norm(&h_step, &self.norm_w, self.rms_norm_eps)?;
             let mut logits = self.lm_heads[g].forward_vec_parallel(&normed, None, workers)?;
+            observe(PredictorObservation::Logits {
+                codebook: g,
+                hidden: &normed,
+                logits: &logits,
+                cache: kv_caches,
+            })?;
+            cancel()?;
             let sampled_idx = sampling::sample_top_k_p(
                 &mut logits,
                 sampling::SampleTopKPParams {
@@ -1608,6 +1649,10 @@ impl CodePredictorModel {
             })?;
             codes[g + 1] = i32::try_from(sampled_idx).map_err(|_| {
                 io::Error::new(io::ErrorKind::InvalidData, "Invalid sampled acoustic code.")
+            })?;
+            observe(PredictorObservation::Decision {
+                codebook: g,
+                token: codes[g + 1],
             })?;
 
             if g + 1 < NUM_ACOUSTIC_CODEBOOKS {

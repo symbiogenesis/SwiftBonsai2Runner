@@ -153,6 +153,41 @@ WAV samples remain Rust-owned through PCM conversion and HTTP writes. Streaming
 may play chunks before a later failure. The resource contract owns scratch,
 output limits and successful completion.
 
+## Independent graph observations
+
+`Synthesizer::synthesize_stream_observed` runs the ordinary serving graph with
+borrowed, synchronous observations. A cold profile exposes the complete Design
+prompt, raw semantic logits before masking/sampling, seeded decisions including
+EOS, every Talker layer's committed K/V, each acoustic frame's predictor prefill,
+all fifteen raw codebook logits/decisions and complete committed K/V, complete
+code frames and the validated reference PCM. Both cold and warm profiles expose
+the selected speaker embedding/reference codes and the same Base graph events,
+validated output chunks and a final sample-count/rate event. Prompt rows include
+all trailing overlays; caches use `[position, kv_head, head_dim]` ordering. Exact
+prefix reuse still exposes the complete restored state rather than just a suffix.
+
+The `observation::ARITHMETIC_IDENTITY` identifies Rust packed-weight projections
+with F32 activations and F32 KV. Before collecting, callers bind exact reviewed
+source, compiler/target/executable, worker count, all model locks and input bytes.
+Retain independent provider identities, original expected float bits/codes/PCM,
+dimensions, tolerances, observation schedule and exclusions. Rust events are not
+native-engine captures, and their hashes cannot replace original replay bytes.
+The API retains no capture or duplicate cache. Callback work, output and cleanup
+share the caller's original workload allowance. Normal service uses a no-op
+observer and does not collect values.
+
+Observer refusal stops the request. Unwinding and failures after input admission
+discard voice/codec reuse; invalid input preserves the selected voice. Previously
+delivered chunks and events remain partial. The final event is valid only if the
+method returns `Ok`; refused completion cannot establish a successful capture.
+Three `tts_observer_` controls exercise a real miniature two-layer Talker and
+two-layer predictor: literal prompt/logit/code decisions, complete cache lengths,
+the full 37-event schedule through EOS, refusal/unwind at each graph event and
+fresh replay, plus exact-prefix invalidation. These model-free controls do not
+exercise a complete pinned codec/speaker graph or qualify audio/listening,
+actual-model numerical parity, resources or latency. Independent expected
+observations and owning hosted/device acceptance remain required.
+
 Actual-model parity, first-audio/synthesis latency, Q8/Q4 listening, lifecycle,
 combined resources and clean-machine acceptance remain in [PLAN.md](../../PLAN.md).
 Model-free controls and captured fixtures do not qualify those properties.

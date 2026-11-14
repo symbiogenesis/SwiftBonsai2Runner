@@ -24,6 +24,7 @@ mod decode_graph;
 pub mod engine;
 mod gguf;
 mod numerics;
+pub mod observation;
 mod philox;
 mod sampling;
 pub mod speaker_encoder;
@@ -168,6 +169,26 @@ pub struct Synthesizer {
     threads: usize,
 }
 
+// A callback can unwind as well as return an error. Keep cleanup outside the
+// callback stack so neither voice nor codec snapshots survive either failure.
+struct SynthesisGuard<'a> {
+    synthesizer: &'a mut Synthesizer,
+    complete: bool,
+}
+
+impl Drop for SynthesisGuard<'_> {
+    fn drop(&mut self) {
+        self.synthesizer.codec.reset();
+        if !self.complete {
+            self.synthesizer.codec.discard_reference();
+            self.synthesizer.voices.0 = None;
+        }
+    }
+}
+
+type Observer<'a> =
+    std::cell::RefCell<&'a mut dyn FnMut(observation::Observation<'_>) -> io::Result<()>>;
+
 struct Voice {
     talker: rust_talker::Talker,
     reference: rust_talker::Reference,
@@ -270,7 +291,7 @@ impl Synthesizer {
         self.codec.sample_rate()
     }
 
-    fn voice(&mut self, profile: &CStr) -> io::Result<&mut Voice> {
+    fn voice(&mut self, profile: &CStr, observe: &Observer<'_>) -> io::Result<&mut Voice> {
         let Self {
             voices,
             design,
@@ -288,7 +309,7 @@ impl Synthesizer {
             let profile = profile.to_str().map_err(io::Error::other)?;
             let mut codes = Vec::new();
             talker
-                .generate(
+                .generate_observed(
                     rust_talker::REFERENCE_TEXT,
                     Some(profile),
                     None,
@@ -297,6 +318,12 @@ impl Synthesizer {
                         Ok(())
                     },
                     &mut || Ok(()),
+                    &mut |observation| {
+                        observe.borrow_mut()(observation::Observation::Talker {
+                            phase: observation::Phase::Design,
+                            observation,
+                        })
+                    },
                 )
                 .map_err(|error| SynthesisStage::ReferenceGeneration.failure(error))?;
             let samples = codec
@@ -307,6 +334,10 @@ impl Synthesizer {
             if !(1920..=24_000 * 30).contains(&count) {
                 return Err(SynthesisStage::ReferenceValidation.failure(invalid_audio()));
             }
+            observe.borrow_mut()(observation::Observation::Pcm {
+                phase: observation::Phase::Design,
+                samples: samples.as_ref(),
+            })?;
             // This is the same ownership handoff exercised by the independent
             // drop-order control: Design is gone before Base intake, and one
             // waveform survives through both speaker and acoustic extraction.
@@ -394,19 +425,53 @@ impl Synthesizer {
         voice: &str,
         sink: &mut (dyn FnMut(&[f32]) -> io::Result<()> + Send),
     ) -> io::Result<()> {
+        self.synthesize_stream_observed(text, voice, sink, &mut |_| Ok(()))
+    }
+
+    /// Synthesize with borrowed observations of both model roles and output.
+    ///
+    /// Bind exact source/compiler/executable, verified model locks, input bytes,
+    /// worker count and [`observation::ARITHMETIC_IDENTITY`] before capture.
+    /// Independent expected values, original replay bytes and tolerances remain
+    /// the caller's responsibility. The observer supplies no parity verdict.
+    /// Callbacks are synchronous and copy no state in the engine. Their work
+    /// shares the caller's original workload deadline. Normal serving uses a
+    /// no-op observer. `Complete` is valid only after this method returns `Ok`.
+    ///
+    /// # Errors
+    /// Returns [`Self::synthesize_stream`] failures or observer refusal. After
+    /// input admission, failure and unwinding discard voice/codec reuse; emitted
+    /// audio/events stay partial. Rejected input preserves the selected voice.
+    pub fn synthesize_stream_observed(
+        &mut self,
+        text: &str,
+        voice: &str,
+        sink: &mut (dyn FnMut(&[f32]) -> io::Result<()> + Send),
+        observe: &mut dyn FnMut(observation::Observation<'_>) -> io::Result<()>,
+    ) -> io::Result<()> {
         let text = bounded_input(text, MAX_TEXT)?;
         let profile = bounded_input(voice, MAX_VOICE)?;
+        let observe = std::cell::RefCell::new(observe);
+        let mut guard = SynthesisGuard {
+            synthesizer: self,
+            complete: false,
+        };
+        let synthesizer = &mut *guard.synthesizer;
         let result = (|| {
-            let _ = self.voice(&profile)?;
-            let Self { voices, codec, .. } = self;
+            let _ = synthesizer.voice(&profile, &observe)?;
+            let Self { voices, codec, .. } = synthesizer;
             let (_, voice) = voices.0.as_mut().ok_or_else(invalid_audio)?;
+            observe.borrow_mut()(observation::Observation::Speaker(&voice.reference.speaker))?;
+            observe.borrow_mut()(observation::Observation::ReferenceCodes(
+                &voice.reference.codes,
+            ))?;
             codec
                 .prime_reference(&voice.reference.codes)
                 .map_err(|error| SynthesisStage::CodecPriming.failure(error))?;
             let mut count = 0;
             voice
                 .talker
-                .generate(
+                .generate_observed(
                     text.to_str().map_err(io::Error::other)?,
                     None,
                     Some(&voice.reference),
@@ -417,23 +482,31 @@ impl Synthesizer {
                         count = sample_count(&chunk, count).ok_or_else(|| {
                             SynthesisStage::AudioValidation.failure(invalid_audio())
                         })?;
+                        observe.borrow_mut()(observation::Observation::Pcm {
+                            phase: observation::Phase::Base,
+                            samples: &chunk,
+                        })?;
                         sink(&chunk).map_err(|error| SynthesisStage::AudioOutput.failure(error))
                     },
                     &mut || Ok(()),
+                    &mut |observation| {
+                        observe.borrow_mut()(observation::Observation::Talker {
+                            phase: observation::Phase::Base,
+                            observation,
+                        })
+                    },
                 )
                 .map_err(|error| SynthesisStage::Generation.failure(error))?;
             if count == 0 {
                 return Err(SynthesisStage::AudioValidation.failure(invalid_audio()));
             }
+            observe.borrow_mut()(observation::Observation::Complete {
+                samples: count,
+                sample_rate: codec.sample_rate(),
+            })?;
             Ok(())
         })();
-        self.codec.reset();
-        if result.is_err() {
-            // Bootstrap, priming, EOS-without-audio and sink failures all use
-            // this exit. No partially computed state survives into a retry.
-            self.codec.discard_reference();
-            self.voices.0 = None;
-        }
+        guard.complete = result.is_ok();
         result
     }
 }
