@@ -379,6 +379,9 @@ adoption decisions without displacing native daily-use acceptance.
 - [ ] Qualify Q8/Q4 speech and thread choices, punctuation/live read-aloud,
   sampling/accent/reference changes and boundary smoothing. Distinguish retained
   PCM continuity from audible continuity under [speech measurement](docs/performance-expectations.md).
+  Include clause-aware hard cuts, preserved live paragraph separators and 5 ms
+  segment-edge fades, with first/last and exact-packet endings, under real-device
+  listening and synthesis-gap acceptance.
 - [ ] Add Rust ebur128 loudness/true-peak observations and reproducible
   loudness-matched listening copies to selected speech review packets under
   [speech measurement](docs/performance-expectations.md#q4-speech-resource-comparison).
