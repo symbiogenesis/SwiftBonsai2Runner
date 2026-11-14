@@ -713,6 +713,9 @@ fn native_service_integration_cleanup_preserves_failures_and_listener_observatio
         .build()
         .unwrap();
     runtime.block_on(LocalSet::new().run_until(async {
+        // Each case owns its task and port. Start them together so the OS's
+        // closed-port refusal delay is paid once instead of once per case.
+        let mut checks = tokio::task::JoinSet::new();
         for (exit, allow_closed, delivered, confirmed) in [
             (RunExit::Shutdown, false, true, true),
             (RunExit::AdmissionClosed, true, false, true),
@@ -720,52 +723,56 @@ fn native_service_integration_cleanup_preserves_failures_and_listener_observatio
             (RunExit::AcceptFailure, true, true, false),
             (RunExit::Shutdown, false, false, false),
         ] {
-            let (stop, stopped) = oneshot::channel();
-            let report = RunReport {
-                exit,
-                completed: 1,
-                failed: 0,
-                peak_in_flight: 1,
-                backend_resources: None,
-            };
-            let running = if delivered {
-                spawn_local(async move {
-                    let _ = stopped.await;
-                    Ok(report)
-                })
-            } else {
-                drop(stopped);
-                spawn_local(async move { Ok(report) })
-            };
-            let deadline = tokio::time::Instant::now() + STOP_WAIT;
-            let (cleanup, observed) = stop_owner(
-                stop,
-                running,
-                released_loopback_port(),
-                allow_closed,
-                deadline,
-            )
-            .await;
-            assert_eq!(cleanup_passed(&cleanup), confirmed);
-            assert_eq!(cleanup["stopSignalDelivered"], delivered);
-            assert_eq!(cleanup["ownedJobEmpty"], true);
-            assert_eq!(cleanup["listenerReleased"], true);
-            assert_eq!(cleanup["listenerProbeOutcome"], "connection-refused");
-            assert_eq!(observed, Some(report));
+            checks.spawn_local(async move {
+                let (stop, stopped) = oneshot::channel();
+                let report = RunReport {
+                    exit,
+                    completed: 1,
+                    failed: 0,
+                    peak_in_flight: 1,
+                    backend_resources: None,
+                };
+                let running = if delivered {
+                    spawn_local(async move {
+                        let _ = stopped.await;
+                        Ok(report)
+                    })
+                } else {
+                    drop(stopped);
+                    spawn_local(async move { Ok(report) })
+                };
+                let deadline = tokio::time::Instant::now() + STOP_WAIT;
+                let (cleanup, observed) = stop_owner(
+                    stop,
+                    running,
+                    released_loopback_port(),
+                    allow_closed,
+                    deadline,
+                )
+                .await;
+                assert_eq!(cleanup_passed(&cleanup), confirmed);
+                assert_eq!(cleanup["stopSignalDelivered"], delivered);
+                assert_eq!(cleanup["ownedJobEmpty"], true);
+                assert_eq!(cleanup["listenerReleased"], true);
+                assert_eq!(cleanup["listenerProbeOutcome"], "connection-refused");
+                assert_eq!(observed, Some(report));
+            });
         }
-        let (stop, stopped) = oneshot::channel();
-        let running = spawn_local(async move {
-            let _ = stopped.await;
-            Err(LaunchError::Stop)
+        checks.spawn_local(async {
+            let (stop, stopped) = oneshot::channel();
+            let running = spawn_local(async move {
+                let _ = stopped.await;
+                Err(LaunchError::Stop)
+            });
+            let deadline = tokio::time::Instant::now() + STOP_WAIT;
+            let (cleanup, observed) =
+                stop_owner(stop, running, released_loopback_port(), true, deadline).await;
+            assert!(observed.is_none());
+            assert!(!cleanup_passed(&cleanup));
+            assert!(cleanup["ownedJobEmpty"].is_null());
+            assert_eq!(cleanup["pendingReason"], "owned-run-failed");
+            assert_eq!(cleanup["listenerReleased"], true);
         });
-        let deadline = tokio::time::Instant::now() + STOP_WAIT;
-        let (cleanup, observed) =
-            stop_owner(stop, running, released_loopback_port(), true, deadline).await;
-        assert!(observed.is_none());
-        assert!(!cleanup_passed(&cleanup));
-        assert!(cleanup["ownedJobEmpty"].is_null());
-        assert_eq!(cleanup["pendingReason"], "owned-run-failed");
-        assert_eq!(cleanup["listenerReleased"], true);
 
         let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
         let port = listener.local_addr().unwrap().port();
@@ -793,6 +800,9 @@ fn native_service_integration_cleanup_preserves_failures_and_listener_observatio
             cleanup["pendingReason"],
             "frontend-listener-release-unconfirmed"
         );
+        while let Some(result) = checks.join_next().await {
+            result.unwrap();
+        }
     }));
 }
 
