@@ -82,12 +82,7 @@ fn harness_with_render(size: [f32; 2], text: &str, render: bool) -> Harness<'sta
     app.commit_history(history(text));
     let builder = Harness::builder()
         .with_size(size)
-        .with_context_setup(|context| {
-            crate::window::configure(context);
-            context.add_font_provider(std::sync::Arc::new(
-                egui_system_font_provider::SystemFontProvider::new(),
-            ));
-        });
+        .with_context_setup(crate::window::configure_test_context);
     let builder = if render {
         let mut setup = eframe::egui_wgpu::WgpuSetupCreateNew::without_display_handle();
         setup.instance_descriptor.backends = wgpu::Backends::DX12;

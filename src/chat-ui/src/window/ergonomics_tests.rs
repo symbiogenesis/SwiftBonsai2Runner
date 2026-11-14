@@ -30,12 +30,7 @@ fn harness_with_preferences(
     app.transcript.remove_empty_response();
     let builder = Harness::builder()
         .with_size(size)
-        .with_context_setup(|ctx| {
-            configure(ctx);
-            ctx.add_font_provider(std::sync::Arc::new(
-                egui_system_font_provider::SystemFontProvider::new(),
-            ));
-        });
+        .with_context_setup(configure_test_context);
     let builder = if render {
         let mut setup = eframe::egui_wgpu::WgpuSetupCreateNew::without_display_handle();
         setup.instance_descriptor.backends = wgpu::Backends::DX12;

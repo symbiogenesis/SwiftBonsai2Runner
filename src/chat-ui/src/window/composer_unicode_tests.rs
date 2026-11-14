@@ -18,12 +18,7 @@ fn harness(draft: &str) -> Harness<'static, Fixture> {
     draft.clone_into(&mut app.input);
     let mut chat = Harness::builder()
         .with_size([1180.0, 860.0])
-        .with_context_setup(|context| {
-            configure(context);
-            context.add_font_provider(std::sync::Arc::new(
-                egui_system_font_provider::SystemFontProvider::new(),
-            ));
-        })
+        .with_context_setup(configure_test_context)
         .build_ui_state(
             |ui, fixture: &mut Fixture| {
                 fixture.app.handle_input_shortcuts(ui.ctx());

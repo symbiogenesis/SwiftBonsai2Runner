@@ -1671,6 +1671,23 @@ fn configure(ctx: &egui::Context) {
     appearance::configure(ctx);
 }
 
+#[cfg(test)]
+fn test_font_provider() -> std::sync::Arc<egui_system_font_provider::SystemFontProvider> {
+    use std::sync::{Arc, LazyLock};
+
+    // Enumerate the same installed fonts once. Each harness still owns its
+    // context, font atlas, styles and layout caches.
+    static PROVIDER: LazyLock<Arc<egui_system_font_provider::SystemFontProvider>> =
+        LazyLock::new(|| Arc::new(egui_system_font_provider::SystemFontProvider::new()));
+    Arc::clone(&PROVIDER)
+}
+
+#[cfg(test)]
+fn configure_test_context(ctx: &egui::Context) {
+    configure(ctx);
+    ctx.add_font_provider(test_font_provider());
+}
+
 impl State {
     fn sidebar(&mut self, ui: &mut egui::Ui) {
         let previous_height = egui::containers::panel::PanelState::load(

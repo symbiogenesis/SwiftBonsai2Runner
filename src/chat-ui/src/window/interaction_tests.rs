@@ -46,12 +46,7 @@ fn harness(size: [f32; 2], seeded: bool) -> Harness<'static, Fixture> {
         // egui 0.37. Keep a finite allowance while preserving repaint checks.
         .with_max_steps(8)
         .with_theme(egui::Theme::Dark)
-        .with_context_setup(|context| {
-            configure(context);
-            context.add_font_provider(std::sync::Arc::new(
-                egui_system_font_provider::SystemFontProvider::new(),
-            ));
-        })
+        .with_context_setup(configure_test_context)
         .build_ui_state(
             |ui, fixture: &mut Fixture| {
                 fixture.app.handle_input_shortcuts(ui.ctx());
@@ -1169,12 +1164,7 @@ fn capture_chat_layouts_when_requested() -> io::Result<()> {
 fn find_controls_navigate_unicode_matches_and_refresh_streamed_text() {
     let mut chat = Harness::builder()
         .with_size([900.0, 760.0])
-        .with_context_setup(|context| {
-            configure(context);
-            context.add_font_provider(std::sync::Arc::new(
-                egui_system_font_provider::SystemFontProvider::new(),
-            ));
-        })
+        .with_context_setup(configure_test_context)
         .build_ui_state(
             |ui, transcript: &mut Transcript| {
                 transcript.close_find_on_escape(ui.ctx());

@@ -6,9 +6,7 @@ fn harness(transcript: Transcript) -> Harness<'static, Transcript> {
     Harness::builder()
         .with_theme(egui::Theme::Dark)
         .with_context_setup(|context| {
-            context.add_font_provider(Arc::new(
-                egui_system_font_provider::SystemFontProvider::new(),
-            ));
+            context.add_font_provider(crate::window::test_font_provider());
         })
         .build_ui_state(
             |ui, transcript: &mut Transcript| {

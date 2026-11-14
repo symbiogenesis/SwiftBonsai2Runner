@@ -34,12 +34,7 @@ fn harness(size: [f32; 2]) -> Harness<'static, Fixture> {
     app.transcript.bind_committed(&[], &app.committed);
     Harness::builder()
         .with_size(size)
-        .with_context_setup(|context| {
-            configure(context);
-            context.add_font_provider(std::sync::Arc::new(
-                egui_system_font_provider::SystemFontProvider::new(),
-            ));
-        })
+        .with_context_setup(configure_test_context)
         .build_ui_state(
             |ui, fixture: &mut Fixture| {
                 fixture.app.handle_input_shortcuts(ui.ctx());

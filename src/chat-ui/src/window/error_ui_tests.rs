@@ -2,13 +2,6 @@
 use super::*;
 use egui_kittest::{Harness, kittest::Queryable as _};
 
-fn configure_error_fixture(context: &egui::Context) {
-    configure(context);
-    context.add_font_provider(std::sync::Arc::new(
-        egui_system_font_provider::SystemFontProvider::new(),
-    ));
-}
-
 struct AlertFixture {
     app: State,
     commands: Receiver<Command>,
@@ -25,7 +18,7 @@ fn harness(size: [f32; 2], font_size: f32) -> Harness<'static, AlertFixture> {
     Harness::builder()
         .with_size(size)
         .with_context_setup(move |ctx| {
-            configure_error_fixture(ctx);
+            configure_test_context(ctx);
             ctx.global_style_mut(|style| {
                 style
                     .text_styles
@@ -413,7 +406,7 @@ fn error_reporting_capture_when_requested() -> io::Result<()> {
         setup.instance_descriptor.backends = wgpu::Backends::DX12;
         let mut chat = Harness::builder()
             .with_size(size)
-            .with_context_setup(configure_error_fixture)
+            .with_context_setup(configure_test_context)
             .wgpu_setup(eframe::egui_wgpu::WgpuSetup::CreateNew(setup))
             .build_ui_state(|ui, state: &mut State| state.draw(ui), app);
         chat.state().appearance.apply(&chat.ctx);
