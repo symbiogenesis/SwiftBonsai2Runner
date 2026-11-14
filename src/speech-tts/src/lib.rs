@@ -26,6 +26,7 @@ mod gguf;
 mod numerics;
 pub mod observation;
 mod philox;
+pub mod replay;
 mod sampling;
 pub mod speaker_encoder;
 mod tokenizer;

@@ -22,6 +22,7 @@ pub enum Phase {
 }
 
 /// Complete acoustic decoder observations for one independent frame session.
+#[derive(Clone, Copy)]
 pub enum PredictorObservation<'a> {
     /// All layers after processing the Talker hidden row at position zero.
     Prefill {
@@ -49,6 +50,7 @@ pub enum PredictorObservation<'a> {
 }
 
 /// Ordered observations of one Talker request, including its EOS decision.
+#[derive(Clone, Copy)]
 pub enum TalkerObservation<'a> {
     /// Complete projected prompt and trailing text overlays before prefill.
     Prompt {
@@ -101,6 +103,7 @@ pub enum TalkerObservation<'a> {
 /// An unchanged warm voice emits no Design graph. The final `Complete` event is
 /// provisional until the synthesis method returns `Ok`; callback refusal or
 /// unwind invalidates the capture and clears reusable voice/codec state.
+#[derive(Clone, Copy)]
 pub enum Observation<'a> {
     /// A borrowed prompt, semantic or acoustic graph observation.
     Talker {

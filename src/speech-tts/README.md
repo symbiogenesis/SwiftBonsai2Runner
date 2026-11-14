@@ -191,3 +191,84 @@ observations and owning hosted/device acceptance remain required.
 Actual-model parity, first-audio/synthesis latency, Q8/Q4 listening, lifecycle,
 combined resources and clean-machine acceptance remain in [PLAN.md](../../PLAN.md).
 Model-free controls and captured fixtures do not qualify those properties.
+
+## Streaming independent replay
+
+`replay::Replay::synthesize` compares the ordinary Rust synthesis graph with an
+authenticated original observation packet. It reads expected values through one
+fixed 16 KiB buffer and borrows live observations; it allocates no duplicate
+tensor, KV cache or waveform, invokes no reference engine and opens no audio
+device. Complete prompts/overlays, hidden rows, every raw semantic/acoustic logit,
+seeded decisions through EOS, every layer's complete committed K/V, all code
+frames, speaker conditioning, reference codes and validated Design/Base PCM are
+mandatory. The engine determines the complete event schedule: missing, extra,
+reordered or changed expected records fail when matched against live events.
+
+Callers supply reviewed `Binding` identities for both providers: original Git
+revision, exact compiler/target, executing image SHA-256 and arithmetic identity.
+The header also binds the complete model-lock digest, the complete Design/Base/
+codec file digests in that order, effective worker count, exact request digest
+and whether an unchanged selected voice must already be retained. The request
+digest covers u64 text UTF-8 byte count, text bytes, u64 voice byte count and
+voice bytes. The comparator hashes the actual bounded inputs and checks live
+worker/voice state before inference. All digest/revision fields must be nonzero;
+identity strings are nonempty, at most 1,024 bytes and contain no control
+characters. The candidate arithmetic must match `observation::ARITHMETIC_IDENTITY`.
+The caller still authenticates the packet, actual executing image/source and
+loaded artifacts, retaining immutable file/ancestor guards. Matching claims do
+not prove provenance, provider independence or full-model/native parity.
+
+Predeclare separate `Tolerances` for prompt, hidden, logits, cache, speaker and
+PCM values. Exact mode preserves all f32 bits, including signed zero and
+exceptional payloads. Finite mode rejects nonfinite values or allowances and
+uses nonnegative allowances evaluated in f64:
+`abs(actual-expected) <= relative.mul_add(abs(expected), absolute)`.
+No tensor, position, vocabulary entry or cache layer may be silently excluded.
+
+The version-one format uses unsigned little-endian u64 counts/indices, signed
+little-endian i32 codes and original little-endian f32 bits. Phase is one byte:
+zero for Design, one for Base. Booleans are one byte, zero or one. Strings are a
+u64 UTF-8 byte count plus original bytes without a terminator; arrays are a u64
+element count plus complete elements. Rows are an outer u64 row count followed
+by each complete float array. Cache is a u64 layer count followed by each ordered
+layer index, committed position count, complete key array and complete value
+array; arrays retain `[position, kv_head, head_dim]` order. Code frames contain
+exactly sixteen i32 values without an additional count.
+
+| Record | Original bytes in order |
+| --- | --- |
+| Header | Eight ASCII bytes `TTSREPL1`; reference provider; candidate provider; 32-byte model-lock SHA-256; three 32-byte model SHA-256s; 32-byte request SHA-256; worker count; retained-voice boolean; six tolerance rules in prompt/hidden/logits/cache/speaker/PCM order. |
+| Provider | 20 original Git revision bytes; compiler string; target string; 32 executing-image SHA-256 bytes; arithmetic string. |
+| Tolerance | One byte `0` for exact bits, or byte `1` followed by absolute then relative f32 bits. |
+| Prompt | Byte `1`; phase; complete rows; complete trailing rows; maximum cacheable-row count before the byte bound. |
+| Semantic logits | Byte `2`; phase; frame index; hidden array; complete vocabulary-logit array; complete cache. |
+| Semantic decision | Byte `3`; phase; frame index; i32 token; EOS boolean. |
+| Predictor prefill | Byte `4`; phase; frame index; complete cache. |
+| Predictor logits | Byte `5`; phase; frame index; codebook index; hidden array; complete vocabulary-logit array; complete cache. |
+| Predictor decision | Byte `6`; phase; frame index; codebook index; i32 token. |
+| Acoustic frame | Byte `7`; phase; frame index; complete code frame. |
+| Speaker | Byte `8`; complete embedding float array. |
+| Reference codes | Byte `9`; frame count; each complete code frame in order. |
+| PCM | Byte `10`; phase; complete finite mono sample array in playback order. |
+| Complete | Byte `11`; total Base sample count; u32 codec sample rate. |
+| Terminal | Byte `255`; total event count including Complete; mandatory EOF. |
+
+Only a successful live synthesis return, matching Complete/Terminal and EOF can
+grant comparison success. EOF is checked synchronously within the Complete
+callback, while ordinary synthesis cleanup still owns reusable voice/codec
+state. Mismatch, I/O failure, cancellation and unwind therefore invalidate reuse
+after input admission; rejected inputs preserve the prior selected voice. Already
+emitted events remain partial. Checks bracket each event, every 4,096 numerical
+values and the final EOF probe. Supply trusted regular files or readers with
+caller-bounded I/O: cooperative cancellation cannot interrupt a blocked `Read`
+call or model compute already executing. Retain the existing contained process
+owner, original absolute workload deadline, power observations and cleanup.
+
+Five named `tts_replay_` controls use literal miniature observations with distinct
+two-layer K/V, all fifteen predictor codebooks, both phases, signed zero and
+known PCM. They cover complete ordering/terminal, all identity boundaries,
+truncation/mutations/trailing bytes, numerical rules and sticky cancellation/
+unwind. They test the comparator contract, rather than loading complete pinned
+codec/speaker models or obtaining independent native captures. Independent
+original full-model observations, owning hosted acceptance and device/listening/
+resource qualification remain required.
