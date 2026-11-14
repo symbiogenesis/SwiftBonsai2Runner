@@ -718,6 +718,9 @@ impl EcapaSpeakerEncoder {
 }
 
 #[cfg(test)]
+mod independent_tests;
+
+#[cfg(test)]
 mod tests {
     use super::{
         AttentiveStatPool, AudioMelConfig, EcapaSpeakerEncoder, MelSpectrogramExtractor,
