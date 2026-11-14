@@ -50,4 +50,63 @@ mod tests {
         );
         Ok(())
     }
+
+    #[test]
+    fn bounded_reads_never_publish_partial_bytes_after_an_io_failure() -> io::Result<()> {
+        struct Failed;
+
+        impl Read for Failed {
+            fn read(&mut self, _bytes: &mut [u8]) -> io::Result<usize> {
+                Err(io::ErrorKind::PermissionDenied.into())
+            }
+        }
+
+        for prefix in [b"".as_slice(), b"partial".as_slice()] {
+            let limit = u64::try_from(prefix.len()).map_err(io::Error::other)?;
+            let error = read(prefix.chain(Failed), limit)
+                .err()
+                .ok_or_else(|| io::Error::other("Read failure was accepted as complete input"))?;
+            assert_eq!(error.kind(), io::ErrorKind::PermissionDenied);
+        }
+        // Once overflow has been established, the reader must not continue to
+        // the later failure (or accept the retained prefix as bounded success).
+        assert_eq!(read(b"partial".as_slice().chain(Failed), 2)?, None);
+        Ok(())
+    }
+
+    #[test]
+    fn bounded_text_preserves_worker_overflow_utf8_and_open_failures() -> io::Result<()> {
+        let stamp = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map_err(io::Error::other)?
+            .as_nanos();
+        let directory =
+            std::env::temp_dir().join(format!("BonsaiBoundedText-{}-{stamp}", std::process::id()));
+        std::fs::create_dir(&directory)?;
+        let path = directory.join("status.txt");
+        let exceeded = "Worker output exceeds its limit.";
+        std::fs::write(&path, b"ready")?;
+        assert_eq!(text(&path, 5, exceeded)?, "ready");
+        std::fs::write(&path, [0xff; 6])?;
+        let overflow = text(&path, 5, exceeded)
+            .err()
+            .ok_or_else(|| io::Error::other("Oversized text was accepted"))?;
+        // Bound admission precedes UTF-8 decoding, preserving the owning
+        // worker's diagnostic even when the oversized bytes are also invalid.
+        assert_eq!(overflow.to_string(), exceeded);
+        let invalid = text(&path, 6, exceeded)
+            .err()
+            .ok_or_else(|| io::Error::other("Invalid UTF-8 was accepted"))?;
+        assert!(
+            invalid
+                .get_ref()
+                .is_some_and(|source| source.is::<std::string::FromUtf8Error>())
+        );
+        std::fs::remove_file(&path)?;
+        let missing = text(&path, 5, exceeded)
+            .err()
+            .ok_or_else(|| io::Error::other("Missing input was accepted"))?;
+        assert_eq!(missing.kind(), io::ErrorKind::NotFound);
+        std::fs::remove_dir(directory)
+    }
 }
