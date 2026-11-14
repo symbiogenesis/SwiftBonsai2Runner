@@ -247,7 +247,7 @@ bonsai-ci native-boundary-verify --root $PWD --manifest $manifest --expected-sha
 
 Use `native-boundary.prism.json` with the independently retained Prism checkout
 as `--root`. The Runner baseline is source revision
-`56b09f555f1c5671132ef304639d20e20ab4c4d7`; the clean read-only Prism baseline is
+`dfe34b7d6e914e9ace8ed35833ea40470382c4fc`; the clean read-only Prism baseline is
 `d30bcfec3c5ca8f57814aad428979a2abe258e57`. The command verifies exact file bytes,
 not Git branch/HEAD provenance: `gitRevisionVerified` stays false. Bind the
 reviewed manifest digest and original source revision independently; computing a

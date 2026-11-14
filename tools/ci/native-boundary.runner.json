@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "kind": "checked-in-native-retirement-boundary",
   "repository": "runner",
-  "sourceRevision": "56b09f555f1c5671132ef304639d20e20ab4c4d7",
+  "sourceRevision": "dfe34b7d6e914e9ace8ed35833ea40470382c4fc",
   "exclusions": [
     {
       "path": ".git",
@@ -105,8 +105,8 @@
     },
     {
       "path": "Cargo.lock",
-      "bytes": 132461,
-      "sha256": "e3054c8a3fe786605be94398f13fe71c011343b375f3ee822f4738b2c3444591",
+      "bytes": 132471,
+      "sha256": "f2a4dea8b657eff6f02f58d690272c556e1a5090d6cd3e6daabef420a7907d52",
       "family": "native-asr"
     },
     {
@@ -141,8 +141,8 @@
     },
     {
       "path": "src/speech-asr/Cargo.toml",
-      "bytes": 1220,
-      "sha256": "3e52065def628bdc77104799b79be3d65f76777803e150e52e0371a07f42fb2e",
+      "bytes": 1302,
+      "sha256": "743d14a016f139672d16bc4a32fe3e94f34abf56138e613c3e5bb4b836c1f6a6",
       "family": "native-asr"
     },
     {
