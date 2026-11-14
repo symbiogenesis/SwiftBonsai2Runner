@@ -181,13 +181,14 @@ mod tests {
     fn application_obeys_original_work_and_time_limits() {
         let solution = solution(vec![vec![1.0]], vec![vec![1.0]]);
         assert!(branch(&[1.0], &[0.0], &solution, Instant::now(), &mut 0).is_err());
+        let mut work = solver::MAX_WORK;
         assert!(
             branch(
                 &[1.0],
                 &[0.0],
                 &solution,
                 Instant::now() + Duration::from_secs(1),
-                &mut solver::MAX_WORK
+                &mut work
             )
             .is_err()
         );
