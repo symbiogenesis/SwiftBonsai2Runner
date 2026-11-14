@@ -130,13 +130,9 @@ impl Pipeline {
                 // restart synthesis when more of the answer is already ready.
                 let mut characters = text.chars().count();
                 while let Some(next) = queued.front() {
-                    let count = next.chars().count();
-                    if characters + 1 + count > super::MAX_SEGMENT {
+                    if !append_segment(&mut text, &mut characters, next) {
                         break;
                     }
-                    text.push(' ');
-                    text.push_str(next);
-                    characters += 1 + count;
                     let _merged = queued.pop_front();
                 }
                 match sender.try_send(text) {
@@ -266,16 +262,29 @@ fn next_segment(
     let mut characters = text.chars().count();
     while let Ok(next) = segments.try_recv() {
         check(generation, current, stop)?;
-        let count = next.chars().count();
-        if characters + 1 + count > super::MAX_SEGMENT {
+        if !append_segment(&mut text, &mut characters, &next) {
             *pending = Some(next);
             break;
         }
-        text.push(' ');
-        text.push_str(&next);
-        characters += 1 + count;
     }
     Ok(Some(text))
+}
+
+fn append_segment(text: &mut String, characters: &mut usize, next: &str) -> bool {
+    // Preserve paragraph cues supplied by segmentation and charge only the
+    // separator actually needed. An extra space can otherwise force a new
+    // model request even when the original two pieces fit exactly.
+    let needs_space = !text.ends_with(char::is_whitespace) && !next.starts_with(char::is_whitespace);
+    let added = usize::from(needs_space) + next.chars().count();
+    if *characters + added > super::MAX_SEGMENT {
+        return false;
+    }
+    if needs_space {
+        text.push(' ');
+    }
+    text.push_str(next);
+    *characters += added;
+    true
 }
 
 struct Frames {
@@ -1226,6 +1235,50 @@ mod tests {
             super::next_segment(&receiver, &mut pending, 4, &current, &stop),
             Ok(None)
         );
+    }
+
+    #[test]
+    fn paragraph_cues_survive_both_coalescing_stages_at_the_character_limit()
+    -> Result<(), &'static str> {
+        let now = Instant::now();
+        let input = format!("{}.\n\nSecond. tail", "a".repeat(246));
+        let expected = format!("{}.\n\nSecond.", "a".repeat(246));
+        assert_eq!(expected.chars().count(), super::super::MAX_SEGMENT);
+        let mut text = super::super::stream::Text::default();
+        text.append(&input, now)?;
+        let mut queued = text.ready(now);
+        assert_eq!(queued.len(), 2);
+
+        // Request intake must keep the same paragraph and fit the original cap.
+        let (sender, receiver) = mpsc::sync_channel(2);
+        for piece in &queued {
+            sender.send(piece.clone()).map_err(|_| "Closed queue")?;
+        }
+        assert_eq!(
+            super::next_segment(
+                &receiver,
+                &mut None,
+                4,
+                &AtomicU64::new(4),
+                &AtomicBool::new(false),
+            ),
+            Ok(Some(expected.clone()))
+        );
+
+        // The producer's earlier coalescing stage follows the same rule.
+        let (_complete, finished) = mpsc::channel();
+        let mut pipeline = super::Pipeline {
+            segments: Some(sender),
+            finished,
+            cancelled: Arc::new(AtomicBool::new(false)),
+            playing: Arc::new(AtomicBool::new(false)),
+            notified_playing: false,
+            worker: None,
+        };
+        pipeline.feed(&mut queued, true);
+        assert_eq!(receiver.try_recv(), Ok(expected));
+        assert!(queued.is_empty());
+        Ok(())
     }
 
     #[test]
