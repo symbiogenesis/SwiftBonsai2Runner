@@ -451,13 +451,16 @@ evaluation controls without making the pruned candidate a prerequisite for W8.
   compatible MoE model; current dense Swift has no expert router.
 - [ ] **W8.1 — Screen structured FFN omission with small recovery adapters.**
   Prioritize retaining most nonlinear computation over replacing a complete FFN
-  with a linear map. Complete pinned Release compilation, strict analyzers and
-  focused fitter/capture regressions before actual-model intake. Qualify paired
-  full/retained branch capture on the same
-  changed-prefix normalized input and the native `ffn-surrogate` compensation
-  fitter. Bind complete 1,024-coordinate groups, original Hadamard signs/stride,
+  with a linear map. Qualify source-only paired full/retained capture, the native
+  `ffn-surrogate` fitter and frozen-compensation replay on the same normalized
+  input, with owning-lane Release/analyzer acceptance and source-bound prebuilt
+  helpers before actual-model intake. Bind complete 1,024-coordinate groups,
+  original Hadamard signs/stride, exact source-order F32 factor application,
   retained standard-adapter semantics, original-prefix teacher drift,
-  failed-token discard, disjoint groups and exported-F32 errors.
+  failed-token discard, disjoint groups, factor/source/scale admission and fresh
+  graph/checkpoint identities. Qualify both exported-factor F64 and actual F32
+  branch-error screens; teacher-forced one-site replay cannot establish
+  autoregressive quality or multi-site drift recovery.
   Follow the [selected investigation](docs/weight-space-programming.md#selected-w8-investigation-recover-omitted-ffn-computation).
   Attribute one actual bottleneck and predeclare one feasible site/capture before
   device work; stop at the development-error gate before building a serving

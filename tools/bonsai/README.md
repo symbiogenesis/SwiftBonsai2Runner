@@ -68,7 +68,9 @@ W8, or a recovery adapter for structured FFN omission. Unlike an FFN-down LoRA,
 5,120-wide FFN input and predicts the complete 5,120-wide branch delta, including
 the teacher's frozen adapter contribution. A future schema-1 replacement must omit that
 site's original gate/up/down and adapter work; applying the skipped adapter again
-would double-count it. No runtime or application currently loads this artifact.
+would double-count it. Whole-FFN replacement has no runtime consumer. Structured
+compensation has a separate source-only Prism replay path described below;
+neither artifact is accepted by the released application.
 
 Supply `schemaVersion: 1`, `source`, `site`, `rows`, optional `controls` and an
 optional new external `outputPath`. `source` binds `modelSha256`, `runtimeSha256`,
@@ -131,11 +133,25 @@ otherwise duplicate inputs can correctly reject the packet. Identities bind
 declarations; the offline fitter
 cannot authenticate the runtime, branches, signs or content independence.
 
-The fitter uses F64 subtraction of the supplied F32 teacher/retained values
-and evaluates exported F32 factors against complete teacher-branch energy.
-It reports the uncompensated error and original-prefix drift separately.
+The fitter uses F64 subtraction of the supplied F32 teacher/retained values.
+It evaluates exported F32 factors twice: algebraically with F64 reductions and
+with the source-only replay consumer's exact F32 application. The latter starts
+from the retained branch, computes each rank's dot product in input order with
+separately rounded F32 products/additions, and adds `dot * b[k][j]` into that
+branch in rank order, also with separate F32 products/additions. It uses no FMA,
+rank-sum-first reduction or extra adapter application. The artifact binds this
+as `factorApplicationArithmetic: "rank-major-source-order-f32-dot-add-v1"`.
+Older artifacts without that marker cannot enter compensated replay.
+
+`diagnostics` preserves the F64 analysis; `sourceOrderF32Diagnostics` evaluates
+the final rounded branch against the teacher using F64 error reductions. Both
+use complete teacher-branch energy and report uncompensated error and
+original-prefix drift separately. `exportedFactorF64DevelopmentScreen` and
+`sourceOrderF32DevelopmentScreen` retain each decision; the combined
+`developmentScreen` requires both to pass. Nonfinite F32 dots or intermediate
+branch outputs reject before publication, even when F64 analysis is finite.
 Schema 2 withholds publication and returns `status: "development-rejected"`
-if either split has zero teacher energy, development relative squared error
+if either screen finds zero split teacher energy, development relative squared error
 exceeds 0.1, its gap above fit exceeds 0.05, or compensation worsens development
 error versus the retained branch. A passing algebraic screen leaves behavior,
 prefix-drift recovery, performance and process RAM unqualified. Resource
@@ -151,8 +167,23 @@ loads every weight and executes the complete teacher FFN, then propagates the
 retained branch. It applies no recovery factors and establishes no savings.
 Retain its exact request and source-bound build identity for independent replay;
 `captureSha256` is the producer's domain-framed packet digest before insertion
-of that field, not the capture file's SHA-256. Runtime publication, compensated
-rollout, multiple edited sites and free-generation acceptance remain pending.
+of that field, not the capture file's SHA-256. Runtime publication, multiple
+edited sites and free-generation acceptance remain pending.
+The separate compensated replay uses the same `captureKind` and `omittedGroups`
+plus `patchPath` pointing to a frozen schema-2 artifact. It takes factors at this same
+site and propagates the corrected branch before residual addition; it binds
+factor arithmetic, exact source/adapter/scale, group/sign identities and fresh
+checkpoint identity. It emits schema 3 with
+`kind: "experimental-structured-ffn-compensated-replay-v1"`, a distinct
+`experimental-ffn-group-compensation-cpu-scalar-unfused-v1` execution profile,
+the recovery artifact digest and separate `compensatedBranch` observations.
+Its replay packet cannot enter the uncorrected fitter. Replay stays limited to
+one site and fixed supplied token IDs; it cannot establish autoregressive
+quality or the drift caused by earlier omitted sites.
+It still loads every weight and evaluates the full teacher branch. This gives
+no selective-loading, serving, speed, memory or answer-quality result.
+`runtimeImplemented: false` on fitted artifacts/results refers to released
+serving and selective loading, as made explicit by `runtimeImplementedScope`.
 
 `native-link-verify` binds retained native link inputs, real ARM64 PE import tables
 and an exact flat package to a separately reviewed schema-3 compiler-source

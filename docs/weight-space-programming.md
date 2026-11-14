@@ -234,8 +234,13 @@ one fixed group-omitted site on the same token IDs. Both passes count against
 its existing 256-token cap and original deadline. It propagates the retained
 branch without recovery, retaining original teacher targets separately. It
 still loads every weight and executes the full teacher FFN, so this capture
-has no speed or RAM benefit. Compensated rollout, multi-site composition and
-free generation require later support and acceptance. The released Runner
+has no speed or RAM benefit. Its separate source-only frozen-compensation replay
+adds the exported correction on that same normalized input before residual
+addition, then propagates it through subsequent computation. Factors,
+application arithmetic, source/adapter/scale, groups and original signs bind a
+fresh graph/checkpoint identity. Replay output has a separate identity and
+format from uncorrected fitting input. Multi-site composition and free-generation
+acceptance remain separate. The released Runner
 runtime does not expose this experiment; the
 [tool contract](../tools/bonsai/README.md) describes the producer/consumer fields.
 
@@ -304,7 +309,9 @@ omission and records the original-prefix teacher separately.
 It uses a deterministic pivoted output basis and a dual ridge solve rather than
 gradient training or a whole-model weight expansion. Only fit rows construct
 the basis and coefficients. Development groups assess reconstruction after
-export to F32; final held-out rows are deliberately unsupported by this command.
+export to F32, both with algebraic F64 reductions and the replay consumer's
+source-order F32 application; final held-out rows are deliberately unsupported
+by this command.
 Group IDs cannot prove semantic independence, so content grouping still needs
 review. This is algebraic calibration, not a claim that direct behavioral
 weight-space reasoning discovered a correction.
@@ -322,7 +329,12 @@ squared error exceeds 10% of teacher branch energy, whose development
 relative squared error exceeds fit relative squared error by more than five
 percentage points, or whose compensated development error exceeds the
 uncompensated retained branch's error. All relative errors use complete teacher
-branch energy, not the much smaller omitted-contribution energy. A schema-2
+branch energy, not the much smaller omitted-contribution energy. Both the
+algebraic and source-order F32 screens must pass. Native arithmetic reduces
+each dot in input order, then adds each rank directly into the retained F32
+branch, with separate product/add rounding and no FMA. This differs from
+summing corrections first or using F64 dots. Nonfinite native dots or
+intermediate branch values reject before publication. A schema-2 development
 rejection retains diagnostics without publishing candidate factors.
 Require nonzero teacher energy and independent development groups; do not hide
 a failed site in an average. These conservative screening thresholds are design
@@ -449,8 +461,11 @@ capture contract; a proposed hook must name exactly what it observes.
 Bind base representation, runtime, tensor/layer/site, activation basis,
 factor/vector hashes, finite shapes, exact scale bits and deterministic composition
 order. Unsupported inputs reject before application and preserve the previous
-profile. Changes clear live state and invalidate checkpoints/prefix reuse; loaded
-zero bypasses correction arithmetic exactly. Retain explicit rollback with Orca.
+profile. Changes clear live state and invalidate checkpoints/prefix reuse. The
+independent rank-one patch's zero scale bypasses its arithmetic exactly.
+Structured recovery has no extra scale or zero-factor bypass; every rank follows
+its declared F32 arithmetic, including signed-zero rounding. Use a separate
+omission-only profile to disable recovery. Retain explicit rollback with Orca.
 
 Require matching prompt/decode/continuation/reset and cancellation behavior on
 every selected CPU/accelerator path, including fused work. Synthetic or CPU-only
