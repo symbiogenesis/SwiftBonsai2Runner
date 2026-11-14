@@ -29,6 +29,10 @@ const OPERATION_LIMIT: Duration = Duration::from_secs(45);
 const PERMISSION_LIMIT: Duration = Duration::from_mins(2);
 const MAX_WAV: u64 = 1024 * 1024;
 
+const fn microphone_access_allowed(status: AppCapabilityAccessStatus) -> bool {
+    status.0 == AppCapabilityAccessStatus::Allowed.0
+}
+
 pub(super) enum Event {
     Status(&'static str),
     Recording { generation: u64 },
@@ -265,7 +269,7 @@ impl Microphone {
             .capability
             .as_ref()
             .ok_or_else(windows::core::Error::from_thread)?;
-        if capability.CheckAccess()? != AppCapabilityAccessStatus::Allowed {
+        if !microphone_access_allowed(capability.CheckAccess()?) {
             return Err(windows::core::Error::from_thread());
         }
         Ok(())
@@ -374,7 +378,7 @@ impl Microphone {
                 let status = operation
                     .GetResults()
                     .map_err(|_| "Windows microphone permission was cancelled or unavailable.")?;
-                if status != AppCapabilityAccessStatus::Allowed {
+                if !microphone_access_allowed(status) {
                     return Err(
                         "Windows microphone permission was denied. Check microphone privacy settings and app capabilities.",
                     );
@@ -473,7 +477,10 @@ impl Drop for Microphone {
 
 #[cfg(test)]
 mod tests {
-    use super::{AudioResource, CaptureResources, Lifecycle};
+    use super::{
+        AppCapabilityAccessStatus, AudioResource, CaptureResources, Lifecycle,
+        microphone_access_allowed,
+    };
     use std::{cell::Cell, io, rc::Rc};
 
     struct Resource(Rc<Cell<bool>>);
@@ -481,6 +488,58 @@ mod tests {
         fn close(self) {
             self.0.set(true);
         }
+    }
+
+    #[test]
+    fn microphone_consent_rejects_every_denied_prompt_and_unknown_status() {
+        assert!(microphone_access_allowed(
+            AppCapabilityAccessStatus::Allowed
+        ));
+        for denied in [
+            AppCapabilityAccessStatus::DeniedBySystem,
+            AppCapabilityAccessStatus::NotDeclaredByApp,
+            AppCapabilityAccessStatus::DeniedByUser,
+            AppCapabilityAccessStatus::UserPromptRequired,
+            AppCapabilityAccessStatus(-1),
+            AppCapabilityAccessStatus(i32::MAX),
+        ] {
+            // A prior grant must not survive the next observed access status.
+            assert!(microphone_access_allowed(
+                AppCapabilityAccessStatus::Allowed
+            ));
+            assert!(!microphone_access_allowed(denied));
+        }
+    }
+
+    #[test]
+    fn microphone_cleanup_closes_each_resource_once_and_rejects_stale_owners() -> io::Result<()> {
+        struct CountedResource(Rc<Cell<usize>>);
+        impl AudioResource for CountedResource {
+            fn close(self) {
+                self.0.set(self.0.get() + 1);
+            }
+        }
+        let capture_closes = Rc::new(Cell::new(0));
+        let stream_closes = Rc::new(Cell::new(0));
+        let mut lifecycle = Lifecycle::default();
+        let first = lifecycle.begin()?;
+        let mut resources = CaptureResources::new();
+        resources.capture = Some((first, CountedResource(Rc::clone(&capture_closes))));
+        resources.stream = Some(CountedResource(Rc::clone(&stream_closes)));
+        assert!(resources.capture_for(first).is_some());
+        assert!(resources.capture_for(first + 1).is_none());
+
+        lifecycle.stop();
+        resources.close();
+        resources.close();
+        assert_eq!(capture_closes.get(), 1);
+        assert_eq!(stream_closes.get(), 1);
+        assert!(!lifecycle.requested && !lifecycle.waiting);
+        let second = lifecycle.begin()?;
+        assert_ne!(first, second);
+        assert!(resources.capture_for(first).is_none());
+        assert!(resources.capture_for(second).is_none());
+        Ok(())
     }
 
     #[test]

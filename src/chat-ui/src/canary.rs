@@ -1249,6 +1249,52 @@ mod tests {
     }
 
     #[test]
+    fn multipart_boundary_scan_matches_scalar_oracle_for_edges_and_arbitrary_bytes()
+    -> io::Result<()> {
+        let finder = memchr::memmem::Finder::new(super::BOUNDARY_PREFIX);
+        let marker = b"bonsai-canary-0123456789abcdef";
+        for length in [0, 1, 28, 29, 30, 8_191, 8_192, 8_193, 24_607] {
+            let mut bytes = vec![0; length];
+            let mut state = 0x6d2b_79f5_u32;
+            for byte in &mut bytes {
+                state ^= state << 13;
+                state ^= state >> 17;
+                state ^= state << 5;
+                *byte = state.to_le_bytes()[0];
+            }
+            for offset in [0, 29, 8_191, 8_192, length.saturating_sub(marker.len())] {
+                if let Some(destination) = bytes.get_mut(offset..offset + marker.len()) {
+                    destination.copy_from_slice(marker);
+                }
+            }
+            // Include a real mixed-case value, malformed suffix and truncated
+            // final prefix. The independent scalar search supplies the oracle.
+            bytes.extend_from_slice(b"bonsai-canary-0000000000ABCDEF");
+            bytes.extend_from_slice(b"bonsai-canary-00000000000000GG");
+            bytes.extend_from_slice(b"bonsai-canary-000");
+            let expected = bytes
+                .array_windows::<{ super::BOUNDARY_WINDOW }>()
+                .filter_map(|window| window.strip_prefix(super::BOUNDARY_PREFIX))
+                .filter_map(|suffix| std::str::from_utf8(suffix).ok())
+                .filter_map(|suffix| u64::from_str_radix(suffix, 16).ok())
+                .collect::<HashSet<_>>();
+            let mut actual = HashSet::new();
+            let mut polls = 0;
+            boundary_values(&bytes, &finder, &mut actual, || {
+                polls += 1;
+                Ok(())
+            })
+            .map_err(|_| io::Error::other("Boundary search failed"))?;
+            assert_eq!(actual, expected, "corpus length {length}");
+            assert_eq!(
+                polls,
+                bytes.len().saturating_sub(marker.len() - 1).div_ceil(8_192)
+            );
+        }
+        Ok(())
+    }
+
+    #[test]
     fn windows_extensible_capture_normalizes_ancillary_chunks_and_rejects_corruption()
     -> io::Result<()> {
         let canonical = wav(&[0, 0, 1, 0])?;
