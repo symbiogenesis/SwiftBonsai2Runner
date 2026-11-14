@@ -453,7 +453,7 @@ fn verify_compilation_database(manifest: &Manifest, total: &mut u64) -> Result<(
             return Err("Native closure repeats a selected build invocation.".into());
         }
     }
-    for entry in entries {
+    for entry in &entries {
         let directory = path_key(&entry.directory)?;
         let source = path_key(&entry.file)?;
         if !arguments_valid(&entry.arguments, &manifest.compiler.path) {
@@ -464,8 +464,8 @@ fn verify_compilation_database(manifest: &Manifest, total: &mut u64) -> Result<(
                 "Native compilation database has a changed, extra or duplicate invocation.".into(),
             );
         };
-        if let Some(output) = entry.output
-            && path_key(&output)? != path_key(&unit.object.path)?
+        if let Some(output) = &entry.output
+            && path_key(output)? != path_key(&unit.object.path)?
         {
             return Err("Native compilation database has a different output identity.".into());
         }
