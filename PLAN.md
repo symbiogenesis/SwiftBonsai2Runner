@@ -23,7 +23,9 @@ under [AGENTS.md](AGENTS.md).
   Foundation and dependency-audit acceptance for the published startup,
   staged-index, ASR/UI fixture, workflow-consolidation and dependency corrections,
   syntax/selector guards, portable and planner compiler-cache recovery, portable
-  environment fixtures and separate hosted/device scheduling. Verify
+  environment fixtures and separate hosted/device scheduling. Include fresh
+  advisory/yank checks for both workspace lockfiles and the SDK reader's patched
+  archive parser. Verify
   cold/hit/input-change paths, failed-regression recovery and independent push handoffs.
   Follow the [startup preflight](tools/ci/README.md#action-dependency-pins) before
   workflow changes and verify supported self-hosted runner versions.
@@ -59,7 +61,8 @@ under [AGENTS.md](AGENTS.md).
   pause/retry, disk/network/permission failures and independent speech retry.
 - [ ] Qualify the shared native Rust HTTPS replacement in its owning compiler,
   analyzer and regression lanes, then exercise Windows Schannel/system trust,
-  proxies, HTTPS-only credential-free redirects, interrupted and ignored-Range
+  proxies, CI baseline lookup with Windows system trust, patched-client address
+  fallback, HTTPS-only credential-free redirects, interrupted and ignored-Range
   transfers, strict length/range bounds, cancellation and aggregate deadlines
   through actual provisioning and updates. Local checks establish no measured
   binary-size, latency or throughput improvement.

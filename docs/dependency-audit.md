@@ -1,7 +1,8 @@
 # Dependency policy and choices
 
-[Cargo.toml](../Cargo.toml), package manifests and [Cargo.lock](../Cargo.lock) own
-the exact dependency selection. [PLAN.md](../PLAN.md#deferred-dependency-experiments)
+[Cargo.toml](../Cargo.toml), package manifests, [Cargo.lock](../Cargo.lock) and the
+[SDK reader lockfile](../tools/hexagon/sdk-reader/Cargo.lock) own the exact dependency
+selection. [PLAN.md](../PLAN.md#deferred-dependency-experiments)
 owns pending alternatives. This guide explains current responsibilities and acceptance
 requirements; prior audit snapshots and prototype results belong in Git history.
 
@@ -14,9 +15,9 @@ ZIP disables defaults and enables only `deflate-flate2-zlib-rs`. Bounded custom
 extraction remains necessary; upstream hardening does not replace Runner policy.
 
 [The source-checks audit job](../.github/workflows/source-checks.yml) runs for relevant
-main pushes, weekly and manually. Pinned cargo-audit fetches RustSec anew;
-vulnerabilities/yanks fail, while maintenance notices remain visible without
-blanket ignores.
+main pushes, weekly and manually. Pinned cargo-audit checks both lockfiles against
+fresh RustSec advisories; vulnerabilities/yanks fail, while maintenance notices
+remain visible without blanket ignores.
 
 ## Dependency footprint and duplication
 
@@ -34,10 +35,11 @@ executables with independently qualified model, cancellation and resource contra
 ### Renderer features
 
 `wgpu_no_default_features` plus the direct wgpu edge selects Windows DX12, Vulkan and
-GLES support. Native chat explicitly selects DX12; fallback policy and device support
-are application contracts. Removing a Windows backend requires a separate support
-and qualification decision. Font parsers, color-font rendering and accessibility
-serve the native UI; they are not evidence of a browser frontend.
+GLES support. Native chat retains upstream adapter selection and `WGPU_BACKEND`;
+source launches can explicitly select a backend with `--graphics-backend`.
+Removing a Windows backend requires a separate support and qualification decision.
+Font parsers, color-font rendering and accessibility serve the native UI; they are
+not evidence of a browser frontend.
 
 ## Direct dependency decisions
 
@@ -47,12 +49,12 @@ serve the native UI; they are not evidence of a browser frontend.
 | `http`, `httparse` | Complementary typed policy and bounded wire parsing; no general web framework needed. |
 | `subtle` | Constant-time bearer comparison; preserve disabled release debug assertions. |
 | `sha2`, `zip` | Artifact verification and minimal deflate extraction at ZIP 9.5.1; custom extraction policy remains necessary. |
-| `socket2`, `windows-sys` | Pre-bind options/backlog/exclusive sockets and selected process/credential/audio/accessibility APIs. |
+| `windows-sys` | Selected process/credential/audio/accessibility APIs. Broker pre-bind options use Tokio's `TcpSocket` and the native exclusive-address helper; `socket2` is transitive through Tokio. |
 | `windows`, `windows-future` | Compatible WinRT microphone permission/capture; distinct from windows-sys. Retain future 0.3.2 with windows 0.62.2; 0.100 is incompatible. |
 | `eframe`, `wgpu` | Native UI, accessibility, clipboard, fallback/system fonts and all three explicit Windows backends. |
 | `egui_kittest`, `egui_system_font_provider` | Test harness/font checks; capture-only splitting offers little while production needs graphics. |
 | `toml` | CI-only manifest parsing with parse/serde/std features. |
-| `ureq` | Synchronous HTTPS for native provisioning, updates and CI. Reuse the workspace pin with defaults, automatic compression and cookies disabled; Windows selects Schannel through native-tls, portable checks select Rustls. No new async runtime is required. |
+| `ureq` | Synchronous HTTPS for native provisioning, updates and CI. Reuse the workspace pin with defaults, automatic compression and cookies disabled; Windows selects Schannel and system trust through native-tls-no-default and PlatformVerifier, portable checks select Rustls. No new async runtime is required. |
 | `transcribe-cpp` | Static CPU ASR, defaults disabled; reviewed CMake script downloads no source and explicitly enables MSVC optimization. |
 | `simd-json` | Exact optional qualification-only crates.io pin; ordinary requests still use serde_json. |
 | `fearless_simd` | Pinned safe SIMD (`=1.2.0` in Runner speech and the active external runtime, with independent locks). ASR uses it in `validate_pcm`; TTS uses it in the serving Rust `engine`/`codec` modules. Prism's `bonsai-neon-dot` kernels are a separate runtime dependency. |
@@ -83,8 +85,8 @@ URLs, including redirected targets, before transport creation. The guard uses
 ureq's pinned unversioned connector API and needs review when that pin changes.
 Artifact transfers use fixed-buffer streaming and
 validated range responses; updates retain independent compressed/expanded body
-limits and conditional-cache/backoff policy. Cancellation shuts down registered
-sockets and joins the scoped HTTP worker; bounded DNS and TCP connection phases
+limits and conditional-cache/backoff policy. Cancellation invokes `Agent::shutdown()`
+and joins the scoped HTTP worker; bounded DNS and TCP connection phases
 remain independently necessary. Removing curl removes an installed
 executable requirement, but no binary-size, latency or throughput improvement is
 claimed without a matching measurement. [PLAN.md](../PLAN.md) owns live-network
