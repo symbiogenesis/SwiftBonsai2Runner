@@ -143,6 +143,14 @@ docs and the qualification executable link passed. This supplies the Rust half
 of a comparison: callers still bind exact source/model/PCM and independent
 expected observations. It neither captures the native engine nor qualifies S2.
 
+Rust prompt construction retains the admitted model's authoritative audio token
+IDs, including duplicate vocabulary spellings. Prefill projects the tied vocabulary
+head only for the final prompt position, matching the native selection; earlier
+positions retain their block, final-normalization, cancellation and transactional
+cache checks. Literal prompt, unused-head overflow/final-failure, complete cache,
+observer and miniature EOS/replay controls passed with strict Rust-only Release
+analysis. These corrections supply no measured model latency or S2 verdict.
+
 The [ASR replay comparator](../src/speech-asr/README.md#streaming-independent-replay)
 now binds reviewed reference/candidate source/compiler/target/executable,
 arithmetic, verified model, actual PCM digest and explicit tolerances. It reads
@@ -171,12 +179,23 @@ and terminal EOF are checked inside synthesis cleanup ownership; only successful
 engine return grants success. Literal miniature controls and independent review
 cover the comparator, without supplying original native observations.
 
-Six `speaker_reference_` mathematical controls additionally exercise production
+Eight `speaker_reference_` mathematical controls additionally exercise production
 Slaney linear/logarithmic anchors, eight-point Hann/DFT and channel-major mel,
 signed TDNN/reflection/dilation, SE gates, Res2Net carry/residual and channel-specific
-attentive moments. Expected values use closed forms and literal answers rather
-than candidate helper outputs. These establish primitive behavior, not complete
-pinned-weight x-vectors, native parity, voice identity or listening acceptance.
+attentive moments, plus a complete miniature waveform-to-vector graph with
+closed-form embedding answers. The speaker frontend now preserves pinned
+`audio-mel.h`'s double-precision angles, narrowing before Hann subtraction and
+multiply/divide/add mel interpolation. The candidate arithmetic identity is v2;
+replay rejects v1 candidate identities without reinterpreting old observations.
+These controls establish synthetic graph behavior, not complete pinned-weight
+x-vectors, native parity, voice identity or listening acceptance.
+
+Codec transformer appends are provisional until all layers, final normalization
+and output projection succeed with finite output. Sliding-window eviction occurs
+only at commit; errors and unwinds restore the original cache bits, extents, layer
+count and position without copying complete caches. Four focused transaction
+controls and the existing worker/state control passed with strict Release analysis.
+Whole-codec/PCM, pinned-model cancellation and recovery remain independent gates.
 
 The [native Q8 projection adapter](../tools/hexagon/native_rpc/README.md#q8-matrix-preparation-and-immutable-placement)
 connects immutable host dispatch to signed-queue ABI calls, exact FD mapping,
@@ -189,6 +208,15 @@ catalog/driver/VTCM/loaded-DSP tuple. Contained HTP0 execution and TTS integrati
 remain pending. TTS's [signed-dispatch prerequisites](../src/speech-tts/README.md#optional-hexagon-runtime)
 still require independent wire/Windows ABI controls; neither these simulations
 nor fixed F32/guarded-Q2 controls qualify Q8 arithmetic, shared KV or speech state.
+
+The separate `Q8ExactOracle` reviews original row-major signed dots for a strict
+diagnostic subset: integral activations with magnitude-127 anchors, dyadic weight
+scales and exactly representable ordered accumulation prefixes. Unsupported
+quantization rejects before submission. Four literal controls passed; they are
+mathematical answers rather than DSP observations. Hosted native receipts now
+bind every Q8 dispatch, native, projection and oracle source/test input; omitted
+or changed identities reject. Signed execution, general speech activations and
+device source/package/driver admission remain pending.
 
 Final acceptance requires source/generated-source and dependency inventories,
 binary-linkage assessment, clean hosted consumer builds without a project C++
