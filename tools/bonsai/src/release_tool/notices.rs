@@ -342,6 +342,16 @@ pub(super) fn sources(value: &Value) -> Result<Value> {
 mod tests {
     use super::*;
     #[test]
+    fn release_notice_admits_ordinary_source_files_inside_the_checkout() -> Result<()> {
+        let root = Path::new(env!("CARGO_MANIFEST_DIR"))
+            .parent()
+            .and_then(Path::parent)
+            .ok_or("Missing source root.")?;
+        let license = bytes(&root.join("src/speech-tts/LICENSE.ggml"), 4 * 1024 * 1024)?;
+        assert!(!license.is_empty());
+        Ok(())
+    }
+    #[test]
     fn release_notice_base64_and_tree_reject_changed_size_redirects_and_padding() -> Result<()> {
         assert_eq!(base64("Y W J j\n")?, b"abc");
         for bad in ["YQ=Z", "YQ==YQ==", "YR==", "YQ="] {

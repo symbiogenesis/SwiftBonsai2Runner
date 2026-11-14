@@ -52,7 +52,7 @@ fn resolve(path: &Path, directory: bool, missing: bool) -> Result<PathBuf> {
 
 fn bytes(path: &Path, maximum: u64) -> Result<Vec<u8>> {
     resolve(path, false, false)?;
-    let file = bonsai_artifacts::open_locked_file(path).map_err(|error| error.to_string())?;
+    let file = crate::build_tools::input_file(path)?;
     crate::bounded_input::read(file, maximum)
         .map_err(|error| error.into_message("Release input exceeds byte bound."))
 }

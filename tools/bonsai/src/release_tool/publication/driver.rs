@@ -320,7 +320,7 @@ pub(super) fn publish(value: &Value) -> Result<Value> {
         "SHA256SUMS.txt".into(),
     ] {
         let file = directory.join(&name);
-        guards.push(bonsai_artifacts::open_locked_file(&file).map_err(|e| e.to_string())?);
+        guards.push(crate::build_tools::input_file(&file)?);
         identities.insert(name,json!({"Path":file,"Bytes":fs::metadata(&file).map_err(|e| e.to_string())?.len(),"Sha256":crate::startup_cache::digest_file(&file)?}));
     }
     assets::validate(value)?;
