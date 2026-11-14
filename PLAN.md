@@ -346,24 +346,69 @@ under [AGENTS.md](AGENTS.md).
 - [ ] After Q4 acceptance and compatible runtime/Hadamard artifacts, evaluate
   ternary Talker separately; do not infer compatibility from repacked Q8/Q4 or
   extend it to codec/head/predictor without independent work.
-- [ ] Complete [weight-space fault assessment](docs/weight-space-programming.md)
-  and controls first. Use the offline direction/LP fitter and explicit native
-  FFN research path only after selecting a reproducible fault; qualify the
-  original activation basis, additive composition, constant-steering control,
-  held-out complete-answer quality, rollback and resources before serving.
-  The [initial CPU factual smoke](docs/evidence/weight-patch-sanity.md) passed
-  four facts with and without the adapter but found no speed win from omission;
-  it does not qualify a pruned/edited adapter or change the selected profile.
-- [ ] Qualify direct [LoRA weight editing](docs/weight-space-programming.md#editing-the-existing-adapter-weights):
-  preserve the packed base and adapter inventory, bind edited A-factor weights
-  and sparse arithmetic, assess representative held-out answers and intended
-  adapter behavior, and measure matched useful-answer latency and process memory.
-  Coefficient fidelity and basic factual passes do not establish accuracy gains.
-  The [half-retained candidate](docs/evidence/lora-weight-edit.md) edits existing
-  A weights, saves 1.4375 MiB of native factor payload and passes four facts in
-  both arms; AC disconnected during the original arm, invalidating speed comparison.
-  Separate original Swift LoRA factors are unavailable in the selected artifact
-  repository; current research can edit the F32 Abliteration adapter only.
+
+### Direct LoRA weight editing
+
+Follow the [evaluation contract](docs/weight-space-programming.md#direct-edit-evaluation-contract).
+W1-W3 establish the next decision on the frozen candidate; W4 is conditional
+on that evidence, W5 qualifies selected candidates and W6 gates application use.
+W7 is an independent source prerequisite and does not block Abliteration work.
+
+- [ ] **W1 — Freeze the accuracy, speed and memory decision contract.** Define
+  representative calibration/development/held-out answer groups covering facts,
+  reasoning, instructions, creative output and intended adapter behavior, with
+  independent review. Predeclare quality nonregression margins, useful-answer
+  latency and actual-process memory targets, allowed tradeoffs and stop criteria.
+  Keep the four familiar facts as smoke checks, outside tuning and held-out scores.
+- [ ] **W2 — Prepare a native evaluator that separates weight and kernel effects.**
+  Add explicit research loading/helper support for the same edited GGUF with
+  dense execution, then compare original-dense, edited-dense and edited-sparse
+  at identical scale/settings. Bind exact build/artifact/derivation identities,
+  final factors and execution profile. Reuse native completion supervision;
+  enforce aggregate budgets, arm order/cache policy, power eligibility, scoring
+  and minimal replay evidence in Rust before selecting device work.
+- [ ] **W3 — Characterize the frozen half-retained candidate using W1/W2.**
+  Establish independent per-site correction/logit tolerances for the same edited
+  weights under dense/sparse execution, and complete-state reset, rollback,
+  cancellation, zero/nonzero scale and checkpoint isolation for the edited profile.
+  Assess complete answers and
+  attribute factor capacity, steady/peak process memory and adapter work before
+  selecting further optimization. Keep P1/writer-basis and other backend gates
+  open; historical pilot clocks stay closed and authorize no repeat.
+- [ ] **W4 — If W3 identifies useful headroom, implement direct A-factor refitting.**
+  Capture bounded original-basis FFN activations with source/profile provenance
+  and disjoint fitting groups; do not transfer scalar/unfused probe verdicts to
+  production NEON. Optimize final A-factor support and activation-weighted
+  correction error under measured storage/work limits; fold aligned LP edits
+  into existing A with exact direction/alpha/scale handling. Constrain final
+  factor sparsity, not just delta sparsity, and certify exported F32 factors.
+  Gate SSM refitting on P1/native writer-basis evidence; keep B, embeddings,
+  target inventory and packed base fixed unless separately scoped.
+- [ ] **W5 — Qualify frozen candidates on untouched held-out tasks.** After W1/W2
+  and applicable W3/W4 checks, use owner-operated CI for the full quality and
+  repeated/counterbalanced performance matrix. Admit only independently useful,
+  predeclared bounded device work; retain per-arm/aggregate power, losing/no-go
+  results and cleanup. Reject speed comparisons with changed/unknown power;
+  separate factor payload, actual RAM and unchanged dense GGUF size. Claim
+  accuracy gains only from independent held-out evidence; retain Pareto tradeoffs
+  and stop candidates that miss quality or material system-benefit criteria.
+- [ ] **W6 — Integrate only an accepted candidate through a reviewed opt-in.**
+  After W3/W5 and standard-profile gates, publish a source-bound Prism release
+  through the owner workflow, then add explicit Runner artifact/profile handling.
+  Bind derivation and sparse arithmetic, invalidate state/prefixes on changes,
+  retain approved-adapter rollback and qualify selected CPU/backend, broker,
+  packaging and application paths. Gate extra kernels, factor precision or disk
+  formats on measured benefit; research success alone changes no default.
+- [ ] **W7 — Obtain original Swift factors before planning Swift-specific edits.**
+  Authenticate floating-point factors, base revision, target/basis mapping,
+  merge/quantization recipe and license if they become available. Do not recover
+  or substitute them by differencing quantized checkpoints or selecting a
+  different model's adapter. Define a separate merge/requantization and complete
+  acceptance pipeline before any packed-base change.
+- [ ] For a separate behavioral correction, complete [fault assessment](docs/weight-space-programming.md#practical-investigation-order)
+  and ordinary controls before selecting a direction/LP fit. Compare constant
+  steering at the same site, preserve the original activation basis and qualify
+  held-out complete answers, composition, state and resources before serving.
 
 ### Memory and profiles
 

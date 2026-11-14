@@ -25,11 +25,14 @@ answer or repeated token alone does not diagnose a correctable defect.
 
 ## Practical investigation order
 
-Use existing complete reasoning/answer captures and independent human review,
-with exact model/runtime/template, sampler, adapter, effective Thinking and
-termination identities. Diagnose a reproducible concentrated failure before
+For a behavioral correction, use existing complete reasoning/answer captures
+and independent human review, with exact model/runtime/template, sampler,
+adapter, effective Thinking and termination identities. Diagnose a reproducible
+concentrated failure before
 capturing activations or fitting a correction. Keep tuning data separate from
-held-out evaluation and freeze candidates before scoring.
+held-out evaluation and freeze candidates before scoring. Compression/refitting
+instead follows the direct-edit contract below; it need not invent a reasoning
+defect to justify a fidelity and resource objective.
 
 If justified, a disabled-by-default constant correction `x_next = x + beta*d`
 is a simple baseline at a named residual site. A width-5,120 F32 direction costs
@@ -63,7 +66,9 @@ existing correction `s * B * (A^T h)`, changing `A` to `A + v` folds a correctio
 along the same `B` direction into that adapter at its existing rank. An unrelated
 output direction generally needs another rank. The LP described above can
 therefore edit an existing A factor when its direction matches B; an additional
-LoRA is not required for that case.
+LoRA is not required for that case. The existing `weight-patch` command still
+exports a standalone correction; direct A-factor refitting/export is separate
+work tracked in PLAN.md, not an implemented mode of that command.
 
 Swift's published correction is already merged into the selected ternary model.
 Its [pinned artifact repository](https://huggingface.co/ukisai/Swift-Bonsai-2-GGUF/tree/a3bdac086bbb6b04d87d0108d18943b5f63868f7)
@@ -106,6 +111,71 @@ The [first direct-weight candidate](evidence/lora-weight-edit.md) retained half
 of the linear A coefficients and saved 1.4375 MiB of native factor payload.
 Both arms passed four facts, but a power-source change during the original arm
 invalidated the speed comparison. It remains an uninstalled research artifact.
+
+## Direct-edit evaluation contract
+
+[PLAN.md W1-W7](../PLAN.md#direct-lora-weight-editing) owns the ordered outstanding
+work. The next decision concerns the frozen half-retained candidate. More
+aggressive pruning, refitting, precision changes and kernel work require a
+measured reason; a small factor payload saving alone need not justify their cost.
+
+Quality and intended adapter behavior have predeclared nonregression margins.
+Speed, memory and accuracy are reported separately, with material-benefit targets
+and accepted tradeoffs fixed before evaluation. A scalar score must not hide a
+quality regression. Improved accuracy requires independent held-out improvement;
+coefficient fidelity, shorter text and four factual passes cannot establish it.
+Calibration, development and held-out splits keep answer/content groups disjoint.
+Freeze candidate bytes, settings, rubric and acceptance criteria before opening
+the held-out split; tuning after inspection needs a new untouched evaluation set.
+
+The following controls separate pruning from sparse execution. Dense execution
+of an edited candidate requires additional explicit research loader/helper
+support; the current edited session loader always selects sparse execution.
+
+| Control | Adapter weights | A reduction |
+| --- | --- | --- |
+| Original dense | Exact approved adapter | Existing dense profile |
+| Edited dense | Frozen candidate bytes | Same dense profile |
+| Edited sparse | The same frozen candidate bytes | Named sparse profile |
+
+Use identical base, adapter scale, alpha, tokenizer/template, sampler, cache,
+context, workers and prompts. Compare original/edited dense for weight effects,
+and edited dense/sparse for execution effects. Distinct graph identities and
+predeclared independent numerical tolerances are required; sparse F64 and dense
+NEON reductions are not assumed bit-identical. These numerical comparisons use
+the same edited weights; original versus edited answers measure the intended
+weight change, not numerical parity. Verify final correction vectors,
+logits and complete transactional state on the selected actual-model paths.
+New profiles cannot inherit another profile's checkpoint or backend acceptance.
+
+Refitting preserves `s * B * (A^T h)` on representative activations unless an
+independently diagnosed behavior supplies a different target. Fixed-support
+least-squares or aligned directional LP edits are candidate methods, not measured
+results. The standalone patch's unit direction, sign and scale must be converted
+explicitly before folding into A; alignment of directions alone does not make its
+exported coefficients directly interchangeable. Charge support/indices and bound
+the sparsity of final A, since a sparse delta can leave `A + delta` dense.
+Recheck support, finite values and the objective after exporting F32 weights.
+FFN probe captures identify their scalar/unfused basis and cannot qualify native
+NEON execution. SSM refitting also requires the existing P1/native writer mapping.
+
+The evaluator reuses native process supervision and owns typed admission,
+derivation/source validation, original aggregate deadlines, comparison eligibility
+and scoring in Rust. Plan fixed arm order or counterbalancing and cache handling
+before execution. Record complete useful answers, termination/token accounting,
+load/prefill/decode/request timings, factor allocation capacity, steady and peak
+process memory, cleanup and per-arm/aggregate power. Factor storage, actual RAM
+and download size are distinct claims. Unknown or changed power rejects a speed
+comparison; equal endpoint observations do not establish uninterrupted stability.
+
+Full matrices and repeated benchmarks remain owner-operated CI work. A laptop
+capture must be independently useful and fit its single predeclared allowance;
+prebuild source-bound native helpers, include setup/retention/cleanup and stop on
+no-go. Closed trials cannot be resumed, retried or split into successive budgets.
+Retain exact selected candidate bytes, minimal derivation/build identities and
+required replay inputs under the existing evidence-retention/archive machinery.
+No new archiver or duplicate source/build bundles are needed. Release and native
+application acceptance follow the existing promotion and owner-push workflow.
 
 ## Existing implementation and delivery limits
 
@@ -192,27 +262,26 @@ or incomplete output cannot supply benefit.
 
 ## Laptop and future-model scope
 
-### Performance and memory pilot
+### Closed pilots and future measurement scope
 
 Adding an independent patch adds factor storage and arithmetic. The LP above
 fits a behavioral correction; it does not directly minimize runtime or memory.
-For an initial adapter-cost screen, Prism's source-only `swift_sanity_check`
-example runs one fixed arm: original PQ2, four CPU workers, K4/V4 cache, 256-token
-context, seed 42, Thinking off and no prompt reuse. The four answer-only questions
-cover France's capital, `2+2`, water's formula and the largest Solar System planet,
+The [initial adapter-cost screen](evidence/weight-patch-sanity.md) used Prism's
+source-only `swift_sanity_check` example: original PQ2, four CPU workers, K4/V4
+cache, 256-token context, seed 42, Thinking off and no prompt reuse. The four
+answer-only questions cover France's capital, `2+2`, water's formula and the largest Solar System planet,
 each capped at eight output tokens. A model stop and exact normalized answer are
 required for a factual pass; truncated output cannot pass.
 
-Compare the approved adapter at scale 1.3 with no adapter using the same source
-and fixed inputs. The absent-adapter arm measures an ablation ceiling for
-simplification, not a recommended replacement or an edited adapter. Retain actual
-answers, termination, token counts, request/load timing and externally supervised
-process memory/cleanup with per-arm and aggregate power observations. Tiny output
-counts and a single ordered pair do not establish stable throughput, broad
-quality or daily-use memory. Basic factual passes cannot qualify creative,
-refusal or instruction-following behavior. Existing lossless adapter storage
-reductions are separate, already implemented local-source work, and must not be
-credited again as a result of this experiment.
+It compared the approved adapter at scale 1.3 with no adapter. That absent-adapter
+arm bounded simplification cost; it did not evaluate edited weights. The later
+[direct-weight pilot](evidence/lora-weight-edit.md) evaluated the half-retained
+candidate but lost speed eligibility after a power-source change. Both workloads
+are closed. The direct-edit evaluation contract governs prospective work, rather
+than another omission trial or repetition of these pilots. Their tiny output
+counts and single ordered pairs establish neither stable throughput nor broad
+quality/daily-use memory. Existing lossless allocation work is separate and must
+not be credited again as a weight-edit result.
 
 Keep Swift packed: approximately 27 billion FP16 weights alone need about 54 GB,
 before state, scratch and Windows. Sparse vectors avoid whole-model expansion

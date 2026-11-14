@@ -187,6 +187,11 @@ They require a verified runtime repin and actual-model qualification.
 
 Quantizing factors, reducing rank/scale, pruning sites or merging into the ternary base
 changes the correction or weights; these are outside lossless allocation work.
+Direct edits to existing A coefficients and their sparse execution have a separate
+[evaluation contract](weight-space-programming.md#direct-edit-evaluation-contract)
+and [W1-W7 backlog](../PLAN.md#direct-lora-weight-editing). Their primary control
+is the original approved adapter at the same scale; the no-adapter controls below
+retain their separate standard-profile purpose.
 
 ## Standard-profile qualification
 
