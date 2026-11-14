@@ -326,6 +326,60 @@ fn conversation_history_filters_unicode_titles_and_inactive_messages_as_you_type
 }
 
 #[test]
+fn conversation_history_equivalent_folded_queries_reuse_scans_and_keep_raw_changes() {
+    let mut fixture = fixture();
+    let app = &mut fixture.app;
+    app.transcript.replace_response("ΟΣ İ then cedar", None);
+    app.conversation_search.text = "  Σ İ  ".into();
+    assert!(app.conversation_search.update(
+        &mut app.conversations,
+        app.active_conversation,
+        &app.transcript,
+    ));
+    assert_eq!(app.conversation_search.rows, [2]);
+    assert!(app.conversation_search.take_scroll_reset());
+    let scans: Vec<_> = app
+        .conversations
+        .iter()
+        .map(|conversation| conversation.search.scans)
+        .collect();
+
+    for query in ["σ i\u{307}", "\tΣ İ\n"] {
+        query.clone_into(&mut app.conversation_search.text);
+        // Raw changes still synchronize Find and reset the sidebar viewport.
+        assert!(app.conversation_search.update(
+            &mut app.conversations,
+            app.active_conversation,
+            &app.transcript,
+        ));
+        assert_eq!(app.conversation_search.rows, [2]);
+        assert!(app.conversation_search.take_scroll_reset());
+        assert_eq!(
+            app.conversations
+                .iter()
+                .map(|conversation| conversation.search.scans)
+                .collect::<Vec<_>>(),
+            scans
+        );
+    }
+
+    app.conversation_search.text = "cedar".into();
+    assert!(app.conversation_search.update(
+        &mut app.conversations,
+        app.active_conversation,
+        &app.transcript,
+    ));
+    assert_eq!(app.conversation_search.rows, [0, 2]);
+    assert_eq!(
+        app.conversations
+            .iter()
+            .map(|conversation| conversation.search.scans)
+            .collect::<Vec<_>>(),
+        scans.into_iter().map(|count| count + 1).collect::<Vec<_>>()
+    );
+}
+
+#[test]
 fn conversation_history_reuses_matches_and_refreshes_streams_renames_and_replacements() {
     let mut chat = harness([1180.0, 860.0]);
     type_query(&mut chat, "new leaf");

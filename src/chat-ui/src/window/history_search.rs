@@ -55,7 +55,16 @@ impl Search {
         let changed = self.previous != self.text;
         if changed {
             self.text.clone_into(&mut self.previous);
-            self.query = lowercase(self.text.trim()).into();
+            // Case or surrounding whitespace can change Find's displayed query
+            // without changing which conversations match. Keep the shared query
+            // identity so each conversation can reuse its cached body scan.
+            if !self
+                .query
+                .chars()
+                .eq(self.text.trim().chars().flat_map(char::to_lowercase))
+            {
+                self.query = lowercase(self.text.trim()).into();
+            }
             self.reset_scroll = true;
         }
         self.rows.clear();
