@@ -53,7 +53,7 @@ impl Placement {
 // requested placement and effective CPU backend in a genuine reviewed release.
 // Source omission alone does not justify a smaller fixed memory allowance.
 const CPU_PLACEMENT_RELEASE: Option<(&str, &str)> =
-    Some(("0.1.27", "1429a33772089dfd3a50a96c698b9dbe0b36836a"));
+    Some(("0.1.28", "99671be7ab2be01e406a11b0c3d6caede398d96f"));
 
 fn select_placement(release: &ReleasePin, requested: Placement) -> Result<Placement, LaunchError> {
     if requested == Placement::Auto || reviewed_release_matches(release, CPU_PLACEMENT_RELEASE) {
@@ -291,7 +291,7 @@ fn row_workers_supported(
 // This combined review also retains four row workers, K4/V4 and latest reuse;
 // a later repin cannot silently lose those existing serving capabilities.
 const MEMORY_CONTEXT_RELEASE: Option<(&str, &str)> =
-    Some(("0.1.27", "1429a33772089dfd3a50a96c698b9dbe0b36836a"));
+    Some(("0.1.28", "99671be7ab2be01e406a11b0c3d6caede398d96f"));
 
 // K4/V3 changes precision and needs its own reviewed capacity/quality release.
 // Both gates must identify the same genuine released source before this profile
@@ -304,7 +304,7 @@ const K4V3_CONTEXT_RELEASE: Option<(&str, &str)> = None;
 // 4 GiB. Precision and process charges remain unchanged; this gate cannot
 // authorize an unrelated memory release.
 const K4V4_FULL_CONTEXT_RELEASE: Option<(&str, &str)> =
-    Some(("0.1.27", "1429a33772089dfd3a50a96c698b9dbe0b36836a"));
+    Some(("0.1.28", "99671be7ab2be01e406a11b0c3d6caede398d96f"));
 
 fn full_context_release_matches(release: &ReleasePin, reviewed: Option<(&str, &str)>) -> bool {
     reviewed.is_some()
@@ -405,6 +405,9 @@ mod tests {
             ("0.1.26", TURBOQUANT_REVISION),
             ("0.1.26", "0000000000000000000000000000000000000000"),
             ("0.1.27", "0000000000000000000000000000000000000000"),
+            ("0.1.28", "0000000000000000000000000000000000000000"),
+            ("0.1.27", "99671be7ab2be01e406a11b0c3d6caede398d96f"),
+            ("0.1.28", "1429a33772089dfd3a50a96c698b9dbe0b36836a"),
         ] {
             pin.version = version.into();
             pin.commit = commit.into();
@@ -474,11 +477,11 @@ mod tests {
         assert_eq!(K4V4_FULL_CONTEXT_RELEASE, MEMORY_CONTEXT_RELEASE);
         assert!(!full_context_release_matches(&pin, None));
         assert!(full_context_release_matches(&pin, MEMORY_CONTEXT_RELEASE));
-        for version in ["0.1.26", "0.1.28"] {
+        for version in ["0.1.27", "0.1.29"] {
             pin.version = version.into();
             assert!(!full_context_release_matches(&pin, MEMORY_CONTEXT_RELEASE));
         }
-        pin.version = "0.1.27".into();
+        pin.version = "0.1.28".into();
         pin.commit = "0".repeat(40);
         assert!(!full_context_release_matches(&pin, MEMORY_CONTEXT_RELEASE));
         let other_source = (pin.version.as_str(), pin.commit.as_str());
@@ -653,13 +656,14 @@ mod tests {
                 );
             }
         }
-        pin.version = "0.1.27".into();
+        pin.version = "0.1.28".into();
         assert!(row_workers_supported(&pin, 4, MEMORY_CONTEXT_RELEASE).is_ok());
         pin.commit = "0".repeat(40);
         for version in [
             "0.1.8",
             "0.1.26",
             "0.1.27",
+            "0.1.28",
             "0.1.22-dev",
             "v0.1.22",
             "0.1.22.0",

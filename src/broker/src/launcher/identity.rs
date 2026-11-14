@@ -9,6 +9,7 @@ pub(super) struct WorkerReadiness {
     expected: u8,
     context_tokens: usize,
     legacy_missing_allowed: bool,
+    projection_startup_required: bool,
     latest_prompt_reuse: bool,
     kv_cache: Option<crate::inference::KvCache>,
     placement: crate::inference::Placement,
@@ -22,6 +23,9 @@ impl WorkerReadiness {
             // Only these reviewed historical releases omit this identity. A
             // later pin must report its graph's effective worker budget.
             legacy_missing_allowed: matches!(version, "0.1.8" | "0.1.9" | "0.1.10"),
+            // This reviewed release waits for model-thread initialization and
+            // always publishes its completed placement/residency observation.
+            projection_startup_required: version == "0.1.28",
             latest_prompt_reuse: false,
             kv_cache: None,
             placement: crate::inference::Placement::Auto,
@@ -160,10 +164,9 @@ fn startup_projection_matches(
     repacked: bool,
 ) -> bool {
     let Some(startup) = &model.startup_projection else {
-        // The published 0.1.27 protocol predates this optional observation.
-        // Requiring it belongs to the exact-source release repin, not a local
-        // source change that would refuse the currently pinned executable.
-        return true;
+        // Historical releases, including 0.1.27, predate this observation.
+        // The reviewed 0.1.28 tuple must identify completed initialization.
+        return !workers.projection_startup_required;
     };
     let requested = if workers.placement == crate::inference::Placement::Cpu {
         "cpu"
@@ -354,9 +357,10 @@ mod tests {
     -> Result<(), serde_json::Error> {
         use crate::inference::{KvCache, Placement};
         let (mut model, _) = kv_cache_model(false, true);
-        let auto = WorkerReadiness::for_version("0.1.27", 4).with_kv_cache(Some(KvCache::Rsq4));
-        // The currently published pin omits the optional startup observation.
-        assert!(validate_native_identity(&model_response(&model)?, false, true, auto).is_ok());
+        let legacy = WorkerReadiness::for_version("0.1.27", 4).with_kv_cache(Some(KvCache::Rsq4));
+        assert!(validate_native_identity(&model_response(&model)?, false, true, legacy).is_ok());
+        let auto = WorkerReadiness::for_version("0.1.28", 4).with_kv_cache(Some(KvCache::Rsq4));
+        assert!(validate_native_identity(&model_response(&model)?, false, true, auto).is_err());
         for effective in ["cpu", "hexagon-native-q2"] {
             model["startup_projection"] = projection_startup(effective);
             assert!(validate_native_identity(&model_response(&model)?, false, true, auto).is_ok());
@@ -371,6 +375,8 @@ mod tests {
         let (mut ptq1, _) = kv_cache_model(true, true);
         ptq1["startup_projection"] = projection_startup("hexagon-native-q2");
         assert!(validate_native_identity(&model_response(&ptq1)?, true, true, auto).is_err());
+        ptq1["startup_projection"] = projection_startup("cpu");
+        assert!(validate_native_identity(&model_response(&ptq1)?, true, true, auto).is_ok());
         Ok(())
     }
 
@@ -380,7 +386,7 @@ mod tests {
         use crate::inference::KvCache;
         use serde_json::json;
         let (model, _) = kv_cache_model(false, false);
-        let auto = WorkerReadiness::for_version("0.1.27", 4).with_kv_cache(Some(KvCache::Rsq4));
+        let auto = WorkerReadiness::for_version("0.1.28", 4).with_kv_cache(Some(KvCache::Rsq4));
         for (field, value) in [
             ("schema_version", json!(2)),
             ("schema_version", json!(true)),
@@ -456,7 +462,7 @@ mod tests {
         use crate::inference::KvCache;
         use serde_json::json;
         let (mut model, _) = kv_cache_model(false, false);
-        let auto = WorkerReadiness::for_version("0.1.27", 4).with_kv_cache(Some(KvCache::Rsq4));
+        let auto = WorkerReadiness::for_version("0.1.28", 4).with_kv_cache(Some(KvCache::Rsq4));
         model["startup_projection"] = projection_startup("external");
         for identity in ["", " ", "bad\nidentity", &"x".repeat(257)] {
             model["startup_projection"]["identity"] = json!(identity);
