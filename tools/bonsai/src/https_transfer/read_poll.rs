@@ -12,8 +12,8 @@ use std::{
 use ureq::{
     Error,
     unversioned::transport::{
-        Buffers, ConnectionDetails, Connector, NextTimeout, ShutdownHandle, Transport,
-        time::Duration as TransportDuration,
+        Buffers, ConnectionDetails, Connector, Either, NextTimeout, ShutdownHandle, TcpConnector,
+        Transport, time::Duration as TransportDuration,
     },
 };
 
@@ -32,14 +32,20 @@ impl ShutdownHandle for ReadShutdown {
 pub(super) struct ReadPollConnector;
 
 impl<In: Transport> Connector<In> for ReadPollConnector {
-    type Out = ReadPollTransport<In>;
+    type Out = Either<In, ReadPollTransport<<TcpConnector as Connector>::Out>>;
 
     fn connect(
         &self,
         details: &ConnectionDetails<'_>,
         chained: Option<In>,
     ) -> Result<Option<Self::Out>, Error> {
-        let Some(inner) = chained else {
+        if let Some(inner) = chained {
+            // CONNECT recursively creates its own protected raw connection.
+            // Its tunnel may already contain TLS to an HTTPS proxy: another
+            // polling layer here would expose short timeouts to that TLS.
+            return Ok(Some(Either::A(inner)));
+        }
+        let Some(inner) = TcpConnector::default().connect(details, None::<()>)? else {
             return Ok(None);
         };
         let shutdown = Arc::new(ReadShutdown::default());
@@ -48,7 +54,7 @@ impl<In: Transport> Connector<In> for ReadPollConnector {
         let handle = Arc::downgrade(&shutdown);
         let handle: std::sync::Weak<dyn ShutdownHandle> = handle;
         (details.register_shutdown)(handle)?;
-        Ok(Some(ReadPollTransport { inner, shutdown }))
+        Ok(Some(Either::B(ReadPollTransport { inner, shutdown })))
     }
 }
 
@@ -135,7 +141,13 @@ impl<In: Transport> Transport for ReadPollTransport<In> {
 mod tests {
     use std::sync::atomic::AtomicU64;
 
-    use ureq::{Timeout, unversioned::transport::LazyBuffers};
+    use ureq::{
+        Agent, Timeout,
+        unversioned::{
+            resolver::{DefaultResolver, Resolver as _},
+            transport::{LazyBuffers, time::Instant as TransportInstant},
+        },
+    };
 
     use super::*;
 
@@ -144,6 +156,7 @@ mod tests {
         buffers: LazyBuffers,
         elapsed: Arc<AtomicU64>,
         slices: Vec<Duration>,
+        last_timeout: Option<NextTimeout>,
         stop: Option<Arc<ReadShutdown>>,
     }
 
@@ -153,6 +166,7 @@ mod tests {
                 buffers: LazyBuffers::new(8, 8),
                 elapsed: Arc::new(AtomicU64::new(0)),
                 slices: Vec::new(),
+                last_timeout: None,
                 stop: None,
             }
         }
@@ -168,6 +182,7 @@ mod tests {
         }
 
         fn await_input(&mut self, timeout: NextTimeout) -> Result<bool, Error> {
+            self.last_timeout = Some(timeout);
             let TransportDuration::Exact(slice) = timeout.after else {
                 return Err(io::Error::other("Read slice must be finite.").into());
             };
@@ -229,5 +244,45 @@ mod tests {
             assert_eq!(inner.slices, [50, 50, 20].map(Duration::from_millis));
             assert_eq!(clock.load(Ordering::Acquire), 120);
         }
+    }
+
+    #[test]
+    fn read_poll_preserves_existing_proxy_tunnel_without_another_read_slice() -> crate::Result<()> {
+        let resolver = DefaultResolver::default();
+        let config = Agent::config_builder().proxy(None).build();
+        let uri = ureq::http::Uri::from_static("https://upstream.invalid/");
+        let timeout = NextTimeout {
+            after: Duration::from_secs(7).into(),
+            per_read: Some(Duration::from_secs(3).into()),
+            ..NextTimeout::default()
+        };
+        let details = ConnectionDetails {
+            uri: &uri,
+            addrs: resolver.empty(),
+            config: &config,
+            request_level: false,
+            resolver: &resolver,
+            now: TransportInstant::now(),
+            timeout,
+            current_time: Arc::new(TransportInstant::now),
+            run_connector: Arc::new(|_| Err(Error::ConnectionFailed)),
+            // The recursive raw transport already owns its shutdown flag.
+            register_shutdown: Arc::new(|_| Err(Error::ConnectionFailed)),
+        };
+        // This models an existing tunnel whose is_tls() is false for the
+        // endpoint, even though its underlying HTTPS-proxy connection is TLS.
+        let Some(Either::A(mut tunnel)) = ReadPollConnector
+            .connect(&details, Some(StalledTransport::new()))
+            .map_err(|error| error.to_string())?
+        else {
+            return Err("Existing proxy tunnel was replaced or wrapped.".into());
+        };
+        assert!(matches!(
+            tunnel.await_input(timeout),
+            Err(Error::Timeout(Timeout::Global))
+        ));
+        assert_eq!(tunnel.last_timeout, Some(timeout));
+        assert_eq!(tunnel.slices, [Duration::from_secs(7)]);
+        Ok(())
     }
 }

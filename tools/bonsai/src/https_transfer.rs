@@ -24,7 +24,7 @@ use ureq::{
     http::{self, Uri},
     unversioned::{
         resolver::DefaultResolver,
-        transport::{ConnectProxyConnector, ConnectionDetails, Connector, TcpConnector},
+        transport::{ConnectProxyConnector, ConnectionDetails, Connector},
     },
 };
 
@@ -124,7 +124,6 @@ fn new_agent(loopback: bool) -> Agent {
     // timeouts, and CONNECT's recursive chain must retain the same protection.
     let connector = guard
         .chain(ConnectProxyConnector::default())
-        .chain(TcpConnector::default())
         .chain(read_poll::ReadPollConnector);
     #[cfg(windows)]
     let connector = connector.chain(ureq::unversioned::transport::NativeTlsConnector::default());
