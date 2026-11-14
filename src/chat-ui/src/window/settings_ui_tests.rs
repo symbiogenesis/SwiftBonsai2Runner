@@ -195,6 +195,43 @@ fn thinking_popup_keyboard_dismissal_keeps_the_draft_and_active_response() {
 }
 
 #[test]
+fn thinking_popup_owns_new_chat_shortcut() {
+    for generating in [false, true] {
+        let mut chat = harness([620.0, 640.0], false);
+        let original = chat.state().app.active_conversation;
+        if generating {
+            chat.state_mut().app.model = ModelLifecycle::Generating;
+            chat.state_mut().app.request_conversation = Some(original);
+        }
+        open_thinking(&mut chat);
+        chat.key_press_modifiers(egui::Modifiers::CTRL, egui::Key::N);
+        chat.run();
+        assert!(chat.query_by_label("Thinking options").is_some());
+        assert_eq!(chat.state().app.active_conversation, original);
+        assert_eq!(chat.state().app.conversations.len(), 1);
+        assert_eq!(chat.state().app.input, "Keep my next draft \u{1f331}");
+        assert_eq!(chat.state().app.model.busy(), generating);
+        assert!(chat.state().commands.try_recv().is_err());
+
+        chat.key_press(egui::Key::Escape);
+        chat.run();
+        chat.key_press_modifiers(egui::Modifiers::CTRL, egui::Key::N);
+        chat.run();
+        assert_ne!(chat.state().app.active_conversation, original);
+        assert_eq!(chat.state().app.conversations.len(), 2);
+        assert!(chat.state().app.input.is_empty());
+        chat.state_mut().app.switch_conversation(original);
+        assert_eq!(chat.state().app.input, "Keep my next draft \u{1f331}");
+        assert!(
+            chat.state()
+                .commands
+                .try_iter()
+                .all(|command| { matches!(command, Command::NewChat | Command::RestoreChat(_)) })
+        );
+    }
+}
+
+#[test]
 fn thinking_and_context_popups_replace_each_other() {
     let mut chat = harness([620.0, 640.0], false);
     chat.get_by_role_and_label(egui::Role::Button, "Context")

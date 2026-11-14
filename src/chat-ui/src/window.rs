@@ -802,6 +802,7 @@ impl State {
             && !self.show_settings
             && !self.show_audio_transcript
             && self.alerts.details.is_none()
+            && !egui::Popup::is_any_open(ctx)
             && ctx.input_mut(|input| input.consume_key(egui::Modifiers::CTRL, egui::Key::N))
         {
             self.new_chat();
