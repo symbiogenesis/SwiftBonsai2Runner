@@ -473,11 +473,18 @@ impl Transcript {
                 .target
                 .as_ref()
                 .filter(|found| found.message == message.id);
-            if row.ready && (ui.is_rect_visible(rect) || target.is_some()) {
+            // egui clears native label selection when its widget disappears.
+            // Keep a source-current galley visible during deferred geometry-only
+            // reflow; exact Find scrolling still waits for current geometry.
+            let retained = message
+                .cache
+                .as_ref()
+                .is_some_and(|cache| cache.body_revision == message.body_revision);
+            if (row.ready || retained) && (ui.is_rect_visible(rect) || target.is_some()) {
                 let (found_rect, message_action) = message.show(
                     ui,
                     rect,
-                    target.map(|found| found.range.start),
+                    target.filter(|_| row.ready).map(|found| found.range.start),
                     controls.as_ref(),
                     speaking_message,
                     speech_enabled,

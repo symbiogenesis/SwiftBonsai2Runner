@@ -361,7 +361,7 @@ impl Transcript {
 mod tests {
     use super::super::Role;
     use super::*;
-    use egui_kittest::Harness;
+    use egui_kittest::{Harness, kittest::Queryable as _};
 
     struct Scene {
         transcript: Transcript,
@@ -570,5 +570,47 @@ mod tests {
         assert!((cursor_y(chat.state())? - before).abs() < 0.5);
         assert!(chat.state().transcript.search.matches.first() == Some(&target));
         Ok(())
+    }
+
+    #[test]
+    fn deferred_geometry_reflow_keeps_real_native_text_selection() {
+        let mut chat = harness();
+        chat.set_size(egui::vec2(640.0, 8000.0));
+        settle(&mut chat, 5);
+        let body = chat.state().transcript.messages[10].body.clone();
+        let label = chat.get_by_label(&body).rect();
+        let start = label.left_top() + egui::vec2(3.0, 8.0);
+        let end = label.left_top() + egui::vec2(130.0, 8.0);
+        chat.hover_at(start);
+        chat.drag_at(start);
+        chat.run_steps(1);
+        chat.hover_at(end);
+        chat.run_steps(1);
+        chat.drop_at(end);
+        chat.run();
+        assert!(
+            chat.ctx
+                .plugin::<egui::text_selection::LabelSelectionState>()
+                .lock()
+                .has_selection()
+        );
+        let previous = chat.state().transcript.messages[10].body_layouts;
+        chat.set_size(egui::vec2(360.0, 8000.0));
+        settle(&mut chat, 1);
+        assert_eq!(chat.state().transcript.messages[10].body_layouts, previous);
+        assert!(
+            chat.ctx
+                .plugin::<egui::text_selection::LabelSelectionState>()
+                .lock()
+                .has_selection()
+        );
+        settle(&mut chat, 3);
+        assert!(chat.state().transcript.messages[10].body_layouts > previous);
+        assert!(
+            chat.ctx
+                .plugin::<egui::text_selection::LabelSelectionState>()
+                .lock()
+                .has_selection()
+        );
     }
 }
