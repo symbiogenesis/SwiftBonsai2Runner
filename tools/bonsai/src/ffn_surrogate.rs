@@ -214,6 +214,9 @@ fn factor_hash(values: &[Vec<f32>]) -> crate::Result<String> {
 /// Rejects unsupported identities/bases, malformed vectors, split leakage,
 /// ill-conditioned solves, exhausted time/work, and existing or unsafe outputs.
 /// There is no final-heldout split: final answer evaluation must remain external.
+/// The numerical deadline is checked before synchronous publication. Native
+/// process supervision must enforce the original aggregate deadline across CLI
+/// intake, publication, output and cleanup; this function cannot preempt file I/O.
 pub fn run(request: Value) -> crate::Result<Value> {
     let started = Instant::now();
     let request: Request = serde_json::from_value(request).map_err(|error| error.to_string())?;
@@ -249,13 +252,15 @@ pub fn run(request: Value) -> crate::Result<Value> {
             "aSha256":factor_hash(&solution.a)?,"bSha256":factor_hash(&solution.b)?},
         "runtimeImplemented":false,"behaviorQualified":false});
     let bytes = serde_json::to_vec_pretty(&artifact).map_err(|error| error.to_string())?;
+    // Finish fallible digest work before publishing the immutable candidate.
+    let artifact_sha256 = hash(&bytes)?;
     solver::charge(&mut work, 0, deadline)?;
     if let Some(path) = &request.output_path {
         crate::weight_patch::publish(path, &bytes)?;
     }
     Ok(
         json!({"schemaVersion":1,"status":"fitted-unqualified","artifact":artifact,
-        "artifactSha256":hash(&bytes)?,"outputPath":request.output_path,
+        "artifactSha256":artifact_sha256,"outputPath":request.output_path,
         "diagnostics":diagnostics,"diagnosticArithmetic":"F64 reduction of exported F32 factors; not a runtime parity oracle",
         "requestedRank":request.controls.rank,"effectiveRank":effective_rank,
         "factorPayloadBytes":effective_rank * WIDTH * 2 * 4,
@@ -263,7 +268,9 @@ pub fn run(request: Value) -> crate::Result<Value> {
         "originalFfnProjectionMultiplyAccumulatesPerToken":3 * WIDTH * 17_408,
         "estimatesExclude":"normalization, nonlinearities, packing, dispatch, allocation, cache and adapter costs",
         "limits":{"maxRows":MAX_ROWS,"maxRank":MAX_RANK,"maxCellVisits":solver::MAX_WORK,
-            "timeBudgetMilliseconds":request.controls.time_budget_milliseconds,"cellVisits":work},
+            "timeBudgetMilliseconds":request.controls.time_budget_milliseconds,"cellVisits":work,
+            "timeBudgetScope":"typed-admission-through-export-preparation; last-check-before-publication",
+            "requiresOriginalAggregateSupervisorDeadlineFor":["CLI-intake","synchronous-publication-and-cleanup","CLI-output"]},
         "developmentUsedForFit":false,"finalHeldoutUsed":false,"sourceAuthenticated":false,
         "runtimeImplemented":false,"behaviorQualified":false,"performanceQualified":false,
         "processMemoryQualified":false,"installed":false}),

@@ -84,15 +84,22 @@ accepted, including at least two fit rows and one development row. Samples and
 content groups cannot cross splits; final held-out answer data is not accepted.
 Controls are `rank` 1–16 (default 8, no greater than fit row count), positive
 `ridge` 1e-8–1e6 (default 0.001), and `timeBudgetMilliseconds` 1–30000 (default
-5000). The same deadline covers validation, fitting, diagnostics and export
-preparation; publication I/O is not preemptible and the outer supervisor must
-retain cleanup time within the original owner-device allowance.
+5000). This deadline starts at typed admission, covers validation, numerical
+fitting, diagnostics and export preparation, and is checked immediately before
+publication. It is not a hard end-to-end cutoff: synchronous file write, sync,
+link and cleanup operations cannot be preempted by this function. Run the command
+under native owned-process supervision that enforces the original aggregate
+deadline across CLI intake, publication, CLI output and cleanup; retain cleanup
+time within the original owner-device allowance. Candidate hashing completes
+before publication.
 
 The deterministic fitter forms a pivoted output subspace from fit targets only,
 then solves dual ridge regression with Cholesky; dependent targets can reduce
 effective rank. It exports rank-major F32 factors, hashes the candidate bytes,
 and recomputes fit/development reconstruction errors from those exported factors.
-The 300-million-cell work cap and deadline reject exhaustion without a candidate.
+The 300-million-cell work cap and numerical deadline reject exhaustion before
+publication. Emitted `limits.timeBudgetScope` records this checkpoint boundary;
+it does not replace the required aggregate supervisor deadline.
 Factor bytes and multiply-accumulate counts are accounting estimates: they
 establish neither actual process RAM nor latency nor complete-answer quality.
 Final held-out answers, source-authenticated capture, runtime state/rollback,
