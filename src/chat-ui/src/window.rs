@@ -25,6 +25,8 @@ mod background_tests;
 mod branding;
 mod composer;
 mod composer_insertion;
+#[cfg(test)]
+mod composer_unicode_tests;
 mod context_capacity;
 mod controls;
 mod draft_buffer;
