@@ -81,7 +81,7 @@ impl Tokenizer {
     /// # Errors
     /// Rejects malformed GGUF, unsupported metadata, invalid tables or bounds.
     pub fn load(source: &mut (impl Read + Seek), length: u64) -> io::Result<Self> {
-        crate::intake::tokenizer(source, length)
+        crate::intake::tokenizer(source, length).map(|(tokenizer, _)| tokenizer)
     }
 
     /// Construct from GGUF-order spellings and `left<space>right` merge lines.

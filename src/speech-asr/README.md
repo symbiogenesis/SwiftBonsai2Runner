@@ -136,6 +136,11 @@ Rust frontend/CNN/transformer/decoder graph with known EOS, plus numerical drive
 boundaries and reset/cancellation. `rust-engine.json` binds its separate arithmetic
 and qualification limits. Default service/application inference remains native.
 
+Prompt intake retains the three admitted audio IDs from the model metadata,
+including a selected later duplicate spelling; chat-role IDs retain the first
+vocabulary occurrence, as in the pinned native provider. A literal duplicate-ID
+control covers this distinction without loading a model or executing C++.
+
 ## Rust-only owning-crate qualification
 
 The default `native-engine` feature retains `transcribe-cpp` and the existing

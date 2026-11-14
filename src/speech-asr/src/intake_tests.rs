@@ -245,6 +245,50 @@ fn rust_asr_intake_checks_tokenizer_ids_table_types_and_merge_boundaries() -> io
 }
 
 #[test]
+fn rust_asr_intake_prompt_preserves_declared_audio_ids_with_duplicate_spellings() -> io::Result<()>
+{
+    let mut index = tokenizer()?;
+    let Some(Value::Strings(tokens)) = index.metadata.get_mut("tokenizer.ggml.tokens") else {
+        return Err(invalid());
+    };
+    tokens.extend(
+        [
+            "<|audio_start|>",
+            "<|audio_pad|>",
+            "<|audio_end|>",
+            "<|im_start|>",
+        ]
+        .map(str::to_owned),
+    );
+    let tokenizer =
+        crate::tokenizer::Tokenizer::from_tables(tokens.clone(), vec!["a b".into()], 1)?;
+    for (key, value) in [
+        ("stt.qwen3_asr.decoder.vocab_size", 17),
+        ("stt.qwen3_asr.audio_start_token_id", 13),
+        ("stt.qwen3_asr.audio_token_id", 14),
+        ("stt.qwen3_asr.audio_end_token_id", 15),
+    ] {
+        index
+            .metadata
+            .insert(key.into(), Value::Integer { kind: 4, value });
+    }
+    model::validate_tokenizer(&index)?;
+    // Native build_prompt_tokens uses metadata audio IDs, while chat-role
+    // resolution uses the first vocabulary occurrence. These literal IDs bind
+    // both choices independently of candidate lookup/assembly helpers.
+    assert_eq!(tokenizer.find("<|audio_start|>"), Some(7));
+    assert_eq!(tokenizer.find("<|audio_pad|>"), Some(8));
+    assert_eq!(tokenizer.find("<|audio_end|>"), Some(9));
+    let prompt = model::prompt_tokens(&index, &tokenizer)?.automatic_prompt(1, 8192)?;
+    assert_eq!(
+        prompt.ids(),
+        [0, 3, 2, 1, 2, 0, 4, 2, 13, 14, 15, 1, 2, 0, 5, 2]
+    );
+    assert_eq!(prompt.audio_rows(), 9..10);
+    Ok(())
+}
+
+#[test]
 fn rust_asr_intake_charges_empty_string_arrays_and_skipped_scalars() {
     let mut reader = Reader {
         source: Cursor::new(strings(&["", ""])),

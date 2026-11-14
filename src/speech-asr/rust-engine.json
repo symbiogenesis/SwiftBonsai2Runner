@@ -48,6 +48,7 @@
     "load": "absolute-regular-nonreparse-file-with-one-write-delete-denying-handle-across-all-intake",
     "callerAuthority": "verified-lock-digest-and-ancestor-guards-required",
     "language": "automatic-empty-system-prompt",
+    "promptIds": "first-vocabulary-occurrence-chat-roles-and-validated-explicit-model-metadata-audio-ids-including-duplicate-spellings",
     "pcm": "finite-normalized-mono-16khz-201-through-480000-samples",
     "context": "at-most-8192-with-minimum-256-output-reserve",
     "budget": "floor-audio-rows-times-24-over-25-at-least-256-capped-by-context-room",

@@ -1,6 +1,7 @@
 //! Source-bound Qwen3-ASR metadata, tokenizer and tensor catalog checks.
 
 use super::{Index, Value, invalid};
+use crate::{protocol::PromptTokens, tokenizer::Tokenizer};
 use std::io;
 
 impl Index {
@@ -154,6 +155,30 @@ pub(super) fn validate_tokenizer(index: &Index) -> io::Result<()> {
         }
     }
     Ok(())
+}
+
+pub(super) fn prompt_tokens(index: &Index, tokenizer: &Tokenizer) -> io::Result<PromptTokens> {
+    let id = |piece| tokenizer.find(piece).ok_or_else(invalid);
+    let audio = |key| u32::try_from(index.uint(key)?).map_err(|_| invalid());
+    // Chat pieces retain the native tokenizer's first occurrence, while the
+    // audio IDs come from the admitted model metadata. A later duplicate of an
+    // audio spelling may intentionally be the selected native prompt token.
+    PromptTokens::new(
+        [
+            id("<|im_start|>")?,
+            id("<|im_end|>")?,
+            id("Ċ")?,
+            id("system")?,
+            id("user")?,
+            id("assistant")?,
+        ],
+        [
+            audio("stt.qwen3_asr.audio_start_token_id")?,
+            audio("stt.qwen3_asr.audio_token_id")?,
+            audio("stt.qwen3_asr.audio_end_token_id")?,
+        ],
+        u32::try_from(tokenizer.vocabulary_size()).map_err(|_| invalid())?,
+    )
 }
 
 fn validate_frontend(index: &Index) -> io::Result<()> {

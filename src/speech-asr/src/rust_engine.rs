@@ -112,7 +112,7 @@ impl RustRecognizer {
                 return Err(invalid());
             }
         }
-        let tokenizer = Tokenizer::load(&mut file, properties.len())?;
+        let (tokenizer, prompt_tokens) = crate::intake::tokenizer(&mut file, properties.len())?;
         check(cancel)?;
         let (encoder, frontend) = Encoder::load(&mut file, properties.len(), cancel)?;
         check(cancel)?;
@@ -121,7 +121,6 @@ impl RustRecognizer {
         if encoder.output_width() != hidden || tokenizer.vocabulary_size() != vocabulary {
             return Err(invalid());
         }
-        let prompt_tokens = prompt_tokens(&tokenizer)?;
         check(cancel)?;
         Ok(Self {
             frontend,
@@ -206,26 +205,6 @@ impl Drop for ClearSession<'_> {
     fn drop(&mut self) {
         self.0.reset();
     }
-}
-
-fn prompt_tokens(tokenizer: &Tokenizer) -> io::Result<PromptTokens> {
-    let id = |name| tokenizer.find(name).ok_or_else(invalid);
-    PromptTokens::new(
-        [
-            id("<|im_start|>")?,
-            id("<|im_end|>")?,
-            id("Ċ")?,
-            id("system")?,
-            id("user")?,
-            id("assistant")?,
-        ],
-        [
-            id("<|audio_start|>")?,
-            id("<|audio_pad|>")?,
-            id("<|audio_end|>")?,
-        ],
-        u32::try_from(tokenizer.vocabulary_size()).map_err(|_| invalid())?,
-    )
 }
 
 fn decode_audio(

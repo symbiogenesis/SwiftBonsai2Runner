@@ -348,7 +348,7 @@ pub(super) fn encoder(
 pub(super) fn tokenizer(
     source: &mut (impl Read + Seek),
     length: u64,
-) -> io::Result<crate::tokenizer::Tokenizer> {
+) -> io::Result<(crate::tokenizer::Tokenizer, crate::protocol::PromptTokens)> {
     let mut index = read_index(source, length)?;
     model::validate(&index)?;
     if let Some(Value::Text(pre)) = index.metadata.get("tokenizer.ggml.pre")
@@ -367,11 +367,13 @@ pub(super) fn tokenizer(
     else {
         return Err(invalid());
     };
-    crate::tokenizer::Tokenizer::from_tables(
+    let tokenizer = crate::tokenizer::Tokenizer::from_tables(
         tokens,
         merges,
         u32::try_from(eos).map_err(|_| invalid())?,
-    )
+    )?;
+    let prompt = model::prompt_tokens(&index, &tokenizer)?;
+    Ok((tokenizer, prompt))
 }
 
 #[cfg(test)]

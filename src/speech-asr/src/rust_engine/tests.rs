@@ -1,10 +1,11 @@
 //! Tiny complete Rust graph wiring and literal driver-boundary controls.
 
-use super::{Observation, RustRecognizer, argmax, decode_budget, prompt_tokens, repeating};
+use super::{Observation, RustRecognizer, argmax, decode_budget, repeating};
 use crate::{
     decoder::{self, CachePrecision, Model, Projection},
     encoder::{self, Encoder, Linear, Norm, Weights},
     frontend::Frontend,
+    protocol::PromptTokens,
     tokenizer::Tokenizer,
 };
 use std::{io, path::Path, sync::Arc};
@@ -48,7 +49,7 @@ pub(crate) fn recognizer(eos: u32) -> io::Result<RustRecognizer> {
         vec!["a b".into()],
         eos,
     )?;
-    let prompt_tokens = prompt_tokens(&tokenizer)?;
+    let prompt_tokens = PromptTokens::new([1, 2, 3, 4, 5, 6], [8, 9, 10], 11)?;
     let block = encoder::Block {
         attention_norm: norm(4),
         ffn_norm: norm(4),
