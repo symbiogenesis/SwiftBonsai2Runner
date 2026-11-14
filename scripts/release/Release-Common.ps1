@@ -16,7 +16,16 @@ function Invoke-NativeReleasePolicy([hashtable]$Request) {
     } finally { $PSNativeCommandUseErrorActionPreference = $nativePreference }
     $raw = ($output | ForEach-Object { $_.ToString() }) -join "`n"
     if ($code -ne 0) { throw $raw }
-    ConvertFrom-Json -InputObject $raw -NoEnumerate
+    # Native stderr remains ErrorRecord data after 2>&1; compiler/rustup
+    # diagnostics must stay visible without becoming part of the JSON reply.
+    $stdout = @($output | ForEach-Object {
+        if ($_ -is [Management.Automation.ErrorRecord]) {
+            [Console]::Error.WriteLine($_.ToString())
+        } else {
+            $_.ToString()
+        }
+    }) -join "`n"
+    ConvertFrom-Json -InputObject $stdout -NoEnumerate
 }
 function Resolve-ReleasePath {
     [CmdletBinding()]
