@@ -383,12 +383,29 @@ review where required. A capability edit must start from a diagnosed failure
 and survive untouched complete-answer evaluation against the original model,
 the cheaper graph without compensation, and the frozen compensated graph.
 If a separate behavioral edit is composed, also compare the compensated graph
-before that edit to attribute the gain. For relative ability, add an
-equal-resource comparison that reinvests saved work in useful reasoning, with
-the same frozen task/rubric and complete answers. Keep this attribution separate
-from the absolute latency/RAM gates: spending every saved millisecond does not
-demonstrate faster answers. Prompt/sampler controls remain necessary;
-shorter answers or repaired termination alone cannot count as better reasoning.
+before that edit to attribute the gain. Report recovery and capability outcomes
+separately, including each task category and failed or truncated attempts.
+
+Before capture, freeze one comparison declaration binding the existing source,
+profile and candidate identities to the task groups, rubric, arm order and
+resource accounting. Reuse native completion capture and the existing
+[qualification controls](validation.md#reusing-qualification-controls) for exact
+answer identities and independent review. At normal effort, hold prompt,
+sampler and effort settings fixed across the original, omission-only and frozen
+compensated graphs; use these arms for absolute quality, latency and RAM gates.
+
+For relative ability, declare a separate paired equal-resource comparison with
+the same frozen tasks/rubric and shared task-level time and memory ceilings.
+Freeze both arms' effort policies, including prompting, Thinking, output limits,
+retries and verification; allow the original model its declared use of that
+budget too. Charge every attempt, verification step and failure to its task,
+retain complete answers and report exhausted budgets rather than dropping them.
+Compare reinvested candidate effort against this original-model control and
+against the same compensated graph at normal effort to attribute the gain.
+Keep this result separate from the absolute latency/RAM gates: spending every
+saved millisecond does not demonstrate faster answers. Prompt/sampler controls
+remain necessary; shorter answers or repaired termination alone cannot count
+as better reasoning.
 Nothing in the November literature establishes this three-way result for Swift.
 
 ## Existing implementation and delivery limits
