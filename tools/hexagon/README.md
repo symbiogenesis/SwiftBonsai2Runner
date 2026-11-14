@@ -83,6 +83,16 @@ build chatter. Public raw-source downloads require the reviewed HTTPS origin
 and reject redirects. No SDK, ABI, callback, cache, driver or profile qualification
 is inferred from matching wire bytes.
 
+Self-hosted inventory, session and dispatch workflow arms forward to the native
+`owner-operation` command. It charges checkout and intake to the original
+300-second job clock, preserves fixed operation/cleanup/evidence reserves,
+validates same-run receipt identities and writes the host gate receipt.
+Each selected operation records AC, battery saver and charge immediately before
+and after its workload. Power at the earlier checkout start remains explicitly
+unknown; equal endpoints do not establish continuity or qualify a performance
+comparison. No clock restart, workload retry, suite dispatch or device execution
+occurs during source/fixture verification.
+
 The SDK lexical fixtures live in `sdk-reader/src/functional.rs`; the historical
 `test_sdk_functional_review.ps1 -Test NAME` command selects the corresponding
 Rust test. SDK metadata still establishes no license grant, SDK/public ABI

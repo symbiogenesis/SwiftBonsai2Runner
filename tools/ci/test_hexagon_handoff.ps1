@@ -41,8 +41,11 @@ $cases=[ordered]@{
     foreach ($name in @('controls','artifact-binder')) { Assert-Ci ($jobs[$name].Contains('if: always()')); Assert-Ci ($jobs[$name] -cnotmatch 'if:.*cache-hit') }
  }
  owner_budget_mutex_same_run_admission={
-    foreach ($name in @('session-probe','inventory','dispatch')) { foreach ($fragment in @('timeout-minutes: 5','group: swift-lora-snapdragon','cancel-in-progress: false','BONSAI_HEXAGON_JOB_STARTED_UTC','WholeJobMaximumSeconds = 300')) { Assert-Ci ($jobs[$name].Contains($fragment)) "$name $fragment" } }
-    foreach ($name in @('session-probe','dispatch')) { foreach ($fragment in @('$build.RunnerRevision -cne $env:GITHUB_SHA','$build.RunId -cne $env:GITHUB_RUN_ID','$build.RunAttempt -cne $env:GITHUB_RUN_ATTEMPT')) { Assert-Ci ($jobs[$name].Contains($fragment)) } }
+    foreach ($name in @('session-probe','inventory','dispatch')) {
+        foreach ($fragment in @('timeout-minutes: 5','group: swift-lora-snapdragon','cancel-in-progress: false','BONSAI_HEXAGON_JOB_STARTED_UTC','wholeJobMaximumSeconds = 300',"operation = 'owner-operation'")) { Assert-Ci ($jobs[$name].Contains($fragment)) "$name $fragment" }
+        Assert-Ci (-not $jobs[$name].Contains('[Math]')) 'Owner budget/scoring policy belongs to the native helper.'
+    }
+    foreach ($name in @('session-probe','dispatch')) { Assert-Ci ($jobs[$name].Contains('fixtureDirectory = $bundle')) 'Native same-run intake requires the selected fixture bundle.' }
  }
 }
 Invoke-CiCases $cases $Case

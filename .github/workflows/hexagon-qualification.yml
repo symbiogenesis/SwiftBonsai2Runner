@@ -398,6 +398,7 @@ jobs:
         shell: pwsh
         working-directory: ${{ runner.temp }}
         env:
+          RUNNER_ENVIRONMENT: ${{ runner.environment }}
           HEXAGON_PACKAGE_DIRECTORY: ${{ inputs.package_directory }}
           HEXAGON_SIGNTOOL_PATH: ${{ inputs.signtool_path }}
           HEXAGON_REFERENCE_INITIALIZATION: ${{ inputs.reference_initialization }}
@@ -405,29 +406,17 @@ jobs:
           Set-StrictMode -Version Latest
           $ErrorActionPreference = 'Stop'
           $PSNativeCommandUseErrorActionPreference = $true
-          $started = [DateTimeOffset]::Parse($env:BONSAI_HEXAGON_JOB_STARTED_UTC, [Globalization.CultureInfo]::InvariantCulture)
           $bundle = Join-Path $env:RUNNER_TEMP 'SwiftBonsai-Hexagon-Native-Bundle'
-          $build = Get-Content -LiteralPath (Join-Path $bundle 'native-build.json') -Raw | ConvertFrom-Json -AsHashtable -NoEnumerate
-          if ($build.RunnerRevision -cne $env:GITHUB_SHA -or $build.RunId -cne $env:GITHUB_RUN_ID -or $build.RunAttempt -cne $env:GITHUB_RUN_ATTEMPT) {
-            throw 'Native probe intake differs from this exact hosted run and revision.'
-          }
-          $setup = ([DateTimeOffset]::UtcNow - $started).TotalSeconds
-          $allowance = [int][Math]::Floor([Math]::Min(120, 270 - $setup))
-          if ($setup -lt 0 -or $allowance -le 75) { throw 'Owner setup exhausted the verified teardown reserve; session mapping remains pending.' }
           $evidence = Join-Path $env:RUNNER_TEMP ('SwiftBonsai-Hexagon-Session-' + [guid]::NewGuid().ToString('N'))
           "BONSAI_HEXAGON_SESSION_EVIDENCE=$evidence" >> $env:GITHUB_ENV
-          if ($env:HEXAGON_REFERENCE_INITIALIZATION -cnotin @('true','false')) { throw 'Reference initialization selection must be explicit.' }
-          $result = @{ operation = 'device'; request = @{ kind = 'session'; repositoryDirectory = $env:GITHUB_WORKSPACE; packageDirectory = $env:HEXAGON_PACKAGE_DIRECTORY; fixtureDirectory = $bundle; outputDirectory = $evidence; signtoolPath = $env:HEXAGON_SIGNTOOL_PATH; expectedRunnerRevision = $env:GITHUB_SHA; maximumSeconds = $allowance; referenceInitialization = ($env:HEXAGON_REFERENCE_INITIALIZATION -ceq 'true') } } | ConvertTo-Json -Depth 5 -Compress | & $env:BONSAI_TOOLS_PATH hexagon-tools --request - | ConvertFrom-Json -AsHashtable
-          [ordered]@{
-            SchemaVersion = 1; RunnerRevision = $env:GITHUB_SHA; RunId = $env:GITHUB_RUN_ID; RunAttempt = $env:GITHUB_RUN_ATTEMPT
-            WholeJobMaximumSeconds = 300; PreparationElapsedMilliseconds = [Math]::Ceiling($setup * 1000)
-            ProbeAggregateAllowanceSeconds = $allowance; PostProcessReserveSeconds = 30; TrustedSameRunIntake = $true
-            Outcome = $result.Outcome; SwiftQualified = $false; ProfileEligible = $false
-            ReferenceInitializationSelected = $env:HEXAGON_REFERENCE_INITIALIZATION -ceq 'true'
-          } | ConvertTo-Json -Depth 5 | Set-Content -LiteralPath (Join-Path $evidence 'host.json') -Encoding utf8NoBOM
+          @{ operation = 'owner-operation'; request = @{
+            kind = 'session'; repositoryDirectory = $env:GITHUB_WORKSPACE; fixtureDirectory = $bundle
+            outputDirectory = $evidence; packageDirectory = $env:HEXAGON_PACKAGE_DIRECTORY
+            signtoolPath = $env:HEXAGON_SIGNTOOL_PATH; referenceInitialization = $env:HEXAGON_REFERENCE_INITIALIZATION
+            wholeJobMaximumSeconds = 300
+          } } | ConvertTo-Json -Depth 5 -Compress | & $env:BONSAI_TOOLS_PATH hexagon-tools --request -
           @('One native Rust signed-module open and terminal 4 KiB FD mapping probe; no compute or model.',
             'Missing signed-session mapping, vendor teardown or custom packed-kernel evidence keeps admission disabled.') | Add-Content -LiteralPath $env:GITHUB_STEP_SUMMARY
-          if ($result.Outcome -cne 'passed') { throw 'Native signed-session access remains pending; inspect the retained stage receipt.' }
       - name: Retain credential-free native signed-session mapping evidence
         if: always() && env.BONSAI_HEXAGON_SESSION_EVIDENCE != ''
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
@@ -460,39 +449,22 @@ jobs:
         shell: pwsh
         working-directory: ${{ runner.temp }}
         env:
+          RUNNER_ENVIRONMENT: ${{ runner.environment }}
           HEXAGON_PACKAGE_DIRECTORY: ${{ inputs.package_directory }}
         run: |
           Set-StrictMode -Version Latest
           $ErrorActionPreference = 'Stop'
           $PSNativeCommandUseErrorActionPreference = $true
-          $started = [DateTimeOffset]::Parse($env:BONSAI_HEXAGON_JOB_STARTED_UTC, [Globalization.CultureInfo]::InvariantCulture)
-          $setupSeconds = ([DateTimeOffset]::UtcNow - $started).TotalSeconds
-          # Charge checkout and setup; reserve thirty seconds for retained evidence.
-          $allowance = [int][Math]::Floor([Math]::Min(45, 270 - $setupSeconds))
-          if ($setupSeconds -lt 0 -or $allowance -lt 5) {
-            throw 'Owner-job setup exhausted the aggregate allowance; Hexagon gates remain pending.'
-          }
           $evidence = Join-Path $env:RUNNER_TEMP ('SwiftBonsai-Hexagon-' + [guid]::NewGuid().ToString('N'))
-          [void][IO.Directory]::CreateDirectory($evidence)
           "BONSAI_HEXAGON_EVIDENCE=$evidence" >> $env:GITHUB_ENV
-          $report = Join-Path $evidence 'preflight.json'
-          $result = @{ operation = 'preflight'; packagePath = $(if ($env:HEXAGON_PACKAGE_DIRECTORY) { $env:HEXAGON_PACKAGE_DIRECTORY } else { $null }); outputPath = $report; maximumSeconds = $allowance } | ConvertTo-Json -Compress | & $env:BONSAI_TOOLS_PATH hexagon-tools --request - | ConvertFrom-Json -AsHashtable
-          [ordered]@{
-            SchemaVersion = 1; SourceRevision = $env:GITHUB_SHA
-            RunId = $env:GITHUB_RUN_ID; RunAttempt = $env:GITHUB_RUN_ATTEMPT
-            JobStartedUtc = $env:BONSAI_HEXAGON_JOB_STARTED_UTC
-            PreparationElapsedMilliseconds = [Math]::Ceiling($setupSeconds * 1000)
-            InventoryAllowanceSeconds = $allowance; WholeJobMaximumSeconds = 300
-            SupervisorSha256 = (Get-FileHash -LiteralPath (Join-Path $env:GITHUB_WORKSPACE 'tools/bonsai/src/hexagon_tools/preflight.rs') -Algorithm SHA256).Hash.ToLowerInvariant()
-            ExperimentLockSha256 = (Get-FileHash -LiteralPath (Join-Path $env:GITHUB_WORKSPACE 'config/hexagon-experiment.lock.json') -Algorithm SHA256).Hash.ToLowerInvariant()
-            ReceiptSha256 = (Get-FileHash -LiteralPath $report -Algorithm SHA256).Hash.ToLowerInvariant()
-            CollectionStatus = $result.CollectionStatus
-            ExecutionQualified = $false; ProfileEligible = $false
-          } | ConvertTo-Json -Depth 5 | Set-Content -LiteralPath (Join-Path $evidence 'host.json') -Encoding utf8NoBOM
+          @{ operation = 'owner-operation'; request = @{
+            kind = 'inventory'; repositoryDirectory = $env:GITHUB_WORKSPACE; outputDirectory = $evidence
+            packageDirectory = $(if ($env:HEXAGON_PACKAGE_DIRECTORY) { $env:HEXAGON_PACKAGE_DIRECTORY } else { $null })
+            wholeJobMaximumSeconds = 300
+          } } | ConvertTo-Json -Depth 5 -Compress | & $env:BONSAI_TOOLS_PATH hexagon-tools --request -
           @('Inventory only; mapping, dispatch, numerical/state and performance gates remain pending.',
             'Native Rust Prism is the integration target; GenieX is a signed access reference.',
             'X1/X2 CPU, GPU and NPU decisions require independently reviewed same-workload comparisons.') | Add-Content -LiteralPath $env:GITHUB_STEP_SUMMARY
-          if ($result.CollectionStatus -cne 'collected') { throw 'Hexagon inventory incomplete; inspect the retained pending receipt.' }
       - name: Retain credential-free prerequisite evidence
         if: always() && env.BONSAI_HEXAGON_EVIDENCE != ''
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
@@ -528,35 +500,24 @@ jobs:
         shell: pwsh
         working-directory: ${{ runner.temp }}
         env:
+          RUNNER_ENVIRONMENT: ${{ runner.environment }}
           HEXAGON_PACKAGE_DIRECTORY: ${{ inputs.package_directory }}
           HEXAGON_SIGNTOOL_PATH: ${{ inputs.signtool_path }}
         run: |
           Set-StrictMode -Version Latest
           $ErrorActionPreference = 'Stop'
           $PSNativeCommandUseErrorActionPreference = $true
-          $started = [DateTimeOffset]::Parse($env:BONSAI_HEXAGON_JOB_STARTED_UTC, [Globalization.CultureInfo]::InvariantCulture)
           $bundle = Join-Path $env:RUNNER_TEMP 'SwiftBonsai-Hexagon-Dispatch-Bundle'
-          $build = Get-Content -LiteralPath (Join-Path $bundle 'fixture-build.json') -Raw | ConvertFrom-Json -AsHashtable -NoEnumerate
-          if ($build.RunnerRevision -cne $env:GITHUB_SHA -or $build.RunId -cne $env:GITHUB_RUN_ID -or $build.RunAttempt -cne $env:GITHUB_RUN_ATTEMPT) {
-            throw 'The fixture does not belong to this exact trusted hosted job and revision.'
-          }
-          $setup = ([DateTimeOffset]::UtcNow - $started).TotalSeconds
-          $allowance = [int][Math]::Floor([Math]::Min(120, 270 - $setup))
-          if ($setup -lt 0 -or $allowance -le 75) { throw 'Owner setup consumed the verified teardown reserve; dispatch remains pending.' }
           $evidence = Join-Path $env:RUNNER_TEMP ('SwiftBonsai-Hexagon-Dispatch-' + [guid]::NewGuid().ToString('N'))
           "BONSAI_HEXAGON_DISPATCH_EVIDENCE=$evidence" >> $env:GITHUB_ENV
-          $result = @{ operation = 'device'; request = @{ kind = 'dispatch'; repositoryDirectory = $env:GITHUB_WORKSPACE; packageDirectory = $env:HEXAGON_PACKAGE_DIRECTORY; fixtureDirectory = $bundle; outputDirectory = $evidence; signtoolPath = $env:HEXAGON_SIGNTOOL_PATH; expectedRunnerRevision = $env:GITHUB_SHA; maximumSeconds = $allowance } } | ConvertTo-Json -Depth 5 -Compress | & $env:BONSAI_TOOLS_PATH hexagon-tools --request - | ConvertFrom-Json -AsHashtable
-          [ordered]@{
-            SchemaVersion = 1; RunnerRevision = $env:GITHUB_SHA; RunId = $env:GITHUB_RUN_ID; RunAttempt = $env:GITHUB_RUN_ATTEMPT
-            WholeJobMaximumSeconds = 300; PreparationElapsedMilliseconds = [Math]::Ceiling($setup * 1000)
-            DispatchAggregateAllowanceSeconds = $allowance; PostProcessReserveSeconds = 30
-            TrustedSameRunIntake = $true; Outcome = $result.Outcome
-            DeviceDispatchVerified = $result.DeviceDispatchVerified; SwiftQualified = $false; ProfileEligible = $false
-          } | ConvertTo-Json -Depth 5 | Set-Content -LiteralPath (Join-Path $evidence 'host.json') -Encoding utf8NoBOM
+          @{ operation = 'owner-operation'; request = @{
+            kind = 'dispatch'; repositoryDirectory = $env:GITHUB_WORKSPACE; fixtureDirectory = $bundle
+            outputDirectory = $evidence; packageDirectory = $env:HEXAGON_PACKAGE_DIRECTORY; signtoolPath = $env:HEXAGON_SIGNTOOL_PATH
+            wholeJobMaximumSeconds = 300
+          } } | ConvertTo-Json -Depth 5 -Compress | & $env:BONSAI_TOOLS_PATH hexagon-tools --request -
           @('Two tiny F32 graphs through the exact signed generic Hexagon package; no model or CPU fallback.',
             'Native Rust Prism packed inference remains independently pending.',
             'No driver/catalog installation, trust changes or performance selection occurs.') | Add-Content -LiteralPath $env:GITHUB_STEP_SUMMARY
-          if ($result.Outcome -cne 'passed' -or -not $result.DeviceDispatchVerified) { throw 'The signed access gate remains pending; inspect retained stage evidence.' }
       - name: Retain only credential-free bounded dispatch evidence
         if: always() && env.BONSAI_HEXAGON_DISPATCH_EVIDENCE != ''
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2

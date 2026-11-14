@@ -266,7 +266,7 @@ fn timestamp_part(value: &str, start: usize, end: usize) -> crate::Result<u64> {
         .ok_or_else(|| "Acceptance clocks require canonical round-trip UTC timestamps.".into())
 }
 
-fn utc_ticks(value: &str) -> crate::Result<u64> {
+pub(super) fn utc_ticks(value: &str) -> crate::Result<u64> {
     let bytes = value.as_bytes();
     if bytes.len() != 28
         || bytes[4] != b'-'
