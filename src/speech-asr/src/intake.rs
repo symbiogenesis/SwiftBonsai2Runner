@@ -306,6 +306,7 @@ fn layout(kind: u32) -> io::Result<(u64, u64)> {
     }
 }
 
+#[cfg(any(feature = "native-engine", test))]
 pub(super) fn validate(source: &mut (impl Read + Seek), length: u64) -> io::Result<()> {
     model::validate(&read_index(source, length)?)
 }

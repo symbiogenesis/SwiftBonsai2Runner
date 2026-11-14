@@ -5,6 +5,16 @@
   "arithmeticIdentity": "rust-asr-scalar-f32-v1-f16-kv-f64-erfc-gelu",
   "applicationDefault": "native-transcribe-cpp-unchanged-pending-qualification",
   "nativeFallback": false,
+  "buildBoundary": {
+    "defaultFeatures": ["native-engine"],
+    "rustOnlyLibrary": "--no-default-features --lib",
+    "qualificationFeature": "rust-qualification",
+    "qualificationBinary": "bonsai-asr-rust-qualification",
+    "productionBinaryRequires": "native-engine",
+    "qualificationIdentity": "distinct-name-and-arithmetic-identity-with-ProductionQualified-false",
+    "serviceAdmission": "compiled-model-lock-verified-file-and-ancestor-guards-protected-credentials-native-windows-arm64-and-existing-bounded-protocol",
+    "applicationSelection": false
+  },
   "componentContracts": ["rust-intake.json", "rust-tokenizer.json", "rust-frontend.json", "rust-encoder.json", "rust-decoder.json", "rust-protocol.json"],
   "nativeSource": {
     "package": "transcribe-cpp-sys", "version": "0.4.1",
@@ -35,7 +45,7 @@
     "reset": "all-kv-and-position-cleared-at-request-entry-and-after-success-failure-cancellation-or-unwind"
   },
   "pending": [
-    "owning-crate native build/link and hosted consumer acceptance",
+    "owning-crate hosted consumer acceptance and retained native control build/link",
     "independent pinned-vocabulary-frontend-layerwise-logit-kv-and-full-transcript observations",
     "source-bound actual-model qualification with matched power and predeclared aggregate allowance",
     "microphone-to-Swift integration, quality, cancellation, lifecycle and resource acceptance",

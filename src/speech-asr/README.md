@@ -134,7 +134,42 @@ Rust frontend/CNN/transformer/decoder graph with known EOS, plus numerical drive
 boundaries and reset/cancellation. `rust-engine.json` binds its separate arithmetic
 and qualification limits. Default service/application inference remains native.
 
-Owning-crate builds, independent numerical observations and actual-model
-comparisons remain necessary before replacing serving or removing native dependencies.
-Standalone source-module checks do not establish owning-crate native build/link,
+## Rust-only owning-crate qualification
+
+The default `native-engine` feature retains `transcribe-cpp` and the existing
+`bonsai-speech-asr` executable. With defaults disabled, the complete Rust library
+has no native inference dependency, service provisioning or CMake build. This
+is an owning-crate build of the production Rust modules, rather than a standalone
+source-module harness:
+
+```powershell
+cargo clippy --locked --package bonsai-speech-asr --no-default-features --lib --all-targets --release
+cargo test --locked --package bonsai-speech-asr --no-default-features --lib --release --no-run
+```
+
+Select only named focused controls for local execution; full suites stay CI-only.
+For example, after the build, `rust_asr_engine_complete_rust_pipeline_eos_and_fresh_replay`
+exercises the complete miniature Rust graph and session reset without models.
+
+An explicit qualification service uses the same compiled model lock, immutable
+file/ancestor guards, protected credentials, bounded loopback protocol and native
+Windows ARM64 host requirement as the retained control service:
+
+```powershell
+cargo build --locked --package bonsai-speech-asr --no-default-features --features rust-qualification --bin bonsai-asr-rust-qualification --release
+```
+
+Its CLI accepts the ordinary ASR `--model`, `--token-file` and optional `--port`
+arguments. `--version` identifies `bonsai-asr-rust-qualification`, the independent
+scalar arithmetic identity and `ProductionQualified: false`; it cannot match the
+production binary identity used by provisioning. The application neither builds
+nor selects this binary automatically. It performs no native inference or
+fallback, even if the native feature is explicitly enabled alongside it. Active
+service inference still requires the caller's existing contained process owner,
+absolute deadline and verified teardown; cooperative graph cancellation alone
+does not establish service cancellation acceptance.
+
+Independent numerical observations and actual-model comparisons remain necessary
+before replacing default serving or removing native dependencies. Owning-crate
+build/link and miniature graph controls do not establish native arithmetic,
 transcript/state parity, microphone integration, quality, listening or resources.
