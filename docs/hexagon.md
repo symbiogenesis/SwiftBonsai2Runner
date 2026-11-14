@@ -60,6 +60,17 @@ publication. Unsupported shapes reject before submission. Failure faults the exe
 clears outputs and retains uncertain owners through terminal completion or supervised
 exit, without replay.
 
+The next local native-source correction seals each secondary weight arena after
+its first DSP import. All of that arena's append-only weights must be prepared
+before import: a later initialization faults before its writer callback, byte
+mutation or handle publication. The supported pre-import cache-clean operation
+cannot be treated as a fence for later writes to a persistent imported mapping.
+Unused secondary arenas remain dirty and unimported; already prepared views can
+still be submitted together after import. Primary-arena append preparation keeps
+its separate populated-prefix flush. Native fake-session controls exercise those
+boundaries; signed-driver coherency, complete serving and release acceptance
+remain independent.
+
 Source work counts establish no measured latency, memory or energy saving. Complete
 model state/logit/adapter and cancellation acceptance, ARM64 code generation, signed
 vendor lifetimes/resources and matched complete-request benefit remain independent

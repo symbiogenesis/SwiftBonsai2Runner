@@ -43,8 +43,9 @@ adoption decisions without displacing native daily-use acceptance.
 - [ ] Complete owning-lane compiler/analyzer and focused regression acceptance
   for centralized UI bounded reads, atomic settings publication and transcript
   insertion and popup shortcut ownership; speech synthesis object-only intake;
-  TTS numerical/GGUF primitives, checked projection layouts and invalid sampler
-  distribution rejection; and tools bounded intake, selected nonblank startup
+  TTS numerical/GGUF primitives, checked projection layouts, packed-half F32
+  operand/range/long-sum controls and invalid sampler distribution rejection;
+  and tools bounded intake, selected nonblank startup
   diagnostics, PE probing and release/Hexagon validation.
   The Hexagon inventory alias correction and pinned-linker
   process-tree regression still need compiled owning-lane verification, including
@@ -666,6 +667,13 @@ nor editing the available Abliteration factors.
 
 ## CPU kernels
 
+- [ ] Qualify the [ggml-inspired execution controls](docs/cpu-kernels.md#fusion-witnesses-precision-admission-and-few-token-tiles):
+  actual completed fusion counts versus separate arithmetic, adapter/unsupported
+  capability rejection before callbacks, pinned BF16/F32 precision boundaries,
+  portable Q4/Q8 shared weight decoding and 2/3/7/9/17/24-token tails/recovery.
+  Require native/feature-disabled strict Release analysis and focused controls,
+  applicable x64 fallback, full-model state/logits/adapters and matched request
+  benefit before a genuine source-bound runtime bundle and reviewed repin.
 - [ ] Qualify final-source exact/failure controls, strict native/x64 Release
   analysis/linking, disabled-feature fallback, ARM64 codegen/resources, complete
   model state/logits/adapters/cancellation and matched CPU-only request benefit
@@ -782,6 +790,12 @@ nor editing the available Abliteration factors.
 
 - [ ] Diagnose X2 `VK_ERROR_INCOMPATIBLE_DRIVER` and the separate GDI32 lookup
   error 126; establish their causes before further inference claims.
+- [ ] After driver/access and packed-projection acceptance, implement and compare
+  bounded fused and [decomposed attention](docs/adreno.md#decomposed-attention-candidate)
+  in the Rust GPU backend. Preserve global normalization/FP16 probability rounding,
+  causal state, exact stage dependencies, complete cache identity and explicit
+  scratch/transfer admission; require path witnesses, independent stage/state
+  controls and whole-request benefit before selecting either implementation.
 - [ ] Qualify the opt-in native ARM64 OpenCL original-PQ2/Q8_K projection
   pilot under unchanged mitigations, including owning hosted analysis/linking,
   exact input/kernel/device identities, every-block scalar replay and terminal
@@ -799,6 +813,12 @@ nor editing the available Abliteration factors.
 
 ## Hexagon NPU
 
+- [ ] Qualify imported-secondary-arena sealing in the native resident path:
+  refusal before writer callback, byte/handle/report mutation or queue submission;
+  unused arenas stay dirty/unimported and preprepared views remain usable after
+  import. Verify primary append-after-warm flushes and independent shape identity,
+  native/x64 strict Release analysis, owning compiled controls and signed-device
+  coherency/lifecycle acceptance before a source-bound release and repin.
 - [ ] Close applicable [signed-runtime/SDK/Windows ABI prerequisites](docs/hexagon-source-audit.md)
   and independent raw-byte replay before expanding a selected device workload.
 - [ ] Qualify the implemented six-arena/168-projection `native-q2` placement:

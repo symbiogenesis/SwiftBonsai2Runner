@@ -562,6 +562,17 @@ cannot promote a pin; follow the
 
 ### Candidate reference-guided controls
 
+The [ggml execution references](research-register.md#ggml-10-execution-and-regression-references)
+also inform the existing CPU/Hexagon paths. Select Prism's `few_token_` controls
+for shared decoding and odd tiles, its fusion/precision controls for actual path
+execution and capability rejection, and the native resident controls for unused
+arenas and imported-arena sealing. Runner's exact
+`engine::packed::tests::packed_half_precision_preserves_f32_operands_and_accumulation`
+uses literal F32 range, sub-half-minimum, long-sum and cancellation answers through
+the production speech projection, including four-row groups and scalar tails.
+Run only selected named controls under one allowance. These checks establish no
+GPU execution, signed cache coherency, whole-model parity or throughput verdict.
+
 The [native application references](research-register.md#native-application-and-writing-references)
 and [reliability references](research-register.md#reliability-and-distribution-references)
 suggest additional controls; they are not installed test dependencies or completed

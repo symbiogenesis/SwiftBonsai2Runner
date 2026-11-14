@@ -519,6 +519,35 @@ Temporary driver sources, selected binaries and duplicate receipts were removed;
 one concise summary remained, with retention complete 257.161 seconds after the
 original start, within the same 480-second allowance.
 
+### Fusion witnesses, precision admission and few-token tiles
+
+The [ggml 1.0 reference review](research-register.md#ggml-10-execution-and-regression-references)
+adds selected controls to existing local Prism paths. Decode preparation reports
+attempted/completed/fallback fusion counts separately from model-state commit and
+packed backend dispatch. Controls must assert the path actually executed and
+compare it to separately evaluated arithmetic. A completed CPU graph branch is
+not proof that a particular device kernel executed. Adapters, unsupported
+capabilities and failed work must not create a successful-fusion verdict.
+
+Prepared grouped/SwiGLU/full-FFN external calls enforce their existing capability
+before invoking an executor, including direct callers. This admits no new
+precision: pinned Prism F16/BF16 activation rounding and speech's F32 operands
+remain separate contracts. Range fixtures must distinguish BF16 from FP16,
+values between representable levels, long sums and cancellation-sensitive sums.
+
+PQ2/PTQ1 prompt tiles already share block decoding across up to 32 tokens. The
+new portable Q4/Q8 tile fallback also decodes each block once across its token
+rows, using a 64-byte stack-scoped integer block. It retains the existing
+activation quantizer, per-block scale/product/add rounding and native dispatch.
+Independent arithmetic/work-count and late-failure recovery controls include
+2/3/7/9/17/24-token cases and row/column tails. Decoded-block counts are source
+work observations, not latency or memory measurements.
+
+Native/feature-disabled and applicable x64 analysis, production linking,
+full-model state/logit/adapter/cancellation acceptance and matched complete-request
+benefit remain required. Runner's published 0.1.27 pin does not consume these local
+changes. Keep its rollback until a genuine verified bundle and reviewed repin.
+
 ## Execution and dispatch
 
 The default `experimental-neon` feature uses [`fearless_simd` 1.1.0][fearless]'s safe core API under

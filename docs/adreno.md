@@ -68,6 +68,44 @@ separate qualification scopes.
 
 ## Resources, failure and acceptance
 
+### Decomposed attention candidate
+
+The ggml 1.0 [Adreno decomposition][ggml-adreno-decomposition] is a resource-pressure
+reference for the future Rust backend. Splitting a fused attention kernel can
+reduce registers and local-memory use even when it adds dispatches. This selects
+no GPU implementation or profile: resolve the driver/access prerequisites in
+[PLAN](../PLAN.md#adreno-vulkan) and qualify the existing packed-projection pilot
+before adding an attention workload.
+
+For the first eligible Swift shape, compare a bounded fused candidate with three
+explicit stages: QK scores, globally normalized probabilities, and probability/V
+accumulation. Keep Prism's existing score and value reduction order, causal masks,
+grouped-head ownership, current-token F32 K/V and selected stored-cache precision.
+The normalization stage must round probabilities to FP16 before V. A tiled online
+softmax that changes that boundary is a separate numerical profile, even if its
+real-arithmetic formula is equivalent.
+
+Declare token/head tiles and checked byte counts before allocation. Charge score
+storage, rounded probabilities, reduction scratch, descriptors, cache conversion
+and transfers as well as weights/KV. Device capacity alone cannot admit them.
+Select the smallest justified tile from measured kernel resource limits; a phone
+or another Adreno's tile size is not a Windows X1/X2 entitlement. Compare total
+dispatch, synchronization, scratch and request cost, including cold compilation.
+
+Each stage consumes only completed predecessors. Queue events must own the
+producer/consumer dependency; incidental graph splits are not synchronization.
+Retain all asynchronously accessed buffers until terminal completion or confirmed
+worker exit, including cancelled/failed stages. Cache keys must bind complete
+shape, stride, precision, kernel and device/driver identity.
+
+The first controls must identify the path actually executed, compare each stage
+and complete logits/state to independent CPU arithmetic, and exercise odd tiles,
+causal boundaries, long sums, changed shapes and cancellation between stages.
+Moving packet boundaries or adding unused work must not silently change arithmetic
+or upload unread inputs. Adapters, native policy access and complete-request
+benefit retain their separate gates. No attention kernel or GPU dispatch is added
+by this design; those tasks remain explicit in PLAN.
+
 Follow [profile eligibility](hardware-capabilities.md#automatic-profile-selection),
 [accelerator storage/lifetimes](hardware-capabilities.md#accelerator-storage-and-lifetime)
 and [measurement rules](performance-expectations.md#measurement-and-comparison).
@@ -181,3 +219,4 @@ resolves Vulkan access or establishes speed/quality. Model/kernel comparisons an
 [prism-ptq1]: https://github.com/PrismML-Eng/llama.cpp/blob/73bfe6cc485554822f80c473a3c0c4f25e80f41b/ggml/src/ggml-vulkan/vulkan-shaders/mul_mat_vecq_ptq1_0.comp
 [overlay]: https://github.com/symbiogenesis/prism-inference/blob/main/scripts/Build-PrismEngine.ps1
 [lora-pool]: https://github.com/symbiogenesis/prism-inference/blob/main/tools/prism/src/pool.rs
+[ggml-adreno-decomposition]: https://github.com/ggml-org/llama.cpp/commit/e1f7593c32e8dd782fc7addb908d0911260511ae

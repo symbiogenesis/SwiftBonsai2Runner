@@ -238,6 +238,29 @@ to justify; upstream speed ratios against older publisher builds do not measure
 the current Rust runtime. BitNet, T-MAC and Vec-LUT remain existing research
 sources, not newly discovered missing consumers.
 
+### ggml 1.0 execution and regression references
+
+The reviewed release is ggml `v1.0.0`, commit
+[`417a024b4fb6bc3116d41af7c067166a039bdf12`][ggml-one]. Its root
+[license][ggml-one-license] declares MIT. These are design/regression references;
+the selected Rust changes add no ggml dependency or copied implementation.
+
+| Mechanism | Selected application and limit |
+| --- | --- |
+| [Fusion execution counts and fused/unfused comparisons](https://github.com/ggml-org/llama.cpp/commit/61d447234482cc0807cab652d763e0fdb5f5d816) | Instrument the existing Prism graph paths and assert both actual fused execution and capability/adapter fallback. Keep attempted, failed and completed execution distinct. Full-model parity remains independent. |
+| [Fusion boundaries](https://github.com/ggml-org/llama.cpp/pull/31688), [stale prefetch](https://github.com/ggml-org/llama.cpp/pull/32100), [hidden synchronization and descriptor shapes](https://github.com/ggml-org/llama.cpp/pull/31744) | Exercise publication, cache coherency, unused arenas, shape identity and packet boundaries in the existing Hexagon path. Reject unsupported late uploads before mutation; do not borrow ggml's scheduler or rely on incidental splits as fences. |
+| [Operand precision admission](https://github.com/ggml-org/llama.cpp/commit/494d0f47bde61fd45018acab8334cdfd0d8b3ca0) | Enforce existing executor capabilities before callbacks. Use BF16/F32 range and long-sum controls without changing Prism's pinned activation rounding or speech's existing F32 operands/accumulation. |
+| [Few-token weight reuse](https://github.com/ggml-org/llama.cpp/pull/31533) | PQ2/PTQ1 already share decoded blocks across up to 32 tokens. Extend the portable Q4/Q8 fallback's real tile consumer and cover 2/3/7/9/17/24-token boundaries with independent arithmetic and work counts. NVIDIA instructions and upstream throughput are not Snapdragon evidence. |
+| [Decomposed Adreno attention](https://github.com/ggml-org/llama.cpp/commit/e1f7593c32e8dd782fc7addb908d0911260511ae) | Follow the [bounded candidate design](adreno.md#decomposed-attention-candidate) only after driver/access and packed-projection prerequisites. Preserve the FP16 probability boundary and account for additional stages, scratch and fences. No GPU attention consumer is present. |
+
+The release's FastRPC handle-width correction overlaps the existing authoritative
+`u64` boundary. Speech already has captured sampler tie/NaN controls. Its ARM
+4x4 change repairs Linux feature-macro selection; it does not establish a new
+Windows ARM64 kernel or speedup. PLAN owns remaining qualification and adoption.
+
+[ggml-one]: https://github.com/ggml-org/ggml/commit/417a024b4fb6bc3116d41af7c067166a039bdf12
+[ggml-one-license]: https://github.com/ggml-org/ggml/blob/417a024b4fb6bc3116d41af7c067166a039bdf12/LICENSE
+
 ### Small edits around cheaper execution
 
 Primary-source review as of 2026-11-14 supports W8's distinction between
