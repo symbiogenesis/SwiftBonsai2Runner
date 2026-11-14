@@ -140,6 +140,12 @@ impl Transcript {
             desired.clamp(0.0, (total - viewport_height).max(0.0)) - offset
         };
         let corrected_offset = offset + correction;
+        // Earlier measurements can shrink and expose rows that were offscreen
+        // when priorities were chosen. Refine those estimates on the next frame
+        // even when none of the old visible rows exhausted the job budget.
+        if visible_pending(&rows, corrected_offset, viewport_height, gap) {
+            ui.ctx().request_repaint();
+        }
         self.viewport.observation = (!navigating).then_some(Observation {
             offset: corrected_offset,
             anchor: Anchor {
@@ -183,11 +189,11 @@ impl Transcript {
                     .filter(|&index| {
                         let row = &rows[index];
                         let top = position(rows, index, gap);
-                        top + row.height > offset
-                            && top < offset + viewport_height
-                            && self
-                                .find_anchor_offset(index, row.selected.as_ref())
-                                .is_some()
+                        self.find_anchor_offset(index, row.selected.as_ref())
+                            .is_some_and(|local| {
+                                let point = top + local;
+                                point >= offset && point <= offset + viewport_height
+                            })
                     });
                 let index = active.unwrap_or_else(|| first_visible(rows, offset, gap));
                 let matched = active.and_then(|index| rows[index].selected.clone());
@@ -355,6 +361,15 @@ impl Transcript {
         }
         priorities
     }
+}
+
+fn visible_pending(rows: &[Row], offset: f32, height: f32, gap: f32) -> bool {
+    let mut top = 0.0;
+    rows.iter().any(|row| {
+        let pending = !row.ready && top + row.height >= offset && top <= offset + height;
+        top += row.height + gap;
+        pending
+    })
 }
 
 #[cfg(test)]
@@ -612,5 +627,65 @@ mod tests {
                 .lock()
                 .has_selection()
         );
+    }
+
+    #[test]
+    fn shrunk_rows_schedule_measurement_for_newly_exposed_viewport_rows() {
+        let mut rows = (0..12)
+            .map(|_| Row {
+                matches: 0..0,
+                highlights: HighlightKey {
+                    query_revision: 0,
+                    count: 0,
+                },
+                selected: None,
+                extra_height: 0.0,
+                height: 200.0,
+                ready: false,
+            })
+            .collect::<Vec<_>>();
+        // Two old visible cards plus six spare background jobs consume the
+        // frame budget. Their shorter measurements expose four untouched cards.
+        for row in rows.iter_mut().take(MAX_LAYOUTS_PER_FRAME) {
+            row.height = 20.0;
+            row.ready = true;
+        }
+        assert!(visible_pending(&rows, 0.0, 400.0, MESSAGE_GAP));
+        rows[8].ready = true;
+        assert!(!visible_pending(&rows, 0.0, 400.0, MESSAGE_GAP));
+        assert!(!visible_pending(&rows, 2000.0, 100.0, MESSAGE_GAP));
+    }
+
+    #[test]
+    fn offscreen_find_match_does_not_replace_the_visible_message_anchor() {
+        let mut chat = harness();
+        settle(&mut chat, 5);
+        let message = &mut chat.state_mut().transcript.messages[10];
+        message.body = format!(
+            "{}needle",
+            "Long Unicode 界 paragraph with wrapping words.\n".repeat(80)
+        );
+        message.body_revision += 1;
+        chat.state_mut().transcript.search.invalidate();
+        chat.state_mut().transcript.find_query("needle");
+        settle(&mut chat, 3);
+        let prefix = top(chat.state(), 10) + chat.state().offset;
+        chat.state_mut().requested_offset = Some(prefix + 20.0);
+        settle(&mut chat, 2);
+        assert!(
+            chat.state()
+                .transcript
+                .viewport
+                .observation
+                .as_ref()
+                .is_some_and(|observation| {
+                    observation.anchor.message == chat.state().transcript.messages[10].id
+                        && observation.anchor.matched.is_none()
+                })
+        );
+        let before = top(chat.state(), 10);
+        chat.set_size(egui::vec2(360.0, 320.0));
+        settle(&mut chat, 6);
+        assert!((top(chat.state(), 10) - before).abs() < 0.5);
     }
 }
