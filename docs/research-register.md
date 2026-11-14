@@ -2,16 +2,16 @@
 
 This register holds reusable proof obligations and optional application,
 inference and validation sources for Swift Bonsai 2. Topic contracts define
-supported behavior; [PLAN.md](../PLAN.md) owns outstanding work. A paper, report or source example neither approves an
-implementation nor qualifies a device/default. Derivations below are reviewable
-arguments, not machine-checked proofs.
+supported behavior; [PLAN.md](../PLAN.md) owns outstanding work. A paper, report or
+source example neither approves an implementation nor qualifies a device/default.
+Derivations below are reviewable arguments, not machine-checked proofs.
 
 ## Existing evidence and project scope
 
 The [runtime contract](native-rust-engine.md) and [inference defaults](inference-defaults.md)
 define Swift's Windows ARM64 scope. Locks/metadata take precedence over similarly
-named paper models. Prism owns kernels; Runner owns provisioning, admission,
-orchestration and [native presentation](ui-architecture.md).
+named paper models. Prism owns language-model kernels; Runner owns speech,
+provisioning, admission, orchestration and [native presentation](ui-architecture.md).
 
 Evidence labels: **theorem** = published result under stated assumptions;
 **derivation** = local algebra/counting; **paper** = authors' algorithm/evaluation;
@@ -375,11 +375,11 @@ verified-artifact and recovery contracts remain authoritative.
 
 1. Identify the usability need or bottleneck and missing evidence; check existing
    Runner/Prism consumers before selecting a mechanism.
-2. Declare numerical/state identity: exact bytes/integers, reordered floats with
-   tolerances, distribution-preserving sampling or explicit approximation.
+2. For numerical changes, declare numerical/state identity: exact bytes/integers,
+   reordered floats with tolerances, distribution-preserving sampling or explicit approximation.
    Pin source/license, artifacts, adapter, checkpoint and complete resource costs.
-3. Keep kernels in Prism and application/validation changes in their owning Rust
-   components, preserving Runner's policy and native UI. Qualify relevant tails,
+3. Keep language-model kernels in Prism and Runner speech/application/validation
+   changes in their owning Rust components, preserving policy and native UI. Qualify relevant tails,
    generic PQ2 `+2`, i8 `-128`, continuation, edits, restore, cancellation and failed
    commit using independent controls. Application changes retain accessibility,
    bounded storage/work, exact user text and no automatic request replay.

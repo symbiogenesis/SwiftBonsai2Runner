@@ -180,6 +180,16 @@ most eight saved prefixes, linear-lookup cost is separate from payload-copy cost
 include unique pages, mutable tails, metadata, rollback and every retained GDN snapshot; shared
 ownership cannot create mutable cross-snapshot aliases.
 
+The [vLLM checkpoint planner/exporter reference](research-register.md#hybrid-recurrence-prefix-caching-and-speculative-decoding)
+adds concrete review cases for extensions to this path: storage allocation is
+not successful checkpoint publication, and an attention-prefix hit is unusable
+without recurrent state and the complete convolution window at the same prefix.
+Check allocated-but-unwritten records, checkpoints available only in a divergent
+suffix, eviction, cancellation and failed publication against fresh execution.
+Borrow the invariants and independent Rust regression cases; the external Python
+implementation is neither an owned runtime dependency nor evidence of a Runner
+defect or qualified fix.
+
 [SuffixDecoding](https://arxiv.org/abs/2411.04975) proposes tokens from prompt/history suffixes.
 [SpecLA](https://arxiv.org/abs/2607.16673) retains verification factors and delays commit to
 reconstruct accepted recurrent states. The generic greedy block verifier does not

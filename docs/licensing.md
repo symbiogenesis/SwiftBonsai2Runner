@@ -16,6 +16,15 @@ or MPL; permissive dependencies remain subject to their own notices.
 
 ## Reviewed dependencies
 
+The [repository research catalog](research-register.md#research-catalog) lists
+unadopted sources separately from the dependencies below. Before any reuse, pin
+the exact revision and review the selected files, test assets and transitive
+dependencies for permission and required notices. A repository-level license
+label alone is insufficient. In particular, ciot has no verified reuse permission
+from the survey, and SillyTavern is a design reference rather than approved code
+for the Apache-2.0 application. Cataloging a source adds no dependency or NOTICE
+entry; actual incorporation requires its own review.
+
 The review covers workspace manifests/lockfile, resolved metadata and cached
 licenses, Prism notices and pinned artifacts. Dependency terms apply independently.
 

@@ -12,6 +12,11 @@ Follow [delivery ownership](docs/development-guide.md#implementation-delivery),
 hosted, device and human acceptance pending; the owner handles pushes and CI
 under [AGENTS.md](AGENTS.md).
 
+The [repository research catalog](docs/research-register.md#research-catalog)
+records candidate sources, overlap and reuse limits. Its references are not
+installed dependencies or qualified improvements; the scoped tasks below own
+adoption decisions without displacing native daily-use acceptance.
+
 ## Publication and qualification prerequisites
 
 - [ ] **L1 — Qualify the Rust/PowerShell tooling migration.** Have the owner
@@ -115,7 +120,10 @@ under [AGENTS.md](AGENTS.md).
   X1 sequential hashing and speech-build contention.
 - [ ] Qualify all native UI flows at normal/minimum window sizes, display scaling,
   high contrast, keyboard/IME input and with assistive technologies under the
-  [application guide](docs/development-guide.md#native-chat-app).
+  [application guide](docs/development-guide.md#native-chat-app). Extend the
+  [reference-guided controls](docs/validation.md#candidate-reference-guided-controls)
+  with process-bound Windows UI Automation checks and representative cosmic-text
+  multilingual edit cases; retain manual Narrator, IME and bidirectional review.
 - [ ] Qualify shared error selection, full-message Copy error, details/startup
   dialogs and Retry with simultaneous setup/model/speech/audio/update failures,
   preserving the composer and modal shortcut ownership.
@@ -195,6 +203,23 @@ under [AGENTS.md](AGENTS.md).
 - [ ] Complete signed-distribution acceptance: binary provenance, dependency and
   license notices, clean-machine prerequisites, installation, upgrades and rollback.
 
+### Native application improvements
+
+- [ ] Implement bounded variable-height transcript layout and stable viewport
+  anchoring using the [hello_egui reference](docs/research-register.md#native-application-and-writing-references).
+  Bound relayout after width/DPI/font changes and preserve streaming, selection,
+  exact Find navigation and conversation switching. Review compatibility with
+  the pinned egui before choosing a crate or a focused Rust implementation.
+- [ ] After long-draft resource attribution, evaluate Ferrite-style operation
+  undo against the current full-draft snapshots under the
+  [native candidate contract](docs/ui-architecture.md#candidate-native-improvements).
+  Bound retained edit bytes and preserve atomic oversized-edit rejection,
+  IME composition, selection/cursor restoration and complete undo/redo recovery.
+- [ ] Add bounded native comparison of alternate replies/drafts using the
+  [similar reference](docs/research-register.md#native-application-and-writing-references).
+  Keep Unicode-aware diff work cancellable and off the event loop; preserve
+  immutable branch identities and require explicit acceptance of any replacement.
+
 ### Isolation, transport and recovery
 
 - [ ] Establish [restricted inference authority](docs/sandboxing.md#worker-authority):
@@ -203,7 +228,9 @@ under [AGENTS.md](AGENTS.md).
   Qualify MXC loading, atomic Job limits and exact identity without weaker fallback.
 - [ ] Qualify trusted-host artifact ancestor sharing and nested rename/DELETE
   regressions through native/AppContainer integration; host guards must outlive
-  contained readers and preserve their narrower rights.
+  contained readers and preserve their narrower rights. Compare Codex's
+  [no-reparse handle controls](docs/research-register.md#reliability-and-distribution-references)
+  as an independent review source for staging/ancestor mutation races.
 - [ ] Bound scratch, PSEC-private temp and stdout/stderr storage; qualify
   exhaustion, diagnostic/credential retention and owner-loss cleanup.
 - [ ] Qualify the [broker contract](docs/broker-policy.md): authentication, numeric
@@ -211,6 +238,11 @@ under [AGENTS.md](AGENTS.md).
   bounds, rate limits, absolute operation deadlines and disconnect/stalled-consumer
   cancellation. Cover complete 429 responses, constant-space draining and explicit
   resend without replay; ordinary generation retains no elapsed-time cap.
+- [ ] Extend selected cancellation/ownership/shutdown models with
+  [Shuttle schedule replay](docs/validation.md#candidate-reference-guided-controls)
+  where existing scheduler histories leave a concrete concurrency gap. Keep
+  models small and independently asserted; replay controls do not qualify real
+  Windows process, Job, handle or network enforcement.
 - [ ] Qualify actual-model [streaming/audio resources](docs/streaming-resources.md):
   ready prefixes, chat/speech overlap, PCM/WinMM reuse, final-storage intake,
   fragmented framing, caps/tails/truncation, failed writes, driver refusal,
@@ -265,6 +297,9 @@ under [AGENTS.md](AGENTS.md).
 - [ ] Qualify explicit [latest-prefix reuse](docs/native-rust-engine.md#latest-prefix-reuse) across service,
   broker and UI: edited/switched histories, scale changes, cancellation/faults,
   fresh-state parity, bounded eviction/resources and repeated-history benefit.
+  Include the [vLLM checkpoint review cases](docs/inference-algorithms.md#hybrid-cache-reuse-and-speculative-state):
+  allocated-but-unwritten checkpoints, complete recurrent/convolution history,
+  and shared attention prefixes without a usable matching recurrent checkpoint.
 - [ ] Qualify the batched target verifier and integrated Swift sampled suffix
   consumer: per-position logits, actual sampler/RNG progression, checkpoint
   admission, accepted-prefix restoration, EOS/Stop/failure and complete-cycle benefit.
@@ -325,7 +360,11 @@ under [AGENTS.md](AGENTS.md).
 - [ ] **Q1 — Prepare independent creative/speech review packets.** Use complete
   answers/audio and declared writing/art-direction rubrics, including Thinking,
   output settings and Extra effort. Reuse applicable retained captures without
-  transferring their verdicts to changed source.
+  transferring their verdicts to changed source. Adapt the
+  [Longform Writing Bench rubric split](docs/performance-expectations.md#creative-review-packets)
+  between local prose and complete-story continuity/coherence; retain independent
+  human review and held-out tasks without importing its Python/cloud-judge harness
+  or claiming leaderboard equivalence for a shortened packet.
 - [ ] Qualify [standard LoRA](docs/swift-lora.md#standard-profile-qualification)
   writer basis, loaded-zero/no-adapter identity, nonzero effect and application
   at scale 1.3; retain scale-specific throughput, complete-answer quality and RAM.
@@ -334,6 +373,11 @@ under [AGENTS.md](AGENTS.md).
 - [ ] Qualify Q8/Q4 speech and thread choices, punctuation/live read-aloud,
   sampling/accent/reference changes and boundary smoothing. Distinguish retained
   PCM continuity from audible continuity under [speech measurement](docs/performance-expectations.md).
+- [ ] Add Rust ebur128 loudness/true-peak observations and reproducible
+  loudness-matched listening copies to selected speech review packets under
+  [speech measurement](docs/performance-expectations.md#q4-speech-resource-comparison).
+  Preserve original PCM and sample identities as numerical evidence; loudness
+  matching alone establishes neither voice quality nor intelligibility.
 - [ ] Qualify chat, warm TTS and overlap: idle/active/ASR monitoring, 30-second
   leases, Stop/wake, shared threads, memory, heat and comfort.
 - [ ] After ordinary Q4 acceptance, evaluate a verified 48 kHz decoder only with
@@ -342,6 +386,16 @@ under [AGENTS.md](AGENTS.md).
 - [ ] After Q4 acceptance and compatible runtime/Hadamard artifacts, evaluate
   ternary Talker separately; do not infer compatibility from repacked Q8/Q4 or
   extend it to codec/head/predictor without independent work.
+
+### Writing context
+
+- [ ] After creative-chat acceptance, implement a small native story-fact and
+  scene-context packet system using [Spindle and SillyTavern design references](docs/research-register.md#native-application-and-writing-references).
+  Use explicit approved facts, deterministic activation/priority, inclusion and
+  exclusion reasons, and a bounded token budget with authoritative broker
+  counting. Require reviewed canon changes; preserve branch ownership, encrypted
+  persistence/opt-out and draft recovery. Start without embeddings or an MCP/web
+  frontend, and evaluate complete-scene continuity and task cost before expansion.
 
 ### Direct LoRA weight editing
 
@@ -622,6 +676,18 @@ nor editing the available Abliteration factors.
   rollback before timing the complete request.
 - [ ] Use signed constant floor division only inside a measured parent hotspot
   with unchanged rounding/rejection and charged setup/dispatch costs.
+- [ ] After the selected CPU candidate's acceptance, review
+  [ciot T2P weight repacking](docs/cpu-kernels.md#external-layout-and-microkernel-references)
+  for a demonstrated projection bottleneck. Resolve reuse permission before
+  copying code; charge load-time preparation, peak duplicate weights, cache/file
+  identity and cancellation. Preserve all PQ2 codes, signed extremes, scales and
+  floating order; do not repeat affine-hoisting work or assume the old tail-path
+  traffic problem applies to current Prism.
+- [ ] For a selected speech/Prism projection bottleneck, review
+  [rten-gemm and KleidiAI packing/tile interfaces](docs/cpu-kernels.md#external-layout-and-microkernel-references)
+  for focused Rust reuse/ports. Retain checked DOTPROD/I8MM dispatch, baseline
+  fallback, bounded storage and independent arithmetic/state controls; source
+  availability and upstream microbenchmarks supply no device benefit verdict.
 - [ ] Capture a matched complete-request pair and record promotion or hold;
   update README measurements only after a freshly declared, source-bound capture
   with aggregate/per-arm power and cleanup observations.
@@ -724,6 +790,12 @@ nor editing the available Abliteration factors.
 - [ ] Consider [learned corpus retrieval](docs/research-register.md#conditional-learned-corpus-retrieval)
   only after embeddings are justified and vector search is a measured bottleneck;
   qualify passage relevance, complete-task cost, resource bounds and fallback.
+- [ ] After portable-update acceptance, design a separate signed-metadata trust
+  extension using the [tough/TUF reference](docs/research-register.md#reliability-and-distribution-references).
+  Specify publisher key custody/rotation, trust bootstrap, expiry/clock and offline
+  behavior, rollback/freeze rejection and recovery before changing release
+  publication or the installed updater. Current checksums remain within GitHub's
+  trust boundary; this research does not establish signing or authenticity.
 
 ## Future Qwen MoE migration
 
@@ -750,6 +822,12 @@ nor editing the available Abliteration factors.
 
 ## Deferred dependency experiments
 
+- [ ] After sequential-decoder and ASR acceptance, compare optional Earshot
+  speech-boundary ranking against the existing RMS chooser under the
+  [sample-conservation contract](docs/streaming-resources.md#candidate-asr-boundary-selection). Preserve every PCM
+  sample, the 30-second recognizer limit and current decoding path; charge detector
+  state/work, transcript boundary accuracy, cancellation and complete import cost
+  within one predeclared workload before any adoption.
 - [ ] Re-evaluate [Wild linker](https://github.com/wild-linker/wild) only after
   an upstream release provides full Windows support, including native
   `aarch64-pc-windows-msvc` linking. Verify MSVC/PE-COFF, static CRT and debug-symbol

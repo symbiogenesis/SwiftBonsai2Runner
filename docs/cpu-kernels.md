@@ -47,6 +47,25 @@ runtime, K4/V4 default or individual optimizations. The
 [X2 thread screen](#x2-cpu-thread-screen) instead compares publisher `4/4` and
 `6/6` thread budgets. Neither supplies a qualified CPU performance result.
 
+## External layout and microkernel references
+
+The [packed-kernel source catalog](research-register.md#packed-projections-cpu-kernels-and-compression)
+records ciot T2P, rten-gemm and KleidiAI as research inputs. ciot's four-row
+weight repack is distinct from Prism's existing activation preparation; its
+upstream speed comparisons do not qualify the current Rust runtime. Affine
+correction hoisting already exists, and current block-local prompt tails do not
+establish the older runtime's repeated whole-weight streaming problem.
+
+Any selected repack must charge preparation, temporary duplicate weight storage,
+verified derived-file/cache identity, cancellation and retained mappings. Cover
+generic PQ2 `+2`, activation `-128`, tails, scales and floating reduction/FMA
+order with independent controls. No visible root license was found for ciot;
+resolve permission before copying its code. rten-gemm offers Rust kernel and
+packing interfaces; KleidiAI's C/assembly tile layouts are reference material for
+focused Rust ports. Optional DOTPROD/I8MM retains checked dispatch and fallback;
+SVE/SME support elsewhere does not imply Snapdragon availability. These sources
+change neither the selected runtime nor the existing candidate/promotion order.
+
 ## Prompt and attention consumers
 
 These explicit source consumers are outside ordinary Runner launch policy:
