@@ -33,7 +33,7 @@ under [AGENTS.md](AGENTS.md).
 - [ ] Complete owning-lane compiler/analyzer and focused regression acceptance
   for centralized UI bounded reads, atomic settings publication and transcript
   insertion; TTS numerical/GGUF primitives and checked projection layouts; and
-  tools bounded intake, PE probing, curl admission and release/Hexagon validation.
+  tools bounded intake, PE probing and release/Hexagon validation.
   The Hexagon inventory alias correction and pinned-linker
   process-tree regression still need compiled owning-lane verification, including
   cold Cargo host/target links; the local direct diagnostic compile/self-test and
@@ -57,6 +57,12 @@ under [AGENTS.md](AGENTS.md).
 - [ ] **D1 — Qualify portable setup, repair and updates.** Cover fresh/custom data folders,
   automatic model/adapter/runtime setup, interruption/resume, corruption repair,
   pause/retry, disk/network/permission failures and independent speech retry.
+- [ ] Qualify the shared native Rust HTTPS replacement in its owning compiler,
+  analyzer and regression lanes, then exercise Windows Schannel/system trust,
+  proxies, HTTPS-only credential-free redirects, interrupted and ignored-Range
+  transfers, strict length/range bounds, cancellation and aggregate deadlines
+  through actual provisioning and updates. Local checks establish no measured
+  binary-size, latency or throughput improvement.
 - [ ] Qualify automatic startup/15-minute release discovery, conditional metadata
   requests, compression, server-directed backoff and manual checks. Cover paginated
   numeric/prerelease selection, incomplete/no-release/network failures, changed

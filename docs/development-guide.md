@@ -549,8 +549,9 @@ compiler, Visual Studio 18 ARM64 C++ tools and Windows SDK. TTS builds through
 Cargo without GGML, CMake or external native source provisioning. These build tools
 are not required on a machine running the portable executable. Pinned LLVM
 ARM64/engine archives and all outputs stay outside Git; only child compiler settings
-change. Downloads use Windows `System32/curl.exe` 8.4+ with HTTPS-only redirects
-and resumable verified partials; LLVM extraction uses `System32/tar.exe`.
+change. Downloads use the shared native Rust HTTPS client with Windows Schannel,
+HTTPS-only redirects and resumable verified partials; LLVM extraction uses
+`System32/tar.exe`. Downloads require no separately installed curl executable.
 
 For model-only inspection, `bonsai-tools chat --speech-models-only` returns verified
 artifact paths without building or launching companions. `speech-build` with
@@ -735,7 +736,19 @@ Neither path downloads fallback, projector or full-precision weights.
 
 Model bytes live under `models/<revision>/`, archives under `downloads/`, and
 installed runtimes under `runtime/<commit>/`. Native downloads resume immutable URLs
-through a bounded HTTPS-only curl process and per-artifact synchronization lock.
+through the shared Rust HTTPS client and per-artifact synchronization lock.
+Every request and redirect requires a credential-free HTTPS URL; artifact requests
+follow at most ten redirects within the caller's existing aggregate deadline.
+The client requests identity encoding, streams bounded buffers into an exclusively
+owned partial, and validates resumed `Content-Range` and response lengths against
+the locked total before appending. A server that ignores Range can restart from
+its full response only after safely truncating that same owned partial. Network
+resolution and connection each have a five-second limit. Artifact header and
+individual read/write waits allow up to 60 seconds without restarting the aggregate
+deadline. The caller polls cancellation and that deadline every 50 ms, shuts down
+the client's sockets when either fires, and joins the scoped HTTP worker before
+returning. Resolution and connection already in progress retain their shorter
+limits; no HTTP worker is detached. Windows uses Schannel and the system trust store.
 The verified partial remains open with writes/deletion denied through same-volume
 hard-link publication, which cannot overwrite a destination. Invalid complete
 partials are quarantined before one fresh retry; a second digest failure stops.

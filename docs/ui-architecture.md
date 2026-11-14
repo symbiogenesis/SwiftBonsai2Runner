@@ -137,8 +137,10 @@ completeness is unknown. Drafts are excluded, and invalid newest assets never
 cause fallback. GitHub SHA-256 identities, the release manifest, checksum inventory
 and tag/source revision must agree before download or use.
 
-Metadata requests retain HTTPS-only redirects, the GitHub JSON media type,
-application User-Agent and an explicit API version. Read-only discovery uses a fixed
+Metadata requests use the shared native Rust HTTPS client with Windows Schannel,
+credential-free HTTPS URLs at every hop, at most three redirects, the GitHub JSON
+media type, application User-Agent and an explicit API version. Read-only discovery
+uses a fixed
 six-slot disk cache binding each body to its exact URL and SHA-256. It prefers
 `If-None-Match`, with `If-Modified-Since` as a fallback; a valid 304 reuses the bounded
 body without a cache rewrite. This user-writable cache cannot authenticate release
@@ -146,9 +148,9 @@ publication: download, queue, launcher and replacement-helper gates request fres
 catalog, manifest, checksum and source metadata unconditionally. During discovery,
 manifest and checksum bodies can be reused only when their length and SHA-256 match
 the revalidated catalog. Requests advertise gzip and identity; native decoding
-independently bounds the compressed and expanded
-bodies at 2 MiB, including on supported Windows curl versions predating
-decompression limits. No authentication, conversation or model data accompanies
+independently bounds the compressed and expanded bodies at 2 MiB. The HTTP client
+does not decompress automatically, and no curl executable is required.
+No authentication, conversation or model data accompanies
 these requests.
 Network and HTTP failures persist an exponential cooldown across helper processes,
 honoring `Retry-After` and exhausted GitHub rate-limit reset instructions. Failed

@@ -51,7 +51,8 @@ serve the native UI; they are not evidence of a browser frontend.
 | `windows`, `windows-future` | Compatible WinRT microphone permission/capture; distinct from windows-sys. Retain future 0.3.2 with windows 0.62.2; 0.100 is incompatible. |
 | `eframe`, `wgpu` | Native UI, accessibility, clipboard, fallback/system fonts and all three explicit Windows backends. |
 | `egui_kittest`, `egui_system_font_provider` | Test harness/font checks; capture-only splitting offers little while production needs graphics. |
-| `toml`, `ureq` | CI-only manifest parsing (parse/serde/std) and synchronous HTTPS (Windows Schannel, otherwise Rustls); ureq defaults/compression disabled. |
+| `toml` | CI-only manifest parsing with parse/serde/std features. |
+| `ureq` | Synchronous HTTPS for native provisioning, updates and CI. Reuse the workspace pin with defaults, automatic compression and cookies disabled; Windows selects Schannel through native-tls, portable checks select Rustls. No new async runtime is required. |
 | `transcribe-cpp` | Static CPU ASR, defaults disabled; reviewed CMake script downloads no source and explicitly enables MSVC optimization. |
 | `simd-json` | Exact optional qualification-only crates.io pin; ordinary requests still use serde_json. |
 | `fearless_simd` | Pinned safe SIMD (`=1.2.0` in Runner speech and the active external runtime, with independent locks). ASR uses it in `validate_pcm`; TTS uses it in the serving Rust `engine`/`codec` modules. Prism's `bonsai-neon-dot` kernels are a separate runtime dependency. |
@@ -66,6 +67,28 @@ RustSec does not fully cover its bundled C/C++. TTS serves in Rust on CPU under
 its [source contract](../src/speech-tts/README.md). Speech uses only `VerifiedFile`
 from `bonsai-artifacts`; splitting its unconditional ZIP APIs needs demonstrated
 build/size benefit after Cargo unification and linker elimination.
+
+### Native HTTPS downloads
+
+The shared `bonsai-tools` HTTPS client replaces the external curl executable and
+its version-admission subprocess. Rust's standard library supplies sockets, not
+HTTP or TLS; ureq supplies HTTP framing and the selected TLS provider. Windows
+uses the operating system's certificate trust and TLS updates through Schannel.
+The pinned Rust dependencies make builds reproducible; they do not freeze the
+Windows trust store or qualify every proxy and TLS configuration.
+
+Runner retains URL, redirect, byte, deadline, cancellation and artifact identity
+policy above the client. A small connector guard validates credential-free target
+URLs, including redirected targets, before transport creation. The guard uses
+ureq's pinned unversioned connector API and needs review when that pin changes.
+Artifact transfers use fixed-buffer streaming and
+validated range responses; updates retain independent compressed/expanded body
+limits and conditional-cache/backoff policy. Cancellation shuts down registered
+sockets and joins the scoped HTTP worker; bounded DNS and TCP connection phases
+remain independently necessary. Removing curl removes an installed
+executable requirement, but no binary-size, latency or throughput improvement is
+claimed without a matching measurement. [PLAN.md](../PLAN.md) owns live-network
+and device qualification.
 
 ## JSON selection
 

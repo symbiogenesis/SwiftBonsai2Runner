@@ -262,8 +262,11 @@ variables. Caller identities are observed natively when omitted for supervised w
 returns the selected download plan and aggregate paths/byte total without
 networking or loading models. `speech-build` also owns native compiler/source
 preparation, selected daemon builds and explicit model provisioning in Rust.
-Provisioning uses Windows curl 8.4+ for HTTPS-only resumable downloads, verifies
-exact bytes/SHA-256, then publishes exclusively. Ordinary startup size-checks
+Provisioning uses the shared native Rust HTTPS client, with Schannel and system
+certificate trust on Windows, for HTTPS-only resumable downloads. It validates
+range responses, streams into exclusively owned bounded partials, verifies exact
+bytes/SHA-256, then publishes exclusively. No curl executable or version probe is
+required. Ordinary startup size-checks
 cached speech files; the native services verify their hashes before first use.
 Select recognition with `model: "QwenAsr"`; the legacy `Canary` selector,
 `CanaryModelPath` result and `--canary-*` connection options remain compatibility
