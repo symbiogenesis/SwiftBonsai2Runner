@@ -464,7 +464,8 @@ pub(super) fn run(value: Value, started: Instant) -> crate::Result<Value> {
             "developmentScreen":screening,
             "exportedFactorF64DevelopmentScreen":reconstruction_screen,
             "sourceOrderF32DevelopmentScreen":application_screen,"sourceAuthenticated":false,
-            "changedPrefixDriftRecoveryQualified":false,"runtimeImplemented":false,"behaviorQualified":false});
+            "changedPrefixDriftRecoveryQualified":false,"runtimeImplemented":false,
+            "runtimeImplementedScope":"released-serving-and-selective-loading","behaviorQualified":false});
         let bytes = serde_json::to_vec_pretty(&artifact).map_err(|error| error.to_string())?;
         artifact_sha256 = Some(hash(&bytes)?);
         solver::charge(&mut work, 0, deadline)?;
@@ -493,6 +494,7 @@ pub(super) fn run(value: Value, started: Instant) -> crate::Result<Value> {
         "developmentUsedForFit":false,"finalHeldoutUsed":false,"sourceAuthenticated":false,
         "captureAndPrefixDeclarationsAuthenticated":false,"signPayloadAuthenticated":false,
         "runtimeImplemented":false,"behaviorQualified":false,"performanceQualified":false,
+        "runtimeImplementedScope":"released-serving-and-selective-loading",
         "processMemoryQualified":false,"installed":false}),
     )
 }

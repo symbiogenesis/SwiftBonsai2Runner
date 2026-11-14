@@ -1,4 +1,7 @@
-//! Offline whole-FFN replacement fitting; no runtime consumes these artifacts yet.
+//! Offline whole-FFN replacement and structured-compensation fitting.
+//!
+//! Structured factors have a separate source-only Prism replay consumer;
+//! whole-FFN replacement, selective loading and released serving stay unsupported.
 //!
 //! Capture identities are declarations, not authentication of supplied vectors.
 
