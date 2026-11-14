@@ -7,6 +7,7 @@
 use std::{
     borrow::Cow,
     collections::{BTreeMap, BTreeSet},
+    ffi::OsString,
     fs::{self, File, OpenOptions},
     io::{Read as _, Write as _},
     path::{Component, Path, PathBuf},
@@ -554,25 +555,66 @@ fn configs_from(directory: &Path, paths: &mut BTreeSet<PathBuf>) -> crate::Resul
     Ok(())
 }
 
+fn build_configurations(
+    repository: &Path,
+    working: &Path,
+    environment: &BTreeMap<String, String>,
+) -> crate::Result<(BTreeSet<PathBuf>, bool)> {
+    let mut configs = BTreeSet::new();
+    configs_from(repository, &mut configs)?;
+    configs_from(working, &mut configs)?;
+    let home = environment
+        .get("CARGO_HOME")
+        .map(PathBuf::from)
+        .or_else(|| {
+            environment
+                .get("USERPROFILE")
+                .map(|profile| PathBuf::from(profile).join(".cargo"))
+        });
+    if let Some(home) = home {
+        if !home.is_absolute() {
+            return Ok((configs, false));
+        }
+        for name in ["config", "config.toml"] {
+            let path = home.join(name);
+            match fs::symlink_metadata(&path) {
+                Ok(metadata) if metadata.is_file() && !is_redirect(&metadata) => {
+                    configs.insert(path);
+                }
+                Ok(_) => return Err("Cargo configuration must be an ordinary file.".into()),
+                Err(error) if error.kind() == std::io::ErrorKind::NotFound => {}
+                Err(error) => return Err(error.to_string()),
+            }
+        }
+    }
+    Ok((configs, true))
+}
+
 pub(crate) fn fingerprint(
     repository: &Path,
     working: &Path,
     identity: &str,
 ) -> crate::Result<Option<String>> {
     crate::startup_cancel::checkpoint()?;
-    let environment = std::env::vars_os()
-        .filter_map(|(name, value)| {
-            name.to_str()
-                .filter(|name| build_environment(name))
-                .map(|name| {
-                    (
-                        name.to_ascii_uppercase(),
-                        value.to_string_lossy().into_owned(),
-                    )
-                })
-        })
-        .collect();
+    let Some(environment) = build_environment_values(std::env::vars_os()) else {
+        return Ok(None);
+    };
     fingerprint_with(repository, working, identity, &environment)
+}
+
+fn build_environment_values(
+    entries: impl IntoIterator<Item = (OsString, OsString)>,
+) -> Option<BTreeMap<String, String>> {
+    let mut environment = BTreeMap::new();
+    for (name, value) in entries {
+        let name = name.to_str()?;
+        if build_environment(name) {
+            // Receipts use Unicode strings. An unrepresentable input disables
+            // reuse instead of aliasing distinct native values through U+FFFD.
+            environment.insert(name.to_ascii_uppercase(), value.into_string().ok()?);
+        }
+    }
+    Some(environment)
 }
 
 fn fingerprint_with(
@@ -589,6 +631,9 @@ fn fingerprint_with(
     {
         return Err("Build paths must be expanded and absolute.".into());
     }
+    let Some(repository_name) = repository.to_str() else {
+        return Ok(None);
+    };
     for ancestor in repository.ancestors() {
         if is_redirect(&fs::symlink_metadata(ancestor).map_err(|error| error.to_string())?) {
             return Err("Reparse-point repository storage is unsupported.".into());
@@ -599,13 +644,16 @@ fn fingerprint_with(
     let mut supported = embedded_inputs(repository, &mut files)?;
     let mut hash = Hasher::new()?;
     part(&mut hash, b"bonsai-rust-startup-v2")?;
-    part(&mut hash, repository.to_string_lossy().as_bytes())?;
+    part(&mut hash, repository_name.as_bytes())?;
     part(&mut hash, identity.as_bytes())?;
     for file in files {
         let relative = file
             .strip_prefix(repository)
             .map_err(|error| error.to_string())?;
-        part(&mut hash, relative.to_string_lossy().as_bytes())?;
+        let Some(relative) = relative.to_str() else {
+            return Ok(None);
+        };
+        part(&mut hash, relative.as_bytes())?;
         part(&mut hash, digest_file(&file)?.as_bytes())?;
         if file.file_name().is_some_and(|name| name == "Cargo.toml") {
             supported &= !external_dependencies(
@@ -629,37 +677,15 @@ fn fingerprint_with(
     ] {
         supported &= environment.get(name).is_none_or(String::is_empty);
     }
-    let mut configs = BTreeSet::new();
-    configs_from(repository, &mut configs)?;
-    configs_from(working, &mut configs)?;
-    let home = environment
-        .get("CARGO_HOME")
-        .map(PathBuf::from)
-        .or_else(|| {
-            environment
-                .get("USERPROFILE")
-                .map(|profile| PathBuf::from(profile).join(".cargo"))
-        });
-    if let Some(home) = home {
-        if home.is_absolute() {
-            for name in ["config", "config.toml"] {
-                let path = home.join(name);
-                match fs::symlink_metadata(&path) {
-                    Ok(metadata) if metadata.is_file() && !is_redirect(&metadata) => {
-                        configs.insert(path);
-                    }
-                    Ok(_) => return Err("Cargo configuration must be an ordinary file.".into()),
-                    Err(error) if error.kind() == std::io::ErrorKind::NotFound => {}
-                    Err(error) => return Err(error.to_string()),
-                }
-            }
-        } else {
-            supported = false;
-        }
-    }
+    let (configs, configurations_supported) =
+        build_configurations(repository, working, environment)?;
+    supported &= configurations_supported;
     for config in configs {
         let content = fs::read_to_string(&config).map_err(|error| error.to_string())?;
-        part(&mut hash, config.to_string_lossy().as_bytes())?;
+        let Some(config_name) = config.to_str() else {
+            return Ok(None);
+        };
+        part(&mut hash, config_name.as_bytes())?;
         part(&mut hash, content.as_bytes())?;
         for key in [
             "paths",
@@ -1001,6 +1027,58 @@ mod tests {
         assert!(!build_environment("CODEX_THREAD_ID"));
         assert!(build_environment("RUSTFLAGS"));
         Ok(())
+    }
+
+    #[test]
+    fn fingerprint_environment_preserves_unicode_without_normalizing() {
+        let values = build_environment_values([
+            ("rustflags".into(), "--cfg=\u{e9}".into()),
+            ("CARGO_HOME".into(), "C:/\u{6a21}\u{578b}/\u{1f331}".into()),
+            ("WT_SESSION".into(), "ignored".into()),
+        ]);
+        assert_eq!(
+            values,
+            Some(BTreeMap::from([
+                ("RUSTFLAGS".into(), "--cfg=\u{e9}".into()),
+                ("CARGO_HOME".into(), "C:/\u{6a21}\u{578b}/\u{1f331}".into()),
+            ]))
+        );
+        assert_ne!(
+            values,
+            build_environment_values([
+                ("RUSTFLAGS".into(), "--cfg=e\u{301}".into()),
+                ("CARGO_HOME".into(), "C:/\u{6a21}\u{578b}/\u{1f331}".into()),
+            ])
+        );
+    }
+
+    #[cfg(windows)]
+    #[test]
+    fn fingerprint_unrepresentable_native_inputs_disable_reuse() -> crate::Result<()> {
+        use std::os::windows::ffi::OsStringExt as _;
+
+        for unit in [0xd800, 0xd801] {
+            let invalid = OsString::from_wide(&[unit]);
+            assert!(build_environment_values([("RUSTFLAGS".into(), invalid.clone())]).is_none());
+            assert!(build_environment_values([(invalid.clone(), "value".into())]).is_none());
+            // Non-build values have no effect on the executable identity.
+            assert_eq!(
+                build_environment_values([("WT_SESSION".into(), invalid)]),
+                Some(BTreeMap::new())
+            );
+        }
+        let (scratch, repo) = fixture()?;
+        let environment = BTreeMap::new();
+        assert!(fingerprint_with(&repo, &scratch, "test", &environment)?.is_some());
+        let source = repo.join("src").join(OsString::from_wide(&[
+            0xd800,
+            u16::from(b'.'),
+            u16::from(b'r'),
+            u16::from(b's'),
+        ]));
+        fs::write(&source, "native filename").map_err(|error| error.to_string())?;
+        assert!(fingerprint_with(&repo, &scratch, "test", &environment)?.is_none());
+        fs::remove_dir_all(scratch).map_err(|error| error.to_string())
     }
 
     #[test]
