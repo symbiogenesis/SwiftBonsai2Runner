@@ -320,8 +320,7 @@ pub async fn run(
         backend_resources: None,
     };
     loop {
-        let accepting = service.accept();
-        let mut accepting = pin!(accepting);
+        let mut accepting = pin!(service.accept());
         let event = poll_fn(|cx| {
             if let Poll::Ready(result) = shutdown.as_mut().poll(cx) {
                 return Poll::Ready(Event::Stop(if result.is_ok() {

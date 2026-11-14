@@ -185,10 +185,8 @@ impl LocalChatService {
     /// Returns [`ServiceError`] for capacity, shutdown or socket failure.
     pub async fn accept(&self) -> Result<AcceptedChat<'_>, ServiceError> {
         let reservation = self.gate.reserve().map_err(ServiceError::Gate)?;
-        let shutdown = pin!(self.gate.closed());
-        let accepting = pin!(self.listener.accept());
-        let mut shutdown = shutdown;
-        let mut accepting = accepting;
+        let mut shutdown = pin!(self.gate.closed());
+        let mut accepting = pin!(self.listener.accept());
         let (stream, peer) = poll_fn(|cx| {
             if shutdown.as_mut().poll(cx).is_ready() {
                 return Poll::Ready(Err(ServiceError::Gate(GateError::Closed)));
