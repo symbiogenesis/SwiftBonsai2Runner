@@ -3,7 +3,9 @@
 use super::*;
 
 fn request(sites: Value) -> Value {
-    json!({"schemaVersion":1,"weightRepresentation":"PQ2_0","sites":sites})
+    let mut request = json!({"schemaVersion":1,"weightRepresentation":"PQ2_0"});
+    request["sites"] = sites;
+    request
 }
 
 fn repeated_sites(groups: &[u32], rank: u32) -> Value {

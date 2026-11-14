@@ -288,7 +288,10 @@ mod tests {
             startup_markers(&format!("{accepted}\r")),
             vec![accepted.to_owned()]
         );
-        assert!(startup_markers(&format!("{accepted}\r\r\n")).is_empty());
+        assert_eq!(
+            startup_markers(&format!("{accepted}\r\r\n")),
+            Vec::<String>::new()
+        );
         let text = format!(
             "{accepted}\r\n{accepted} extra\nsecret {accepted}\nNative backend startup failure: stage=native-identity, error=Memory, process=running\n"
         );

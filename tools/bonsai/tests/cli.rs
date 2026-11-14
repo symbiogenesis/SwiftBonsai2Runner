@@ -21,7 +21,7 @@ fn ffn_plan_dispatches_without_model_or_request_files() -> Result<(), Box<dyn st
         ])
         .output()?;
     assert!(output.status.success());
-    assert!(output.stderr.is_empty());
+    assert_eq!(output.stderr, Vec::<u8>::new());
     let plan: Value = serde_json::from_slice(&output.stdout)?;
     assert_eq!(plan["status"], "geometry-only");
     assert_eq!(plan["selectedSiteCount"], 1);
