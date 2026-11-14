@@ -31,8 +31,10 @@ under [AGENTS.md](AGENTS.md).
   native-acceptance caches: cold build, exact hit and relevant-input invalidation,
   fresh same-run packages, source/digest verification and every selected check.
 - [ ] Complete owning-lane compiler/analyzer and focused regression acceptance
-  for centralized UI bounded reads, TTS numerical/GGUF primitives and tools
-  release/Hexagon validation. The Hexagon inventory alias correction and pinned-linker
+  for centralized UI bounded reads, atomic settings publication and transcript
+  insertion; TTS numerical/GGUF primitives and checked projection layouts; and
+  tools bounded intake, PE probing, curl admission and release/Hexagon validation.
+  The Hexagon inventory alias correction and pinned-linker
   process-tree regression still need compiled owning-lane verification, including
   cold Cargo host/target links; the local direct diagnostic compile/self-test and
   Windows process-identity control passed.
