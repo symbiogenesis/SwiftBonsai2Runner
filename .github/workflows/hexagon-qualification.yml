@@ -162,6 +162,7 @@ jobs:
           if-no-files-found: error
           retention-days: 90
   layout-controls:
+    needs: checked-policy
     runs-on: windows-11-arm
     timeout-minutes: 5
     steps:
@@ -175,6 +176,8 @@ jobs:
       - name: Check hosted handoffs and owner prerequisites offline
         shell: pwsh
         run: '& tools/ci/test_hexagon_handoff.ps1'
+      - name: Use the current run's checked native audit implementation
+        uses: $/.github/actions/use-bonsai-tools
       - name: Validate packed layout and bounded inventory supervision without models
         shell: pwsh
         run: |

@@ -1,6 +1,6 @@
 # Hexagon packed-weight audit
 
-`pq2_bridge.ps1` is a bounded, model-free PowerShell audit for the first Hexagon
+`pq2_bridge.ps1` forwards to a bounded, model-free Rust audit for the first Hexagon
 projection experiment. It never loads an inference engine, opens a device or
 rewrites a GGUF file. Native inference kernels and device ownership belong in
 Prism; this tool prepares an independent layout control.
@@ -16,6 +16,18 @@ The complete regression suite runs on hosted CI through
 Foundation. A focused local case is
 `pwsh -NoProfile -File tools/hexagon/test_pq2_bridge.ps1 -Test test_known_byte_fixture_splits_at_element_64_and_keeps_fourth_symbol`.
 Follow the [local-check and device-budget policy](../../docs/validation.md).
+
+These compatibility entry points require the checked native `bonsai-tools`
+executable through `BONSAI_TOOLS_PATH` or PATH. They do not compile inside an
+owner workload. `hexagon-policy`'s `audit` request owns PQ2 binary conversion,
+strict inventory admission, retained independent packed-fixture verification,
+checked integer operation/traffic/resident accounting, binary16 counterexamples
+and VTCM solver policy. `test_pq2_bridge.ps1 -Test NAME` and
+`test_k_tiling_and_reduction_audit.ps1 -Test NAME` select native fixtures from the
+same checked executable. The Rust harness also exercises these fixtures in CI.
+Static ledger values preserve the prior derivation, while their source inventories
+now bind the Rust policy and fixed descriptive contracts. The historical original
+operation ledger and independent capture bytes remain unchanged.
 
 [Hexagon qualification](../../.github/workflows/hexagon-qualification.yml) owns
 current native fixture preparation, model-free policy controls and the independent

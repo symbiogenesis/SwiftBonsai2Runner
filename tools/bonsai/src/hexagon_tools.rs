@@ -807,6 +807,33 @@ fn sdk_inventory_report(
     )
 }
 
+fn sdk_reader(context: &mut Context, rustc: &Path) -> Result<PathBuf> {
+    let cargo = rustc
+        .parent()
+        .ok_or("Pinned compiler directory missing.")?
+        .join("cargo.exe");
+    context.digest(&cargo, 256 * 1024 * 1024)?;
+    let target = context.output.join("sdk-reader-build");
+    context.run(
+        cargo.as_os_str(),
+        &[
+            "build".into(),
+            "--locked".into(),
+            "--release".into(),
+            "--manifest-path".into(),
+            context
+                .repo
+                .join("tools/hexagon/sdk-reader/Cargo.toml")
+                .into_os_string(),
+            "--target-dir".into(),
+            target.clone().into_os_string(),
+        ],
+        360,
+        &context.output.join("reader-build.txt"),
+    )?;
+    Ok(target.join("release/bonsai-sdk-reader.exe"))
+}
+
 fn sdk_inventory(mut context: Context) -> Result<Value> {
     let clock = Instant::now();
     let review = context.output.join("review");
@@ -864,30 +891,7 @@ fn sdk_inventory(mut context: Context) -> Result<Value> {
             .as_str()
             .ok_or("SDK archive name missing.")?;
         let archive = receive(&mut context, &pin["asset"], archive_name, 240)?;
-        let cargo = rustc
-            .parent()
-            .ok_or("Pinned compiler directory missing.")?
-            .join("cargo.exe");
-        context.digest(&cargo, 256 * 1024 * 1024)?;
-        let reader_target = context.output.join("sdk-reader-build");
-        context.run(
-            cargo.as_os_str(),
-            &[
-                "build".into(),
-                "--locked".into(),
-                "--release".into(),
-                "--manifest-path".into(),
-                context
-                    .repo
-                    .join("tools/hexagon/sdk-reader/Cargo.toml")
-                    .into_os_string(),
-                "--target-dir".into(),
-                reader_target.clone().into_os_string(),
-            ],
-            360,
-            &context.output.join("reader-build.txt"),
-        )?;
-        let reader = reader_target.join("release/bonsai-sdk-reader.exe");
+        let reader = sdk_reader(&mut context, &rustc)?;
         report["ArchiveReaderExecutable"] = context.executable(&reader, "bonsai-sdk-reader.exe")?;
         report["Stage"] = json!("sdk-data-only-inventory");
         let inventory = review.join("sdk-inventory.json");

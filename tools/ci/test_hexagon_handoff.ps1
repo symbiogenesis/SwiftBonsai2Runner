@@ -6,7 +6,9 @@ $workflow=[IO.File]::ReadAllText((Join-Path $repository '.github/workflows/hexag
 function Get-HexagonCaches([string]$Job) { return ,@([regex]::Split($Job,'(?m)^      - ') | Where-Object { $_.Contains('uses: actions/cache@') }) }
 $cases=[ordered]@{
  independent_controls_and_intake_prerequisites={
-    foreach ($name in @('checked-policy','layout-controls','ranking-controls','public-native-abi')) { Assert-CiSet (Get-CiDependencies $jobs[$name]) @() }
+    foreach ($name in @('checked-policy','ranking-controls','public-native-abi')) { Assert-CiSet (Get-CiDependencies $jobs[$name]) @() }
+    Assert-CiSet (Get-CiDependencies $jobs['layout-controls']) @('checked-policy')
+    Assert-Ci ($jobs['layout-controls'].Contains('uses: $/.github/actions/use-bonsai-tools'))
     Assert-CiSet (Get-CiDependencies $jobs.controls) @('checked-policy','layout-controls','ranking-controls'); Assert-CiSet (Get-CiDependencies $jobs['artifact-binder']) @('checked-policy'); Assert-Ci (Test-CiAcyclic $jobs)
     foreach ($name in @('session-probe','inventory','dispatch')) { Assert-CiSet (Get-CiDependencies $jobs[$name]) @('controls') }
  }

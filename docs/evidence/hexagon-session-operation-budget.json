@@ -1,33 +1,43 @@
 {
-  "modelLoaded": false,
-  "historicalLedgerUnchanged": true,
-  "oneAllEligibleEvaluationFits": true,
-  "profileEligible": false,
-  "historicalTerminalMaximumOperations": 21760,
-  "oneHiddenPlusOneEvaluationOperations": 45912.0,
-  "remainingAfterOneAllEligibleEvaluation": 744,
+  "cleanupReserveSeconds": 3,
   "completeRequestAdmissionRequired": true,
-  "sourceIdentityEncoding": "UTF8-with-LF-newlines",
+  "deviceOpened": false,
+  "evaluateOperationsPerToken": 23256,
+  "firstProjectionOperationsPerToken": 40,
+  "hiddenOperationsPerToken": 22656,
+  "historicalLedgerUnchanged": true,
+  "historicalTerminalMaximumOperations": 21760,
+  "kind": "current-original-pq2-terminal-operation-budget",
   "limitations": [
     "Static original-PQ2 counts; PTQ1, smaller row tiles and partial placement need independent accounting.",
     "One evaluation fitting does not admit a prompt and generated reply or establish a persistent serving lifetime.",
     "The complete unreused prompt, output reserve and prior session attempts must fit before inference.",
     "An operation count establishes no device arithmetic, available resources, duration or performance benefit."
   ],
-  "schemaVersion": 1,
-  "kind": "current-original-pq2-terminal-operation-budget",
-  "evaluateOperationsPerToken": 23256.0,
+  "maximumFirstProjectionEvaluationsByOperationsOnly": 600,
   "measuredInferenceSpeedup": null,
-  "hiddenOperationsPerToken": 22656.0,
+  "modelLoaded": false,
+  "oneAllEligibleEvaluationFits": true,
   "oneHiddenPlusOneEvaluationFits": false,
+  "oneHiddenPlusOneEvaluationOperations": 45912,
+  "profileEligible": false,
+  "remainingAfterOneAllEligibleEvaluation": 744,
   "resetReplenishesCapacity": false,
-  "terminalMaximumOperations": 24000,
+  "schemaVersion": 1,
   "sessionMaximumSeconds": 120,
-  "cleanupReserveSeconds": 3,
+  "sourceIdentityEncoding": "UTF8-with-LF-newlines",
   "sources": [
     {
-      "path": "tools/hexagon/verify_operation_budget.ps1",
-      "sha256": "a2943452e414620e58d6b72657bba2a3d5e6e199d0f566f34a70a4712913b70f"
+      "path": "tools/bonsai/src/hexagon_policy/audit/ledgers.rs",
+      "sha256": "a4ac40eaed884ef2eb892fa8ba8d1aa785ac94640d81cd67711eb832ee33f983"
+    },
+    {
+      "path": "tools/bonsai/src/hexagon_policy/audit/contracts.rs",
+      "sha256": "f7115bcc9f0c249332449bec9a09a2c84d8ba2e5200fe66c54c692f086fb26c6"
+    },
+    {
+      "path": "tools/bonsai/src/hexagon_policy/audit/mod.rs",
+      "sha256": "0962fd68c4ca947bd665d93c50ba19f22f861bffffddfa33074c2cbb6a63cacb"
     },
     {
       "path": "tools/hexagon/native_rpc/projection.rs",
@@ -38,7 +48,5 @@
       "sha256": "53be628d45e7784394ba45a92804dd22363788264f94bd394fe7f1eb0d33019c"
     }
   ],
-  "deviceOpened": false,
-  "maximumFirstProjectionEvaluationsByOperationsOnly": 600,
-  "firstProjectionOperationsPerToken": 40
+  "terminalMaximumOperations": 24000
 }

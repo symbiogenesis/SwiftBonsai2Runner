@@ -5,7 +5,7 @@ use serde_json::{Map, Number, Value};
 use std::collections::BTreeSet;
 use std::fmt;
 
-struct Seed(usize);
+struct Seed(usize, usize);
 
 impl<'de> DeserializeSeed<'de> for Seed {
     type Value = Value;
@@ -43,18 +43,18 @@ impl<'de> Visitor<'de> for Seed {
         Ok(Value::Null)
     }
     fn visit_seq<A: SeqAccess<'de>>(self, mut sequence: A) -> Result<Value, A::Error> {
-        if self.0 >= 32 {
-            return Err(de::Error::custom("Hexagon JSON exceeds depth 32."));
+        if self.0 >= self.1 {
+            return Err(de::Error::custom("Hexagon JSON exceeds its depth bound."));
         }
         let mut values = Vec::new();
-        while let Some(value) = sequence.next_element_seed(Self(self.0 + 1))? {
+        while let Some(value) = sequence.next_element_seed(Self(self.0 + 1, self.1))? {
             values.push(value);
         }
         Ok(Value::Array(values))
     }
     fn visit_map<A: MapAccess<'de>>(self, mut object: A) -> Result<Value, A::Error> {
-        if self.0 >= 32 {
-            return Err(de::Error::custom("Hexagon JSON exceeds depth 32."));
+        if self.0 >= self.1 {
+            return Err(de::Error::custom("Hexagon JSON exceeds its depth bound."));
         }
         let mut names = BTreeSet::new();
         let mut values = Map::new();
@@ -66,18 +66,22 @@ impl<'de> Visitor<'de> for Seed {
                     "Hexagon JSON contains ambiguous object names.",
                 ));
             }
-            values.insert(name, object.next_value_seed(Self(self.0 + 1))?);
+            values.insert(name, object.next_value_seed(Self(self.0 + 1, self.1))?);
         }
         Ok(Value::Object(values))
     }
 }
 
 pub(super) fn parse(text: &str) -> crate::Result<Value> {
-    if text.len() > 65536 {
-        return Err("Hexagon JSON exceeds its 64 KiB byte bound.".into());
+    parse_bounded(text, 65536, 32)
+}
+
+pub(super) fn parse_bounded(text: &str, maximum: usize, depth: usize) -> crate::Result<Value> {
+    if text.len() > maximum {
+        return Err("Hexagon JSON exceeds its byte bound.".into());
     }
     let mut decoder = serde_json::Deserializer::from_str(text);
-    let value = Seed(0)
+    let value = Seed(0, depth)
         .deserialize(&mut decoder)
         .map_err(|error| error.to_string())?;
     decoder.end().map_err(|error| error.to_string())?;

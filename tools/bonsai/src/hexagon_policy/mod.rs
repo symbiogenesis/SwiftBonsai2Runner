@@ -6,6 +6,7 @@ use serde_json::{Value, json};
 use crate::Result;
 use crate::identity::is_lower_hex;
 
+mod audit;
 mod dispatch;
 mod json;
 mod session;
@@ -47,6 +48,9 @@ pub(super) const SOURCE_NAMES: &[&str] = &[
     deny_unknown_fields
 )]
 enum Request {
+    Audit {
+        request: Value,
+    },
     DispatchPlan {
         maximum_seconds: u32,
     },
@@ -397,6 +401,7 @@ fn dispatch_build(
 pub fn run(request: Value) -> Result<Value> {
     let request: Request = serde_json::from_value(request).map_err(|error| error.to_string())?;
     match request {
+        Request::Audit { request } => audit::run(request),
         Request::DispatchPlan { maximum_seconds } => plan("dispatch", maximum_seconds, false, ""),
         Request::SessionPlan {
             maximum_seconds,

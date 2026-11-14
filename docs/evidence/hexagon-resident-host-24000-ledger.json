@@ -1,6 +1,18 @@
 {
-  "sourceIdentityEncoding": "UTF8-with-LF-newlines",
-  "newOwnerDeviceExecutionMilliseconds": 0,
+  "assumptions": {
+    "allSelectedWeightsRetainedForEveryRepeatedToken": true,
+    "allocationAlignmentBytes": 4096,
+    "cacheEviction": false,
+    "fullAllocationQueueBufferFlags": "0x90",
+    "maximumResidentArenaBytes": 67108864,
+    "maximumWeightRowsPerOperation": 17408,
+    "residentArena": "immutable packed weights in mapped host RAM; not DSP VTCM",
+    "residentRangeAlignmentBytes": 128,
+    "swiftServiceAllowanceBytes": 12348030976,
+    "terminalOperationCap": 24000
+  },
+  "deviceOpened": false,
+  "kind": "static-original-pq2-resident-host-payload-bounds",
   "limitations": [
     "Conditional byte arithmetic, not runtime admission, actual cache occupancy, measured bandwidth or inference speedup.",
     "The first scenario assumes its complete weight payload is resident and reused; metadata, scales, temporary packing, allocator, CPU graph and DSP resources are additional.",
@@ -12,27 +24,117 @@
     "Repeated-token cases are arithmetic examples within operation bounds only, without a duration, numerical, model-state, resource or device acceptance claim."
   ],
   "measuredInferenceSpeedup": null,
-  "assumptions": {
-    "swiftServiceAllowanceBytes": 12348030976,
-    "residentRangeAlignmentBytes": 128,
-    "residentArena": "immutable packed weights in mapped host RAM; not DSP VTCM",
-    "maximumResidentArenaBytes": 67108864,
-    "allSelectedWeightsRetainedForEveryRepeatedToken": true,
-    "allocationAlignmentBytes": 4096,
-    "fullAllocationQueueBufferFlags": "0x90",
-    "maximumWeightRowsPerOperation": 17408,
-    "cacheEviction": false,
-    "terminalOperationCap": 24000
-  },
   "modelLoaded": false,
-  "sources": [
+  "newOwnerDeviceExecutionMilliseconds": 0,
+  "profileEligible": false,
+  "scenarios": [
     {
-      "path": "tools/hexagon/verify_resident_traffic.ps1",
-      "sha256": "ed2d45c6bae0f72841376f6431cc3e7b7de275aea4cb4cfd61f2d7883f197d7e"
+      "activationPayloadPerTokenBytes": 163840,
+      "baseNativeAllocationBytes": 1191936,
+      "baselineDescriptorCoveredExtentPerTokenBytes": 47677440,
+      "fitsMaximumResidentArena": true,
+      "kernelLogicalPayloadPerTokenBytes": 47513600,
+      "kernelWeightPayloadPerTokenBytes": 25067520,
+      "minimumOriginalPlusResidentWeightBytes": 48742400,
+      "minimumPackedResidentArenaBytes": 25067520,
+      "minimumWeightsFitServiceAllowance": true,
+      "nativeAllocationWithMinimumArenaBytes": 26259456,
+      "operationsPerToken": 40,
+      "originalSelectedWeightBytes": 23674880,
+      "placement": "blk.0.ffn_up.weight",
+      "repeatedProjectionCases": [
+        {
+          "avoidedRepeatedCpuPackingBytesUpperBound": 0,
+          "fitsTerminalOperationCap": true,
+          "kernelLogicalPayloadBytes": 47513600,
+          "operations": 40,
+          "residentCpuPackedWeightBytesLowerBound": 25067520,
+          "streamingCpuPackedWeightBytes": 25067520,
+          "tokens": 1
+        },
+        {
+          "avoidedRepeatedCpuPackingBytesUpperBound": 175472640,
+          "fitsTerminalOperationCap": true,
+          "kernelLogicalPayloadBytes": 380108800,
+          "operations": 320,
+          "residentCpuPackedWeightBytesLowerBound": 25067520,
+          "streamingCpuPackedWeightBytes": 200540160,
+          "tokens": 8
+        },
+        {
+          "avoidedRepeatedCpuPackingBytesUpperBound": 3183575040,
+          "fitsTerminalOperationCap": true,
+          "kernelLogicalPayloadBytes": 6081740800,
+          "operations": 5120,
+          "residentCpuPackedWeightBytesLowerBound": 25067520,
+          "streamingCpuPackedWeightBytes": 3208642560,
+          "tokens": 128
+        }
+      ],
+      "residentDescriptorCoveredExtentPerTokenBytes": 1050378240,
+      "returnedPlanePayloadPerTokenBytes": 22282240
     },
     {
-      "path": "tools/hexagon/verify_operation_traffic.ps1",
-      "sha256": "2d6331861b8204698d1e9d31641fb602df601f69e43cb70dfcb21d9aa2c72030"
+      "activationPayloadPerTokenBytes": 95256576,
+      "baseNativeAllocationBytes": 1191936,
+      "baselineDescriptorCoveredExtentPerTokenBytes": 27719663616,
+      "fitsMaximumResidentArena": false,
+      "kernelLogicalPayloadPerTokenBytes": 13694386176,
+      "kernelWeightPayloadPerTokenBytes": 7199539200,
+      "minimumOriginalPlusResidentWeightBytes": 13999104000,
+      "minimumPackedResidentArenaBytes": 7199539200,
+      "minimumWeightsFitServiceAllowance": false,
+      "nativeAllocationWithMinimumArenaBytes": null,
+      "operationsPerToken": 23256,
+      "originalSelectedWeightBytes": 6799564800,
+      "placement": "all-eligible-original-PQ2-plus-logits-idealized",
+      "repeatedProjectionCases": [
+        {
+          "avoidedRepeatedCpuPackingBytesUpperBound": 0,
+          "fitsTerminalOperationCap": true,
+          "kernelLogicalPayloadBytes": 13694386176,
+          "operations": 23256,
+          "residentCpuPackedWeightBytesLowerBound": 7199539200,
+          "streamingCpuPackedWeightBytes": 7199539200,
+          "tokens": 1
+        },
+        {
+          "avoidedRepeatedCpuPackingBytesUpperBound": 50396774400,
+          "fitsTerminalOperationCap": false,
+          "kernelLogicalPayloadBytes": 109555089408,
+          "operations": 186048,
+          "residentCpuPackedWeightBytesLowerBound": 7199539200,
+          "streamingCpuPackedWeightBytes": 57596313600,
+          "tokens": 8
+        },
+        {
+          "avoidedRepeatedCpuPackingBytesUpperBound": 914341478400,
+          "fitsTerminalOperationCap": false,
+          "kernelLogicalPayloadBytes": 1752881430528,
+          "operations": 2976768,
+          "residentCpuPackedWeightBytesLowerBound": 7199539200,
+          "streamingCpuPackedWeightBytes": 921541017600,
+          "tokens": 128
+        }
+      ],
+      "residentDescriptorCoveredExtentPerTokenBytes": null,
+      "returnedPlanePayloadPerTokenBytes": 6399590400
+    }
+  ],
+  "schemaVersion": 1,
+  "sourceIdentityEncoding": "UTF8-with-LF-newlines",
+  "sources": [
+    {
+      "path": "tools/bonsai/src/hexagon_policy/audit/ledgers.rs",
+      "sha256": "a4ac40eaed884ef2eb892fa8ba8d1aa785ac94640d81cd67711eb832ee33f983"
+    },
+    {
+      "path": "tools/bonsai/src/hexagon_policy/audit/contracts.rs",
+      "sha256": "f7115bcc9f0c249332449bec9a09a2c84d8ba2e5200fe66c54c692f086fb26c6"
+    },
+    {
+      "path": "tools/bonsai/src/hexagon_policy/audit/mod.rs",
+      "sha256": "0962fd68c4ca947bd665d93c50ba19f22f861bffffddfa33074c2cbb6a63cacb"
     },
     {
       "path": "docs/evidence/hexagon-swift-operation-ledger.json",
@@ -40,109 +142,11 @@
     },
     {
       "path": "docs/evidence/hexagon-swift-traffic-ledger.json",
-      "sha256": "979108d2f19418639e1e6ecb9f032af678ed5919519aa70d5109a793ef02e12b"
+      "sha256": "8ebc56e7cffcd3469e71a9bacf51a4974e9f4dde34e9b49370f53fc7cab7d56d"
     },
     {
       "path": "docs/evidence/hexagon-session-operation-budget.json",
-      "sha256": "37fb9c3a4dd59605c8c0ccdbd823f9dd322586ee71771b0c1b7e99f76f97ce07"
-    }
-  ],
-  "schemaVersion": 1,
-  "kind": "static-original-pq2-resident-host-payload-bounds",
-  "profileEligible": false,
-  "deviceOpened": false,
-  "scenarios": [
-    {
-      "minimumOriginalPlusResidentWeightBytes": 48742400,
-      "fitsMaximumResidentArena": true,
-      "operationsPerToken": 40,
-      "placement": "blk.0.ffn_up.weight",
-      "minimumWeightsFitServiceAllowance": true,
-      "originalSelectedWeightBytes": 23674880,
-      "repeatedProjectionCases": [
-        {
-          "fitsTerminalOperationCap": true,
-          "avoidedRepeatedCpuPackingBytesUpperBound": 0,
-          "kernelLogicalPayloadBytes": 47513600,
-          "tokens": 1,
-          "operations": 40,
-          "streamingCpuPackedWeightBytes": 25067520,
-          "residentCpuPackedWeightBytesLowerBound": 25067520
-        },
-        {
-          "fitsTerminalOperationCap": true,
-          "avoidedRepeatedCpuPackingBytesUpperBound": 175472640,
-          "kernelLogicalPayloadBytes": 380108800,
-          "tokens": 8,
-          "operations": 320,
-          "streamingCpuPackedWeightBytes": 200540160,
-          "residentCpuPackedWeightBytesLowerBound": 25067520
-        },
-        {
-          "fitsTerminalOperationCap": true,
-          "avoidedRepeatedCpuPackingBytesUpperBound": 3183575040,
-          "kernelLogicalPayloadBytes": 6081740800,
-          "tokens": 128,
-          "operations": 5120,
-          "streamingCpuPackedWeightBytes": 3208642560,
-          "residentCpuPackedWeightBytesLowerBound": 25067520
-        }
-      ],
-      "minimumPackedResidentArenaBytes": 25067520,
-      "kernelWeightPayloadPerTokenBytes": 25067520,
-      "activationPayloadPerTokenBytes": 163840,
-      "baseNativeAllocationBytes": 1191936,
-      "baselineDescriptorCoveredExtentPerTokenBytes": 47677440,
-      "residentDescriptorCoveredExtentPerTokenBytes": 1050378240,
-      "returnedPlanePayloadPerTokenBytes": 22282240,
-      "nativeAllocationWithMinimumArenaBytes": 26259456,
-      "kernelLogicalPayloadPerTokenBytes": 47513600
-    },
-    {
-      "minimumOriginalPlusResidentWeightBytes": 13999104000,
-      "fitsMaximumResidentArena": false,
-      "operationsPerToken": 23256,
-      "placement": "all-eligible-original-PQ2-plus-logits-idealized",
-      "minimumWeightsFitServiceAllowance": false,
-      "originalSelectedWeightBytes": 6799564800,
-      "repeatedProjectionCases": [
-        {
-          "fitsTerminalOperationCap": true,
-          "avoidedRepeatedCpuPackingBytesUpperBound": 0,
-          "kernelLogicalPayloadBytes": 13694386176,
-          "tokens": 1,
-          "operations": 23256,
-          "streamingCpuPackedWeightBytes": 7199539200,
-          "residentCpuPackedWeightBytesLowerBound": 7199539200
-        },
-        {
-          "fitsTerminalOperationCap": false,
-          "avoidedRepeatedCpuPackingBytesUpperBound": 50396774400,
-          "kernelLogicalPayloadBytes": 109555089408,
-          "tokens": 8,
-          "operations": 186048,
-          "streamingCpuPackedWeightBytes": 57596313600,
-          "residentCpuPackedWeightBytesLowerBound": 7199539200
-        },
-        {
-          "fitsTerminalOperationCap": false,
-          "avoidedRepeatedCpuPackingBytesUpperBound": 914341478400,
-          "kernelLogicalPayloadBytes": 1752881430528,
-          "tokens": 128,
-          "operations": 2976768,
-          "streamingCpuPackedWeightBytes": 921541017600,
-          "residentCpuPackedWeightBytesLowerBound": 7199539200
-        }
-      ],
-      "minimumPackedResidentArenaBytes": 7199539200,
-      "kernelWeightPayloadPerTokenBytes": 7199539200,
-      "activationPayloadPerTokenBytes": 95256576,
-      "baseNativeAllocationBytes": 1191936,
-      "baselineDescriptorCoveredExtentPerTokenBytes": 27719663616,
-      "residentDescriptorCoveredExtentPerTokenBytes": null,
-      "returnedPlanePayloadPerTokenBytes": 6399590400,
-      "nativeAllocationWithMinimumArenaBytes": null,
-      "kernelLogicalPayloadPerTokenBytes": 13694386176
+      "sha256": "3a0848c0663a2cabe29778b892c43b31efed63ee64edfc4daa75a8380b7e9840"
     }
   ]
 }
