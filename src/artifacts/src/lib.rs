@@ -522,11 +522,9 @@ fn inspect_archive<R: Read + Seek>(
         let mut parent = Path::new(name).parent();
         while let Some(path) = parent {
             if !path.as_os_str().is_empty() {
-                expected_directories.insert(
-                    path.to_string_lossy()
-                        .replace('\\', "/")
-                        .to_ascii_lowercase(),
-                );
+                let mut directory = path.to_string_lossy().replace('\\', "/");
+                directory.make_ascii_lowercase();
+                expected_directories.insert(directory);
             }
             parent = path.parent();
         }
@@ -676,7 +674,7 @@ fn enumerate_installation(
         if is_redirect(&metadata) {
             return Err(ArtifactError::Path);
         }
-        let name = path
+        let mut name = path
             .strip_prefix(root)
             .map_err(|_| ArtifactError::Path)?
             .to_str()
@@ -686,12 +684,14 @@ fn enumerate_installation(
             return Err(ArtifactError::Installation);
         }
         if metadata.is_dir() {
-            if !directories.insert(name.to_ascii_lowercase()) {
+            name.make_ascii_lowercase();
+            if !directories.insert(name) {
                 return Err(ArtifactError::Installation);
             }
             enumerate_installation(root, &path, files, directories, checkpoint)?;
         } else if metadata.is_file() {
-            if !files.insert(name.to_ascii_lowercase()) {
+            name.make_ascii_lowercase();
+            if !files.insert(name) {
                 return Err(ArtifactError::Installation);
             }
         } else {
