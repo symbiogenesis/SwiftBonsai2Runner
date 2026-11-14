@@ -185,9 +185,11 @@ those verdicts separate.
 Diagnostics collect only `backend.stdout`/`backend.stderr` from at most eight
 immediate protected sessions, at most 64 KiB/log with strict UTF-8. Validate both
 keys, redact across every retained log and recheck before publication; invalid keys
-suppress logs. Upload only the two fixed sanitized logs and
-`startup-diagnostics.json` after regular-file/reparse/credential checks. Unsafe
-directories remain untouched and suppress that artifact. Base acceptance receipts
+suppress logs. Record empty and whitespace-only logs in `startup-diagnostics.json`
+without publishing placeholder log files or session headers. Upload only that
+receipt and the selected nonblank fixed sanitized logs after
+regular-file/reparse/credential checks. Unsafe directories remain untouched and
+suppress that artifact. Base acceptance receipts
 remain separate. `host.json` stores fixed startup stage/error/exit markers without
 raw exceptions, arguments or keys; the harness exit is recorded separately.
 

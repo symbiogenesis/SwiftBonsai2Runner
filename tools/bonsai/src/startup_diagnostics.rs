@@ -281,6 +281,10 @@ fn collect_logs(
                 Err(classification) => source.classification = classification,
                 Ok((bytes, _guard)) => match std::str::from_utf8(&bytes) {
                     Err(_) => source.classification = "invalid-utf8",
+                    Ok("") => source.classification = "empty",
+                    Ok(text) if text.trim().is_empty() => {
+                        source.classification = "whitespace-only";
+                    }
                     Ok(text) => {
                         let text = sanitize(text, keys);
                         if contains_key(&text, keys) {
@@ -317,11 +321,12 @@ fn collect_logs(
     } else {
         "bounded-sanitized-logs-retained"
     };
-    Ok(receipt.published_files.len() == 2
-        && receipt
-            .sources
-            .iter()
-            .all(|source| source.classification == "sanitized"))
+    Ok(receipt.sources.iter().all(|source| {
+        matches!(
+            source.classification,
+            "sanitized" | "empty" | "whitespace-only"
+        )
+    }))
 }
 
 fn publish_receipt(root: &Path, receipt: &Receipt, keys: &[String]) -> Result<(), &'static str> {
@@ -335,10 +340,15 @@ fn publish_receipt(root: &Path, receipt: &Receipt, keys: &[String]) -> Result<()
     write_new(root, PUBLIC_FILES[2], &bytes).map_err(|_| "publication-check-failed")
 }
 
-fn final_check(root: &Path, keys: &[String]) -> Result<(), &'static str> {
+fn final_check(root: &Path, receipt: &Receipt, keys: &[String]) -> Result<(), &'static str> {
     // Credential replacement shrinks hex runs; control replacement preserves
     // byte length. Input plus fixed headers stays within this aggregate bound.
-    for name in PUBLIC_FILES {
+    for name in receipt
+        .published_files
+        .iter()
+        .map(|file| file.name)
+        .chain(std::iter::once(PUBLIC_FILES[2]))
+    {
         let (bytes, _guard) = read_bounded(
             root.join(name).as_path(),
             MAX_LOG_BYTES * MAX_SESSIONS + 4096,
@@ -408,7 +418,7 @@ pub fn run(request: Value) -> crate::Result<Value> {
         }
     };
     let published = publish_receipt(root, &receipt, &keys).is_ok();
-    let checked = !complete || final_check(root, &keys).is_ok();
+    let checked = !complete || final_check(root, &receipt, &keys).is_ok();
     let classification = if published && checked {
         receipt.classification
     } else {

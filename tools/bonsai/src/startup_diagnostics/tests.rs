@@ -129,6 +129,10 @@ fn logs_redact_every_session_key_and_unknown_hex_without_traversing_nested_files
     assert!(receipt.get("BackendExitCode").is_none());
     assert_eq!(receipt["Sources"].as_array().map(Vec::len), Some(4));
     assert_eq!(receipt["PublishedFiles"].as_array().map(Vec::len), Some(2));
+    for index in [1, 3] {
+        assert_eq!(receipt["Sources"][index]["Classification"], "empty");
+        assert_eq!(receipt["Sources"][index]["Published"], false);
+    }
     let mut public = String::new();
     for name in PUBLIC_FILES {
         public.push_str(
@@ -139,6 +143,7 @@ fn logs_redact_every_session_key_and_unknown_hex_without_traversing_nested_files
         assert!(!public.to_ascii_lowercase().contains(&secret.repeat(64)));
     }
     assert!(!public.contains("MUST-NOT-BE-COPIED"));
+    assert!(!public.contains("--- worker session 2 ---"));
     assert!(public.contains("ready [REDACTED]"));
     assert!(public.contains("fixed startup failure"));
     assert!(public.contains("Unicode: 森 🌲"));
@@ -155,6 +160,31 @@ fn logs_redact_every_session_key_and_unknown_hex_without_traversing_nested_files
         .map_err(|error| error.to_string())?;
         assert_eq!(file["Bytes"], bytes.len());
         assert_eq!(file["Sha256"], crate::identity::sha256(&bytes));
+    }
+    Ok(())
+}
+
+#[test]
+fn empty_and_whitespace_logs_are_recorded_without_placeholder_publication() -> crate::Result<()> {
+    let fixture = Fixture::new()?;
+    let session = fixture.session('1')?;
+    fs::write(session.join("backend.stdout"), []).map_err(|error| error.to_string())?;
+    fs::write(session.join("backend.stderr"), " \t\r\n\u{2003}")
+        .map_err(|error| error.to_string())?;
+    for name in &PUBLIC_FILES[..2] {
+        fs::write(fixture.0.join(name), "stale log").map_err(|error| error.to_string())?;
+    }
+    let result = fixture.collect()?;
+    assert_eq!(result["Ready"], true);
+    assert_eq!(result["Classification"], "no-log-published");
+    let receipt = fixture.receipt()?;
+    assert_eq!(receipt["PublishedFiles"], json!([]));
+    assert_eq!(receipt["Sources"][0]["Classification"], "empty");
+    assert_eq!(receipt["Sources"][1]["Classification"], "whitespace-only");
+    assert_eq!(receipt["Sources"][0]["Published"], false);
+    assert_eq!(receipt["Sources"][1]["Published"], false);
+    for name in &PUBLIC_FILES[..2] {
+        assert!(!fixture.0.join(name).exists());
     }
     Ok(())
 }
