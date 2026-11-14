@@ -762,6 +762,39 @@ pub struct ProcessMemory {
 /// Owns a complete native process tree; dropping it kills remaining processes.
 pub struct OwnedProcess(native::NativeProcess);
 
+#[derive(Debug)]
+struct UnconfirmedStartCleanup(io::Error);
+
+impl std::fmt::Display for UnconfirmedStartCleanup {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        std::fmt::Display::fmt(&self.0, formatter)
+    }
+}
+
+impl std::error::Error for UnconfirmedStartCleanup {
+    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+        Some(&self.0)
+    }
+}
+
+fn unconfirmed_start_cleanup(error: io::Error) -> io::Error {
+    io::Error::new(error.kind(), UnconfirmedStartCleanup(error))
+}
+
+/// Identifies a launch failure whose already-created worker exit is unconfirmed.
+///
+/// The launch attempted exact-root termination before returning this error, but
+/// could not verify completion. Retain granted file identities and private
+/// storage and close further admission until application exit. Error kinds such
+/// as `InvalidInput` or `Unsupported` alone cannot establish cleanup status.
+/// The original error kind, display and source remain available for diagnosis.
+#[must_use]
+pub fn process_start_cleanup_unconfirmed(error: &io::Error) -> bool {
+    error
+        .get_ref()
+        .is_some_and(|source| source.is::<UnconfirmedStartCleanup>())
+}
+
 /// Retained identity of the caller whose lifetime bounds a supervised operation.
 pub struct ParentProcess(native::ParentProcess);
 
@@ -1481,6 +1514,32 @@ mod tests {
         }
     }
 }
+#[cfg(test)]
+#[test]
+fn failed_start_cleanup_marker_preserves_kind_display_and_source() {
+    for kind in [
+        io::ErrorKind::TimedOut,
+        io::ErrorKind::Other,
+        io::ErrorKind::InvalidInput,
+        io::ErrorKind::Unsupported,
+    ] {
+        let original = io::Error::new(kind, "native cleanup failure");
+        assert!(!process_start_cleanup_unconfirmed(&original));
+        let marked = unconfirmed_start_cleanup(original);
+        assert!(process_start_cleanup_unconfirmed(&marked));
+        assert_eq!(marked.kind(), kind);
+        assert_eq!(marked.to_string(), "native cleanup failure");
+        assert_eq!(
+            marked
+                .get_ref()
+                .and_then(|source| source.source())
+                .map(ToString::to_string)
+                .as_deref(),
+            Some("native cleanup failure")
+        );
+    }
+}
+
 #[cfg(test)]
 #[test]
 fn sandbox_environment_classifies_credential_names_without_changing_environment() {

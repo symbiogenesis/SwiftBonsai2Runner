@@ -544,7 +544,7 @@ impl NativeProcess {
             // PSEC may broker process creation rather than inheriting JOB_LIST.
             // Any failure before confirmed ownership must terminate this exact
             // retained root, even when closing our Job cannot reach it yet.
-            terminate_failed_start(&process)?;
+            terminate_failed_start(&process).map_err(crate::unconfirmed_start_cleanup)?;
             return Err(error);
         }
         Ok(Self {
