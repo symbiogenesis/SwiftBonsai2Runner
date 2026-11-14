@@ -99,30 +99,33 @@ fn identifier(value: &str) -> bool {
     !value.is_empty() && value.len() <= 1024 && !value.chars().any(char::is_control)
 }
 
+fn validate_source_identity(source: &Source) -> crate::Result<f32> {
+    for (value, width) in [
+        (&source.model_sha256, 64),
+        (&source.runtime_sha256, 64),
+        (&source.runtime_source_commit, 40),
+        (&source.adapter_scale_bits, 8),
+    ] {
+        if !crate::identity::is_lower_hex(value, width) {
+            return Err("Noncanonical source identity.".into());
+        }
+    }
+    if source
+        .adapter_sha256
+        .as_ref()
+        .is_some_and(|value| !crate::identity::is_lower_hex(value, 64))
+    {
+        return Err("Noncanonical teacher adapter identity.".into());
+    }
+    Ok(f32::from_bits(
+        u32::from_str_radix(&source.adapter_scale_bits, 16).map_err(|error| error.to_string())?,
+    ))
+}
+
 impl Request {
     fn validate(&self) -> crate::Result<()> {
         let source = &self.source;
-        for (value, width) in [
-            (&source.model_sha256, 64),
-            (&source.runtime_sha256, 64),
-            (&source.runtime_source_commit, 40),
-            (&source.adapter_scale_bits, 8),
-        ] {
-            if !crate::identity::is_lower_hex(value, width) {
-                return Err("Noncanonical source identity.".into());
-            }
-        }
-        if source
-            .adapter_sha256
-            .as_ref()
-            .is_some_and(|value| !crate::identity::is_lower_hex(value, 64))
-        {
-            return Err("Noncanonical teacher adapter identity.".into());
-        }
-        let scale = f32::from_bits(
-            u32::from_str_radix(&source.adapter_scale_bits, 16)
-                .map_err(|error| error.to_string())?,
-        );
+        let scale = validate_source_identity(source)?;
         if self.schema_version != 1
             || !(3..=MAX_ROWS).contains(&self.rows.len())
             || !scale.is_finite()
