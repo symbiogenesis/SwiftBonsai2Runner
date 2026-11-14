@@ -28,6 +28,13 @@ pub(super) const SOURCE_NAMES: &[&str] = &[
     "projection.rs",
     "projection_native.rs",
     "q8.rs",
+    "q8_dispatch.rs",
+    "q8_dispatch_tests.rs",
+    "q8_native.rs",
+    "q8_native_tests.rs",
+    "q8_oracle.rs",
+    "q8_oracle_tests.rs",
+    "q8_projection.rs",
     "query.rs",
     "sources.json",
 ];

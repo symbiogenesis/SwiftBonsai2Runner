@@ -248,6 +248,13 @@ fn build_record(session: bool) -> Value {
                 "projection.rs",
                 "projection_native.rs",
                 "q8.rs",
+                "q8_dispatch.rs",
+                "q8_dispatch_tests.rs",
+                "q8_native.rs",
+                "q8_native_tests.rs",
+                "q8_oracle.rs",
+                "q8_oracle_tests.rs",
+                "q8_projection.rs",
                 "query.rs",
                 "sources.json"
             ]
@@ -277,6 +284,13 @@ fn check_build(record: &Value, session: bool) -> Result<Value> {
             "projection.rs",
             "projection_native.rs",
             "q8.rs",
+            "q8_dispatch.rs",
+            "q8_dispatch_tests.rs",
+            "q8_native.rs",
+            "q8_native_tests.rs",
+            "q8_oracle.rs",
+            "q8_oracle_tests.rs",
+            "q8_projection.rs",
             "query.rs",
             "sources.json",
         ]
@@ -342,6 +356,64 @@ fn hosted_build_requires_exact_source_set_types_and_executable_identity() -> Res
                 check_build(value, false)
             });
         }
+    }
+    Ok(())
+}
+
+#[test]
+fn hosted_native_source_inventory_covers_every_rust_input() -> Result<()> {
+    let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../hexagon/native_rpc");
+    let actual: std::collections::BTreeSet<_> = std::fs::read_dir(root)
+        .map_err(|error| error.to_string())?
+        .map(|entry| {
+            entry
+                .map(|entry| entry.file_name().to_string_lossy().into_owned())
+                .map_err(|error| error.to_string())
+        })
+        .collect::<Result<Vec<_>>>()?
+        .into_iter()
+        .filter(|name| {
+            std::path::Path::new(name)
+                .extension()
+                .is_some_and(|extension| extension.eq_ignore_ascii_case("rs"))
+                || name == "sources.json"
+        })
+        .collect();
+    let declared: std::collections::BTreeSet<_> =
+        SOURCE_NAMES.iter().map(|name| (*name).to_owned()).collect();
+    assert_eq!(actual, declared);
+    assert_eq!(SOURCE_NAMES.len(), declared.len());
+    let record = build_record(true);
+    for name in [
+        "q8_dispatch.rs",
+        "q8_dispatch_tests.rs",
+        "q8_native.rs",
+        "q8_native_tests.rs",
+        "q8_oracle.rs",
+        "q8_oracle_tests.rs",
+        "q8_projection.rs",
+    ] {
+        let mut omitted = record.clone();
+        omitted["SourceFiles"]
+            .as_array_mut()
+            .ok_or("Missing source files.")?
+            .retain(|file| file["Name"] != name);
+        assert!(
+            check_build(&omitted, true).is_err(),
+            "Accepted omitted {name}"
+        );
+        let mut changed = record.clone();
+        let file = changed["SourceFiles"]
+            .as_array_mut()
+            .ok_or("Missing source files.")?
+            .iter_mut()
+            .find(|file| file["Name"] == name)
+            .ok_or("Missing Q8 source fixture.")?;
+        file["Sha256"] = json!("9".repeat(64));
+        assert!(
+            check_build(&changed, true).is_err(),
+            "Accepted changed {name}"
+        );
     }
     Ok(())
 }

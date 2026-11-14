@@ -161,6 +161,23 @@ nonfinite tails, oracle rejection/unwind, a caught progress unwind after write,
 cancellation and exhausted bounds.
 These tests open no driver/DSP/model and supply no Q8 numerical observation.
 
+`Q8ExactOracle` supplies an independent signed-dot review for an explicitly exact
+diagnostic subset. It reads unchanged original row-major Q8 blocks, including
+signed -128 codes, and admits only integral activations in -127..127 with a
+magnitude-127 anchor in every 32-value group. The pinned DSP half conversion,
+scale and inverse then retain unit activation scale and unchanged codes. Weight
+scales are signed zero or powers of two from 2^-8 through 2^8; every ordered
+block-sum prefix must be exactly representable in F32. Unsupported scales,
+ordinary speech activations and sums requiring rounding reject before submission.
+`submit` passes the original borrowed inputs and this review to `Q8Submitter`;
+every output bit must match before publication. Four literal controls cover
+signed extremes, scale/block order, all vectors, late corruption, zero sign,
+unsupported inputs and refusal before publication. These are mathematical
+controls, not original native observations or general HVX quantization emulation.
+The hosted compiler/device source inventory now also binds every Q8 dispatcher,
+projection, native adapter, oracle and test input; incomplete older source sets
+cannot pass current receipt admission.
+
 The Q8 packet/solver controls remain mathematical/layout checks, not native
 captures. Signed-package/device execution, exact loaded DSP identity, contained
 HTP0 supervision, Q8 activation quantization/arithmetic, correlated completions

@@ -19,6 +19,7 @@ mod dispatch;
 mod projection;
 mod q8;
 mod q8_dispatch;
+mod q8_oracle;
 mod q8_projection;
 mod session;
 mod session_mapping;
@@ -33,6 +34,7 @@ pub use projection::{
 };
 pub use q8::{Q8_MAX_MAPPED_BYTES, Q8Matmul};
 pub use q8_dispatch::{Q8Buffer, Q8Completion, Q8Dispatcher, Q8Request};
+pub use q8_oracle::Q8ExactOracle;
 pub use q8_projection::{Q8Projection, Q8ProjectionReport, Q8Submitter};
 pub use session::{
     GET_EFFECTIVE_DOMAIN_ID, GET_URI, MAP_FD, MAP_FD_DELAYED, SessionPreparationReport,

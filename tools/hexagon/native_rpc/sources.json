@@ -373,6 +373,29 @@
     "ttsPrefillOrSharedKvQualified": false,
     "profileEligible": false
   },
+  "q8ExactArithmeticOracle": {
+    "status": "independent-exact-diagnostic-subset-no-device-or-speech-qualification",
+    "api": "Q8ExactOracle::new; review; submit",
+    "ggmlCommit": "19cce6919992fdffd92e0ac152caaf1e2b8f254e",
+    "quantizationSource": {
+      "path": "ggml/src/ggml-hexagon/htp/hvx-mm-kernels-tiled.h",
+      "sha256": "89dbb3c7a2e4da170c657f47d3bce57376a1aad445e2bbd62814ca8bcb00dd6f",
+      "functions": "quantize_block_f32_q8_0_tiled; accum_q8_0_32x1/32x2; tiled_vec_dot_q8_0_32x1/32x2"
+    },
+    "inverseSource": {
+      "path": "ggml/src/ggml-hexagon/htp/hvx-inverse.h",
+      "sha256": "7e2a59f619f0aec2dc966823e8128a70e15cb6f056582b2ae87ba6fab64eed92",
+      "function": "hvx_vec_inverse_f16"
+    },
+    "activationSubset": "each-32-values-integral-minus127-through127-with-absolute127-anchor; exact-half-input-unit-scale-and-unchanged-signed-codes",
+    "weightScaleSubset": "signed-zero-or-power-of-two-2^-8-through2^8",
+    "arithmetic": "independent-original-row-major-signed-i8-dot-in-i32; exact-scaled-i64-units; every-ordered-prefix-must-round-trip-through-F32; no-FMA-or-general-QF16-emulation",
+    "acceptance": "every-output-bit-including-zero-sign; original-borrowed-inputs-only; unsupported-inputs-reject-before-native-submit",
+    "controls": "four-q8_oracle_-literal-controls-no-driver-DSP-or-model-execution",
+    "signedPackageDeviceQualified": false,
+    "ttsPrefillOrSharedKvQualified": false,
+    "profileEligible": false
+  },
   "windowsAbi": [
     "https://learn.microsoft.com/en-us/windows/win32/api/winsvc/nf-winsvc-queryserviceconfigw",
     "https://learn.microsoft.com/en-us/windows/win32/api/libloaderapi/nf-libloaderapi-loadlibraryexw",
