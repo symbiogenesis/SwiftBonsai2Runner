@@ -490,6 +490,8 @@ fn run_owned(
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[cfg(windows)]
+    use std::os::windows::process::CommandExt as _;
 
     #[test]
     fn build_deadlines_require_the_explicit_exact_hosted_release() {
@@ -679,63 +681,70 @@ mod tests {
     }
 
     #[cfg(windows)]
-    fn quoted(path: &Path) -> String {
-        path.to_string_lossy().replace('\'', "''")
-    }
-
-    #[cfg(windows)]
     fn process_tree(
         scratch: &Path,
         wait: bool,
     ) -> crate::Result<(PathBuf, Vec<OsString>, PathBuf)> {
-        let executable = resolve(OsStr::new("pwsh.exe"))?;
+        let executable = std::env::current_exe().map_err(|error| error.to_string())?;
         let marker = scratch.join("descendant.txt");
-        let leaf = scratch.join("leaf.ps1");
-        let parent = scratch.join("parent.ps1");
-        fs::write(
-            &leaf,
-            format!(
-                "$ErrorActionPreference = 'Stop'\n\
-                 $process = Get-Process -Id $PID\n\
-                 [IO.File]::WriteAllText('{marker}.partial', \"$PID`n$($process.StartTime.ToUniversalTime().ToFileTimeUtc())\")\n\
-                 [IO.File]::Move('{marker}.partial', '{marker}')\n\
-                 $deadline = [DateTime]::UtcNow.AddSeconds(30)\n\
-                 while ([DateTime]::UtcNow -lt $deadline) {{ Start-Sleep -Milliseconds 100 }}\n",
-                marker = quoted(&marker)
-            ),
-        )
-        .map_err(|error| error.to_string())?;
-        fs::write(
-            &parent,
-            format!(
-                "$ErrorActionPreference = 'Stop'\n\
-                 $start = [Diagnostics.ProcessStartInfo]::new('{executable}')\n\
-                 $start.UseShellExecute = $false\n\
-                 $start.CreateNoWindow = $true\n\
-                 $start.WorkingDirectory = '{working}'\n\
-                 foreach ($argument in @('-NoLogo', '-NoProfile', '-NonInteractive', '-File', '{leaf}')) {{ $start.ArgumentList.Add($argument) }}\n\
-                 $child = [Diagnostics.Process]::Start($start)\n\
-                 while (-not [IO.File]::Exists('{marker}')) {{ if ($child.HasExited) {{ throw 'Leaf failed.' }}; Start-Sleep -Milliseconds 10 }}\n\
-                 {wait}\n",
-                executable = quoted(&executable),
-                working = quoted(scratch),
-                leaf = quoted(&leaf),
-                marker = quoted(&marker),
-                wait = if wait { "$child.WaitForExit()" } else { "exit 0" },
-            ),
-        )
-        .map_err(|error| error.to_string())?;
+        fs::write(scratch.join("wait-for-descendant"), wait.to_string())
+            .map_err(|error| error.to_string())?;
         Ok((
             executable,
             vec![
-                "-NoLogo".into(),
-                "-NoProfile".into(),
-                "-NonInteractive".into(),
-                "-File".into(),
-                parent.into_os_string(),
+                "--exact".into(),
+                "startup_process::tests::compiler_tree_parent".into(),
+                "--ignored".into(),
             ],
             marker,
         ))
+    }
+
+    #[cfg(windows)]
+    fn compiler_tree_wait() -> std::io::Result<bool> {
+        fs::read_to_string("wait-for-descendant")?
+            .parse()
+            .map_err(std::io::Error::other)
+    }
+
+    #[cfg(windows)]
+    #[test]
+    #[ignore = "subprocess entry point; invoked only in a process-tree fixture directory"]
+    fn compiler_tree_leaf() -> std::io::Result<()> {
+        let _ = compiler_tree_wait()?;
+        let creation = bonsai_windows_process::current_process_creation_time()?;
+        fs::write(
+            "descendant.partial",
+            format!("{}\n{creation}", std::process::id()),
+        )?;
+        fs::rename("descendant.partial", "descendant.txt")?;
+        thread::sleep(Duration::from_secs(30));
+        Ok(())
+    }
+
+    #[cfg(windows)]
+    #[test]
+    #[ignore = "subprocess entry point; invoked only in a process-tree fixture directory"]
+    fn compiler_tree_parent() -> std::io::Result<()> {
+        let wait = compiler_tree_wait()?;
+        let mut child = std::process::Command::new(std::env::current_exe()?)
+            .args([
+                "--exact",
+                "startup_process::tests::compiler_tree_leaf",
+                "--ignored",
+            ])
+            .creation_flags(0x0800_0000)
+            .spawn()?;
+        while !Path::new("descendant.txt").is_file() {
+            if child.try_wait()?.is_some() {
+                return Err(std::io::Error::other("Compiler descendant failed."));
+            }
+            thread::sleep(Duration::from_millis(10));
+        }
+        if wait {
+            child.wait()?;
+        }
+        Ok(())
     }
 
     #[cfg(windows)]
