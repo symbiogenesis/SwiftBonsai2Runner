@@ -167,7 +167,12 @@ all trailing overlays; caches use `[position, kv_head, head_dim]` ordering. Exac
 prefix reuse still exposes the complete restored state rather than just a suffix.
 
 The `observation::ARITHMETIC_IDENTITY` identifies Rust packed-weight projections
-with F32 activations and F32 KV. Before collecting, callers bind exact reviewed
+with F32 activations and F32 KV. Version 2 also identifies the speaker frontend's
+double-precision Hann/DFT angles narrowed to F32, including narrowing before Hann
+subtraction, and the original multiply/divide/add order for mel interpolation
+from pinned `audio-mel.h`. Replay rejects the older candidate arithmetic identity;
+old observations retain their original identity and supply no new verdict.
+Before collecting, callers bind exact reviewed
 source, compiler/target/executable, worker count, all model locks and input bytes.
 Retain independent provider identities, original expected float bits/codes/PCM,
 dimensions, tolerances, observation schedule and exclusions. Rust events are not
@@ -272,3 +277,10 @@ unwind. They test the comparator contract, rather than loading complete pinned
 codec/speaker models or obtaining independent native captures. Independent
 original full-model observations, owning hosted acceptance and device/listening/
 resource qualification remain required.
+
+The `speaker_reference_` controls include a complete miniature waveform-to-vector
+graph with closed-form embedding answers, in addition to individual primitives.
+It exercises all three ordered SE-Res2Net outputs, aggregation, temporal pooling
+and final projection. Literal coefficient and quadrature controls distinguish
+double-angle baking from the former F32 angles. This graph uses synthetic small
+weights; pinned-weight speaker/voice and full native-model parity remain separate.

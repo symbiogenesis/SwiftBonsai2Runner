@@ -25,6 +25,15 @@ use fearless_simd::{Level, dispatch, f32x4, prelude::*};
 use crate::numerics::{axpy_simd, f32_dot_simd, usize_to_f32};
 
 #[expect(
+    clippy::as_conversions,
+    clippy::cast_possible_truncation,
+    reason = "The pinned audio-mel.h explicitly rounds double-precision sine/cosine coefficients to binary32 before any subsequent arithmetic."
+)]
+const fn coefficient(value: f64) -> f32 {
+    value as f32
+}
+
+#[expect(
     clippy::inline_always,
     reason = "fearless_simd dispatch! requires inline(always) to inherit target_feature attributes."
 )]
@@ -256,22 +265,36 @@ impl MelSpectrogramExtractor {
         }
         let n_freq = cfg.n_fft / 2 + 1;
         let n_fft_f = usize_to_f32(cfg.n_fft);
-        let two_pi = 2.0_f32 * core::f32::consts::PI;
+        let n_fft_double =
+            f64::from(u32::try_from(cfg.n_fft).map_err(|_| {
+                io::Error::new(io::ErrorKind::InvalidInput, "FFT length exceeds u32.")
+            })?);
+        let two_pi = 2.0_f64 * core::f64::consts::PI;
 
         let mut hann = Vec::with_capacity(cfg.n_fft);
         for i in 0..cfg.n_fft {
-            let phase = two_pi * usize_to_f32(i) / n_fft_f;
-            hann.push(0.5_f32 * (1.0_f32 - phase.cos()));
+            let phase = two_pi
+                * f64::from(u32::try_from(i).map_err(|_| {
+                    io::Error::new(io::ErrorKind::InvalidInput, "Hann index exceeds u32.")
+                })?)
+                / n_fft_double;
+            // The original narrows cos(), then subtracts/multiplies in f32.
+            hann.push(0.5_f32 * (1.0_f32 - coefficient(phase.cos())));
         }
 
         let mut dft_real = vec![0.0_f32; n_freq * cfg.n_fft];
         let mut dft_imag = vec![0.0_f32; n_freq * cfg.n_fft];
         for k in 0..n_freq {
-            let kf = usize_to_f32(k);
+            let kf = f64::from(u32::try_from(k).map_err(|_| {
+                io::Error::new(io::ErrorKind::InvalidInput, "DFT row exceeds u32.")
+            })?);
             for n in 0..cfg.n_fft {
-                let th = two_pi * kf * usize_to_f32(n) / n_fft_f;
-                dft_real[k * cfg.n_fft + n] = th.cos();
-                dft_imag[k * cfg.n_fft + n] = -th.sin();
+                let nf = f64::from(u32::try_from(n).map_err(|_| {
+                    io::Error::new(io::ErrorKind::InvalidInput, "DFT column exceeds u32.")
+                })?);
+                let th = two_pi * kf * nf / n_fft_double;
+                dft_real[k * cfg.n_fft + n] = coefficient(th.cos());
+                dft_imag[k * cfg.n_fft + n] = coefficient(-th.sin());
             }
         }
 
@@ -288,7 +311,7 @@ impl MelSpectrogramExtractor {
         let mut hz_pts = Vec::with_capacity(cfg.n_mels + 2);
         let denom = usize_to_f32(cfg.n_mels + 1);
         for i in 0..(cfg.n_mels + 2) {
-            let mel = (mmax - mmin).mul_add(usize_to_f32(i) / denom, mmin);
+            let mel = mmin + (mmax - mmin) * usize_to_f32(i) / denom;
             hz_pts.push(mel_to_hz_slaney(mel));
         }
 

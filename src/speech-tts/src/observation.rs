@@ -10,7 +10,7 @@
 use crate::engine::{LayerKvCache, TOTAL_CODE_GROUPS};
 
 /// Separately identified arithmetic of ordinary Rust speech serving.
-pub const ARITHMETIC_IDENTITY: &str = "rust-tts-packed-f32-activation-v1-f32-kv";
+pub const ARITHMETIC_IDENTITY: &str = "rust-tts-packed-f32-activation-v2-f32-kv-f64-speaker-basis";
 
 /// The selected model role; cold bootstrap and Base synthesis are separate graphs.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]

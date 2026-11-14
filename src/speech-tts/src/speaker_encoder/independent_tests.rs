@@ -4,8 +4,8 @@
 //! pinned-weight x-vector parity nor voice identity or listening acceptance.
 
 use super::{
-    AttentiveStatPool, AudioMelConfig, MelSpectrogramExtractor, SeRes2NetBlock, SqueezeExcitation,
-    TdnnConv1d,
+    AttentiveStatPool, AudioMelConfig, EcapaSpeakerEncoder, MelSpectrogramExtractor,
+    SeRes2NetBlock, SqueezeExcitation, TdnnConv1d,
 };
 
 fn close(actual: &[f32], expected: &[f64]) {
@@ -27,6 +27,113 @@ fn pointwise(out_c: usize, in_c: usize, weight: Vec<f32>, bias: Vec<f32>) -> Tdn
         weight,
         bias,
     }
+}
+
+#[test]
+fn speaker_reference_basis_preserves_double_angles_and_narrowing_before_hann() -> std::io::Result<()>
+{
+    let extractor = MelSpectrogramExtractor::new(AudioMelConfig {
+        sample_rate: 8,
+        n_fft: 8,
+        hop: 4,
+        n_mels: 3,
+        fmin: 0.0,
+        fmax: 4.0,
+    })?;
+    // cos(pi/4) rounds to 0x3f3504f3. The pinned source narrows that
+    // cosine before f32 subtraction, giving this distinct Hann coefficient.
+    assert_eq!(extractor.hann[1].to_bits(), 0x3e15_f61a);
+    assert_eq!(extractor.hann[3].to_bits(), 0x3f5a_827a);
+    assert_eq!(extractor.dft_real[8 + 1].to_bits(), 0x3f35_04f3);
+    assert_eq!(extractor.dft_imag[8 + 3].to_bits(), 0xbf35_04f3);
+    // Exact quadrature coefficients have only double-angle rounding error.
+    // A binary32 angle produces residuals around 1e-7 instead.
+    assert!(extractor.dft_real[8 + 2].abs() < 1e-15);
+    assert!(extractor.dft_imag[8 + 4].abs() < 1e-15);
+    assert!(extractor.dft_real[3 * 8 + 6].abs() < 1e-14);
+    Ok(())
+}
+
+#[test]
+#[expect(
+    clippy::suboptimal_flops,
+    reason = "Independent closed-form f64 answers are written directly as their mathematical derivation."
+)]
+fn speaker_reference_complete_graph_matches_closed_form_embedding() -> std::io::Result<()> {
+    let identity = vec![1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0];
+    let block = SeRes2NetBlock {
+        tdnn1: pointwise(3, 3, identity.clone(), vec![0.0; 3]),
+        branches: vec![
+            pointwise(1, 1, vec![2.0], vec![0.0]),
+            pointwise(1, 1, vec![3.0], vec![0.0]),
+        ],
+        tdnn2: pointwise(3, 3, identity, vec![0.0; 3]),
+        se: SqueezeExcitation {
+            conv1: pointwise(1, 3, vec![0.0; 3], vec![0.0]),
+            conv2: pointwise(3, 1, vec![0.0; 3], vec![0.0; 3]),
+        },
+        scale: 3,
+    };
+    let mut aggregate = vec![0.0; 81];
+    for channel in 0..9 {
+        aggregate[channel * 9 + channel] = 1.0;
+    }
+    let mut final_weight = vec![0.0; 3 * 18];
+    final_weight[0] = 0.125;
+    final_weight[3] = 0.25;
+    final_weight[6] = -0.125;
+    final_weight[18 + 2] = 0.125;
+    final_weight[18 + 5] = -0.0625;
+    final_weight[18 + 8] = 0.03125;
+    final_weight[36 + 4] = 0.0625;
+    final_weight[36 + 17] = 0.007_812_5;
+    let encoder = EcapaSpeakerEncoder {
+        mel: MelSpectrogramExtractor::new(AudioMelConfig {
+            sample_rate: 8,
+            n_fft: 8,
+            hop: 4,
+            n_mels: 3,
+            fmin: 0.0,
+            fmax: 4.0,
+        })?,
+        conv0: pointwise(
+            3,
+            3,
+            vec![-1.0, 0.0, 0.0, -2.0, 0.0, 0.0, -4.0, 0.0, 0.0],
+            vec![2.0, 4.0, 8.0],
+        ),
+        blocks: [block.clone(), block.clone(), block],
+        mfa: pointwise(9, 9, aggregate, vec![0.0; 9]),
+        // Constant logits give independently known weights [1/2,1/2].
+        asp: AttentiveStatPool {
+            tdnn: pointwise(1, 27, vec![0.0; 27], vec![0.0]),
+            conv: pointwise(9, 1, vec![0.0; 9], vec![0.0; 9]),
+        },
+        fc: pointwise(3, 18, final_weight, vec![0.0, 0.0, -1.0]),
+    };
+    // The two impulses have Hann amplitudes 1,a and 0,b. Their first
+    // mel-bin logarithms follow the eight-point DFT's closed form. No
+    // serving helper, intermediate output or native engine supplies answers.
+    let root_two = 2.0_f64.sqrt();
+    let a = (2.0 + root_two) / 4.0;
+    let b = (2.0 - root_two) / 4.0;
+    let first = 2.0 - (1.0 + a * a + root_two * a + 1e-9).ln() / 2.0;
+    let second = 2.0 - (b * b + 1e-9).ln() / 2.0;
+    let mean = first.midpoint(second);
+    let deviation = (second - first) / 2.0;
+    // For frontend [1,2,4]*g, successive block factors are [1.5,4,16],
+    // [2.25,8,52], [3.375,16,154]. MFA preserves this exact order; FC
+    // combines nonadjacent means and the final channel's population std.
+    let expected = [
+        0.328_125 * mean,
+        3.5625 * mean,
+        0.5 * mean + ((154.0 * deviation).powi(2) + 1e-12).sqrt() / 128.0 - 1.0,
+    ];
+    let audio = [0.0, 0.0, 1.0, 1.0, 0.0, 0.0, 0.0, 0.0];
+    close(&encoder.extract_xvector(&audio)?, &expected);
+    // The public graph owns no retained utterance state.
+    close(&encoder.extract_xvector(&audio)?, &expected);
+    Ok(())
 }
 
 #[test]

@@ -304,7 +304,9 @@ fn tts_replay_rejects_changed_identities_workers_voice_and_tolerances() -> io::R
             1 => binding.reference.compiler = "changed",
             2 => binding.candidate.target = "changed",
             3 => binding.candidate.executable[0] ^= 1,
-            4 => binding.candidate.arithmetic = "changed",
+            4 => {
+                binding.candidate.arithmetic = "rust-tts-packed-f32-activation-v1-f32-kv";
+            }
             5 => binding.model_lock[0] ^= 1,
             6..=8 => binding.models[changed - 6][0] ^= 1,
             9 => binding.request[0] ^= 1,
