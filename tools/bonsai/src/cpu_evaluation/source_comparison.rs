@@ -689,14 +689,14 @@ fn evaluate(packet: &Preparation, owner: &Owner, owner_root: &Path) -> Result<Va
             expected_power,
             &mut reference_conditions,
         )?;
-        let owned = milliseconds(
+        let arm_milliseconds = milliseconds(
             arm.cleanup_completed_tick - arm.started_tick,
             owner.clock_frequency,
         )?;
         let process = positive(&supervisor["WallMilliseconds"])?;
         require(
             positive(&receipt["elapsed_milliseconds"])? <= process + 1.0
-                && process <= owned + 1.0
+                && process <= arm_milliseconds + 1.0
                 && process
                     <= milliseconds(
                         arm.execution_deadline_tick - arm.started_tick,
@@ -718,7 +718,7 @@ fn evaluate(packet: &Preparation, owner: &Owner, owner_root: &Path) -> Result<Va
         )?;
         outputs.push(output);
         process_times.push(process);
-        owned_times.push(owned);
+        owned_times.push(arm_milliseconds);
         request_times.push(
             positive(&receipt["preparation_milliseconds"])?
                 + positive(&receipt["request_milliseconds"])?,
@@ -734,12 +734,12 @@ fn comparison_result(
     request_times: &[f64],
 ) -> Result<Value> {
     let process = ratios(process_times)?;
-    let owned = ratios(owned_times)?;
+    let arm_ratios = ratios(owned_times)?;
     let request = ratios(request_times)?;
     Ok(
         json!({"schema_version":1,"kind":"prism-cpu-source-comparison","status":"admitted",
-        "short_request_benefit_observed":process.iter().all(|ratio| *ratio <= 0.90) && owned.iter().all(|ratio| *ratio <= 1.10),
-        "candidate_over_baseline_process_wall_ratios":process,"candidate_over_baseline_owned_arm_ratios":owned,
+        "short_request_benefit_observed":process.iter().all(|ratio| *ratio <= 0.90) && arm_ratios.iter().all(|ratio| *ratio <= 1.10),
+        "candidate_over_baseline_process_wall_ratios":process,"candidate_over_baseline_owned_arm_ratios":arm_ratios,
         "candidate_over_baseline_request_ratios":request,"pairs":2,
         "complete_answer_observed":outputs.iter().all(|output| output[5] == "stop"),
         "continuous_power_stability_proven":false,"promotion_qualified":false,"benefit_gate_qualified":false,

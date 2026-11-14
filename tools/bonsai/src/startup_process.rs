@@ -725,10 +725,6 @@ mod tests {
     #[cfg(windows)]
     #[test]
     #[ignore = "subprocess entry point; invoked only in a process-tree fixture directory"]
-    #[expect(
-        clippy::zombie_processes,
-        reason = "The non-waiting fixture intentionally leaves a descendant for the owning Windows Job to stop after root exit."
-    )]
     fn compiler_tree_parent() -> std::io::Result<()> {
         const CREATE_NO_WINDOW: u32 = 0x0800_0000;
         let wait = compiler_tree_wait()?;
