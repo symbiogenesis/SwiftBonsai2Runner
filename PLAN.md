@@ -57,7 +57,8 @@ adoption decisions without displacing native daily-use acceptance.
   TTS numerical/GGUF primitives, checked projection layouts, packed-half F32
   operand/range/long-sum controls and invalid sampler distribution rejection;
   and tools bounded intake, selected nonblank startup
-  diagnostics, PE probing and release/Hexagon validation.
+  diagnostics, PE probing, release/Hexagon validation, target-family evidence
+  and startup admission, and Qwen-only reference-snapshot selection.
   The Hexagon inventory alias correction and pinned-linker
   process-tree regression still need compiled owning-lane verification, including
   cold Cargo host/target links; the local direct diagnostic compile/self-test and
