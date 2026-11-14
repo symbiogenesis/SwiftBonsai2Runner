@@ -1,0 +1,5 @@
+# MXC and ureq independently select base64 and Windows bindings; the application
+# cannot unify these upstream major versions without replacing their contracts.
+# Cargo metadata also includes MXC's nix and native-tls/OpenSSL's Syn 2 on
+# foreign targets alongside the workspace's pinned Serde/Syn 3.
+allowed-duplicate-crates = ["base64", "windows-sys", "nix", "syn"]

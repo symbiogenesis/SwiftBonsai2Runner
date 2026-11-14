@@ -50,9 +50,12 @@ zip.workspace = true
 [target.'cfg(windows)'.dependencies]
 bonsai-windows-process.workspace = true
 bonsai-windows-credentials.workspace = true
+# Use Schannel/system trust without compiling a bundled root certificate set.
+ureq = { workspace = true, features = ["native-tls-no-default"] }
 
 [target.'cfg(not(windows))'.dependencies]
 sha2.workspace = true
+ureq = { workspace = true, features = ["rustls"] }
 
 [target.'cfg(windows)'.build-dependencies]
 winresource = { version = "=0.1.34", default-features = false }
