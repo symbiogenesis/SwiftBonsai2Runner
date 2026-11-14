@@ -461,6 +461,64 @@ under the owning repositories' focused Release check recipes; include the
 applicable native/fallback analyzer and feature-disabled branches. This is a
 check selection, not authorization for another owner-device trial or CI run.
 
+### Exact rotation butterflies, BF16 row pairs and recurrent validation
+
+The next X1-applicable CPU candidates retain the existing packed-cache and
+recurrent arithmetic, without changing precision or memory admission:
+
+- Native packed-KV Hadamard rotation evaluates its first two ordered butterfly
+  stages in deinterleaved sixteen-coordinate NEON tiles. The final butterfly
+  normalizes and checks its results before their only store, omitting separate
+  normalization and finite-result traversals. Every binary32 add/subtract and
+  multiply boundary, three-pass sign order and unchanged-output failure rule
+  remains intact. This serves ordinary K4/V4 query, K/V and inverse-output
+  preparation; portable butterflies remain an independent control.
+- Four/eight-row BF16 projections pair independent rows in NEON binary64
+  lanes. Each product still rounds to binary32, then enters its row's binary64
+  sum in original column order, starting from negative zero. The final sum
+  rounds once to binary32. Interleaving rows shares conversion/add instructions
+  without regrouping columns. Single-row and portable runtime paths remain
+  controls; the helper's safe checked-slice API also has scalar fallback.
+- Private provisional GDN decode uses the existing complete query reduction to
+  reject nonfinite updated state. Every updated cell feeds a temporal FMA lane;
+  NaN or infinity cannot become a finite reduced output, including multiplication
+  by signed zero. Only the disposable, complete-width native consumer omits its
+  redundant per-cell finite masks. Defensive helpers, committed-state ownership
+  and scalar failure replay retain their existing behavior.
+- Eligible singleton convolution tiles use the existing direct native kernel
+  before the staged single-token fallback. Immutable projected rows and previous
+  history feed provisional output/history without preceding copies. Unsupported
+  geometry and portable execution retain staging. This covers exact-prefill
+  singleton tails, not a new ordinary-ingestion convolution selection.
+
+Independent controls cover ordered butterfly bits, BF16 row/tail boundaries and
+order-sensitive cancellation, signed zero/subnormals, overflow and atomic
+rejection; every GDN column with nonfinite updates and
+zero/subnormal queries; and raw/prepared convolution coefficients, untouched
+inputs and dirty-delta recovery. These source reductions add no persistent
+storage. BF16 adds `bonsai_neon_dot::dot_bf16_rows`; the other changes add no
+public helper API. Deinterleaving and row-transpose costs, codegen/stack,
+strict native/x64 analysis and linking, feature-disabled execution, complete-model
+state/logits/adapters/cancellation and matched CPU-only complete-request benefit
+remain independent gates. The changed NEON helper must be published before its
+dependent runtime. Retain the active 0.1.27 bundle until verified publication and
+reviewed Runner locks under [cross-generation promotion](#cross-generation-cpu-promotion).
+
+The fixed local source check at Prism
+`5c99a51bcfcf970bb0b07857e807af3a4a4471e4` stopped after 57.007 seconds of its
+480-second allowance. Native supervision bootstrap, the owned-language guard,
+compiler invocation and workspace formatting passed. Native Release Clippy
+rejected BF16 binding names, combined unsafe operations and an unfulfilled lint
+expectation. The follow-up source correction separates loads from reinterpretation
+and removes that expectation; it was not retried. Arithmetic tests, native/x64
+analysis completion, feature-disabled checks and collector linking remain pending.
+Every launched native Job reported zero remaining processes. Aggregate power
+endpoints on the X2 host observed AC connected, battery saver off and charge
+45% to 46%; uninterrupted power and X1 performance were not established.
+Temporary driver sources, selected binaries and duplicate receipts were removed;
+one concise summary remained, with retention complete 257.161 seconds after the
+original start, within the same 480-second allowance.
+
 ## Execution and dispatch
 
 The default `experimental-neon` feature uses [`fearless_simd` 1.1.0][fearless]'s safe core API under

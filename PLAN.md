@@ -740,6 +740,13 @@ nor editing the available Abliteration factors.
   [dispatch and attention preparation](docs/cpu-kernels.md#dispatch-and-attention-preparation) and
   [tiled dispatch and adapters](docs/cpu-kernels.md#tiled-dispatch-and-adapter-preparation), retaining each
   path's independent integration, numerical, fallback and benefit gates.
+- [ ] Publish and qualify [exact rotation butterflies, BF16 row pairs and recurrent validation](docs/cpu-kernels.md#exact-rotation-butterflies-bf16-row-pairs-and-recurrent-validation):
+  final-source native/x64 strict Release analysis and linking, independent
+  scalar-bit/failure and disabled-feature controls, ARM64 codegen/stack/resources,
+  complete-model state/logit/adapter/cancellation parity and matching-source
+  complete-request CPU benefit. Keep singleton exact-prefill convolution separate
+  from ordinary decode. Publish the changed helper before its dependent runtime;
+  retain the active 0.1.27 bundle until verified publication and reviewed repin.
 - [ ] Qualify [grouped dispatch, half widening and exact LUT execution](docs/cpu-kernels.md#grouped-dispatch-hardware-half-widening-and-exact-lut-execution).
 - [ ] Qualify [complete-row SDOT, fixed attention lanes and bounded GDN phases](docs/cpu-kernels.md#complete-row-sdot-fixed-attention-lanes-and-bounded-gdn-phases).
 - [ ] Qualify [scoped PQ2 validation, tiled Q/K/V and temporal GDN](docs/cpu-kernels.md#scoped-pq2-validation-tiled-qkv-preparation-and-temporal-gdn).
