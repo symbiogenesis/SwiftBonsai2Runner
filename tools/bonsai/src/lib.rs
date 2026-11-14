@@ -60,6 +60,7 @@ pub const COMMANDS: &[&str] = &[
     "publisher-startup",
     "pe-closure",
     "native-link-verify",
+    "release-package",
     "release-tool",
     "native-reference",
     "acceptance-driver",
@@ -209,6 +210,9 @@ pub mod native_reference;
 
 /// Native owner-workflow profiles, original-budget bridges and process ownership.
 pub mod acceptance_driver;
+
+/// Native source-bound portable packaging and model-free extraction checks.
+pub mod release_package;
 
 /// Retained caller identity for cancellation of native startup work.
 pub mod startup_cancel;

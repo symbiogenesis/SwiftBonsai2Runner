@@ -990,3 +990,12 @@ contributor invocation without it bootstraps the pinned workspace command throug
 Cargo. This fallback belongs to source tooling; device qualification launchers
 continue to require prebuilt source-bound helpers. The release identity check in
 `Release-Policy.ps1` remains a pre-Rust fan-out guard.
+
+`release-package` owns hosted five-lane receipt intake, portable bundle assembly,
+release manifests/checksums and model-free executable smoke. The smoke command
+checks the ARM64 PE32+ GUI subsystem before launching the image, then runs the
+bundle's extraction command and the extracted maintenance executable's installed
+inventory check in native owned Jobs. Its receipt requires confirmed extraction
+cleanup and leaves model and clean-machine acceptance pending. Packaging and
+smoke PowerShell scripts only forward parameters; native package commands are
+called directly from Rust without a shell round trip.

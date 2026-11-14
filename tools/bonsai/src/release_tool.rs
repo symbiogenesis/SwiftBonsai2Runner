@@ -22,7 +22,7 @@ fn path(value: &Value, field: &str) -> Result<PathBuf> {
     Ok(PathBuf::from(text(value, field)?))
 }
 
-fn resolve(path: &Path, directory: bool, missing: bool) -> Result<PathBuf> {
+pub(crate) fn resolve(path: &Path, directory: bool, missing: bool) -> Result<PathBuf> {
     if !path.is_absolute()
         || path
             .components()
@@ -50,18 +50,18 @@ fn resolve(path: &Path, directory: bool, missing: bool) -> Result<PathBuf> {
     Ok(path.components().collect())
 }
 
-fn bytes(path: &Path, maximum: u64) -> Result<Vec<u8>> {
+pub(crate) fn bytes(path: &Path, maximum: u64) -> Result<Vec<u8>> {
     resolve(path, false, false)?;
     let file = crate::build_tools::input_file(path)?;
     crate::bounded_input::read(file, maximum)
         .map_err(|error| error.into_message("Release input exceeds byte bound."))
 }
 
-fn read_json(path: &Path) -> Result<Value> {
+pub(crate) fn read_json(path: &Path) -> Result<Value> {
     serde_json::from_slice(&bytes(path, 2 * 1024 * 1024)?).map_err(|error| error.to_string())
 }
 
-fn version(tag: &str, revision: &str) -> Result<String> {
+pub(crate) fn version(tag: &str, revision: &str) -> Result<String> {
     let version = tag.strip_prefix('v').ok_or("Invalid release tag.")?;
     let parts: Vec<_> = version.split('.').collect();
     if parts.len() != 3

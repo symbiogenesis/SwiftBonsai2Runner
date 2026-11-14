@@ -82,7 +82,7 @@ fn archive(executable: &Path) -> crate::Result<(ZipArchive<File>, String)> {
     Ok((archive, digest))
 }
 
-fn require_windowless(file: &mut File) -> crate::Result<()> {
+pub(crate) fn require_windowless(file: &mut File) -> crate::Result<()> {
     file.rewind().map_err(|error| error.to_string())?;
     let mut dos = [0; 64];
     file.read_exact(&mut dos)

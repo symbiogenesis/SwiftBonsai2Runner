@@ -51,6 +51,7 @@ fn startup_command(command: &str, request: &serde_json::Value) -> bool {
             | "provision"
             | "artifact"
             | "doctor"
+            | "release-package"
     ) || (command == "speech-build"
         && matches!(
             request["operation"].as_str(),
@@ -195,6 +196,7 @@ fn dispatch(command: &str, request: serde_json::Value) -> bonsai_tools::Result<s
         "release-tool" => bonsai_tools::release_tool::run(&request),
         "native-reference" => bonsai_tools::native_reference::run(&request),
         "acceptance-driver" => bonsai_tools::acceptance_driver::run(&request),
+        "release-package" => bonsai_tools::release_package::run(request),
         "startup-diagnostics" => bonsai_tools::startup_diagnostics::run(request),
         _ => Err("Unknown maintenance command.".into()),
     }
