@@ -207,3 +207,61 @@ mel/encoder/prompt/logit answers, all bits of distinct two-layer F16 caches,
 every generation step, refusal at each boundary, unwind, cancellation and fresh
 replay. These are mathematical miniature-graph controls, with no model loading or
 native inference observation.
+
+### Streaming independent replay
+
+`replay::Replay` compares an authenticated retained observation stream directly
+with `RustRecognizer::transcribe_observed`, using one fixed 16 KiB input buffer
+and borrowed candidate tensors/caches. The caller supplies reviewed `Binding`
+identities for both independent and candidate providers (source revision, exact
+compiler, target, executable SHA-256 and arithmetic), the complete verified model
+SHA-256 and normalized mono PCM SHA-256. The packet header must match them exactly.
+`transcribe` hashes the actual f32 little-endian PCM before execution. The caller
+still authenticates the expected packet, the actual candidate image/source and
+loaded model, retaining immutable file/ancestor guards. Matching claims alone do
+not establish provider independence, source provenance or native parity.
+
+Declare separate frontend, encoder, full-logit and complete-KV tolerances before
+the comparison. Each is either exact f32 bits (including signed zero and
+exceptional payloads) or finite absolute/relative tolerance, evaluated in f64 as
+`abs(actual-expected) <= relative.mul_add(abs(expected), absolute)`. The header
+also binds these rules. Finite mode rejects NaN/infinity and negative/nonfinite
+allowances. No stage, vocabulary entry, decoder position or cache layer may be
+excluded by this format; a separately reviewed exclusion needs a new explicit
+contract rather than truncating the stream.
+
+The version-one wire format is deliberately simple for an independent producer.
+Integers are unsigned little-endian: counts/indices are u64, token IDs and f32
+bits are u32. Strings have a u64 UTF-8 byte count and no terminator. Numeric arrays
+have a u64 element count followed by original f32 bits. No padding is present.
+
+| Record | Bytes in order |
+| --- | --- |
+| Header | Eight ASCII bytes `ASRREPL1`; reference provider; candidate provider; 32-byte complete-model SHA-256; 32-byte PCM SHA-256; four tolerance rules in frontend/encoder/logits/cache order. |
+| Provider | 20 original Git revision bytes; compiler string; target string; 32 executable SHA-256 bytes; arithmetic string. Identity strings are nonempty, at most 1,024 bytes and contain no control characters; all-zero revisions/digests are rejected. |
+| Tolerance | One byte `0` for exact bits, or byte `1` followed by absolute then relative f32 bits. |
+| Frontend | Byte `1`; frame count; complete bin-major mel array. |
+| Encoder | Byte `2`; row count; width; complete time-major encoder array. |
+| Prompt | Byte `3`; ID count; all token IDs; audio-placeholder start and exclusive end. |
+| Decoder | Byte `4`; generation index; full vocabulary-logit array; greedy token ID; committed position count; layer count; then each ordered layer index and complete key/value arrays, in `[position, kv_head, head_dim]` order. |
+| Terminal | Byte `5`; decoder-record count; transcript UTF-8 byte count; exact complete transcript bytes (at most 128 KiB); mandatory EOF. |
+
+Exactly one frontend, encoder and prompt record precede contiguous decoder
+indices beginning at zero. Every decoder record binds all committed positions
+and every layer; the EOS decision is included. Only a successful engine return,
+matching terminal transcript and EOF complete a comparison. Reordered/duplicate,
+missing/truncated, mismatched or extra records fail; failure is sticky. Engine
+failure, cancellation, observer I/O failure and unwind retain the engine's complete
+reset contract and cannot turn a partial stream into success. Cancellation checks
+occur between records and every 4,096 numerical values. Supply a trusted regular
+file or another externally bounded reader: a blocking `Read` implementation
+cannot be interrupted cooperatively. Comparison and retained bytes share the
+original workload/deadline and evidence-retention rules.
+
+Six named `rust_asr_replay_` controls use literal mathematical miniature-graph
+answers, including distinct two-layer F16 caches and known RoPE zero signs. They
+cover complete/fresh replay, identity/PCM/tolerance changes, every record boundary,
+cache bits, truncation/trailing bytes, sticky ordering failures and cancellation/
+unwind while the decoder is active. They establish streaming comparison behavior;
+they provide no full-model or native-engine observation. Independent complete
+native captures and owning hosted/model/device qualification remain pending.

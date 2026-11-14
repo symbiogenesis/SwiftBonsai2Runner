@@ -566,6 +566,7 @@ dependencies = [
  "bonsai-speech-service",
  "fearless_simd 1.2.0",
  "serde_json",
+ "sha2",
  "transcribe-cpp",
 ]
 

@@ -13,9 +13,9 @@ description = "Bounded native Qwen3-ASR 1.7B recognition for Bonsai speech servi
 [features]
 default = ["native-engine"]
 # Production remains on the independently retained native control engine.
-native-engine = ["dep:bonsai-speech-service", "dep:fearless_simd", "dep:transcribe-cpp"]
+native-engine = ["dep:bonsai-speech-service", "dep:fearless_simd", "dep:serde_json", "dep:transcribe-cpp"]
 # Explicit qualification binary; never selected by application provisioning.
-rust-qualification = ["dep:bonsai-speech-service"]
+rust-qualification = ["dep:bonsai-speech-service", "dep:serde_json"]
 
 [[bin]]
 name = "bonsai-speech-asr"
@@ -30,7 +30,8 @@ required-features = ["rust-qualification"]
 [dependencies]
 bonsai-speech-service = { workspace = true, optional = true }
 fearless_simd = { workspace = true, optional = true }
-serde_json.workspace = true
+serde_json = { workspace = true, optional = true }
+sha2.workspace = true
 transcribe-cpp = { version = "=0.4.1", default-features = false, optional = true }
 
 [lints]

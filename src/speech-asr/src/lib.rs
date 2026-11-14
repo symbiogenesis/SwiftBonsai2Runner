@@ -12,6 +12,7 @@ mod intake;
 #[cfg(feature = "native-engine")]
 mod native;
 pub mod protocol;
+pub mod replay;
 pub mod rust_engine;
 pub mod tokenizer;
 

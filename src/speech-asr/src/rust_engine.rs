@@ -317,4 +317,4 @@ fn repeating(ids: &[u32]) -> bool {
 
 #[cfg(test)]
 #[path = "rust_engine/tests.rs"]
-mod tests;
+pub(crate) mod tests;

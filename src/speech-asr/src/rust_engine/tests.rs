@@ -25,7 +25,11 @@ fn norm(width: usize) -> Norm {
     }
 }
 
-fn recognizer(eos: u32) -> io::Result<RustRecognizer> {
+#[expect(
+    clippy::redundant_pub_crate,
+    reason = "Shared model-free graph fixture; unreachable_pub forbids broader visibility."
+)]
+pub(crate) fn recognizer(eos: u32) -> io::Result<RustRecognizer> {
     let tokens = [
         "<|endoftext|>",
         "<|im_start|>",
@@ -129,7 +133,11 @@ fn recognizer(eos: u32) -> io::Result<RustRecognizer> {
     })
 }
 
-fn assert_cleared(recognizer: &RustRecognizer) {
+#[expect(
+    clippy::redundant_pub_crate,
+    reason = "Shared model-free reset assertion; unreachable_pub forbids broader visibility."
+)]
+pub(crate) fn assert_cleared(recognizer: &RustRecognizer) {
     assert_eq!(recognizer.decoder.position(), 0);
     assert_eq!(recognizer.decoder.layer_count(), 2);
     for layer in 0..recognizer.decoder.layer_count() {
