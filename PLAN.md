@@ -470,8 +470,11 @@ evaluation controls without making the pruned candidate a prerequisite for W8.
   branch-error screens; teacher-forced one-site replay cannot establish
   autoregressive quality or multi-site drift recovery.
   Follow the [selected investigation](docs/weight-space-programming.md#selected-w8-investigation-recover-omitted-ffn-computation).
-  Attribute one actual bottleneck and predeclare one feasible site/capture before
-  device work; stop at the development-error gate before building a serving
+  Qualify the source-only native `ffn-timing` checker and use a bounded full-token
+  CPU attribution to nominate one actual bottleneck; retain all layer observations,
+  first-token scope, original deadline and power. It does not qualify sampled
+  answers, narrowed/tiled prefill or Hexagon. Predeclare one feasible site/capture
+  before its device work; stop at the development-error gate before building a serving
   profile. Reject compensation that loses to the uncompensated branch or fails
   the fixed development-error/generalization gates. Keep whole-FFN replacement
   as a separate capacity experiment. Scalar reconstruction does not qualify
@@ -481,8 +484,9 @@ evaluation controls without making the pruned candidate a prerequisite for W8.
   admission, surviving adapter semantics and complete state/reset/rollback
   isolation. Compare original, omitted-without-recovery and frozen-recovery
   profiles. Preserve original sign slices and down-column strides when compacting
-  complete Hadamard groups. Size the omission policy against net factor/payload
-  cost: two groups at all 64 sites cannot meet W8.4's 512 MiB RAM target even
+  complete Hadamard groups. Size the exact mixed omission/rank policy with native
+  `ffn-plan` accounting against net factor/payload cost; its 512 MiB envelope is
+  geometry only. Two groups at all 64 sites cannot meet W8.4's RAM target even
   before adding compensation. Qualify selected sites independently and their
   changed-prefix composition. Measure real process resources; a bypass retaining
   tensors saves no RAM.

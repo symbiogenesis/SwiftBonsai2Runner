@@ -300,6 +300,28 @@ groups at all 64 sites therefore offer 630 MiB gross and 590 MiB net payload
 with rank-16 recovery per site; two groups offer 420 MiB gross and 380 MiB net.
 Representation-specific geometry cannot be reused as process-memory evidence.
 
+`bonsai-tools ffn-plan` accounts for an explicit mixed plan: each selected layer
+names its complete omitted groups and recovery rank. It rejects malformed sites
+and reports per-site and aggregate packed payload and F32 factor costs, with a
+fixed 512 MiB envelope screen. Removed packed-weight operations and added F32
+operations stay separate because their costs differ. This model-free command
+selects no sites and authenticates no artifacts; reaching its payload envelope
+does not establish process RAM, latency or quality benefit. Use the
+[request contract](../tools/bonsai/README.md) before spending capture work on an
+envelope that cannot reach the material target.
+
+For short-context CPU attribution, Prism's source-only
+[`ffn-timing` checker](https://github.com/symbiogenesis/prism-inference/blob/main/docs/build-and-validation.md#ffn-layer-attribution)
+records every layer's attention and FFN brackets on 1–16 fixed full-token
+evaluations, preserving the selected fusion, workers and standard adapter.
+Prebuild and bind its exact source/executable, use the original native supervisor
+deadline and retain aggregate/per-arm power. Report first-token work separately
+from later tokens. This can nominate a capacity-screen site, but supplies no
+sampled-answer, long-context, tiled/accelerator, speedup or memory-saving verdict.
+FFN brackets include adjacent residual/normalization work, so they are not
+isolated projection measurements. Qualification of this new source remains
+independent of existing request-phase timing controls.
+
 ### Bounded native capacity screen
 
 `bonsai-tools ffn-surrogate` fits a single site from at most 64 supplied rows,
