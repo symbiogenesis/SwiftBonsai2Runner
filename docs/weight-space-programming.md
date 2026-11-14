@@ -199,6 +199,127 @@ required replay inputs under the existing evidence-retention/archive machinery.
 No new archiver or duplicate source/build bundles are needed. Release and native
 application acceptance follow the existing promotion and owner-push workflow.
 
+## Selected W8 investigation: recover omitted FFN computation
+
+The first implementation tests whether a small input-to-residual map can recover
+one complete FFN branch. It is a capacity screen before selective loading or a
+serving kernel is built. The related [literature review](research-register.md#small-edits-around-cheaper-execution)
+also identifies structured FFN omission and learned prompt retention as distinct
+opportunities; this selection does not establish a measured Swift bottleneck.
+Whole-FFN replacement is easy to screen and carries substantial capacity risk.
+If its development error is unacceptable, prefer retaining most nonlinear FFN
+computation rather than increasing ranks without a resource bound.
+
+For a selected layer, capture `x = RMSNorm(residual_after_attention)` in the
+original, unfolded width-5,120 basis and the complete FFN branch `t` immediately
+before residual addition. Fit `t_hat = B * (A^T * x)` and eventually substitute
+`residual_after_attention + t_hat`. A and B are new editable F32 factors. This
+replaces the FFN; it is not an extra correction after executing the full FFN.
+The target includes the teacher's FFN-down adapter at its exact frozen scale.
+That skipped adapter cannot also run: its width-17,408 input no longer exists.
+Other adapter sites survive unchanged. Scale changes require a new candidate
+or an explicitly qualified scale-dependent design.
+
+The existing post-SwiGLU capture is a different basis and cannot supply these
+inputs. Capture the branch directly, because subtracting the residual after its
+rounded addition does not recover the exact teacher delta. All observations
+remain provisional until a complete token succeeds; discard them on failure.
+
+### Source-derived opportunity
+
+Swift has 64 FFNs, each with packed gate/up/down matrices of shape
+5,120 by 17,408. These counts exclude norms, adapters, scratch and state:
+
+| Quantity | Calculated work or payload |
+| --- | ---: |
+| One original FFN | 267,386,880 weight MACs/token; 67.734375 MiB packed weights |
+| All 64 original FFNs | 4.2333984375 GiB packed weights |
+| One rank-16 replacement | 163,840 factor MACs/token; 640 KiB F32 factors |
+| Eight rank-16 replacements | 536.875 MiB net weight/factor payload opportunity |
+| Sixteen rank-16 replacements | 1.048583984375 GiB net weight/factor payload opportunity |
+
+These are geometry calculations, not elapsed-time, resident-memory or quality
+results. Packed ternary and F32 operations have different costs. The current
+loader allocates all model tensors and the graph retains all three FFN matrices;
+a compute bypass alone releases no weights. A later memory-saving profile must
+authenticate the complete original artifact and descriptors, omit the selected
+payloads from allocation, and prove no model/graph owner retains them. The
+original on-disk GGUF remains unchanged. FFN omission removes neither KV entries
+nor recurrent state.
+
+### Bounded native capacity screen
+
+`bonsai-tools ffn-surrogate` fits a single site from at most 64 supplied
+input/target pairs, rank 1 through 16, with a finite positive ridge penalty.
+It uses a deterministic pivoted output basis and a dual ridge solve rather than
+gradient training or a whole-model weight expansion. Only fit rows construct
+the basis and coefficients. Development groups assess reconstruction after
+export to F32; final held-out rows are deliberately unsupported by this command.
+Group IDs cannot prove semantic independence, so content grouping still needs
+review. This is algebraic calibration, not a claim that direct behavioral
+weight-space reasoning discovered a correction.
+
+Freeze source/runtime/base/adapter/scale, graph and capture identities, selected
+site, groups, rank, ridge and rejection limits before capture. Use exact
+normalized-input and complete-branch observations from the separate Prism
+research capture; its scalar/unfused teacher does not qualify production NEON.
+Fitting's internal deadline does not renew the enclosing owner allowance.
+Keep the output factors, digest, source/capture derivation and reconstruction
+summary only if a candidate or an actionable no-go needs them.
+
+A prospective initial screen should reject a candidate whose development
+squared error exceeds 10% of teacher branch energy, or whose development
+relative error exceeds fit relative error by more than five percentage points.
+Require nonzero teacher energy and independent development groups; do not hide
+a failed site in an average. These conservative screening thresholds are design
+choices, not answer-quality guarantees. No actual-model screen has been run.
+Choose a single site and fixed capture workload only after source-bound helpers
+and feasible setup/capture/cleanup estimates exist. Repeated ranks, sites or
+ridge sweeps are a matrix and remain owner-operated CI work.
+
+### Capacity-preserving and long-prefill alternatives
+
+For structured FFN omission, Swift's folded down-projection Hadamard basis rules
+out arbitrary original-neuron slicing. Complete contiguous 1,024-coordinate
+groups respect the current independent transform blocks. Omitting two of the
+17 groups at all 64 FFNs offers 510 MiB gross packed payload, before compensation
+factors. It needs explicit retained group/sign identities, gate/up row omission,
+original-stride down columns and selective loading. The current whole-FFN fitter
+does not yet consume teacher-minus-retained-FFN targets. That extension needs
+paired inputs from the same changed-prefix execution, with original teacher
+targets retained separately; original-prefix reconstruction alone can hide
+accumulated error across multiple edited layers.
+
+[TokenGate](https://arxiv.org/abs/2610.26754v1) is a separate long-prefill
+candidate, including a Qwen3.5 hybrid experiment. It combines learned prompt
+retention with attention Q/V LoRA. Do not transfer its GPU speedups to Swift.
+Pre-gate recurrent summaries, retained positions, attention bias and post-gate
+history need new native state/cache identities; deleting KV rows alone is
+insufficient. Select it only when measured long-prefill cost justifies its
+calibration and state work.
+
+### Three-way success and capability improvement
+
+The ambitious target is all three: at least 10% lower useful-answer latency,
+at least 512 MiB lower actual serving private commit, and independently improved
+held-out task quality. Also inspect peak Job commit, residency, startup and
+prefill/decode separately; do not add accounting domains or substitute factor
+counts for process RAM. Declare baseline, workload, aggregation, uncertainty,
+per-category nonregression margins and comfort/resource limits before scoring.
+The [existing promotion criteria](validation.md#promotion-criteria) still apply.
+An intermediate two-way win may justify research, but does not meet this target.
+
+Compensation that restores teacher behavior establishes recovery, not increased
+cognitive ability. Keep reasoning, knowledge, instruction following, complete
+creative work and intended adapter behavior separate, with independent human
+review where required. A capability edit must start from a diagnosed failure
+and survive untouched complete-answer evaluation against the original model,
+the cheaper graph without compensation, and the frozen compensated graph.
+If a separate behavioral edit is composed, also compare the compensated graph
+before that edit to attribute the gain. Prompt/sampler controls remain necessary;
+shorter answers or repaired termination alone cannot count as better reasoning.
+Nothing in the November literature establishes this three-way result for Swift.
+
 ## Existing implementation and delivery limits
 
 ### Offline fitting and an explicit native research path
