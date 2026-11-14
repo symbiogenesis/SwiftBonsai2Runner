@@ -62,6 +62,14 @@ the GGUF byte length unchanged. Native sparse execution is separately required
 for memory or arithmetic savings. Neither retained weight energy nor a factual
 smoke establishes broad quality or an inference-speed improvement.
 
+`native-link-verify` binds retained native link inputs, real ARM64 PE import tables
+and an exact flat package to a separately reviewed schema-3 compiler-source
+closure. It runs no linker or inspected image. Supply `--request PATH` containing
+`{"manifest":{"path":"ABSOLUTE_PATH","bytes":N,"sha256":"REVIEWED_SHA256"}}`.
+The source verifier must have run independently; digest binding of its reviewed
+receipt is not a fresh source-verification result. See the
+[link/package capture contract](#selected-native-link-and-package-capture).
+
 `pe-closure` audits ARM64 PE files without loading them. Supply `bundleDirectory`
 and `systemDirectory`; omitted/null `aliases` reads `apisetschema.dll`. It follows
 candidate normal/delay imports and recursive system normal imports, rejects GUI
@@ -78,6 +86,79 @@ identity fields bind external ownership. Nothing builds/downloads; setup through
 teardown shares one allowance. See [candidate inputs](../../docs/runtime-candidates/README.md).
 
 ## Command boundary
+
+### Selected native link and package capture
+
+Run `bonsai-ci native-closure-verify` against the independently digest-bound
+original schema-3 [source manifest](../ci/README.md#selected-compiler-source-closure)
+first. Independently review that result and retain its exact JSON receipt. Then
+run the source-bound maintenance executable:
+
+```powershell
+& $reviewedTools native-link-verify --request C:\Evidence\reviewed-link-request.json
+```
+
+The request contains only `manifest`, with absolute `path`, nonzero `bytes` and
+lowercase `sha256`. That independently reviewed file has the strict schema below.
+Every `Identity` uses the same three fields; unknown fields reject.
+
+| Manifest field | Required original retained value |
+| --- | --- |
+| `schemaVersion`, `kind` | `1`, `selected-lld-arm64-link-package`. |
+| `sourceManifest`, `sourceReceipt` | Identities of the original schema-3 source manifest and separately reviewed source-verifier JSON receipt. Their manifest/source/compiler/database/count identities must match. |
+| `linker` | Exact original `lld-link` executable identity; no compiler/linker is executed by verification. |
+| `links` | Nonempty array of original successful invocations, at most 128. |
+| `packageDirectory`, `packageFiles` | Absolute existing flat directory and complete `{name, bytes, sha256}` file inventory, at most 4,096. Names are lowercase plain basenames. No directories, redirects, missing or extra files are admitted. |
+| `systemImports` | Exact distinct lowercase DLL basenames of imports deliberately outside the package. Every name must actually be imported; packaged-file collisions reject. |
+
+Each link has `workingDirectory`, full `arguments` starting with the exact linker
+path, `exitCode: 0`, `inputs`, `output` identity, `packageName`, `normalImports`
+and `delayImports`. Each input is `{kind, identity}` with `kind` one of
+`compiled-object`, `toolchain-object` or `library`. Objects use `.obj`; libraries
+use `.lib` or `.a`. Every selected source-manifest object must occur as an exact
+`compiled-object`; relabeling it as external cannot omit its source obligation.
+Input identities must exactly cover the explicit input paths in the original
+argument array. Distinct links can share inputs; input/output aliases reject.
+
+This supported subset requires explicit `/nodefaultlib`, `/machine:arm64`,
+`/manifest:no` and `/out:ABSOLUTE_OUTPUT`. DLL links additionally require
+`/noimplib`. Other accepted options are `/nologo`, `/subsystem:console`,
+`/subsystem:windows`, `/dll`, `/opt:ref` or `/opt:icf`, `/debug:none`, `/nxcompat`,
+`/dynamicbase`, `/highentropyva`, `/fixed:no`, `/incremental:no`, `/brepro`,
+`/entry:SYMBOL` and distinct `/delayload:NAME.dll`. Other options, response files,
+implicit/default libraries and library search paths reject. Export an original
+explicit invocation in this subset; editing an original response-file invocation
+into a new array cannot establish that it actually ran. The caller authenticates
+original successful invocation provenance and the selected build's completeness.
+
+Every packaged `.exe`/`.dll` must match exactly one link output in length/SHA-256,
+including renamed packaged copies. Verification uses the existing bounded ARM64
+PE parser to read both real normal and delay import tables; neither a manifest
+assertion nor a source receipt supplies those values. Each table must match the
+link's reviewed import names. Imports must resolve by name to another packaged
+image or a declared system boundary. No image/DLL is loaded. Non-image package
+assets retain exact bytes too. Windows file/ancestor guards remain alive during
+verification; no receipt promises that files remain immutable after return.
+
+Bounds are 16 MiB documents, 256 MiB individual files, 32 MiB PE images and 2 GiB
+aggregate verified bytes including repeated inputs; each link has at most 4,096
+inputs / 8,192 arguments, each at most 16 KiB. These bounds do not extend an
+owner-device workload allowance. Retain only the original selection needed by the
+owning replay consumer under the evidence-retention policy.
+
+The receipt declares `sourceClosureReexecuted: false` and
+`independentSourceReceiptReviewRequired: true`. Hashing a caller-supplied receipt
+cannot prove its origin or substitute for independently running/reviewing the
+source verifier. Static libraries may still contain C++ runtime code; this tool
+does not inspect archive members, OS import implementations, API-set routing or
+forwarded exports. `freshLinkerExecution`, `systemDependencyClosureChecked`,
+`staticLibrarySourceClosureChecked`, `cppRuntimeAbsenceQualified` and
+`nativeRetirementQualified` remain false. Separate `pe-closure`/owning-build and
+actual-model qualification retain their existing scope. The named `native_link_`
+controls use literal miniature files, with no original compiler execution or
+claim that the fixture source receipt came from that verifier.
+
+### Evidence archive
 
 `evidence-archive` preserves an explicitly reviewed credential-free upload
 selection outside Git. It performs no download, CI query, model work or gate

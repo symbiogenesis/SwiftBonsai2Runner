@@ -56,6 +56,7 @@ pub const COMMANDS: &[&str] = &[
     "hexagon-policy",
     "publisher-startup",
     "pe-closure",
+    "native-link-verify",
 ];
 
 /// Returns the native maintenance protocol capabilities without reading a request.
@@ -181,6 +182,9 @@ pub mod publisher_startup;
 
 /// Bounded static ARM64 PE imports and API-set dependency closure.
 pub mod pe_closure;
+
+/// Offline binding of retained native link inputs, PE imports and packaged bytes.
+pub mod native_link;
 
 /// Retained caller identity for cancellation of native startup work.
 pub mod startup_cancel;

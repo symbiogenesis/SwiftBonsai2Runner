@@ -53,7 +53,7 @@ struct Section {
     raw: usize,
 }
 
-struct Image {
+pub(crate) struct Image {
     data: Vec<u8>,
     optional: usize,
     base: u64,
@@ -141,7 +141,7 @@ fn read_image(path: &Path, budget: &Budget) -> Result<Image> {
     parse_image(data)
 }
 
-fn parse_image(data: Vec<u8>) -> Result<Image> {
+pub(crate) fn parse_image(data: Vec<u8>) -> Result<Image> {
     extent(&data, 0, 64)?;
     if data.get(..2) != Some(b"MZ") {
         return Err("Missing DOS signature".into());
@@ -240,7 +240,7 @@ fn module(image: &Image, rva: u64) -> Result<String> {
     Ok(name)
 }
 
-fn imports(image: &Image, delayed: bool) -> Result<Vec<String>> {
+pub(crate) fn imports(image: &Image, delayed: bool) -> Result<Vec<String>> {
     let directory_index = if delayed { 13 } else { 1 };
     let directory = image.optional + 112 + directory_index * 8;
     let rva = u64::from(u32_at(&image.data, directory)?);

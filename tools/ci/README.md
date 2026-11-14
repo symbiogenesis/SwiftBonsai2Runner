@@ -230,7 +230,13 @@ fixtures; they are not captures of a compiler execution.
 This verifies the declared selection and its retained bytes. A trusted owning
 build must independently establish the original inventory's completeness, generated-file
 classification, effective compiler/environment configuration, matching
-preprocessing/compilation and linker/library closure. The receipt explicitly
+preprocessing/compilation and linker/library closure. The separate native
+[`native-link-verify` command](../bonsai/README.md#selected-native-link-and-package-capture)
+binds every selected object to explicit retained link inputs, checks actual
+normal/delay PE imports and verifies exact packaged copies. Its independently
+reviewed source receipt must come from this verifier; it does not repeat source
+verification or establish static-library ancestry or OS dependency closure.
+The source receipt explicitly
 leaves complete-build, linkage, inference and retirement qualification false.
 Retain only the selected bytes needed by that consumer, under the evidence policy.
 
