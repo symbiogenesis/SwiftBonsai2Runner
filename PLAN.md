@@ -1,7 +1,8 @@
 # Swift Bonsai 2 Runner TODO
 
 This is the single backlog. [Technical docs](docs/README.md) own behavior,
-contracts, commands and required evidence. Remove completed items.
+contracts, commands and required evidence. Delete completed items and their
+completion notes instead of marking them done or applying strikethrough.
 
 Prioritize native daily use, then correctness, isolation, creative quality and
 comfort, then measured optimization. Task IDs identify related work across docs.
@@ -280,43 +281,6 @@ under [AGENTS.md](AGENTS.md).
 
 ## Complete C++ retirement
 
-- [x] ~~Retire the final TTS tokenizer C ABI replay adapter.~~ Serving and
-  lifecycle replay share bounded safe Rust intake; all 1,810 captured requests
-  and independent ownership/failure assertions remain. Eight focused controls
-  and strict Release all-target analysis passed; actual-model gates remain below.
-- [x] ~~Expose complete Rust ASR observations for independent comparisons.~~
-  Borrowed mel, encoder, prompt, logits/greedy decisions and every layer's
-  committed KV are available through EOS; refusal, cancellation and unwind reset
-  state. Rust-only build/link, strict analysis/docs and six focused controls passed.
-- [x] ~~Connect immutable Q8 dispatch to the native signed-queue transport.~~
-  FD mapping, nonblocking writes/reads, correlated completions, mandatory oracle,
-  terminal uncertainty and inherited deadlines have compiled native controls.
-  Twelve focused controls and warning-denied analysis/docs passed; no DSP ran.
-- [x] ~~Implement bounded file-level inventories for pinned external source ZIPs.~~
-  Original archive/pin hashes, every member identity, safe paths, expansion and
-  collision checks have four focused controls and strict Release analysis.
-  Real source intake remains pending: the publisher archive returned HTTP 404;
-  the fixed workload stopped without retry before the Prism archive. See the
-  [retained no-go](docs/evidence/native-source-archives/summary.json).
-- [x] ~~Expose complete Rust TTS graph observations for independent controls.~~
-  Serving now lends prompts/overlays, raw semantic/acoustic logits, every
-  committed KV layer, seeded decisions through EOS, conditioning, codes and PCM.
-  Six focused controls, strict Release analysis/docs and service linking passed;
-  independent pinned-model codec/speaker, parity and listening gates remain below.
-- [x] ~~Implement bounded independent ASR observation replay.~~ Reviewed
-  provider/model/PCM identities and tolerances bind streamed expected answers;
-  complete ordered logits/KV, transcript/EOF and cancellation are mandatory.
-  Seven focused controls and strict Rust-only Release analysis/docs passed;
-  independent native captures and production qualification remain below.
-- [x] ~~Bind selected compiler closure to its complete compilation database.~~
-  Schema 3 rejects omitted/extra/changed invocations while retaining recursive
-  generated-input provenance and older replay scopes. Five focused controls and
-  strict Release analysis passed; actual captures and linked closure remain below.
-- [x] ~~Inventory the remaining checked-in native families and operative edges.~~
-  Exact manifests bind Runner's two C controls and Prism's 40 C++ files/two C ABI
-  files, build/provider paths, green IDs and both original geometry schedules.
-  Four focused controls, strict Release analysis/docs and both snapshot checks
-  passed. The guard rejects source/edge changes and cannot grant retirement.
 - [ ] **S1 — Qualify Rust TTS.** Compare pinned Q8/Q4 models against independent
   controls: tokenizer, Philox/MSVC tie behavior, graph/cache/compute leases,
   Design teardown/Base extraction, voice identity, audio/listening, cancellation,
@@ -395,6 +359,9 @@ under [AGENTS.md](AGENTS.md).
   and sparse arithmetic, assess representative held-out answers and intended
   adapter behavior, and measure matched useful-answer latency and process memory.
   Coefficient fidelity and basic factual passes do not establish accuracy gains.
+  The [half-retained candidate](docs/evidence/lora-weight-edit.md) edits existing
+  A weights, saves 1.4375 MiB of native factor payload and passes four facts in
+  both arms; AC disconnected during the original arm, invalidating speed comparison.
   Separate original Swift LoRA factors are unavailable in the selected artifact
   repository; current research can edit the F32 Abliteration adapter only.
 

@@ -102,6 +102,11 @@ intended behavior. Pruning/refitting on representative activations and independe
 complete-answer evaluation remain necessary before promotion. The sparse loader
 is source-only and is not exposed through the released application.
 
+The [first direct-weight candidate](evidence/lora-weight-edit.md) retained half
+of the linear A coefficients and saved 1.4375 MiB of native factor payload.
+Both arms passed four facts, but a power-source change during the original arm
+invalidated the speed comparison. It remains an uninstalled research artifact.
+
 ## Existing implementation and delivery limits
 
 ### Offline fitting and an explicit native research path
