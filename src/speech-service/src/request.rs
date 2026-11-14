@@ -156,7 +156,7 @@ fn split_bytes<'a, 'd>(
     })
 }
 
-fn trim_http_whitespace(mut bytes: &[u8]) -> &[u8] {
+const fn trim_http_whitespace(mut bytes: &[u8]) -> &[u8] {
     while let [b' ' | b'\t', rest @ ..] = bytes {
         bytes = rest;
     }
