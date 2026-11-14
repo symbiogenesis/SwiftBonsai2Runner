@@ -33,6 +33,8 @@ adoption decisions without displacing native daily-use acceptance.
   advisory/yank checks for both workspace lockfiles and the SDK reader's patched
   archive parser. Verify
   cold/hit/input-change paths, failed-regression recovery and independent push handoffs.
+  Verify per-test timing reports, shared UI font discovery, native process-tree
+  fixtures and concurrent/virtual-time broker controls in their owning lanes.
   Follow the [startup preflight](tools/ci/README.md#action-dependency-pins) before
   workflow changes and verify supported self-hosted runner versions.
 - [ ] Qualify Runner's checked-tools producer, shared regression runner and
