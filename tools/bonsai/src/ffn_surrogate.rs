@@ -154,6 +154,7 @@ impl Request {
         }
         let mut groups = BTreeMap::new();
         let mut samples = BTreeMap::new();
+        let mut inputs = BTreeMap::new();
         let mut tokens = BTreeSet::new();
         let mut fit_count = 0;
         let mut development_count = 0;
@@ -180,6 +181,16 @@ impl Request {
                 {
                     return Err("A sample or content group crosses fit/development splits.".into());
                 }
+            }
+            // Renaming a sample/group must not admit an exact training input
+            // as development evidence. Keep F32 identities exact, including
+            // signed zero, as in the paired fitter's F32-le input digests.
+            let input: Vec<_> = row.input.iter().map(|value| value.to_bits()).collect();
+            if inputs
+                .insert(input, row.split)
+                .is_some_and(|split| split != row.split)
+            {
+                return Err("An identical F32 input crosses fit/development splits.".into());
             }
             match row.split {
                 Split::Fit => fit_count += 1,

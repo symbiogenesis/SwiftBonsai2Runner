@@ -102,6 +102,29 @@ fn rejects_final_holdout_and_sample_or_group_leakage() {
 }
 
 #[test]
+fn input_split_isolation_survives_renamed_samples_and_groups() -> crate::Result<()> {
+    let request: Request = serde_json::from_value(fixture()).map_err(|error| error.to_string())?;
+    for fit_index in [0, 1] {
+        let mut duplicate: Request =
+            serde_json::from_value(fixture()).map_err(|error| error.to_string())?;
+        duplicate.rows[2].input = duplicate.rows[fit_index].input.clone();
+        assert_eq!(
+            duplicate.validate().err().as_deref(),
+            Some("An identical F32 input crosses fit/development splits.")
+        );
+    }
+    let mut same_split = request;
+    same_split.rows[1].input = same_split.rows[0].input.clone();
+    same_split.validate()?;
+    // Compare exact F32 inputs rather than introducing a numerical tolerance
+    // into an admission guard: a one-bit change remains a distinct input.
+    same_split.rows[2].input = same_split.rows[0].input.clone();
+    same_split.rows[2].input[0] = f32::from_bits(1.0_f32.to_bits() + 1);
+    same_split.validate()?;
+    Ok(())
+}
+
+#[test]
 fn rejects_wrong_basis_shapes_controls_and_nonfinite_values() -> crate::Result<()> {
     let mut request = fixture();
     request["site"]["inputBasis"] = json!("original-ffn-hidden");
