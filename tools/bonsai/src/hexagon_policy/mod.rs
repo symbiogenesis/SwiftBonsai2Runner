@@ -497,3 +497,7 @@ pub fn run(request: Value) -> Result<Value> {
 pub(super) fn data_json(text: &str) -> Result<Value> {
     json::parse_bounded(text, 1_048_576, 64)
 }
+
+pub(super) fn data_json_with_limit(text: &str, maximum: usize) -> Result<Value> {
+    json::parse_bounded(text, maximum, 64)
+}

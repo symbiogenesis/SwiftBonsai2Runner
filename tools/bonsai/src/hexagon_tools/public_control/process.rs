@@ -124,8 +124,18 @@ impl Owned {
                     return Err(error.to_string());
                 }
             }
-            self.child.wait().map_err(|error| error.to_string())?;
             let started = Instant::now();
+            while self
+                .child
+                .try_wait()
+                .map_err(|error| error.to_string())?
+                .is_none()
+            {
+                if started.elapsed() >= Duration::from_secs(5) {
+                    return Err("Hosted compiler root cleanup is unconfirmed.".into());
+                }
+                thread::sleep(Duration::from_millis(10));
+            }
             loop {
                 match killpg(self.group, None) {
                     Err(Errno::ESRCH) => break,

@@ -68,8 +68,9 @@ fn read(path: &Path, maximum: u64) -> Result<Vec<u8>> {
         .map_err(|e| e.into_message("Public control input exceeds byte bound."))
 }
 fn json_file(path: &Path, maximum: u64) -> Result<Value> {
-    hexagon_policy::data_json(
+    hexagon_policy::data_json_with_limit(
         std::str::from_utf8(&read(path, maximum)?).map_err(|e| e.to_string())?,
+        usize::try_from(maximum).map_err(|error| error.to_string())?,
     )
 }
 fn save(path: &Path, value: &Value) -> Result<()> {
@@ -334,5 +335,27 @@ pub(super) fn run(request: &Request) -> Result<Value> {
         "windows-abi" => windows::run(request),
         "public-qaic" => qaic::run(request),
         _ => Err("Unknown public compiler control.".into()),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn public_json_intake_preserves_independent_cabal_plan_extent() -> Result<()> {
+        let path = std::env::temp_dir().join(format!(
+            "Bonsai-Cabal-Plan-{}.json",
+            startup_process::unique()
+        ));
+        let text = format!("{{\"padding\":\"{}\"}}", "x".repeat(1_048_577));
+        fs::write(&path, &text).map_err(|error| error.to_string())?;
+        let result = (|| {
+            let accepted = json_file(&path, 2 * 1024 * 1024)?;
+            assert_eq!(accepted["padding"].as_str().map(str::len), Some(1_048_577));
+            assert!(json_file(&path, 1024 * 1024).is_err());
+            Ok(())
+        })();
+        fs::remove_file(&path).map_err(|error| error.to_string())?;
+        result
     }
 }
