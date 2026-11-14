@@ -40,6 +40,14 @@ Credential requests contain only `parentDirectory`, an existing absolute externa
 local directory; results contain protected file paths, never key bytes.
 Planning commands never start inference.
 
+`weight-patch` is offline research tooling for source-bound rank-one FFN
+corrections. Its `direction` operation estimates a unit direction from fitting
+residuals; `fit` solves the soft-constrained L1 objective and checks a dual bound
+after F32 export. Held-out answer groups stay outside fitting. Numerical
+convergence grants no behavioral qualification or permission to install a patch.
+See the [research contract](../../docs/weight-space-programming.md#offline-fitting-and-an-explicit-native-research-path)
+for capture identities, basis, bounds and the separate experimental native path.
+
 `pe-closure` audits ARM64 PE files without loading them. Supply `bundleDirectory`
 and `systemDirectory`; omitted/null `aliases` reads `apisetschema.dll`. It follows
 candidate normal/delay imports and recursive system normal imports, rejects GUI
@@ -102,6 +110,7 @@ bonsai-tools runtime-stage --request ABSOLUTE_JSON_PATH
 bonsai-tools runtime-verify --request ABSOLUTE_JSON_PATH
 bonsai-tools completion --request ABSOLUTE_JSON_PATH
 bonsai-tools qualification --request ABSOLUTE_JSON_PATH
+bonsai-tools weight-patch --request ABSOLUTE_JSON_PATH
 bonsai-tools speech-models --request ABSOLUTE_JSON_PATH
 bonsai-tools inference-lock --request ABSOLUTE_JSON_PATH
 bonsai-tools inference-capabilities --request ABSOLUTE_JSON_PATH

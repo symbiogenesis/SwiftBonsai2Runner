@@ -55,6 +55,63 @@ activation basis. FFN-only sites avoid the separate grouped-SSM authoring ambigu
 
 ## Existing implementation and delivery limits
 
+### Offline fitting and an explicit native research path
+
+`bonsai-tools weight-patch` provides offline `direction` and `fit` operations.
+It does not load a model, change the approved adapter, install a candidate or
+enable a serving feature. The corresponding experimental Prism FFN probe is
+source-only until its owning runtime release is reviewed and published; the
+Runner runtime pins do not change for this investigation.
+
+The intended composition at a selected FFN-down site is
+`y = W*h + standard_adapter(h) + u*(v^T*h)`. Both adapter branches consume
+the original, post-gating FFN activation `h`, before any Hadamard transform.
+The new patch is an independent additive correction, not a network that consumes
+the existing adapter's output. Swift's published correction is already merged
+into the selected base artifact; Runner loads no separate Swift adapter.
+
+Given an independently supplied unit direction `u`, the fitter chooses `v` for
+the soft-constrained linear program:
+
+```text
+min lambda*sum(abs(v))
+    + targetPenalty*sum(max(0, h_target*v + delta))
+    + preservePenalty*sum(max(0, abs(h_preserve*v) - epsilon))
+```
+
+`direction` can instead estimate `u` from the difference between mean target
+and preserve residual vectors in the fitting split. Held-out rows never
+contribute to that estimate or the fit. Keep answer groups disjoint between
+splits; distinct IDs cannot establish independent content or prevent manual
+tuning against a holdout. Direction estimation is not a diagnosis of a defect.
+
+The bounded CPU solver uses primal-dual hybrid gradient steps and reports a
+feasible dual bound and primal-dual gap. Candidate certification applies to
+the exported F32 factors. Exhausted work/time limits, nonconvergence and a
+no-op remain explicit outcomes. A numerical certificate concerns this captured
+linear objective only: it proves neither complete-answer quality nor how later
+activations change after the patch is applied.
+
+Requests bind exact model/runtime/adapter hashes, adapter scale bits, runtime
+source and execution profile, graph identity, FFN site and activation basis.
+Rows name their sample, answer group, split and target/preserve label. Factors
+retain their own hashes and deterministic composition order. This command accepts
+at most 48 MiB of JSON, allowing the probe's bounded 32 MiB capture plus metadata;
+retain only deliberately selected rows rather than full-layer activation dumps.
+
+```powershell
+bonsai-tools weight-patch --request C:\Research\direction-request.json
+bonsai-tools weight-patch --request C:\Research\fit-request.json
+```
+
+Start with a reproducible complete-answer failure and freeze its ordinary
+controls before collecting activations. Compare a fitted patch with a constant
+steering baseline at the same site. Do not transfer the cited Qwen model's
+directions, layers or strengths to Swift. Capture on a dedicated experimental
+CPU path does not qualify the application's fused, batched or accelerator paths.
+
+### Released service
+
 Runner loads only the approved adapter from its compiled locks. The generic
 rank-one graph APIs do not authorize an arbitrary correction through the released
 service. Composing an independent patch with Orca at overlapping sites requires
@@ -80,6 +137,28 @@ Measure useful-answer latency, resources and comfort with matched power; shorter
 or incomplete output cannot supply benefit.
 
 ## Laptop and future-model scope
+
+### Performance and memory pilot
+
+Adding an independent patch adds factor storage and arithmetic. The LP above
+fits a behavioral correction; it does not directly minimize runtime or memory.
+For an initial adapter-cost screen, Prism's source-only `swift_sanity_check`
+example runs one fixed arm: original PQ2, four CPU workers, K4/V4 cache, 256-token
+context, seed 42, Thinking off and no prompt reuse. The four answer-only questions
+cover France's capital, `2+2`, water's formula and the largest Solar System planet,
+each capped at eight output tokens. A model stop and exact normalized answer are
+required for a factual pass; truncated output cannot pass.
+
+Compare the approved adapter at scale 1.3 with no adapter using the same source
+and fixed inputs. The absent-adapter arm measures an ablation ceiling for
+simplification, not a recommended replacement or an edited adapter. Retain actual
+answers, termination, token counts, request/load timing and externally supervised
+process memory/cleanup with per-arm and aggregate power observations. Tiny output
+counts and a single ordered pair do not establish stable throughput, broad
+quality or daily-use memory. Basic factual passes cannot qualify creative,
+refusal or instruction-following behavior. Existing lossless adapter storage
+reductions are separate, already implemented local-source work, and must not be
+credited again as a result of this experiment.
 
 Keep Swift packed: approximately 27 billion FP16 weights alone need about 54 GB,
 before state, scratch and Windows. Sparse vectors avoid whole-model expansion

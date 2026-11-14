@@ -340,8 +340,10 @@ under [AGENTS.md](AGENTS.md).
   ternary Talker separately; do not infer compatibility from repacked Q8/Q4 or
   extend it to codec/head/predictor without independent work.
 - [ ] Complete [weight-space fault assessment](docs/weight-space-programming.md)
-  and controls first. A diagnosed fault may activate disabled steering/capture/
-  fitting, held-out quality, rollback and resource gates.
+  and controls first. Use the offline direction/LP fitter and explicit native
+  FFN research path only after selecting a reproducible fault; qualify the
+  original activation basis, additive composition, constant-steering control,
+  held-out complete-answer quality, rollback and resources before serving.
 
 ### Memory and profiles
 

@@ -30,6 +30,7 @@ pub const COMMANDS: &[&str] = &[
     "runtime-verify",
     "completion",
     "qualification",
+    "weight-patch",
     "runtime-promotion",
     "kv-promotion",
     "evidence-archive",
@@ -95,6 +96,9 @@ pub mod runtime;
 
 /// Fixed qualification plans, canonical identities, and offline gate scoring.
 pub mod qualification;
+
+/// Offline, source-bound research fitting for independent rank-one FFN patches.
+pub mod weight_patch;
 
 /// Exact standard-profile promotion policy and offline evidence completeness review.
 pub mod runtime_promotion;

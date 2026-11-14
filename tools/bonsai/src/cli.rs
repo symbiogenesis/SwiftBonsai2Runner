@@ -8,6 +8,8 @@ use std::path::{Path, PathBuf};
 use serde_json::{Map, Value};
 
 const MAX_REQUEST_BYTES: u64 = 16 * 1024 * 1024;
+// The experimental probe emits at most 32 MiB; allow its selected rows plus metadata.
+const MAX_WEIGHT_PATCH_REQUEST_BYTES: u64 = 48 * 1024 * 1024;
 // Legacy scoring permits 24 responses of 1 Mi UTF-16 units, including JSON escapes.
 const MAX_QUALIFICATION_REQUEST_BYTES: u64 = 160 * 1024 * 1024;
 
@@ -50,10 +52,10 @@ fn file_request(path: &Path, maximum: u64) -> crate::Result<Value> {
 /// # Errors
 /// Rejects unknown options, trailing arguments, non-object JSON and oversized input.
 pub fn request(command: &str, arguments: &[OsString]) -> crate::Result<Value> {
-    let maximum = if command == "qualification" {
-        MAX_QUALIFICATION_REQUEST_BYTES
-    } else {
-        MAX_REQUEST_BYTES
+    let maximum = match command {
+        "qualification" => MAX_QUALIFICATION_REQUEST_BYTES,
+        "weight-patch" => MAX_WEIGHT_PATCH_REQUEST_BYTES,
+        _ => MAX_REQUEST_BYTES,
     };
     match arguments {
         [option, source] if option == "--request" && source == "-" => {
