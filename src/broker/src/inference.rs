@@ -202,7 +202,7 @@ fn release(input: &str) -> Result<ReleasePin, LaunchError> {
             .version
             .bytes()
             .all(|byte| byte.is_ascii_digit() || byte == b'.')
-        || release.release != format!("v{}", release.version)
+        || release.release.strip_prefix('v') != Some(release.version.as_str())
         || !hex(&release.commit, 40)
         || release.asset.filename != filename
         || release.asset.url
