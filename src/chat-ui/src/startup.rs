@@ -757,7 +757,7 @@ mod tests {
                     format!(
                         "{}\n{}",
                         std::process::id(),
-                        bonsai_windows_process::process_creation_time(std::process::id())?
+                        bonsai_windows_process::process_creation_file_time(std::process::id())?
                     ),
                 )?;
                 fs::rename(partial, marker)?;
