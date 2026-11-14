@@ -8,6 +8,7 @@ use crate::Result;
 
 mod capture;
 mod conditions;
+mod source_comparison;
 
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
@@ -118,6 +119,9 @@ fn arguments(model: &str, threads: Threads, prompt: &str) -> Result<Vec<String>>
 /// Rejects unknown fields, unsupported operations/devices, unbounded CPU counts,
 /// unavailable candidate budgets and invalid compiled CPU plans.
 pub fn run(request: Value) -> Result<Value> {
+    if request["operation"] == "evaluate-source-comparison" {
+        return source_comparison::run(request);
+    }
     if matches!(
         request["operation"].as_str(),
         Some("observed-plan" | "capture")
