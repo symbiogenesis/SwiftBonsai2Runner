@@ -27,6 +27,9 @@ mod native_archive_inventory;
 #[path = "native_source_closure.rs"]
 mod native_source_closure;
 
+#[path = "native_boundary.rs"]
+mod native_boundary;
+
 const USAGE: &str = "Usage: bonsai-ci impact [--root PATH] [--config PATH] [--workflow FILE] [--before REV] [--after REV] [--full]\n       bonsai-ci gate [--root PATH] [--config PATH] --workflow NAME\n       bonsai-ci rust-select --root PATH\n       bonsai-ci rust-plan --root PATH [--package NAME] [--phase PHASE]\n       bonsai-ci rust-check --root PATH --target PATH --evidence PATH [--package NAME] [--phase PHASE]";
 
 #[derive(Default)]
@@ -143,35 +146,25 @@ fn action_outputs(plan: &impact::Plan, config: &Value, serialized: &str) -> Resu
     Ok(output)
 }
 
+fn native_operation(arguments: &[OsString]) -> Option<Result<String>> {
+    match arguments.first()?.to_str()? {
+        "native-boundary-verify" => Some(native_boundary::run(arguments)),
+        "native-archive-inventory" => Some(native_archive_inventory::run(arguments)),
+        "native-closure-verify" => Some(native_source_closure::run(arguments)),
+        "native-source-verify" => Some(native_source_inventory::run(arguments)),
+        "native-acceptance-guard" => Some(native_acceptance_guard::run(arguments)),
+        _ => None,
+    }
+}
+
 /// Execute a CI planning, check or native-admission operation.
 ///
 /// # Errors
 /// Rejects invalid arguments/configuration, failed output writes and incomplete
 /// or unsuccessful selected gates. Baseline failures select full coverage.
 pub fn run(arguments: &[OsString]) -> Result<String> {
-    if arguments
-        .first()
-        .is_some_and(|command| command == "native-archive-inventory")
-    {
-        return native_archive_inventory::run(arguments);
-    }
-    if arguments
-        .first()
-        .is_some_and(|command| command == "native-closure-verify")
-    {
-        return native_source_closure::run(arguments);
-    }
-    if arguments
-        .first()
-        .is_some_and(|command| command == "native-source-verify")
-    {
-        return native_source_inventory::run(arguments);
-    }
-    if arguments
-        .first()
-        .is_some_and(|command| command == "native-acceptance-guard")
-    {
-        return native_acceptance_guard::run(arguments);
+    if let Some(result) = native_operation(arguments) {
+        return result;
     }
     if arguments
         .first()
@@ -182,7 +175,7 @@ pub fn run(arguments: &[OsString]) -> Result<String> {
     }
     if arguments.len() == 1 && arguments[0] == "--help" {
         return Ok(format!(
-            "{USAGE}\n       bonsai-ci rust-select|rust-plan|rust-check (see tools/ci/README.md)\n       bonsai-ci native-acceptance-guard --json REQUEST\n       bonsai-ci native-source-verify --root PATH --source PATH --archive PATH\n       bonsai-ci native-archive-inventory --archive PATH --pin PATH --expected-pin-sha256 SHA256\n       bonsai-ci native-closure-verify --manifest PATH --expected-sha256 SHA256"
+            "{USAGE}\n       bonsai-ci rust-select|rust-plan|rust-check (see tools/ci/README.md)\n       bonsai-ci native-acceptance-guard --json REQUEST\n       bonsai-ci native-source-verify --root PATH --source PATH --archive PATH\n       bonsai-ci native-archive-inventory --archive PATH --pin PATH --expected-pin-sha256 SHA256\n       bonsai-ci native-closure-verify --manifest PATH --expected-sha256 SHA256\n       bonsai-ci native-boundary-verify --root PATH --manifest PATH --expected-sha256 SHA256"
         ));
     }
     let arguments = parse(arguments)?;

@@ -1,0 +1,737 @@
+{
+  "schemaVersion": 1,
+  "kind": "checked-in-native-retirement-boundary",
+  "repository": "prism",
+  "sourceRevision": "d30bcfec3c5ca8f57814aad428979a2abe258e57",
+  "exclusions": [
+    {
+      "path": ".git",
+      "reason": "Git object and worktree administration, not operative repository source."
+    },
+    {
+      "path": ".worktrees",
+      "reason": "Independent local Git worktrees, inventoried through their own roots."
+    },
+    {
+      "path": "target",
+      "reason": "Reconstructible Cargo outputs and local worktrees; selected generated/compiled closure uses native-closure-verify separately."
+    }
+  ],
+  "families": [
+    {
+      "id": "common-action-file",
+      "obligations": [
+        "Preserve every routed assertion, error/tolerance, boundary, model/session and concurrency obligation of tools/prism/upstream/common/action_file.hpp under the exact catalog and migration inventory. Independent replacement and required green IDs must pass before removing this provider or its operative include/dispatch edge."
+      ],
+      "retirementQualified": false
+    },
+    {
+      "id": "common-allocation",
+      "obligations": [
+        "Preserve every routed assertion, error/tolerance, boundary, model/session and concurrency obligation of tools/prism/upstream/common/allocation.hpp under the exact catalog and migration inventory. Independent replacement and required green IDs must pass before removing this provider or its operative include/dispatch edge."
+      ],
+      "retirementQualified": false
+    },
+    {
+      "id": "common-arena-graph",
+      "obligations": [
+        "Preserve every routed assertion, error/tolerance, boundary, model/session and concurrency obligation of tools/prism/upstream/common/arena_graph.hpp under the exact catalog and migration inventory. Independent replacement and required green IDs must pass before removing this provider or its operative include/dispatch edge."
+      ],
+      "retirementQualified": false
+    },
+    {
+      "id": "common-arg-parser",
+      "obligations": [
+        "Preserve every routed assertion, error/tolerance, boundary, model/session and concurrency obligation of tools/prism/upstream/common/arg_parser.hpp under the exact catalog and migration inventory. Independent replacement and required green IDs must pass before removing this provider or its operative include/dispatch edge."
+      ],
+      "retirementQualified": false
+    },
+    {
+      "id": "common-backend-ops",
+      "obligations": [
+        "Preserve every routed assertion, error/tolerance, boundary, model/session and concurrency obligation of tools/prism/upstream/common/backend_ops.hpp under the exact catalog and migration inventory. Independent replacement and required green IDs must pass before removing this provider or its operative include/dispatch edge."
+      ],
+      "retirementQualified": false
+    },
+    {
+      "id": "common-backend-sampler",
+      "obligations": [
+        "Preserve every routed assertion, error/tolerance, boundary, model/session and concurrency obligation of tools/prism/upstream/common/backend_sampler.hpp under the exact catalog and migration inventory. Independent replacement and required green IDs must pass before removing this provider or its operative include/dispatch edge."
+      ],
+      "retirementQualified": false
+    },
+    {
+      "id": "common-backend-session",
+      "obligations": [
+        "Preserve every routed assertion, error/tolerance, boundary, model/session and concurrency obligation of tools/prism/upstream/common/backend_session.hpp under the exact catalog and migration inventory. Independent replacement and required green IDs must pass before removing this provider or its operative include/dispatch edge."
+      ],
+      "retirementQualified": false
+    },
+    {
+      "id": "common-batch-allocator",
+      "obligations": [
+        "Preserve every routed assertion, error/tolerance, boundary, model/session and concurrency obligation of tools/prism/upstream/common/batch_allocator.hpp under the exact catalog and migration inventory. Independent replacement and required green IDs must pass before removing this provider or its operative include/dispatch edge."
+      ],
+      "retirementQualified": false
+    },
+    {
+      "id": "common-bridge",
+      "obligations": [
+        "Preserve every routed assertion, error/tolerance, boundary, model/session and concurrency obligation of tools/prism/upstream/common/bridge.cpp under the exact catalog and migration inventory. Independent replacement and required green IDs must pass before removing this provider or its operative include/dispatch edge."
+      ],
+      "retirementQualified": false
+    },
+    {
+      "id": "common-chat",
+      "obligations": [
+        "Preserve every routed assertion, error/tolerance, boundary, model/session and concurrency obligation of tools/prism/upstream/common/chat.hpp under the exact catalog and migration inventory. Independent replacement and required green IDs must pass before removing this provider or its operative include/dispatch edge."
+      ],
+      "retirementQualified": false
+    },
+    {
+      "id": "common-chat-analysis",
+      "obligations": [
+        "Preserve every routed assertion, error/tolerance, boundary, model/session and concurrency obligation of tools/prism/upstream/common/chat_analysis.hpp under the exact catalog and migration inventory. Independent replacement and required green IDs must pass before removing this provider or its operative include/dispatch edge."
+      ],
+      "retirementQualified": false
+    },
+    {
+      "id": "common-chat-auto",
+      "obligations": [
+        "Preserve every routed assertion, error/tolerance, boundary, model/session and concurrency obligation of tools/prism/upstream/common/chat_auto.hpp under the exact catalog and migration inventory. Independent replacement and required green IDs must pass before removing this provider or its operative include/dispatch edge."
+      ],
+      "retirementQualified": false
+    },
+    {
+      "id": "common-chat-parser",
+      "obligations": [
+        "Preserve every routed assertion, error/tolerance, boundary, model/session and concurrency obligation of tools/prism/upstream/common/chat_parser.hpp under the exact catalog and migration inventory. Independent replacement and required green IDs must pass before removing this provider or its operative include/dispatch edge."
+      ],
+      "retirementQualified": false
+    },
+    {
+      "id": "common-chat-templates",
+      "obligations": [
+        "Preserve every routed assertion, error/tolerance, boundary, model/session and concurrency obligation of tools/prism/upstream/common/chat_templates.hpp under the exact catalog and migration inventory. Independent replacement and required green IDs must pass before removing this provider or its operative include/dispatch edge."
+      ],
+      "retirementQualified": false
+    },
+    {
+      "id": "common-codec",
+      "obligations": [
+        "Preserve every routed assertion, error/tolerance, boundary, model/session and concurrency obligation of tools/prism/upstream/common/codec.hpp under the exact catalog and migration inventory. Independent replacement and required green IDs must pass before removing this provider or its operative include/dispatch edge."
+      ],
+      "retirementQualified": false
+    },
+    {
+      "id": "common-codec-buffers",
+      "obligations": [
+        "Preserve every routed assertion, error/tolerance, boundary, model/session and concurrency obligation of tools/prism/upstream/common/codec_buffers.hpp under the exact catalog and migration inventory. Independent replacement and required green IDs must pass before removing this provider or its operative include/dispatch edge."
+      ],
+      "retirementQualified": false
+    },
+    {
+      "id": "common-concurrency",
+      "obligations": [
+        "Preserve every routed assertion, error/tolerance, boundary, model/session and concurrency obligation of tools/prism/upstream/common/concurrency.hpp under the exact catalog and migration inventory. Independent replacement and required green IDs must pass before removing this provider or its operative include/dispatch edge."
+      ],
+      "retirementQualified": false
+    },
+    {
+      "id": "common-context-graph",
+      "obligations": [
+        "Preserve every routed assertion, error/tolerance, boundary, model/session and concurrency obligation of tools/prism/upstream/common/context_graph.hpp under the exact catalog and migration inventory. Independent replacement and required green IDs must pass before removing this provider or its operative include/dispatch edge."
+      ],
+      "retirementQualified": false
+    },
+    {
+      "id": "common-dspark",
+      "obligations": [
+        "Preserve every routed assertion, error/tolerance, boundary, model/session and concurrency obligation of tools/prism/upstream/common/dspark.hpp under the exact catalog and migration inventory. Independent replacement and required green IDs must pass before removing this provider or its operative include/dispatch edge."
+      ],
+      "retirementQualified": false
+    },
+    {
+      "id": "common-dspark-runtime",
+      "obligations": [
+        "Preserve every routed assertion, error/tolerance, boundary, model/session and concurrency obligation of tools/prism/upstream/common/dspark_runtime.hpp under the exact catalog and migration inventory. Independent replacement and required green IDs must pass before removing this provider or its operative include/dispatch edge."
+      ],
+      "retirementQualified": false
+    },
+    {
+      "id": "common-generated-model",
+      "obligations": [
+        "Preserve every routed assertion, error/tolerance, boundary, model/session and concurrency obligation of tools/prism/upstream/common/generated_model.hpp under the exact catalog and migration inventory. Independent replacement and required green IDs must pass before removing this provider or its operative include/dispatch edge."
+      ],
+      "retirementQualified": false
+    },
+    {
+      "id": "common-gguf",
+      "obligations": [
+        "Preserve every routed assertion, error/tolerance, boundary, model/session and concurrency obligation of tools/prism/upstream/common/gguf.hpp under the exact catalog and migration inventory. Independent replacement and required green IDs must pass before removing this provider or its operative include/dispatch edge."
+      ],
+      "retirementQualified": false
+    },
+    {
+      "id": "common-grammar",
+      "obligations": [
+        "Preserve every routed assertion, error/tolerance, boundary, model/session and concurrency obligation of tools/prism/upstream/common/grammar.hpp under the exact catalog and migration inventory. Independent replacement and required green IDs must pass before removing this provider or its operative include/dispatch edge."
+      ],
+      "retirementQualified": false
+    },
+    {
+      "id": "common-grammar-parser",
+      "obligations": [
+        "Preserve every routed assertion, error/tolerance, boundary, model/session and concurrency obligation of tools/prism/upstream/common/grammar_parser.hpp under the exact catalog and migration inventory. Independent replacement and required green IDs must pass before removing this provider or its operative include/dispatch edge."
+      ],
+      "retirementQualified": false
+    },
+    {
+      "id": "common-jinja",
+      "obligations": [
+        "Preserve every routed assertion, error/tolerance, boundary, model/session and concurrency obligation of tools/prism/upstream/common/jinja.hpp under the exact catalog and migration inventory. Independent replacement and required green IDs must pass before removing this provider or its operative include/dispatch edge."
+      ],
+      "retirementQualified": false
+    },
+    {
+      "id": "common-json-schema",
+      "obligations": [
+        "Preserve every routed assertion, error/tolerance, boundary, model/session and concurrency obligation of tools/prism/upstream/common/json_schema.hpp under the exact catalog and migration inventory. Independent replacement and required green IDs must pass before removing this provider or its operative include/dispatch edge."
+      ],
+      "retirementQualified": false
+    },
+    {
+      "id": "common-llguidance",
+      "obligations": [
+        "Preserve every routed assertion, error/tolerance, boundary, model/session and concurrency obligation of tools/prism/upstream/common/llguidance.hpp under the exact catalog and migration inventory. Independent replacement and required green IDs must pass before removing this provider or its operative include/dispatch edge."
+      ],
+      "retirementQualified": false
+    },
+    {
+      "id": "common-model-resolution",
+      "obligations": [
+        "Preserve every routed assertion, error/tolerance, boundary, model/session and concurrency obligation of tools/prism/upstream/common/model_resolution.hpp under the exact catalog and migration inventory. Independent replacement and required green IDs must pass before removing this provider or its operative include/dispatch edge."
+      ],
+      "retirementQualified": false
+    },
+    {
+      "id": "common-model-runtime",
+      "obligations": [
+        "Preserve every routed assertion, error/tolerance, boundary, model/session and concurrency obligation of tools/prism/upstream/common/model_runtime.hpp under the exact catalog and migration inventory. Independent replacement and required green IDs must pass before removing this provider or its operative include/dispatch edge."
+      ],
+      "retirementQualified": false
+    },
+    {
+      "id": "common-mtmd",
+      "obligations": [
+        "Preserve every routed assertion, error/tolerance, boundary, model/session and concurrency obligation of tools/prism/upstream/common/mtmd.hpp under the exact catalog and migration inventory. Independent replacement and required green IDs must pass before removing this provider or its operative include/dispatch edge."
+      ],
+      "retirementQualified": false
+    },
+    {
+      "id": "common-mtmd-chunks",
+      "obligations": [
+        "Preserve every routed assertion, error/tolerance, boundary, model/session and concurrency obligation of tools/prism/upstream/common/mtmd_chunks.hpp under the exact catalog and migration inventory. Independent replacement and required green IDs must pass before removing this provider or its operative include/dispatch edge."
+      ],
+      "retirementQualified": false
+    },
+    {
+      "id": "common-optimizer",
+      "obligations": [
+        "Preserve every routed assertion, error/tolerance, boundary, model/session and concurrency obligation of tools/prism/upstream/common/optimizer.hpp under the exact catalog and migration inventory. Independent replacement and required green IDs must pass before removing this provider or its operative include/dispatch edge."
+      ],
+      "retirementQualified": false
+    },
+    {
+      "id": "common-peg",
+      "obligations": [
+        "Preserve every routed assertion, error/tolerance, boundary, model/session and concurrency obligation of tools/prism/upstream/common/peg.hpp under the exact catalog and migration inventory. Independent replacement and required green IDs must pass before removing this provider or its operative include/dispatch edge."
+      ],
+      "retirementQualified": false
+    },
+    {
+      "id": "common-public-c-abi",
+      "obligations": [
+        "Preserve every routed assertion, error/tolerance, boundary, model/session and concurrency obligation of tools/prism/upstream/common/public_c_abi.c under the exact catalog and migration inventory. Independent replacement and required green IDs must pass before removing this provider or its operative include/dispatch edge."
+      ],
+      "retirementQualified": false
+    },
+    {
+      "id": "common-quantization",
+      "obligations": [
+        "Preserve every routed assertion, error/tolerance, boundary, model/session and concurrency obligation of tools/prism/upstream/common/quantization.hpp under the exact catalog and migration inventory. Independent replacement and required green IDs must pass before removing this provider or its operative include/dispatch edge."
+      ],
+      "retirementQualified": false
+    },
+    {
+      "id": "common-reasoning-budget",
+      "obligations": [
+        "Preserve every routed assertion, error/tolerance, boundary, model/session and concurrency obligation of tools/prism/upstream/common/reasoning_budget.hpp under the exact catalog and migration inventory. Independent replacement and required green IDs must pass before removing this provider or its operative include/dispatch edge."
+      ],
+      "retirementQualified": false
+    },
+    {
+      "id": "common-sampling",
+      "obligations": [
+        "Preserve every routed assertion, error/tolerance, boundary, model/session and concurrency obligation of tools/prism/upstream/common/sampling.hpp under the exact catalog and migration inventory. Independent replacement and required green IDs must pass before removing this provider or its operative include/dispatch edge."
+      ],
+      "retirementQualified": false
+    },
+    {
+      "id": "common-tensor-graph",
+      "obligations": [
+        "Preserve every routed assertion, error/tolerance, boundary, model/session and concurrency obligation of tools/prism/upstream/common/tensor_graph.hpp under the exact catalog and migration inventory. Independent replacement and required green IDs must pass before removing this provider or its operative include/dispatch edge."
+      ],
+      "retirementQualified": false
+    },
+    {
+      "id": "common-threadpool",
+      "obligations": [
+        "Preserve every routed assertion, error/tolerance, boundary, model/session and concurrency obligation of tools/prism/upstream/common/threadpool.hpp under the exact catalog and migration inventory. Independent replacement and required green IDs must pass before removing this provider or its operative include/dispatch edge."
+      ],
+      "retirementQualified": false
+    },
+    {
+      "id": "common-vocab",
+      "obligations": [
+        "Preserve every routed assertion, error/tolerance, boundary, model/session and concurrency obligation of tools/prism/upstream/common/vocab.hpp under the exact catalog and migration inventory. Independent replacement and required green IDs must pass before removing this provider or its operative include/dispatch edge."
+      ],
+      "retirementQualified": false
+    },
+    {
+      "id": "common-vocab-session",
+      "obligations": [
+        "Preserve every routed assertion, error/tolerance, boundary, model/session and concurrency obligation of tools/prism/upstream/common/vocab_session.hpp under the exact catalog and migration inventory. Independent replacement and required green IDs must pass before removing this provider or its operative include/dispatch edge."
+      ],
+      "retirementQualified": false
+    },
+    {
+      "id": "upstream-contracts",
+      "obligations": [
+        "Preserve all 71 source IDs, all approved required green IDs and source hashes, every exclusion and tolerance.",
+        "Retain all 22817 ordered correctness geometries and separate 1530 performance workloads; count parity alone cannot replace exact schedule bytes."
+      ],
+      "retirementQualified": false
+    },
+    {
+      "id": "native-build",
+      "obligations": [
+        "Preserve CMake/native adapter/source patch/compiler/link/cache/packaging routes until independent providers and no-project-C++ hosted acceptance pass."
+      ],
+      "retirementQualified": false
+    },
+    {
+      "id": "external-native",
+      "obligations": [
+        "Preserve exact upstream archive/patch/LLGuidance/codec source identities, license notices and ABI/dependency boundaries before removing download/load/build routes."
+      ],
+      "retirementQualified": false
+    }
+  ],
+  "files": [
+    {
+      "path": "tools/prism/upstream/common/action_file.hpp",
+      "bytes": 3256,
+      "sha256": "474445881948a30a5bdf11bcd320d0aa3b613e4846d13320ed0ade46e579da38",
+      "family": "common-action-file"
+    },
+    {
+      "path": "tools/prism/upstream/common/allocation.hpp",
+      "bytes": 18686,
+      "sha256": "bd077698d38e599eeab3f3690f756b717b941a7a213eff9fac778ee20e0e8838",
+      "family": "common-allocation"
+    },
+    {
+      "path": "tools/prism/upstream/common/arena_graph.hpp",
+      "bytes": 6731,
+      "sha256": "ebe0ef150d538cd728cb7009b84038fb8af26d0907454d9d35fc83bfb5962364",
+      "family": "common-arena-graph"
+    },
+    {
+      "path": "tools/prism/upstream/common/arg_parser.hpp",
+      "bytes": 8531,
+      "sha256": "48aecb9c07fb32225b2f35071430d9760892bd6a4efc3d63d1e2dfd668688fca",
+      "family": "common-arg-parser"
+    },
+    {
+      "path": "tools/prism/upstream/common/backend_ops.hpp",
+      "bytes": 45874,
+      "sha256": "b87e717cb647696d0a90bc10e1714442a3933504c5ff5c69cdd1a408952f8f68",
+      "family": "common-backend-ops"
+    },
+    {
+      "path": "tools/prism/upstream/common/backend_sampler.hpp",
+      "bytes": 15179,
+      "sha256": "b3e94510f19115887a57c7303c21f9ae12d84ad86489b418cf5a96d658eadf15",
+      "family": "common-backend-sampler"
+    },
+    {
+      "path": "tools/prism/upstream/common/backend_session.hpp",
+      "bytes": 5444,
+      "sha256": "104cb583d3e710e21098aed4b8bd992981733b743aa6f312f8196e828147df73",
+      "family": "common-backend-session"
+    },
+    {
+      "path": "tools/prism/upstream/common/batch_allocator.hpp",
+      "bytes": 15904,
+      "sha256": "45cff2ac3645a8487b0bac1057a0f77f9b79189e785b0ff8c0f923e750530d73",
+      "family": "common-batch-allocator"
+    },
+    {
+      "path": "tools/prism/upstream/common/bridge.cpp",
+      "bytes": 16014,
+      "sha256": "2be9cfe360910be92c0260013932bfdb8ff379f6ab5837bcdaaee98e65cef689",
+      "family": "common-bridge"
+    },
+    {
+      "path": "tools/prism/upstream/common/chat.hpp",
+      "bytes": 14240,
+      "sha256": "64134516ab2e95cb3fbb8ac8b49109d380b2b9f2fabc302517eeadc57c3d4383",
+      "family": "common-chat"
+    },
+    {
+      "path": "tools/prism/upstream/common/chat_analysis.hpp",
+      "bytes": 7642,
+      "sha256": "5cbdb23ebdb5cfe0feba315b67f2e4e513c06b6017851d9f3015a40a6cc80bcc",
+      "family": "common-chat-analysis"
+    },
+    {
+      "path": "tools/prism/upstream/common/chat_auto.hpp",
+      "bytes": 10607,
+      "sha256": "2a88e137e1d4d55d172fa42d5358faf172efe9b78007bd4261e59229735e6139",
+      "family": "common-chat-auto"
+    },
+    {
+      "path": "tools/prism/upstream/common/chat_parser.hpp",
+      "bytes": 20493,
+      "sha256": "5a0eae95683b25afdf00ff562c96b7004baed332832c2b37fe06256d780f3b5e",
+      "family": "common-chat-parser"
+    },
+    {
+      "path": "tools/prism/upstream/common/chat_templates.hpp",
+      "bytes": 5769,
+      "sha256": "54f63b953b5e9c133829edfc49070b0c620f1106f74321a08a5476c059fbdfaf",
+      "family": "common-chat-templates"
+    },
+    {
+      "path": "tools/prism/upstream/common/codec.hpp",
+      "bytes": 8937,
+      "sha256": "d003ec0f23e729b0014879d7907176c9ae1741b1e2cbc174e274190b9da382b9",
+      "family": "common-codec"
+    },
+    {
+      "path": "tools/prism/upstream/common/codec_buffers.hpp",
+      "bytes": 12780,
+      "sha256": "ef02c447f88e4c49c4efee53824086343ec1ea8dbb52837faec5541aeb216619",
+      "family": "common-codec-buffers"
+    },
+    {
+      "path": "tools/prism/upstream/common/concurrency.hpp",
+      "bytes": 5060,
+      "sha256": "d3e59da30f741f10a16d18b04463288c44e952c19a6e967a31b1ad8bbc19d74a",
+      "family": "common-concurrency"
+    },
+    {
+      "path": "tools/prism/upstream/common/context_graph.hpp",
+      "bytes": 2463,
+      "sha256": "516d8844ab188d7bf2f679d2396b5d5f53b3a178e3fa6a1da40ea0cd83b8d2da",
+      "family": "common-context-graph"
+    },
+    {
+      "path": "tools/prism/upstream/common/dspark.hpp",
+      "bytes": 3549,
+      "sha256": "c48c37d65730c595442fedceef523bacca6fbca0b2e9864533728c1ae49d1af4",
+      "family": "common-dspark"
+    },
+    {
+      "path": "tools/prism/upstream/common/dspark_runtime.hpp",
+      "bytes": 26368,
+      "sha256": "6c927681e23677dca8109e09a6d17305326d4f328c05092fc1c6ecb6c23d8c94",
+      "family": "common-dspark-runtime"
+    },
+    {
+      "path": "tools/prism/upstream/common/generated_model.hpp",
+      "bytes": 10469,
+      "sha256": "4fb9f6524508780c476e2fcb068f4b64036fd003614c0359791d6649f956a063",
+      "family": "common-generated-model"
+    },
+    {
+      "path": "tools/prism/upstream/common/gguf.hpp",
+      "bytes": 26334,
+      "sha256": "7647252d5cba72b3d14774f87493c26e899b58081c467852c291764ccd055522",
+      "family": "common-gguf"
+    },
+    {
+      "path": "tools/prism/upstream/common/grammar.hpp",
+      "bytes": 17202,
+      "sha256": "fd53dfbb3530c33236859176a3fca6a7ff2e542ce494981abb9d69b37ae5434c",
+      "family": "common-grammar"
+    },
+    {
+      "path": "tools/prism/upstream/common/grammar_parser.hpp",
+      "bytes": 2559,
+      "sha256": "12e39a281c4d84a0cfdab071b308e106c452277e31545e16a78f78c6764116df",
+      "family": "common-grammar-parser"
+    },
+    {
+      "path": "tools/prism/upstream/common/jinja.hpp",
+      "bytes": 13643,
+      "sha256": "d623795d4d70a4faa81205407a32927a08156b64071a98691ef409d389250fe3",
+      "family": "common-jinja"
+    },
+    {
+      "path": "tools/prism/upstream/common/json_schema.hpp",
+      "bytes": 2641,
+      "sha256": "04af794a96977dcc52b098098dc405625cd2005d397316b341ec173710d5e40c",
+      "family": "common-json-schema"
+    },
+    {
+      "path": "tools/prism/upstream/common/llguidance.hpp",
+      "bytes": 12261,
+      "sha256": "409dd2cd4832d27ce64c31b570a7d6c96e4558845a5c3adebd9635679938dfa4",
+      "family": "common-llguidance"
+    },
+    {
+      "path": "tools/prism/upstream/common/model_resolution.hpp",
+      "bytes": 5094,
+      "sha256": "fcbeab4850cef34d33638c28b934eebcd7dc65a699a34b82484c908c919e2a23",
+      "family": "common-model-resolution"
+    },
+    {
+      "path": "tools/prism/upstream/common/model_runtime.hpp",
+      "bytes": 44001,
+      "sha256": "316755d7728ff406e7c0ff604ef52235208ed5cae080e7b5160cd6b1dd13134d",
+      "family": "common-model-runtime"
+    },
+    {
+      "path": "tools/prism/upstream/common/mtmd.hpp",
+      "bytes": 6424,
+      "sha256": "fbfb84d5000e8f439f9377563e2514bdf05639d7f576fb0321fc3fd35b4fe126",
+      "family": "common-mtmd"
+    },
+    {
+      "path": "tools/prism/upstream/common/mtmd_chunks.hpp",
+      "bytes": 10062,
+      "sha256": "75a1d212b5306cc40ab38813a60cb457d69c8dc79e46a5ca98b80484c8a4f603",
+      "family": "common-mtmd-chunks"
+    },
+    {
+      "path": "tools/prism/upstream/common/optimizer.hpp",
+      "bytes": 29047,
+      "sha256": "e51f8e6d61d42f2853af1f44ee9e48e768b77176e209cced192c660799ff188f",
+      "family": "common-optimizer"
+    },
+    {
+      "path": "tools/prism/upstream/common/peg.hpp",
+      "bytes": 12116,
+      "sha256": "edc2b312960de15cc869151af4c1b3aaaacf8b20fdac1b95df73080893e11fed",
+      "family": "common-peg"
+    },
+    {
+      "path": "tools/prism/upstream/common/public_c_abi.c",
+      "bytes": 645,
+      "sha256": "7c86a440a59de7b9f2751a54021669cfcfd4f57ba72ed7a1c475d4aa369b668a",
+      "family": "common-public-c-abi"
+    },
+    {
+      "path": "tools/prism/upstream/common/public_c_abi.h",
+      "bytes": 488,
+      "sha256": "ed3f091689777544af6c85d1ab517d1923d44d77e96c2c210f1d1a8d49027a51",
+      "family": "common-public-c-abi"
+    },
+    {
+      "path": "tools/prism/upstream/common/quantization.hpp",
+      "bytes": 8334,
+      "sha256": "d2b00806fbc915558e205ce9732e9e649ca173a1810ee49a0bc3ecbbe9d80983",
+      "family": "common-quantization"
+    },
+    {
+      "path": "tools/prism/upstream/common/reasoning_budget.hpp",
+      "bytes": 10887,
+      "sha256": "2a13d475165a9c866f22bdd0763cdcaaee0034510bc36b51798ba9c4ec7a25d5",
+      "family": "common-reasoning-budget"
+    },
+    {
+      "path": "tools/prism/upstream/common/sampling.hpp",
+      "bytes": 15586,
+      "sha256": "4c577b442710ac605598000ab234fb4e9224db941ca84d59537bd9218e3241d5",
+      "family": "common-sampling"
+    },
+    {
+      "path": "tools/prism/upstream/common/tensor_graph.hpp",
+      "bytes": 19707,
+      "sha256": "23c2a703d9f3d246fafcda0e3af7e1581631192f0826c6f83abe2c3bb594209a",
+      "family": "common-tensor-graph"
+    },
+    {
+      "path": "tools/prism/upstream/common/threadpool.hpp",
+      "bytes": 9450,
+      "sha256": "9d07e3277e17cf8f25e9ec636327ce3bbbce018bc25ddb27a193ed80e31ad00a",
+      "family": "common-threadpool"
+    },
+    {
+      "path": "tools/prism/upstream/common/vocab.hpp",
+      "bytes": 8985,
+      "sha256": "e6e3c7d50be1a0c3b26688452894a9be820ccd307bd38d84505ef475fad7bd69",
+      "family": "common-vocab"
+    },
+    {
+      "path": "tools/prism/upstream/common/vocab_session.hpp",
+      "bytes": 8426,
+      "sha256": "d438bbffc3dbd933481b50fed8e353cd5f57b97d89a9afb10ec76fbf48408c88",
+      "family": "common-vocab-session"
+    }
+  ],
+  "edges": [
+    {
+      "path": "Cargo.lock",
+      "bytes": 54992,
+      "sha256": "2e9f8ff3ab2c0a8848194cce61bad8f62caf9633aac28ec87672c03830764f8d",
+      "family": "external-native"
+    },
+    {
+      "path": "Cargo.toml",
+      "bytes": 5626,
+      "sha256": "39a28e9b7a2f883be0084af6c3afe2ca545c7e9253c210330e6f1a9a0e0dc986",
+      "family": "external-native"
+    },
+    {
+      "path": "scripts/Bonsai.Native.psm1",
+      "bytes": 3967,
+      "sha256": "2d085b83039898315ed87233a50170ed9747375d98750ea0d243e9a231cfd605",
+      "family": "external-native"
+    },
+    {
+      "path": "scripts/Bonsai.PrismNativeCache.psm1",
+      "bytes": 7808,
+      "sha256": "86efcde9bdf1903bff6420966ca994d5ccdcb23942bc0995fb4c93764b69959a",
+      "family": "native-build"
+    },
+    {
+      "path": "scripts/Build-PrismEngine.ps1",
+      "bytes": 14485,
+      "sha256": "5be6d37f40ff701d7e7e3aa50c4da4b798de484cfba9d7aa16ff270712185e4b",
+      "family": "native-build"
+    },
+    {
+      "path": "scripts/New-ReleaseBundle.ps1",
+      "bytes": 6354,
+      "sha256": "fa558ade6bd7f2988dbec3ebb5e230eaf3c4e19cb6bace0d3e56e709d55a986f",
+      "family": "native-build"
+    },
+    {
+      "path": "tests/upstream_prism/backend-ops-geometries.json",
+      "bytes": 2360032,
+      "sha256": "8eb986e0a2cf7694b98a03f24f8ed4e5aabf6407ce60dcc502cab0682434549d",
+      "family": "upstream-contracts"
+    },
+    {
+      "path": "tests/upstream_prism/backend-ops-program.json",
+      "bytes": 3301844,
+      "sha256": "bb1264b48ee43841949ef350a84bd2731a0656e9c4cd565c1afcecbfd75633a6",
+      "family": "upstream-contracts"
+    },
+    {
+      "path": "tools/codec-probe/Cargo.toml",
+      "bytes": 880,
+      "sha256": "b830de0958b409457ba07c9f003784c41055c8e1065a9b6ec9925f0a8333c8e1",
+      "family": "external-native"
+    },
+    {
+      "path": "tools/codec-probe/native.lock.json",
+      "bytes": 699,
+      "sha256": "cc1244b813b59bab411442c4bad400dcd14967f54f74246f998edc1abe554235",
+      "family": "external-native"
+    },
+    {
+      "path": "tools/prism/CMakeLists.txt",
+      "bytes": 1202,
+      "sha256": "ea3c31dcbd3c8655cef36ae7abd7273fa121ac2b7dabc21a973146393e207a6f",
+      "family": "native-build"
+    },
+    {
+      "path": "tools/prism/Cargo.toml",
+      "bytes": 790,
+      "sha256": "2dee06ba8b464c19522a0d4939441e47ca67d941fd34ffe706870ccdaaeb5966",
+      "family": "native-build"
+    },
+    {
+      "path": "tools/prism/build.rs",
+      "bytes": 4285,
+      "sha256": "13ae0d33f3177538c41856fa41382ee1e388c5eed67d16f32105f0a97fe9b11b",
+      "family": "native-build"
+    },
+    {
+      "path": "tools/prism/src/loader.rs",
+      "bytes": 16929,
+      "sha256": "cc47295174dec551e51b0983cc46e94995b8d946542e097b5a9fa0ca93782f20",
+      "family": "native-build"
+    },
+    {
+      "path": "tools/prism/upstream/Apply-ReferencePatch.cmake",
+      "bytes": 1556,
+      "sha256": "1c50647d8334c59aaf1bdc004f790ef0c68766d274e1bb24f69dec2f25aa5b31",
+      "family": "native-build"
+    },
+    {
+      "path": "tools/prism/upstream/CMakeLists.txt",
+      "bytes": 1132,
+      "sha256": "eebaec09de0c2ad53cb0bd107dbb9121eeae8a1b2d167d80ab62dca1bf9c9412",
+      "family": "native-build"
+    },
+    {
+      "path": "tools/prism/upstream/LICENSE",
+      "bytes": 1099,
+      "sha256": "bcd8ec749126d45cb06737d0690295d73df4b6e7e194205bcf91190368f27285",
+      "family": "external-native"
+    },
+    {
+      "path": "tools/prism/upstream/RustBridge.cmake",
+      "bytes": 3794,
+      "sha256": "0c52498ee58c75d99630bb2097da4b2c896d388b1df3b637cdd058b153e936d8",
+      "family": "native-build"
+    },
+    {
+      "path": "tools/prism/upstream/baseline.json",
+      "bytes": 7240,
+      "sha256": "d8c75c5207a2cde0d250db32262be32d124d70bbbca54f254a67b9b5be6d1779",
+      "family": "upstream-contracts"
+    },
+    {
+      "path": "tools/prism/upstream/bridge/native.rs",
+      "bytes": 7205,
+      "sha256": "6df2f8016b891ab19945a8bf5b0ef37cb83fcbc79151584177fbc2f7c51995d0",
+      "family": "native-build"
+    },
+    {
+      "path": "tools/prism/upstream/catalog.json",
+      "bytes": 13696,
+      "sha256": "4293dcedddbe3cac5ffbbe273fc70de2d531246ef6b0b3c85cc74e01d0ccbf4b",
+      "family": "upstream-contracts"
+    },
+    {
+      "path": "tools/prism/upstream/common/CMakeLists.txt",
+      "bytes": 5198,
+      "sha256": "b8adecdccdfde5b86c296e29c5690e63f9d2662c4dba0dec0d9a521fbbdb5eed",
+      "family": "native-build"
+    },
+    {
+      "path": "tools/prism/upstream/llguidance.lock.json",
+      "bytes": 870,
+      "sha256": "5d6fa36c0669be2e7fe50e594a76b53adafe088c6eb233591bd2b7b6a6c4ea9b",
+      "family": "external-native"
+    },
+    {
+      "path": "tools/prism/upstream/migration.json",
+      "bytes": 43390,
+      "sha256": "bd5ec6f529d6ba1504e13f3525850514d66c276ee3a23b2304e155d904dfcd14",
+      "family": "upstream-contracts"
+    },
+    {
+      "path": "tools/prism/upstream/reference-patches.lock.json",
+      "bytes": 1903,
+      "sha256": "5a5fc96d05469640b524c2d9d583cfd27c810b9be94eb5e1f0630d04b02dea88",
+      "family": "external-native"
+    }
+  ]
+}

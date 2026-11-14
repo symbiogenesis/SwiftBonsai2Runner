@@ -234,6 +234,49 @@ preprocessing/compilation and linker/library closure. The receipt explicitly
 leaves complete-build, linkage, inference and retirement qualification false.
 Retain only the selected bytes needed by that consumer, under the evidence policy.
 
+### Checked-in native retirement boundary
+
+`native-boundary-verify` checks every owned checked-in C/C++/Objective-C source
+and header against a separately reviewed immutable manifest, without compiling
+or executing the inspected source:
+
+```powershell
+$manifest = Join-Path $PWD 'tools/ci/native-boundary.runner.json'
+bonsai-ci native-boundary-verify --root $PWD --manifest $manifest --expected-sha256 $reviewedManifestDigest
+```
+
+Use `native-boundary.prism.json` with the independently retained Prism checkout
+as `--root`. The Runner baseline is source revision
+`56b09f555f1c5671132ef304639d20e20ab4c4d7`; the clean read-only Prism baseline is
+`d30bcfec3c5ca8f57814aad428979a2abe258e57`. The command verifies exact file bytes,
+not Git branch/HEAD provenance: `gitRevisionVerified` stays false. Bind the
+reviewed manifest digest and original source revision independently; computing a
+new digest from changed bytes is not inventory acceptance.
+
+The manifests enumerate both Runner C controls and Prism's 40 C++ files plus its
+coupled C ABI source/header. Each file belongs to an explicit replacement family.
+Additional identities bind operative compiler/provisioning/dispatcher/cache/
+packaging paths and immutable catalog, migration, required-green-ID and complete
+ordered backend geometry contracts. The 22,817 correctness geometries and 1,530
+performance workloads retain their separate original byte identities.
+
+The scan rejects added, omitted, deleted or changed native files, changed declared
+edges, unsafe/aliased paths, links/reparse points, empty obligations and every
+`retirementQualified: true` claim. A reviewed deletion is an inventory change;
+independent parity and retirement qualification remain separate requirements.
+Git administration, independent worktrees and Cargo `target` outputs have fixed
+explicit exclusions; Runner's separately pinned `third_party` vendor submodules
+are outside the owned-file boundary. Historical `.c.txt` observations remain data;
+an operative `.c` file cannot hide in an evidence directory. External archives,
+generated translation-unit closure, downloaded DLLs, vendor ABI decisions and
+MSVC unwinding retain their separate inventories and acceptance gates.
+
+Limits are 2 MiB per manifest, 4,096 source files and edges each, 64 families,
+32 MiB per retained identity, 128 MiB aggregate identity bytes, 100,000 visited
+filesystem entries and 64 directory levels. Four named `native_boundary_`
+controls exercise exact sets, tamper, deletion, qualification refusal and explicit
+vendor/data boundaries. They supply no native model, ABI or performance verdict.
+
 ## Workflow scope
 
 The retained workflows own current checks or open gates in [PLAN.md](../../PLAN.md):

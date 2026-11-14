@@ -1,0 +1,257 @@
+{
+  "schemaVersion": 1,
+  "kind": "checked-in-native-retirement-boundary",
+  "repository": "runner",
+  "sourceRevision": "56b09f555f1c5671132ef304639d20e20ab4c4d7",
+  "exclusions": [
+    {
+      "path": ".git",
+      "reason": "Git object and worktree administration, not operative repository source."
+    },
+    {
+      "path": ".worktrees",
+      "reason": "Independent local Git worktrees, inventoried through their own roots."
+    },
+    {
+      "path": "target",
+      "reason": "Reconstructible Cargo outputs and local worktrees; selected generated/compiled closure uses native-closure-verify separately."
+    },
+    {
+      "path": "third_party",
+      "reason": "Git submodule dependency sources are separately pinned vendor inputs; this inventory covers owned checked-in native files only."
+    }
+  ],
+  "families": [
+    {
+      "id": "hexagon-qaic",
+      "obligations": [
+        "Preserve original generated start/stop wire observations and independent Rust encoding, exact pinned public imports, notices and source provenance.",
+        "Public generator observations do not qualify SDK equivalence or signed device execution."
+      ],
+      "retirementQualified": false
+    },
+    {
+      "id": "hexagon-windows-abi",
+      "obligations": [
+        "Preserve every public-header Windows ARM64 size/alignment/offset/flag/function-signature assertion and distinct timed/nonblocking queue mock.",
+        "Retain independent wire, SDK and Windows ABI controls until all owning replay and hosted gates pass."
+      ],
+      "retirementQualified": false
+    },
+    {
+      "id": "native-asr",
+      "obligations": [
+        "Preserve all 1718 native registry-package identities and exact model/tokenizer/frontend/numerical/transcript/state/lifecycle obligations before native-engine removal.",
+        "Rust service and actual-model parity, microphone integration, quality, cancellation and resource acceptance remain separate."
+      ],
+      "retirementQualified": false
+    },
+    {
+      "id": "publisher-runtime",
+      "obligations": [
+        "Preserve immutable publisher source/DLL/archive identities, rollback profiles, PTQ1 capture inputs and independent exact numerical/state controls.",
+        "Failed exact-source archive HTTP 404 intake remains closed; no substitution or implicit fallback."
+      ],
+      "retirementQualified": false
+    },
+    {
+      "id": "compiler-provisioning",
+      "obligations": [
+        "Remove native compiler/CMake/Ninja/source/cache/build edges only after replacement coverage and hosted no-project-C++ builds pass."
+      ],
+      "retirementQualified": false
+    },
+    {
+      "id": "msvc-unwind",
+      "obligations": [
+        "Preserve preparation-peer panic recovery, scoped destruction, worker draining and cleanup while replacing embedded MSVC C++ exception support.",
+        "Static CRT linkage and panic-abort do not establish a qualified Rust unwinder."
+      ],
+      "retirementQualified": false
+    }
+  ],
+  "files": [
+    {
+      "path": "tools/hexagon/public_qaic_wire.c",
+      "bytes": 5643,
+      "sha256": "a3d8ca46afe5bdf58690a58f243ad917fe97d68c879f67a02a257f24725fc0bb",
+      "family": "hexagon-qaic"
+    },
+    {
+      "path": "tools/hexagon/windows_queue_abi.c",
+      "bytes": 11246,
+      "sha256": "42b162626ecbbee43a7c21be4fa9801546bc773cd92ca53c46ef0a506ca1833e",
+      "family": "hexagon-windows-abi"
+    }
+  ],
+  "edges": [
+    {
+      "path": ".cargo/config.toml",
+      "bytes": 165,
+      "sha256": "5f5370d16633dfdd6c3cc25f0d770b8780b322b778593e93ee817636fdc13e8b",
+      "family": "msvc-unwind"
+    },
+    {
+      "path": ".github/actions/native-speech/action.yml",
+      "bytes": 871,
+      "sha256": "e9b89a26f8ceb37a8fe7c185f87e1ae867c0240f7aefcbda909a140aa85782ee",
+      "family": "compiler-provisioning"
+    },
+    {
+      "path": ".github/workflows/hexagon-qualification.yml",
+      "bytes": 34670,
+      "sha256": "e7ac26c953677a592b8f0a73839f43907c34059596c72dd846bc8cbb229bb47f",
+      "family": "hexagon-windows-abi"
+    },
+    {
+      "path": "Cargo.lock",
+      "bytes": 132461,
+      "sha256": "e3054c8a3fe786605be94398f13fe71c011343b375f3ee822f4738b2c3444591",
+      "family": "native-asr"
+    },
+    {
+      "path": "Cargo.toml",
+      "bytes": 3372,
+      "sha256": "76f34c32e6967e0a7f6570d600e686b239cd47132ff3eeb6fa6178a78b0a4323",
+      "family": "msvc-unwind"
+    },
+    {
+      "path": "config/native-speech.lock.json",
+      "bytes": 1821,
+      "sha256": "f3cb40c1088e1e8dbcbe7210aca2f1a51debc7a6fcc93a90747c39b282816b48",
+      "family": "compiler-provisioning"
+    },
+    {
+      "path": "config/profiles/reference-cpu.json",
+      "bytes": 931,
+      "sha256": "90cf0b15f431eac31362ef8d1e8f854d095849f168e258a6727dc05686189f37",
+      "family": "publisher-runtime"
+    },
+    {
+      "path": "config/runtime.lock.json",
+      "bytes": 2153,
+      "sha256": "218cae1ecc5d8878494b15be6ad6139392ccfd84d21b078447c7c7c6274c512b",
+      "family": "publisher-runtime"
+    },
+    {
+      "path": "src/cpu-policy/src/lib.rs",
+      "bytes": 25751,
+      "sha256": "c262d5f33e1a5c709f8ececa6569a800f0e55a8a3a6232e32f071ad11ff873ed",
+      "family": "msvc-unwind"
+    },
+    {
+      "path": "src/speech-asr/Cargo.toml",
+      "bytes": 1220,
+      "sha256": "3e52065def628bdc77104799b79be3d65f76777803e150e52e0371a07f42fb2e",
+      "family": "native-asr"
+    },
+    {
+      "path": "src/speech-asr/model.lock.json",
+      "bytes": 880,
+      "sha256": "d7ccfa21bba09948383deff6ed4e01b8d2ea25197d1128639d82ec06c61ee19f",
+      "family": "native-asr"
+    },
+    {
+      "path": "src/speech-asr/native-sources.json",
+      "bytes": 312619,
+      "sha256": "1b7147da6a06e7bcf7f9f9df8fba6bf91fc3920250996a678f20d9eeec22b17e",
+      "family": "native-asr"
+    },
+    {
+      "path": "src/speech-asr/src/native.rs",
+      "bytes": 13079,
+      "sha256": "de2baab18ae910921f10afbc2df33065115d9e446127873520c35716bbf36b7c",
+      "family": "native-asr"
+    },
+    {
+      "path": "tools/bonsai/src/build_tools/capture.rs",
+      "bytes": 14042,
+      "sha256": "4bc36f5b18ad876f19c3775a20252bf4bcca86c05b67b00cc5bfa5daff5d3d75",
+      "family": "compiler-provisioning"
+    },
+    {
+      "path": "tools/bonsai/src/build_tools/engine.rs",
+      "bytes": 16281,
+      "sha256": "863c893665f433b1b5ad5422375d820a54904545c88062372c14d83a06eb3d1b",
+      "family": "compiler-provisioning"
+    },
+    {
+      "path": "tools/bonsai/src/build_tools/headless.rs",
+      "bytes": 27217,
+      "sha256": "8abd9afaf980e3099048cba35bb85a62fcb1b3a014a92a71e470ab186a5451ee",
+      "family": "compiler-provisioning"
+    },
+    {
+      "path": "tools/bonsai/src/native_startup.rs",
+      "bytes": 38078,
+      "sha256": "66405aec1db43d06de6a36541fc0568d25125021deb0128207c5bf522130adc3",
+      "family": "compiler-provisioning"
+    },
+    {
+      "path": "tools/bonsai/src/native_startup/asr_cpu.rs",
+      "bytes": 3927,
+      "sha256": "797591d3f9770a8bdb2041816579871de20224d25e6b4bb4b2e564044497a050",
+      "family": "compiler-provisioning"
+    },
+    {
+      "path": "tools/bonsai/src/ptq1_capture.rs",
+      "bytes": 20958,
+      "sha256": "e3530020af06209b7409d77f356e0ae32c45f98a22eb8829afb26f26c8440378",
+      "family": "publisher-runtime"
+    },
+    {
+      "path": "tools/bonsai/src/publisher_startup.rs",
+      "bytes": 12611,
+      "sha256": "640e6e2471a1da14312df00e02c4f89c27231519d40538eac1e2642f60ee9e9f",
+      "family": "publisher-runtime"
+    },
+    {
+      "path": "tools/bonsai/src/publisher_startup/windows.rs",
+      "bytes": 13845,
+      "sha256": "2e89a900ed94937485de3d0587db24d20ab5de27c32ede6de4682556218d52b2",
+      "family": "publisher-runtime"
+    },
+    {
+      "path": "tools/bonsai/src/speech_build.rs",
+      "bytes": 35239,
+      "sha256": "5a3ce68cfe8f45d48d046ddae199894b220c95a48cf673899ea674762c2a6047",
+      "family": "compiler-provisioning"
+    },
+    {
+      "path": "tools/hexagon/public-qaic-wire.expected.json",
+      "bytes": 1797,
+      "sha256": "de50944e2eab9c56eab0544a42c2754c421e4bdcb5cae20ac52294981aa3e552",
+      "family": "hexagon-qaic"
+    },
+    {
+      "path": "tools/hexagon/public-qaic.lock.json",
+      "bytes": 8665,
+      "sha256": "7b7b7c6205fe6c11ad2c7b6bcfae57430beccd96dab77e92f8c9cf7f1f6e0f90",
+      "family": "hexagon-qaic"
+    },
+    {
+      "path": "tools/hexagon/public_idl_control.rs",
+      "bytes": 6042,
+      "sha256": "f4fe57638001868ebb9fe62b09dd08af1e23695ec469c5546205a4a6a75eeaa1",
+      "family": "hexagon-qaic"
+    },
+    {
+      "path": "tools/hexagon/public_qaic_wire.ps1",
+      "bytes": 8846,
+      "sha256": "8021790ada53e708473bc6db56e90be4c935888159779928fd7ed162c9edbdbb",
+      "family": "hexagon-qaic"
+    },
+    {
+      "path": "tools/hexagon/windows_queue_abi.ps1",
+      "bytes": 16118,
+      "sha256": "b60fa0efce76cd7333e917df7c43f1790ca27300c4fba313f28230e3d1179e88",
+      "family": "hexagon-windows-abi"
+    },
+    {
+      "path": "tools/hexagon/windows_queue_abi.rs",
+      "bytes": 3126,
+      "sha256": "a560c3f4abc9f046f355371bb9459d6449470d6b2886ff528809ff5e19dad472",
+      "family": "hexagon-windows-abi"
+    }
+  ]
+}
