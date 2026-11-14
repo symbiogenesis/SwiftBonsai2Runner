@@ -80,6 +80,7 @@ impl Request {
 }
 
 fn base() -> Value {
+    let unknown_power = json!({"ac_online":null,"battery_saver":null,"battery_percent":null});
     json!({"schema_version":1, "kind":"runner-opencl-pq2-projection-pilot",
         "status":"unknown", "scope":"standalone-packed-projection",
         "columns":COLUMNS, "rows":ROWS, "source_tensor_shape":"blk.0.ffn_gate.weight",
@@ -89,6 +90,9 @@ fn base() -> Value {
         "arithmetic":"original-pq2-q8k-per-128-integer-dot-cpu-ordered-fma",
         "explicit_device_buffer_bytes":WEIGHT_BYTES+COLUMNS+DOT_BYTES,
         "driver_compiler_memory_budget_bytes":null,
+        "aggregate_power_before":unknown_power, "aggregate_power_after":unknown_power,
+        "cpu_power_before":unknown_power, "cpu_power_after":unknown_power,
+        "gpu_power_before":unknown_power, "gpu_power_after":unknown_power,
         "endpoint_power_does_not_prove_stability":true})
 }
 
@@ -288,7 +292,52 @@ mod windows {
     }
 
     fn output_identity(path: &Path, bytes: &[u8]) -> Value {
-        json!({"file":path.file_name(),"bytes":bytes.len(),"sha256":crate::identity::sha256(bytes)})
+        json!({"file":path.file_name().and_then(std::ffi::OsStr::to_str),"bytes":bytes.len(),"sha256":crate::identity::sha256(bytes)})
+    }
+
+    fn checkpoint(directory: &Path, report: &Value) -> crate::Result<()> {
+        let bytes = serde_json::to_vec(report).map_err(|error| error.to_string())?;
+        if bytes.len() > 64 * 1024 {
+            return Err("OpenCL progress exceeds its fixed bound.".into());
+        }
+        let stage = directory.join("progress-next.json");
+        publish(&stage, &bytes)?;
+        // Same-directory rename replaces the previous complete checkpoint
+        // atomically. A killed or failed publication leaves its prior snapshot.
+        fs::rename(&stage, directory.join("progress.json")).map_err(|error| error.to_string())
+    }
+
+    fn recover_power(directory: &Path, report: &mut Value) -> crate::Result<bool> {
+        let path = directory.join("progress.json");
+        let file = match File::open(&path) {
+            Ok(file) => file,
+            Err(error) if error.kind() == std::io::ErrorKind::NotFound => return Ok(false),
+            Err(error) => return Err(error.to_string()),
+        };
+        let mut bytes = Vec::new();
+        file.take(64 * 1024 + 1)
+            .read_to_end(&mut bytes)
+            .map_err(|error| error.to_string())?;
+        if bytes.len() > 64 * 1024 {
+            return Err("OpenCL progress exceeds its fixed bound.".into());
+        }
+        let progress: Value = serde_json::from_slice(&bytes).map_err(|error| error.to_string())?;
+        if progress["kind"] != "runner-opencl-pq2-projection-pilot"
+            || progress["schema_version"] != 1
+        {
+            return Err("OpenCL progress identity is invalid.".into());
+        }
+        for key in [
+            "cpu_power_before",
+            "cpu_power_after",
+            "gpu_power_before",
+            "gpu_power_after",
+        ] {
+            if progress[key].is_object() {
+                report[key] = progress[key].clone();
+            }
+        }
+        Ok(true)
     }
 
     pub(super) fn worker(request: &Request) -> crate::Result<Value> {
@@ -301,27 +350,34 @@ mod windows {
         let weights = read(&request.weights, WEIGHT_BYTES)?;
         let q8k = read(&request.q8k, Q8K_BYTES)?;
         let input = prepared(&q8k, COLUMNS)?;
-        let cpu_before = power();
-        let (expected, projection) = scalar(&weights, &input, COLUMNS, ROWS)?;
-        let cpu_after = power();
+        let mut report = base();
+        report["kernel_sha256"] = json!(request.kernel_sha256);
+        report["weights_sha256"] = json!(request.weights.sha256);
+        report["q8k_sha256"] = json!(request.q8k.sha256);
+        report["cpu_power_before"] = power();
+        checkpoint(&request.output_directory, &report)?;
+        let cpu = scalar(&weights, &input, COLUMNS, ROWS);
+        report["cpu_power_after"] = power();
+        checkpoint(&request.output_directory, &report)?;
+        let (expected, projection) = match cpu {
+            Ok(result) => result,
+            Err(error) => {
+                report["error"] = json!(error);
+                return Ok(report);
+            }
+        };
         let selection = OpenClProjectionSelection {
             platform_name: request.device.platform_name.clone(),
             device_name: request.device.device_name.clone(),
             driver_version: request.device.driver_version.clone(),
             vendor_id: request.device.vendor_id,
         };
-        let gpu_before = power();
+        report["gpu_power_before"] = power();
+        checkpoint(&request.output_directory, &report)?;
         let device =
             bonsai_windows_process::opencl_pq2_projection(&selection, &weights, &input.codes);
-        let gpu_after = power();
-        let mut report = base();
-        report["cpu_power_before"] = cpu_before;
-        report["cpu_power_after"] = cpu_after;
-        report["gpu_power_before"] = gpu_before;
-        report["gpu_power_after"] = gpu_after;
-        report["kernel_sha256"] = json!(request.kernel_sha256);
-        report["weights_sha256"] = json!(request.weights.sha256);
-        report["q8k_sha256"] = json!(request.q8k.sha256);
+        report["gpu_power_after"] = power();
+        checkpoint(&request.output_directory, &report)?;
         let device = match device {
             Ok(device) => device,
             Err(error) => {
@@ -403,21 +459,29 @@ mod windows {
             crate::runtime_probe::run(&spec, 1024 * 1024, "OpenCL PQ2 projection", || Ok(()));
         let mut report = match result {
             Ok(output) => {
-                let mut report: Value =
-                    serde_json::from_str(&output.stdout).map_err(|error| error.to_string())?;
-                if report["kind"] != "runner-opencl-pq2-projection-pilot"
-                    || report["schema_version"] != 1
-                    || report["backend_ready"] != false
-                    || report["qualification"] != "unqualified"
-                    || report["performance_comparison_eligible"] != false
-                {
-                    return Err("OpenCL worker returned an invalid pilot report.".into());
-                }
+                let parsed = serde_json::from_str::<Value>(&output.stdout);
+                let valid = parsed.as_ref().is_ok_and(|report| {
+                    report["kind"] == "runner-opencl-pq2-projection-pilot"
+                        && report["schema_version"] == 1
+                        && report["backend_ready"] == false
+                        && report["qualification"] == "unqualified"
+                        && report["performance_comparison_eligible"] == false
+                });
+                let mut report = match parsed {
+                    Ok(report) if valid => report,
+                    _ => {
+                        let mut report = base();
+                        report["error"] = json!("OpenCL worker returned an invalid pilot report.");
+                        report
+                    }
+                };
                 report["owned_job_cleanup"] = json!("confirmed");
                 if output.stderr.trim().is_empty() {
                     fs::remove_file(&spec.stderr).map_err(|error| error.to_string())?;
                 }
-                fs::remove_file(&spec.stdout).map_err(|error| error.to_string())?;
+                if valid || output.stdout.is_empty() {
+                    fs::remove_file(&spec.stdout).map_err(|error| error.to_string())?;
+                }
                 report
             }
             Err(error) => {
@@ -432,6 +496,13 @@ mod windows {
                 report
             }
         };
+        let recovered = match recover_power(&request.output_directory, &mut report) {
+            Ok(recovered) => recovered,
+            Err(error) => {
+                report["power_checkpoint_error"] = json!(error);
+                false
+            }
+        };
         report["aggregate_power_before"] = before;
         report["aggregate_power_after"] = power();
         report["execution_policy"] = json!("headless-worker");
@@ -442,7 +513,58 @@ mod windows {
             &request.output_directory.join("receipt.json"),
             &serde_json::to_vec(&report).map_err(|error| error.to_string())?,
         )?;
+        if recovered {
+            fs::remove_file(request.output_directory.join("progress.json"))
+                .map_err(|error| error.to_string())?;
+        }
+        for name in ["progress.json", "progress-next.json"] {
+            let path = request.output_directory.join(name);
+            if fs::metadata(&path).is_ok_and(|metadata| metadata.len() == 0) {
+                fs::remove_file(path).map_err(|error| error.to_string())?;
+            }
+        }
         Ok(report)
+    }
+
+    #[cfg(test)]
+    mod tests {
+        use super::*;
+
+        #[test]
+        fn opencl_pq2_progress_recovers_completed_cpu_and_unfinished_gpu_power() -> crate::Result<()>
+        {
+            let stamp = std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .map_err(|error| error.to_string())?
+                .as_nanos();
+            let directory = std::env::temp_dir().join(format!(
+                "Bonsai-OpenClProgress-{}-{stamp}",
+                std::process::id()
+            ));
+            fs::create_dir(&directory).map_err(|error| error.to_string())?;
+            let mut progress = base();
+            progress["cpu_power_before"] =
+                json!({"ac_online":true,"battery_saver":false,"battery_percent":70});
+            checkpoint(&directory, &progress)?;
+            progress["cpu_power_after"] =
+                json!({"ac_online":true,"battery_saver":false,"battery_percent":71});
+            progress["gpu_power_before"] =
+                json!({"ac_online":false,"battery_saver":true,"battery_percent":71});
+            checkpoint(&directory, &progress)?;
+            let mut report = base();
+            report["aggregate_power_after"] =
+                json!({"ac_online":true,"battery_saver":false,"battery_percent":72});
+            assert!(recover_power(&directory, &mut report)?);
+            assert_eq!(report["cpu_power_before"]["battery_percent"], 70);
+            assert_eq!(report["cpu_power_after"]["battery_percent"], 71);
+            assert_eq!(report["gpu_power_before"]["ac_online"], false);
+            assert!(report["gpu_power_after"]["ac_online"].is_null());
+            assert_eq!(report["performance_comparison_eligible"], false);
+            assert!(directory.join("progress.json").is_file());
+            fs::remove_file(directory.join("progress.json"))
+                .and_then(|()| fs::remove_dir(directory))
+                .map_err(|error| error.to_string())
+        }
     }
 }
 

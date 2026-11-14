@@ -43,6 +43,12 @@ CPU/GPU power snapshots retain unknowns explicitly; equal endpoints do not prove
 uninterrupted stability. Performance comparison eligibility and backend qualification
 always remain false.
 
+Power observations are synced and atomically replaced in a bounded progress
+checkpoint before and after each arm. After owned child exit the parent merges
+that checkpoint into the single receipt, preserving observed CPU endpoints and
+GPU-before even when a driver call times out. Unobserved endpoints remain unknown.
+Interrupted or invalid checkpoint publication remains selected failure evidence.
+
 This source preparation executes no device workload. Run a source-bound pilot only
 in its owning CI or a separately predeclared eligible owner workload, charging
 preparation, both controls, power, cleanup and retention to the original allowance.
