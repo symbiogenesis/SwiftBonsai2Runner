@@ -25,7 +25,7 @@ if ($eventName -cin @('push','pull_request')) {
         $workflow='.github/workflows/source-checks.yml'
         $selected.portable=$eligible.portable -and @($paths | Where-Object { -not ($_.EndsWith('.md',[StringComparison]::Ordinal) -or $_.StartsWith('docs/',[StringComparison]::Ordinal) -or $_ -ceq '.rumdl.toml') }).Count -gt 0
         $selected.markdown=$eligible.markdown -and @($paths | Where-Object { $_.EndsWith('.md',[StringComparison]::Ordinal) -or $_ -cin @('.rumdl.toml',$workflow) }).Count -gt 0
-        $selected.audit=$eligible.audit -and @($paths | Where-Object { $_ -cin @('Cargo.lock','Cargo.toml','rust-toolchain.toml',$workflow) -or $_.EndsWith('/Cargo.toml',[StringComparison]::Ordinal) -or $_.StartsWith('.github/actions/rust-toolchain/',[StringComparison]::Ordinal) }).Count -gt 0
+        $selected.audit=$eligible.audit -and @($paths | Where-Object { $_ -cin @('Cargo.lock','Cargo.toml','rust-toolchain.toml',$workflow) -or $_.EndsWith('/Cargo.lock',[StringComparison]::Ordinal) -or $_.EndsWith('/Cargo.toml',[StringComparison]::Ordinal) -or $_.StartsWith('.github/actions/rust-toolchain/',[StringComparison]::Ordinal) }).Count -gt 0
         $reason='Selected from the complete changed-path range.'
     } catch { foreach ($key in $eligible.Keys) { $selected[$key]=$eligible[$key] }; $reason='Unavailable source range: conservatively select every eligible check.' }
 }

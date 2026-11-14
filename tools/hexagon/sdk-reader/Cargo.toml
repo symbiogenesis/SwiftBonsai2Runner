@@ -10,7 +10,7 @@ description = "Bounded data-only Hexagon SDK archive stream"
 
 [dependencies]
 lzma-rust2 = { version = "=0.25.0", default-features = false, features = ["std", "xz"] }
-tar = { version = "=0.4.44", default-features = false }
+tar = { version = "=0.4.46", default-features = false }
 serde_json = "=1.0.154"
 sha2 = { version = "=0.11.1", default-features = false }
 unicode-casefold = "=0.2.0"

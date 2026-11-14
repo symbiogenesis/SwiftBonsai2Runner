@@ -66,6 +66,21 @@ $cases=[ordered]@{
     Assert-SourceSelection (Invoke-SourceSelection workflow_dispatch refs/heads/topic) $true $true $false
     Assert-SourceSelection (Invoke-SourceSelection pull_request refs/pull/1/merge) $false $false $false
  }
+ nested_lockfile_selects_independent_audit={
+    Assert-SourceSelection (Invoke-SourceSelection push refs/heads/main @('tools/hexagon/sdk-reader/Cargo.lock')) $false $false $true
+    Assert-SourceSelection (Invoke-SourceSelection push refs/heads/main @('tools/future-reader/Cargo.lock')) $false $false $true
+    Assert-SourceSelection (Invoke-SourceSelection push refs/heads/main @('docs/Cargo.lock.md')) $false $true $false
+ }
+ every_workspace_lock_is_audited_after_root_failure={
+    $workflow=[IO.File]::ReadAllText((Join-Path $repository '.github/workflows/source-checks.yml'))
+    Assert-Ci ($workflow.Contains("      - '**/Cargo.lock'")) 'Nested lockfile changes must trigger Source checks.'
+    $audit=(Get-CiJobBlocks $workflow)['audit']
+    $commands=[regex]::Matches($audit,'audit --file "\$GITHUB_WORKSPACE/([^\"]+)" --deny yanked')
+    Assert-CiSet @($commands | ForEach-Object { $_.Groups[1].Value }) @('Cargo.lock','tools/hexagon/sdk-reader/Cargo.lock')
+    Assert-Ci ($audit.Contains('        id: workspace-audit')) 'The first audit must expose its outcome.'
+    Assert-Ci ($audit.Contains("        if: `${{ !cancelled() && (steps.workspace-audit.outcome == 'success' || steps.workspace-audit.outcome == 'failure') }}")) 'The independent audit must run after either workspace-audit result.'
+    Assert-Ci (-not $audit.Contains('continue-on-error: true')) 'Audit failures must still fail the job.'
+ }
  unknown_ranges_fail_closed={
     foreach ($range in @('invalid','missing')) {
         Assert-SourceSelection (Invoke-SourceSelection push refs/heads/main @('docs/guide.md') $range) $false $true $true
