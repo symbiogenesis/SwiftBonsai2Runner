@@ -507,32 +507,51 @@ fn pcm_format(format: &[u8]) -> bool {
     }
 }
 
+const BOUNDARY_PREFIX: &[u8] = b"bonsai-canary-";
+const BOUNDARY_WINDOW: usize = BOUNDARY_PREFIX.len() + 16;
+const BOUNDARY_POLL_WINDOWS: usize = 8192;
+
+fn boundary_values(
+    bytes: &[u8],
+    finder: &memchr::memmem::Finder<'_>,
+    used: &mut HashSet<u64>,
+    mut check: impl FnMut() -> Result<()>,
+) -> Result<()> {
+    let windows = bytes.len().saturating_sub(BOUNDARY_WINDOW - 1);
+    for start in (0..windows).step_by(BOUNDARY_POLL_WINDOWS) {
+        check()?;
+        let end = (start + BOUNDARY_POLL_WINDOWS).min(windows);
+        // The overlapping tail belongs only to candidates beginning before end.
+        // Search for the fixed prefix in bulk, then parse actual candidates;
+        // ordinary PCM never incurs one Rust prefix comparison per sample byte.
+        let chunk = &bytes[start..end + BOUNDARY_WINDOW - 1];
+        for offset in finder.find_iter(chunk) {
+            let Some(suffix) = chunk.get(offset + BOUNDARY_PREFIX.len()..offset + BOUNDARY_WINDOW)
+            else {
+                break;
+            };
+            if let Ok(hex) = std::str::from_utf8(suffix)
+                && let Ok(value) = u64::from_str_radix(hex, 16)
+            {
+                used.insert(value);
+            }
+        }
+    }
+    Ok(())
+}
+
 fn boundary(wav: &CanonicalWav<'_>, call: &Call<'_>) -> Result<String> {
-    const PREFIX: &[u8] = b"bonsai-canary-";
-    const WINDOW: usize = PREFIX.len() + 16;
     let mut used = HashSet::new();
+    let finder = memchr::memmem::Finder::new(BOUNDARY_PREFIX);
     // Scan the two source slices plus their bounded join, including a marker
     // split across the normalized header and PCM without joining the clip.
-    let tail = WINDOW - 1;
-    let mut join = [0; 2 * (WINDOW - 1)];
+    let tail = BOUNDARY_WINDOW - 1;
+    let mut join = [0; 2 * (BOUNDARY_WINDOW - 1)];
     join[..tail].copy_from_slice(&wav.header[wav.header.len() - tail..]);
     let prefix = tail.min(wav.data.len());
     join[tail..tail + prefix].copy_from_slice(&wav.data[..prefix]);
-    let windows = wav
-        .header
-        .array_windows::<WINDOW>()
-        .chain(join[..tail + prefix].array_windows::<WINDOW>())
-        .chain(wav.data.array_windows::<WINDOW>());
-    for (index, window) in windows.enumerate() {
-        if index.is_multiple_of(8192) {
-            call.check()?;
-        }
-        if let Some(suffix) = window.strip_prefix(PREFIX)
-            && let Ok(hex) = std::str::from_utf8(suffix)
-            && let Ok(value) = u64::from_str_radix(hex, 16)
-        {
-            used.insert(value);
-        }
+    for bytes in [&wav.header[..], &join[..tail + prefix], wav.data] {
+        boundary_values(bytes, &finder, &mut used, || call.check())?;
     }
     // There are at most used.len() occupied counter values. The first N+1
     // values contain a free one, so the selected boundary cannot occur in WAV
@@ -806,10 +825,11 @@ const fn response_status(code: Option<u16>) -> Result<()> {
 mod tests {
     use super::{
         Call, Client, Config, Failure, MAX_HEAD, MAX_REQUEST, MAX_RESPONSE, MAX_WAVE_RESPONSE,
-        MODEL, Media, boundary, multipart, normalize_wav, request_length, response_body,
-        response_length, validate_wav, write_all_vectored,
+        MODEL, Media, boundary, boundary_values, multipart, normalize_wav, request_length,
+        response_body, response_length, validate_wav, write_all_vectored,
     };
     use std::{
+        collections::HashSet,
         fs,
         io::{self, IoSlice, Read, Write},
         net::{TcpListener, TcpStream},
@@ -1165,6 +1185,67 @@ mod tests {
         assert!(validate_wav(&wav(&[])?).is_err());
         assert!(validate_wav(&wav(&[0])?).is_err());
         Ok(())
+    }
+
+    #[test]
+    fn multipart_boundary_search_preserves_collisions_across_slices_and_scan_blocks()
+    -> io::Result<()> {
+        let current = AtomicU64::new(1);
+        let call = Call::new(1, &current, Duration::from_secs(10));
+        let marker = b"bonsai-canary-0000000000000000";
+        for split in 0..=marker.len() {
+            // Move every byte of a real marker across the normalized-header/PCM
+            // join and across each bounded search-block boundary independently.
+            let mut bytes = vec![b'x'; 44 + 3 * 8192];
+            let join = 44 - split;
+            bytes[join..join + marker.len()].copy_from_slice(marker);
+            let block = 44 + 8192 - split;
+            bytes[block..block + marker.len()].copy_from_slice(b"bonsai-canary-0000000000000001");
+            let header = bytes[..44].try_into().map_err(io::Error::other)?;
+            let normalized = super::CanonicalWav {
+                header,
+                data: &bytes[44..],
+            };
+            assert_eq!(
+                boundary(&normalized, &call),
+                Ok("bonsai-canary-0000000000000002".to_owned())
+            );
+        }
+        // Preserve the complete previous hexadecimal subset, including upper
+        // case, while rejecting truncated and malformed candidate suffixes.
+        let bytes =
+            b"bonsai-canary-0000000000ABCDEF-bonsai-canary-00000000000000GG-bonsai-canary-000";
+        let mut used = HashSet::new();
+        let finder = memchr::memmem::Finder::new(super::BOUNDARY_PREFIX);
+        boundary_values(bytes, &finder, &mut used, || call.check())
+            .map_err(|_| io::Error::other("Boundary candidate search failed"))?;
+        assert_eq!(used, HashSet::from([0x00ab_cdef]));
+        Ok(())
+    }
+
+    #[test]
+    fn multipart_boundary_search_checks_cancellation_between_bounded_borrowed_blocks() {
+        let mut bytes = vec![0; 960_000];
+        let first = b"bonsai-canary-0000000000000000";
+        bytes[..first.len()].copy_from_slice(first);
+        bytes[8192..8192 + first.len()].copy_from_slice(b"bonsai-canary-0000000000000001");
+        let finder = memchr::memmem::Finder::new(super::BOUNDARY_PREFIX);
+        let mut used = HashSet::new();
+        let mut polls = 0;
+        assert_eq!(
+            boundary_values(&bytes, &finder, &mut used, || {
+                polls += 1;
+                if polls == 2 {
+                    Err(Failure::Cancelled)
+                } else {
+                    Ok(())
+                }
+            }),
+            Err(Failure::Cancelled)
+        );
+        assert_eq!(polls, 2);
+        assert_eq!(used, HashSet::from([0]));
+        assert_eq!(&bytes[..first.len()], first);
     }
 
     #[test]
