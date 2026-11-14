@@ -434,4 +434,119 @@ mod tests {
         );
         Ok(())
     }
+
+    #[test]
+    fn prosody_streaming_clauses_wait_for_sentence_context() -> Result<(), &'static str> {
+        let now = Instant::now();
+        let mut text = Text::default();
+        for part in [
+            "A quiet opening,",
+            " followed by a pause;",
+            " then a detail:",
+            " and a complete ending.",
+        ] {
+            text.append(part, now)?;
+            assert!(text.ready(now).is_empty());
+        }
+        text.append(" ", now)?;
+        assert_eq!(
+            text.ready(now),
+            ["A quiet opening, followed by a pause; then a detail: and a complete ending."]
+        );
+        text.finished = true;
+        assert!(text.ready(now).is_empty());
+        Ok(())
+    }
+
+    #[test]
+    fn prosody_fragmented_terminators_keep_their_closing_delimiters() -> Result<(), &'static str> {
+        let now = Instant::now();
+        for (parts, expected, tail) in [
+            (
+                &["\"Wait.", ".", ".", "\"", " Next"][..],
+                "\"Wait...\"",
+                "Next",
+            ),
+            (&["Really?", "!", "”", " Next"][..], "Really?!”", "Next"),
+            (&["「待って。", "」", "次"][..], "「待って。」", "次"),
+        ] {
+            let mut text = Text::default();
+            for (index, part) in parts.iter().enumerate() {
+                text.append(part, now)?;
+                if index + 1 == parts.len() {
+                    assert_eq!(text.ready(now), [expected]);
+                } else {
+                    assert!(text.ready(now).is_empty());
+                }
+            }
+            text.finished = true;
+            assert_eq!(text.ready(now), [tail]);
+            assert!(text.ready(now).is_empty());
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn prosody_fragmented_crlf_preserves_every_paragraph_break() -> Result<(), &'static str> {
+        let now = Instant::now();
+        let mut text = Text::default();
+        text.append("First.\r", now)?;
+        let mut ready = text.ready(now);
+        assert_eq!(ready, ["First.\r"]);
+        text.append("\n\r", now)?;
+        assert!(text.ready(now + LATENCY).is_empty());
+        text.append("\nSecond. tail", now + LATENCY)?;
+        ready.extend(text.ready(now + LATENCY));
+        assert_eq!(
+            ready.into_iter().collect::<String>(),
+            "First.\r\n\r\nSecond."
+        );
+        text.finished = true;
+        assert_eq!(text.ready(now + LATENCY), ["tail"]);
+        assert!(text.ready(now + LATENCY).is_empty());
+        Ok(())
+    }
+
+    #[test]
+    fn prosody_fragmented_numbers_and_initials_keep_sentence_context() -> Result<(), &'static str> {
+        let now = Instant::now();
+        let mut text = Text::default();
+        for part in [
+            "Dr.",
+            " Smith read",
+            " 3.",
+            "14 at",
+            " 08:",
+            "30 with J.",
+            " R.",
+            " Tolkien.",
+        ] {
+            text.append(part, now)?;
+            assert!(text.ready(now).is_empty());
+        }
+        text.append(" Next", now)?;
+        assert_eq!(
+            text.ready(now),
+            ["Dr. Smith read 3.14 at 08:30 with J. R. Tolkien."]
+        );
+        text.finished = true;
+        assert_eq!(text.ready(now), ["Next"]);
+        assert!(text.ready(now).is_empty());
+        Ok(())
+    }
+
+    #[test]
+    fn prosody_leading_punctuation_waits_for_its_spoken_phrase() -> Result<(), &'static str> {
+        let now = Instant::now();
+        let mut text = Text::default();
+        for part in ["… ", "Well,"] {
+            text.append(part, now)?;
+            assert!(text.ready(now).is_empty());
+        }
+        text.append(" let's continue. ", now)?;
+        assert_eq!(text.ready(now), ["… Well, let's continue."]);
+        text.finished = true;
+        assert!(text.ready(now).is_empty());
+        Ok(())
+    }
 }

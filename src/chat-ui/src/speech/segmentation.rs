@@ -240,4 +240,30 @@ mod tests {
         let input = format!("{}，{}", "读".repeat(100), "word ".repeat(40));
         assert!(clip_boundary(&input) > "读".repeat(100).len() + '，'.len_utf8());
     }
+
+    #[test]
+    fn prosody_complete_sentence_precedes_a_later_clause_cut() {
+        let sentence = "The introduction ends naturally here.";
+        let input = format!(
+            "{sentence} {}; {}",
+            "the following clause continues calmly ".repeat(4),
+            "more words without a sentence ending ".repeat(8)
+        );
+        assert_eq!(clip_boundary(&input), sentence.len());
+    }
+
+    #[test]
+    fn prosody_hard_clip_chooses_the_last_complete_clause_in_the_window() {
+        let preferred = format!("{}, {};", "a".repeat(130), "b".repeat(50));
+        let input = format!("{preferred} {}", "continuing words ".repeat(20));
+        assert_eq!(clip_boundary(&input), preferred.len());
+    }
+
+    #[test]
+    fn prosody_unicode_clause_and_closing_quote_fit_the_exact_character_cap() {
+        let preferred = format!("{}，」", "读".repeat(super::super::MAX_SEGMENT - 2));
+        let input = format!("{preferred}{}", "下一段".repeat(20));
+        assert_eq!(clip_boundary(&input), preferred.len());
+        assert_eq!(preferred.chars().count(), super::super::MAX_SEGMENT);
+    }
 }
