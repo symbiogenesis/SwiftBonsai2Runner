@@ -22,7 +22,7 @@ struct Input {
 
 #[derive(Clone, Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
-struct Device {
+struct DeviceSelection {
     platform_name: String,
     device_name: String,
     driver_version: String,
@@ -42,7 +42,7 @@ struct Request {
     weights: Input,
     q8k: Input,
     kernel_sha256: String,
-    device: Device,
+    device: DeviceSelection,
     output_directory: PathBuf,
 }
 
@@ -155,16 +155,18 @@ fn prepared(q8k: &[u8], columns: usize) -> crate::Result<Prepared> {
     }
     let mut codes = Vec::with_capacity(columns);
     let mut scales = Vec::with_capacity(columns / 256);
-    for block in q8k.chunks_exact(292) {
+    for block in q8k.as_chunks::<292>().0 {
         let scale = f32::from_le_bytes(block[..4].try_into().map_err(|_| "Invalid Q8_K scale.")?);
         if !scale.is_finite() {
             return Err("Nonfinite original Q8_K scale.".into());
         }
         for (values, sum) in block[4..260]
-            .chunks_exact(16)
-            .zip(block[260..].chunks_exact(2))
+            .as_chunks::<16>()
+            .0
+            .iter()
+            .zip(block[260..].as_chunks::<2>().0)
         {
-            let sum = i16::from_le_bytes(sum.try_into().map_err(|_| "Invalid Q8_K sum.")?);
+            let sum = i16::from_le_bytes(*sum);
             let expected: i16 = values
                 .iter()
                 .map(|&value| i16::from(i8::from_ne_bytes([value])))
@@ -223,14 +225,16 @@ fn scalar(
     for row in weights.chunks_exact(blocks * 34) {
         let mut sum = 0.0_f32;
         for (index, (block, codes)) in row
-            .chunks_exact(34)
-            .zip(input.codes.chunks_exact(128))
+            .as_chunks::<34>()
+            .0
+            .iter()
+            .zip(input.codes.as_chunks::<128>().0)
             .enumerate()
         {
             let mut dot = 0_i32;
             // Independent scalar byte traversal: four adjacent symbols from
             // each original packed byte, including code 3 and signed -128.
-            for (&packed, values) in block[2..].iter().zip(codes.chunks_exact(4)) {
+            for (&packed, values) in block[2..].iter().zip(codes.as_chunks::<4>().0) {
                 for (shift, &value) in [0, 2, 4, 6].into_iter().zip(values) {
                     dot += (i32::from((packed >> shift) & 3) - 1)
                         * i32::from(i8::from_ne_bytes([value]));
@@ -255,7 +259,10 @@ fn scalar(
 
 #[cfg(windows)]
 mod windows {
-    use super::*;
+    use super::{
+        COLUMNS, DOT_BYTES, Input, Q8K_BYTES, ROWS, Request, Value, WEIGHT_BYTES, base, json,
+        prepared, scalar,
+    };
     use bonsai_windows_process::{OpenClProjectionSelection, ProcessSpec};
     use std::fs::{self, File, OpenOptions};
     use std::io::{Read as _, Write as _};
@@ -326,6 +333,30 @@ mod windows {
             || progress["schema_version"] != 1
         {
             return Err("OpenCL progress identity is invalid.".into());
+        }
+        for key in [
+            "cpu_power_before",
+            "cpu_power_after",
+            "gpu_power_before",
+            "gpu_power_after",
+        ] {
+            let power = &progress[key];
+            if !power.as_object().is_some_and(|object| object.len() == 3)
+                || !["ac_online", "battery_saver"]
+                    .into_iter()
+                    .all(|name| power[name].is_boolean() || power[name].is_null())
+                || !(power["battery_percent"].is_null()
+                    || power["battery_percent"]
+                        .as_u64()
+                        .is_some_and(|percent| percent <= 100))
+                || !power.as_object().is_some_and(|object| {
+                    ["ac_online", "battery_saver", "battery_percent"]
+                        .into_iter()
+                        .all(|key| object.contains_key(key))
+                })
+            {
+                return Err("OpenCL progress contains invalid power observations.".into());
+            }
         }
         for key in [
             "cpu_power_before",
@@ -528,7 +559,7 @@ mod windows {
 
     #[cfg(test)]
     mod tests {
-        use super::*;
+        use super::{base, checkpoint, fs, json, recover_power};
 
         #[test]
         fn opencl_pq2_progress_recovers_completed_cpu_and_unfinished_gpu_power() -> crate::Result<()>
@@ -561,6 +592,11 @@ mod windows {
             assert!(report["gpu_power_after"]["ac_online"].is_null());
             assert_eq!(report["performance_comparison_eligible"], false);
             assert!(directory.join("progress.json").is_file());
+            progress["gpu_power_after"] =
+                json!({"ac_online":"battery","battery_saver":false,"battery_percent":71});
+            checkpoint(&directory, &progress)?;
+            assert!(recover_power(&directory, &mut report).is_err());
+            assert!(directory.join("progress.json").is_file());
             fs::remove_file(directory.join("progress.json"))
                 .and_then(|()| fs::remove_dir(directory))
                 .map_err(|error| error.to_string())
@@ -570,12 +606,12 @@ mod windows {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    use super::{half, json, prepared, run, scalar, worker};
 
     fn q8k(codes: &[u8; 256], scale: f32) -> Vec<u8> {
         let mut bytes = scale.to_le_bytes().to_vec();
         bytes.extend_from_slice(codes);
-        for values in codes.chunks_exact(16) {
+        for values in codes.as_chunks::<16>().0 {
             let sum: i16 = values
                 .iter()
                 .map(|&value| i16::from(i8::from_ne_bytes([value])))
@@ -589,7 +625,7 @@ mod tests {
     fn opencl_pq2_control_preserves_four_symbols_signed_extremes_and_original_blocks()
     -> crate::Result<()> {
         let mut codes = [0_u8; 256];
-        for group in codes.chunks_exact_mut(4) {
+        for group in codes.as_chunks_mut::<4>().0 {
             group.copy_from_slice(&[128, 127, 255, 1]);
         }
         let bytes = q8k(&codes, 0.5);
@@ -614,7 +650,10 @@ mod tests {
             half(&0x8000_u16.to_le_bytes())?.to_bits(),
             (-0.0_f32).to_bits()
         );
-        assert_eq!(half(&0x0001_u16.to_le_bytes())?, 1.0 / 16_777_216.0);
+        assert_eq!(
+            half(&0x0001_u16.to_le_bytes())?.to_bits(),
+            (1.0_f32 / 16_777_216.0).to_bits()
+        );
         Ok(())
     }
 
