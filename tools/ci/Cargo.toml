@@ -22,12 +22,12 @@ sha2.workspace = true
 toml = { version = "=1.2.1", default-features = false, features = ["parse", "serde", "std"] }
 zip.workspace = true
 
-# Windows uses Schannel through Rust bindings, avoiding an additional C/assembly
-# compiler just to build the small CI command on native ARM64.
+# Windows uses Schannel and system trust through Rust bindings, avoiding a bundled
+# root set or an additional C/assembly compiler for the native ARM64 CI command.
 [target.'cfg(windows)'.dependencies]
 bonsai-artifacts.workspace = true
 bonsai-windows-process.workspace = true
-ureq = { workspace = true, features = ["native-tls"] }
+ureq = { workspace = true, features = ["native-tls-no-default"] }
 
 [target.'cfg(not(windows))'.dependencies]
 ureq = { workspace = true, features = ["rustls"] }

@@ -135,6 +135,7 @@ fn fetch_runs(repository: &str, token: &str, workflow: &str) -> Result<Value> {
     let config = config.tls_config(
         ureq::tls::TlsConfig::builder()
             .provider(ureq::tls::TlsProvider::NativeTls)
+            .root_certs(ureq::tls::RootCerts::PlatformVerifier)
             .build(),
     );
     let config = config.build();
