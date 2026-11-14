@@ -141,6 +141,20 @@ fn source_objects(manifest: &Manifest, intake: &mut Intake) -> Result<BTreeMap<S
     let receipt: Value =
         serde_json::from_slice(&intake.read(&manifest.source_receipt, DOCUMENT_LIMIT)?)
             .map_err(|error| error.to_string())?;
+    let concrete_identities = source["sourceRevision"]
+        .as_str()
+        .is_some_and(|value| is_lower_hex(value, 40))
+        && source["compiler"]["sha256"]
+            .as_str()
+            .is_some_and(|value| is_lower_hex(value, 64))
+        && source["compilationDatabase"]["sha256"]
+            .as_str()
+            .is_some_and(|value| is_lower_hex(value, 64))
+        && source["configuration"].as_str().is_some_and(|value| {
+            !value.trim().is_empty()
+                && value.len() <= 256
+                && !value.bytes().any(|byte| byte.is_ascii_control())
+        });
     if source["schemaVersion"] != 3
         || source["kind"] != "selected-clang-native-source-closure"
         || source["target"] != "aarch64-pc-windows-msvc"
@@ -150,6 +164,7 @@ fn source_objects(manifest: &Manifest, intake: &mut Intake) -> Result<BTreeMap<S
         || receipt["manifestSchemaVersion"] != 3
         || receipt["recursiveGenerationProvenanceChecked"] != true
         || receipt["selectedBuildInventoryChecked"] != true
+        || !concrete_identities
         || receipt["manifestSha256"] != manifest.source_manifest.sha256
         || receipt["sourceRevision"] != source["sourceRevision"]
         || receipt["target"] != source["target"]

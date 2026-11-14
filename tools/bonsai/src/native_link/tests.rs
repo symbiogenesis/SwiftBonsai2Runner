@@ -280,3 +280,55 @@ fn native_link_manifest_intake_rejects_digest_tamper_and_unknown_fields() -> Tes
     assert!(run(json!({"manifest":identity(&manifest),"ignoreErrors":true})).is_err());
     Ok(())
 }
+
+#[test]
+fn native_link_source_binding_rejects_paired_missing_and_malformed_identities() -> TestResult {
+    let scratch = Scratch::new()?;
+    let mut manifest = fixture(&scratch)?;
+    let original_source: Value =
+        serde_json::from_slice(&fs::read(&manifest.source_manifest.path)?)?;
+    let original_receipt: Value =
+        serde_json::from_slice(&fs::read(&manifest.source_receipt.path)?)?;
+    for (source_path, receipt_key) in [
+        ("/sourceRevision", "sourceRevision"),
+        ("/configuration", "configuration"),
+        ("/compiler/sha256", "compilerSha256"),
+        ("/compilationDatabase/sha256", "compilationDatabaseSha256"),
+    ] {
+        for malformed in [
+            None,
+            Some(Value::Null),
+            Some(json!(17)),
+            Some(json!("")),
+            Some(json!("bad\nidentity")),
+        ] {
+            let mut source = original_source.clone();
+            let mut receipt = original_receipt.clone();
+            if let Some(malformed) = malformed {
+                *source
+                    .pointer_mut(source_path)
+                    .ok_or("Missing fixture identity")? = malformed.clone();
+                receipt[receipt_key] = malformed;
+            } else {
+                let (parent, key) = source_path.rsplit_once('/').ok_or("Missing fixture path")?;
+                source
+                    .pointer_mut(parent)
+                    .and_then(Value::as_object_mut)
+                    .ok_or("Missing fixture object")?
+                    .remove(key);
+                receipt
+                    .as_object_mut()
+                    .ok_or("Missing fixture receipt")?
+                    .remove(receipt_key);
+            }
+            manifest.source_manifest = scratch.document("source-manifest.json", &source)?;
+            receipt["manifestSha256"] = manifest.source_manifest.sha256.clone().into();
+            manifest.source_receipt = scratch.document("source-receipt.json", &receipt)?;
+            assert!(
+                source_objects(&manifest, &mut Intake::default()).is_err(),
+                "{source_path}"
+            );
+        }
+    }
+    Ok(())
+}
