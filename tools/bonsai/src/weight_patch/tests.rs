@@ -81,6 +81,53 @@ fn direction_estimation_ignores_held_out_residuals() -> crate::Result<()> {
 }
 
 #[test]
+fn fit_excludes_conflicting_holdout_rows_but_reports_their_effect() -> crate::Result<()> {
+    let mut request = fixture();
+    let first = run(request.clone())?;
+    assert_eq!(first["status"], "converged");
+    assert!(first["artifact"]["factors"].is_object());
+
+    // This target contradicts the fitting target. Including it in the solver
+    // would change both the optimum and its certificate, not just diagnostics.
+    request["rows"][2]["activation"] = json!(vector(INPUT_WIDTH, -128.0));
+    request["rows"][2]["residual"] = json!(vector(OUTPUT_WIDTH, -500.0));
+    let second = run(request)?;
+    assert_eq!(second["status"], "converged");
+    for field in ["iterations", "optimizationCertificate"] {
+        assert_eq!(first[field], second[field], "{field}");
+    }
+    assert_eq!(first["artifact"]["factors"], second["artifact"]["factors"]);
+    assert_ne!(
+        first["artifact"]["fitInputSha256"],
+        second["artifact"]["fitInputSha256"]
+    );
+    assert_eq!(first["rows"][0], second["rows"][0]);
+    assert_eq!(first["rows"][1], second["rows"][1]);
+    assert_eq!(second["rows"][2]["split"], "holdout");
+    assert!(
+        second["rows"][2]["constraintViolation"]
+            .as_f64()
+            .is_some_and(|violation| violation > 100.0)
+    );
+    assert_ne!(first["rows"][2], second["rows"][2]);
+    assert_eq!(second["holdoutUsedForFit"], false);
+    Ok(())
+}
+
+#[test]
+fn split_isolation_rejects_same_sample_in_distinct_trace_groups() {
+    let mut request = fixture();
+    // Distinct token positions and groups must not let one sample appear in
+    // both fit and holdout; the existing group-level control cannot detect it.
+    request["rows"][2]["sampleId"] = json!("fit-target");
+    request["rows"][2]["tokenIndex"] = json!(1);
+    assert_eq!(
+        run(request).err().as_deref(),
+        Some("A sample or trace group crosses the fit/holdout boundary.")
+    );
+}
+
+#[test]
 fn split_leakage_unknown_fields_and_bad_shapes_reject() {
     let mut request = fixture();
     request["rows"][2]["groupId"] = json!("fit-target-trace");
