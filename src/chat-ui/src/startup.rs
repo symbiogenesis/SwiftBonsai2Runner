@@ -692,90 +692,135 @@ mod tests {
         Ok(directory)
     }
 
-    fn quoted(path: &Path) -> String {
-        path.to_string_lossy().replace('\'', "''")
-    }
+    const NATIVE_PROBE: &str = "startup::tests::native_startup_probe";
 
-    fn powershell() -> io::Result<PathBuf> {
-        let search =
-            std::env::var_os("PATH").ok_or_else(|| io::Error::other("PATH unavailable."))?;
-        std::env::split_paths(&search)
-            .map(|directory| directory.join("pwsh.exe"))
-            .find(|path| path.is_absolute() && path.is_file())
-            .ok_or_else(|| {
-                io::Error::other(
-                    "PowerShell 7 is required for the synthetic startup process fixture.",
-                )
-            })
-    }
-
-    fn spec(directory: &Path, script: &str) -> io::Result<ToolProcessSpec> {
-        let path = directory.join("prepare.ps1");
-        fs::write(&path, script)?;
+    fn spec(directory: &Path, mode: &str) -> io::Result<ToolProcessSpec> {
         Ok(ToolProcessSpec {
-            executable: powershell()?,
-            arguments: vec![
-                "-NoLogo".into(),
-                "-NoProfile".into(),
-                "-NonInteractive".into(),
-                "-File".into(),
-                path.into_os_string(),
-            ],
+            executable: std::env::current_exe()?,
+            arguments: ["--exact", NATIVE_PROBE, "--ignored", "--nocapture"]
+                .into_iter()
+                .map(OsString::from)
+                .collect(),
             working_directory: directory.into(),
             stdout: directory.join("prepare.stdout"),
             stderr: directory.join("prepare.stderr"),
-            environment: BTreeMap::new(),
+            environment: BTreeMap::from([("BONSAI_STARTUP_PROBE".into(), mode.into())]),
         })
+    }
+
+    #[test]
+    #[ignore = "Replayed only inside a native owned startup process."]
+    #[expect(
+        clippy::exit,
+        reason = "The synthetic child must expose an exact nonzero process exit without libtest writing stderr."
+    )]
+    fn native_startup_probe() -> io::Result<()> {
+        use std::{
+            io::Write as _,
+            os::windows::process::CommandExt as _,
+            process::{Command, Stdio},
+        };
+        use windows_sys::Win32::System::Threading::CREATE_NO_WINDOW;
+
+        let directory = std::env::current_dir()?;
+        match std::env::var("BONSAI_STARTUP_PROBE").as_deref() {
+            Ok("failure") => {
+                io::stderr().lock().write_all(b"Synthetic failure\n")?;
+                std::process::exit(7);
+            }
+            Ok("empty-failure") => std::process::exit(7),
+            Ok("bound") => {
+                let mut output = io::stdout().lock();
+                output.write_all(&vec![b'x'; 1_048_577])?;
+                output.flush()?;
+            }
+            Ok("tree") => {
+                let mut child = Command::new(std::env::current_exe()?)
+                    .args(["--exact", NATIVE_PROBE, "--ignored", "--nocapture"])
+                    .env("BONSAI_STARTUP_PROBE", "leaf")
+                    .current_dir(&directory)
+                    .stdin(Stdio::null())
+                    .stdout(Stdio::inherit())
+                    .stderr(Stdio::inherit())
+                    .creation_flags(CREATE_NO_WINDOW)
+                    .spawn()?;
+                let status = child.wait()?;
+                return Err(io::Error::other(format!(
+                    "Synthetic startup descendant exited unexpectedly: {status}"
+                )));
+            }
+            Ok("leaf") => {
+                let marker = directory.join("descendant.txt");
+                let partial = marker.with_extension("partial");
+                fs::write(
+                    &partial,
+                    format!(
+                        "{}\n{}",
+                        std::process::id(),
+                        bonsai_windows_process::process_creation_time(std::process::id())?
+                    ),
+                )?;
+                fs::rename(partial, marker)?;
+            }
+            _ => return Err(io::Error::other("Missing synthetic startup probe mode.")),
+        }
+        thread::sleep(Duration::from_secs(60));
+        Err(io::Error::other(
+            "Synthetic startup probe outlived its owner deadline.",
+        ))
     }
 
     #[test]
     fn cancelled_startup_stops_native_descendants_before_returning() -> io::Result<()> {
         let directory = scratch("Cancel")?;
         let marker = directory.join("descendant.txt");
-        let leaf = directory.join("leaf.ps1");
-        fs::write(
-            &leaf,
-            format!(
-                "$process = Get-Process -Id $PID\n[IO.File]::WriteAllText('{marker}.partial', \"$PID`n$($process.StartTime.ToUniversalTime().ToFileTimeUtc())\")\n[IO.File]::Move('{marker}.partial', '{marker}')\nStart-Sleep -Seconds 60\n",
-                marker = quoted(&marker)
-            ),
-        )?;
-        let script = format!(
-            "$ErrorActionPreference = 'Stop'\n$start = [Diagnostics.ProcessStartInfo]::new('{executable}')\n$start.UseShellExecute = $false\n$start.CreateNoWindow = $true\n$start.WorkingDirectory = '{directory}'\nforeach ($argument in @('-NoLogo', '-NoProfile', '-NonInteractive', '-File', '{leaf}')) {{ $start.ArgumentList.Add($argument) }}\n$child = [Diagnostics.Process]::Start($start)\n$child.WaitForExit()\n",
-            executable = quoted(&powershell()?),
-            directory = quoted(&directory),
-            leaf = quoted(&leaf)
-        );
-        let spec = spec(&directory, &script)?;
+        let spec = spec(&directory, "tree")?;
         let cancelled = Arc::new(AtomicBool::new(false));
         let cancellation = Arc::clone(&cancelled);
         let worker = thread::spawn(move || {
             capture(&spec, &cancellation, Duration::from_secs(30), false, None)
         });
-        let started = Instant::now();
-        while !marker.is_file() && started.elapsed() < Duration::from_secs(20) {
-            thread::sleep(Duration::from_millis(20));
-        }
-        if !marker.is_file() {
-            cancelled.store(true, Ordering::Release);
-            let _joined = worker.join();
-            return Err(io::Error::other(
-                "Synthetic startup descendant did not start.",
-            ));
-        }
-        let identity = fs::read_to_string(&marker)?;
-        let (id, creation) = identity
-            .split_once('\n')
-            .ok_or_else(|| io::Error::other("Incomplete descendant identity."))?;
-        let child = bonsai_windows_process::ParentProcess::open(
-            id.trim().parse().map_err(io::Error::other)?,
-            creation.trim().parse().map_err(io::Error::other)?,
-        )?;
+        let descendant = (|| {
+            let started = Instant::now();
+            while !marker.is_file()
+                && !worker.is_finished()
+                && started.elapsed() < Duration::from_secs(20)
+            {
+                thread::sleep(Duration::from_millis(20));
+            }
+            if !marker.is_file() {
+                return Err(io::Error::other(
+                    "Synthetic startup descendant did not start.",
+                ));
+            }
+            let identity = fs::read_to_string(&marker)?;
+            let (id, creation) = identity
+                .split_once('\n')
+                .ok_or_else(|| io::Error::other("Incomplete descendant identity."))?;
+            bonsai_windows_process::ParentProcess::open(
+                id.trim().parse().map_err(io::Error::other)?,
+                creation.trim().parse().map_err(io::Error::other)?,
+            )
+        })();
+        // Join even if fixture setup or identity parsing fails: a failing
+        // control must not leave its synthetic owner/descendant running.
         cancelled.store(true, Ordering::Release);
         let result = worker
             .join()
             .map_err(|_| io::Error::other("Synthetic startup worker panicked."))?;
-        assert!(result.is_err_and(|error| error.kind() == io::ErrorKind::Interrupted));
+        let child = descendant.map_err(|error| {
+            io::Error::other(format!(
+                "{error} Capture result: {result:?}; stdout: {:?}; stderr: {:?}",
+                bounded_text(&directory.join("prepare.stdout")),
+                bounded_text(&directory.join("prepare.stderr"))
+            ))
+        })?;
+        assert!(
+            result
+                .as_ref()
+                .is_err_and(|error| error.kind() == io::ErrorKind::Interrupted),
+            "Unexpected startup cancellation result: {result:?}"
+        );
         assert!(
             child.ensure_alive().is_err(),
             "Startup descendant survived cancellation."
@@ -787,27 +832,29 @@ mod tests {
 
     #[test]
     fn native_startup_bounds_output_and_reports_preparation_failure() -> io::Result<()> {
-        for (name, script, expected) in [
+        for (name, mode, expected) in [
+            ("Failure", "failure", "Synthetic failure"),
             (
-                "Failure",
-                "[Console]::Error.WriteLine('Synthetic failure'); exit 7",
-                "Synthetic failure",
+                "Empty",
+                "empty-failure",
+                "wrote no standard-error diagnostics",
             ),
-            (
-                "Bound",
-                "[Console]::Write('x' * 1048577); Start-Sleep -Seconds 10",
-                "exceeded its bound",
-            ),
+            ("Bound", "bound", "exceeded its bound"),
         ] {
             let directory = scratch(name)?;
             let result = capture(
-                &spec(&directory, script)?,
+                &spec(&directory, mode)?,
                 &AtomicBool::new(false),
                 Duration::from_secs(30),
                 false,
                 None,
             );
-            assert!(result.is_err_and(|error| error.to_string().contains(expected)));
+            let error = result.expect_err("Synthetic startup unexpectedly succeeded.");
+            let message = error.to_string();
+            assert!(message.contains(expected), "{name}: {message}");
+            if mode != "bound" {
+                assert!(message.contains("process exited 7, 0x00000007"));
+            }
             fs::remove_dir_all(&directory)?;
         }
         Ok(())
