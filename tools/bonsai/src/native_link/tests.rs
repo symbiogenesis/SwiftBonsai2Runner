@@ -9,7 +9,9 @@ struct Scratch(PathBuf);
 
 impl Scratch {
     fn new() -> std::result::Result<Self, Box<dyn std::error::Error>> {
-        let path = fs::canonicalize(std::env::temp_dir())?.join(format!(
+        // The real command intentionally accepts ordinary disk paths, not
+        // canonical Windows namespace paths (\\?\C:\...).
+        let path = std::env::temp_dir().join(format!(
             "Bonsai-NativeLink-{}-{}",
             std::process::id(),
             SystemTime::now().duration_since(UNIX_EPOCH)?.as_nanos()
@@ -44,7 +46,8 @@ impl Scratch {
 impl Drop for Scratch {
     fn drop(&mut self) {
         if let Ok(parent) = fs::canonicalize(std::env::temp_dir())
-            && self.0.parent() == Some(parent.as_path())
+            && let Ok(target) = fs::canonicalize(&self.0)
+            && target.parent() == Some(parent.as_path())
             && fs::symlink_metadata(&self.0)
                 .is_ok_and(|metadata| !bonsai_artifacts::is_redirect(&metadata))
         {
@@ -120,7 +123,7 @@ fn fixture(scratch: &Scratch) -> std::result::Result<Capture, Box<dyn std::error
     fs::create_dir(scratch.0.join("package"))?;
     let output = scratch.file("linked.exe", &image())?;
     let packaged = scratch.file("package/service.exe", &image())?;
-    Ok(Capture {
+    let capture = Capture {
         schema_version: 1,
         kind: "selected-lld-arm64-link-package".into(),
         source_manifest: source,
@@ -160,7 +163,15 @@ fn fixture(scratch: &Scratch) -> std::result::Result<Capture, Box<dyn std::error
             sha256: packaged.sha256,
         }],
         system_imports: vec!["kernel32.dll".into(), "bcrypt.dll".into()],
-    })
+    };
+    // Every mutation control starts from a successfully admitted selection.
+    // Otherwise a path/setup failure could masquerade as policy rejection.
+    verify(&capture, &mut Intake::default())?;
+    Ok(capture)
+}
+
+fn rejected<T>(result: Result<T>, expected: &str) {
+    assert_eq!(result.err().as_deref(), Some(expected));
 }
 
 #[test]
@@ -190,9 +201,9 @@ fn native_link_explicit_invocation_rejects_hidden_inputs_and_failed_links() -> T
         "/incremental",
     ] {
         manifest.links[0].arguments.push(option.into());
-        assert!(
-            verify_arguments(&manifest.links[0], &manifest.linker).is_err(),
-            "{option}"
+        rejected(
+            verify_arguments(&manifest.links[0], &manifest.linker),
+            "Native link has an unsupported or repeated option; response/search/default-library inputs are excluded.",
         );
         manifest.links[0].arguments.pop();
     }
@@ -200,10 +211,16 @@ fn native_link_explicit_invocation_rejects_hidden_inputs_and_failed_links() -> T
     manifest.links[0]
         .arguments
         .retain(|value| value != "/nodefaultlib");
-    assert!(verify_arguments(&manifest.links[0], &manifest.linker).is_err());
+    rejected(
+        verify_arguments(&manifest.links[0], &manifest.linker),
+        "Native link requires explicit input, ARM64, output and disabled implicit-library/manifest paths.",
+    );
     manifest.links[0].arguments = ordinary;
     manifest.links[0].exit_code = 1;
-    assert!(verify_arguments(&manifest.links[0], &manifest.linker).is_err());
+    rejected(
+        verify_arguments(&manifest.links[0], &manifest.linker),
+        "Native link lacks a successful explicit original invocation.",
+    );
     Ok(())
 }
 
@@ -212,10 +229,16 @@ fn native_link_rejects_object_omission_relabeling_and_changed_receipt() -> TestR
     let scratch = Scratch::new()?;
     let mut manifest = fixture(&scratch)?;
     let removed = manifest.links[0].inputs.remove(0);
-    assert!(verify(&manifest, &mut Intake::default()).is_err());
+    rejected(
+        verify(&manifest, &mut Intake::default()),
+        "Native link inputs differ from its explicit invocation.",
+    );
     manifest.links[0].inputs.insert(0, removed);
     manifest.links[0].inputs[0].kind = InputKind::ToolchainObject;
-    assert!(verify(&manifest, &mut Intake::default()).is_err());
+    rejected(
+        verify(&manifest, &mut Intake::default()),
+        "Native link cannot relabel a selected compiled object.",
+    );
     manifest.links[0].inputs[0].kind = InputKind::CompiledObject;
     let mut receipt: Value = serde_json::from_slice(&fs::read(&manifest.source_receipt.path)?)?;
     for field in [
@@ -226,9 +249,9 @@ fn native_link_rejects_object_omission_relabeling_and_changed_receipt() -> TestR
         let original = receipt[field].clone();
         receipt[field] = "d".repeat(64).into();
         manifest.source_receipt = scratch.document("source-receipt.json", &receipt)?;
-        assert!(
-            verify(&manifest, &mut Intake::default()).is_err(),
-            "{field}"
+        rejected(
+            verify(&manifest, &mut Intake::default()),
+            "Native link requires the matching independently reviewed schema-3 source receipt.",
         );
         receipt[field] = original;
     }
@@ -240,16 +263,29 @@ fn native_link_rejects_missing_extra_or_changed_package_bytes() -> TestResult {
     let scratch = Scratch::new()?;
     let mut manifest = fixture(&scratch)?;
     scratch.file("package/extra.txt", b"unexpected")?;
-    assert!(verify(&manifest, &mut Intake::default()).is_err());
+    rejected(
+        verify(&manifest, &mut Intake::default()),
+        "Native link package has missing or extra entries.",
+    );
     fs::remove_file(scratch.0.join("package/extra.txt"))?;
     let original = manifest.package_files[0].sha256.clone();
     manifest.package_files[0].sha256 = "d".repeat(64);
-    assert!(verify(&manifest, &mut Intake::default()).is_err());
+    rejected(
+        verify(&manifest, &mut Intake::default()),
+        "Artifact length or SHA-256 differs from the compiled lock.",
+    );
     manifest.package_files[0].sha256 = original;
     manifest.links[0].output.sha256 = "d".repeat(64);
-    assert!(verify(&manifest, &mut Intake::default()).is_err());
+    rejected(
+        verify(&manifest, &mut Intake::default()),
+        "Artifact length or SHA-256 differs from the compiled lock.",
+    );
+    manifest.links[0].output.sha256 = manifest.package_files[0].sha256.clone();
     fs::remove_file(scratch.0.join("package/service.exe"))?;
-    assert!(verify(&manifest, &mut Intake::default()).is_err());
+    rejected(
+        verify(&manifest, &mut Intake::default()),
+        "Artifact storage could not be opened safely.",
+    );
     Ok(())
 }
 
@@ -258,13 +294,22 @@ fn native_link_rejects_unreviewed_delay_imports_and_unbound_boundaries() -> Test
     let scratch = Scratch::new()?;
     let mut manifest = fixture(&scratch)?;
     manifest.links[0].delay_imports.clear();
-    assert!(verify(&manifest, &mut Intake::default()).is_err());
+    rejected(
+        verify(&manifest, &mut Intake::default()),
+        "Native link PE imports differ from the reviewed inventory.",
+    );
     manifest.links[0].delay_imports.push("bcrypt.dll".into());
     manifest.system_imports.pop();
-    assert!(verify(&manifest, &mut Intake::default()).is_err());
+    rejected(
+        verify(&manifest, &mut Intake::default()),
+        "Native link PE import is neither packaged nor a declared system boundary.",
+    );
     manifest.system_imports.push("bcrypt.dll".into());
     manifest.system_imports.push("unused.dll".into());
-    assert!(verify(&manifest, &mut Intake::default()).is_err());
+    rejected(
+        verify(&manifest, &mut Intake::default()),
+        "Native link omits source objects/package images or declares unused system imports.",
+    );
     assert!(module_set(&["../unsafe.dll".into()]).is_err());
     assert!(module_set(&["kernel32.dll".into(), "kernel32.dll".into()]).is_err());
     Ok(())
@@ -274,10 +319,21 @@ fn native_link_rejects_unreviewed_delay_imports_and_unbound_boundaries() -> Test
 fn native_link_manifest_intake_rejects_digest_tamper_and_unknown_fields() -> TestResult {
     let scratch = Scratch::new()?;
     let mut manifest = scratch.document("link.json", &json!({"schemaVersion":1,"unknown":true}))?;
-    assert!(run(json!({"manifest":identity(&manifest)})).is_err());
+    assert!(
+        run(json!({"manifest":identity(&manifest)}))
+            .err()
+            .is_some_and(|error| error.contains("unknown field"))
+    );
     manifest.sha256 = "d".repeat(64);
-    assert!(run(json!({"manifest":identity(&manifest)})).is_err());
-    assert!(run(json!({"manifest":identity(&manifest),"ignoreErrors":true})).is_err());
+    rejected(
+        run(json!({"manifest":identity(&manifest)})),
+        "Artifact length or SHA-256 differs from the compiled lock.",
+    );
+    assert!(
+        run(json!({"manifest":identity(&manifest),"ignoreErrors":true}))
+            .err()
+            .is_some_and(|error| error.contains("unknown field"))
+    );
     Ok(())
 }
 
@@ -324,9 +380,9 @@ fn native_link_source_binding_rejects_paired_missing_and_malformed_identities() 
             manifest.source_manifest = scratch.document("source-manifest.json", &source)?;
             receipt["manifestSha256"] = manifest.source_manifest.sha256.clone().into();
             manifest.source_receipt = scratch.document("source-receipt.json", &receipt)?;
-            assert!(
-                source_objects(&manifest, &mut Intake::default()).is_err(),
-                "{source_path}"
+            rejected(
+                source_objects(&manifest, &mut Intake::default()),
+                "Native link requires the matching independently reviewed schema-3 source receipt.",
             );
         }
     }
