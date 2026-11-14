@@ -79,6 +79,10 @@ jobs:
           Set-StrictMode -Version Latest
           $ErrorActionPreference = 'Stop'
           $PSNativeCommandUseErrorActionPreference = $true
+          # Build this lane's own native supervisor; the ABI control stays independent.
+          $target = Join-Path $env:RUNNER_TEMP 'SwiftBonsai-Public-ABI-Tools'
+          cargo +nightly-2026-11-12-aarch64-pc-windows-msvc build --locked --release --manifest-path (Join-Path $env:GITHUB_WORKSPACE 'Cargo.toml') --package bonsai-tools --bin bonsai-tools --target-dir $target
+          $env:BONSAI_TOOLS_PATH = Join-Path $target 'release/bonsai-tools.exe'
           & (Join-Path $env:GITHUB_WORKSPACE 'tools/hexagon/windows_queue_abi.ps1') -Output (Join-Path $env:RUNNER_TEMP 'SwiftBonsai-Hexagon-Windows-ABI') -Rustc (Join-Path '${{ steps.rust.outputs.toolchain-path }}' 'bin/rustc.exe')
       - name: Retain independent compiler, source, ABI, wire and losing-control evidence
         if: always()

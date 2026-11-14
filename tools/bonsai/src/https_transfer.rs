@@ -295,7 +295,19 @@ fn metadata_with(
     maximum: u64,
     cancelled: &AtomicBool,
 ) -> crate::Result<Response> {
-    let mut response = get(agent, uri, headers, until, 3)?;
+    metadata_with_redirects(agent, uri, headers, until, maximum, cancelled, 3)
+}
+
+fn metadata_with_redirects(
+    agent: &Agent,
+    uri: &str,
+    headers: &[(String, String)],
+    until: Instant,
+    maximum: u64,
+    cancelled: &AtomicBool,
+    redirects: u32,
+) -> crate::Result<Response> {
+    let mut response = get(agent, uri, headers, until, redirects)?;
     active(until, cancelled)?;
     let status = response.status().as_u16();
     let headers = response_headers(&response)?;
@@ -346,6 +358,23 @@ pub(crate) fn metadata(
         until,
         &mut crate::startup_cancel::checkpoint,
         |agent, cancelled| metadata_with(agent, uri, headers, until, maximum, cancelled),
+    )
+}
+
+pub(crate) fn metadata_no_redirects(
+    uri: &str,
+    timeout: Duration,
+    maximum: u64,
+) -> crate::Result<Response> {
+    validate_uri(uri)?;
+    let until = Instant::now()
+        .checked_add(timeout)
+        .ok_or("Invalid HTTPS allowance.")?;
+    owned(
+        agent(),
+        until,
+        &mut crate::startup_cancel::checkpoint,
+        |agent, cancelled| metadata_with_redirects(agent, uri, &[], until, maximum, cancelled, 0),
     )
 }
 

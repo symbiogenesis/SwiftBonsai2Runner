@@ -22,6 +22,7 @@ mod model_device;
 mod preflight;
 mod prepare_model;
 mod projection_build;
+mod public_control;
 
 const TARGET: &str = "aarch64-pc-windows-msvc";
 
@@ -33,6 +34,9 @@ const TARGET: &str = "aarch64-pc-windows-msvc";
     deny_unknown_fields
 )]
 enum Request {
+    PublicControl {
+        request: public_control::Request,
+    },
     PrepareModelControl {
         request: prepare_model::Request,
     },
@@ -937,6 +941,7 @@ fn sdk_inventory(mut context: Context) -> Result<Value> {
 /// failed bounded children and incomplete source-bound build receipts.
 pub fn run(request: Value) -> Result<Value> {
     match serde_json::from_value(request).map_err(|error| error.to_string())? {
+        Request::PublicControl { request } => public_control::run(&request),
         Request::PrepareModelControl { request } => prepare_model::run(&request),
         Request::BuildDispatch {
             repository_directory,

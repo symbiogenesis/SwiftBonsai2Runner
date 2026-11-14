@@ -252,17 +252,23 @@ and header against a separately reviewed immutable manifest, without compiling
 or executing the inspected source:
 
 ```powershell
-$manifest = Join-Path $PWD 'tools/ci/native-boundary.runner.json'
-bonsai-ci native-boundary-verify --root $PWD --manifest $manifest --expected-sha256 $reviewedManifestDigest
+$manifest = Join-Path $snapshotRoot 'tools/ci/native-boundary.runner.json'
+bonsai-ci native-boundary-verify --root $snapshotRoot --manifest $manifest --expected-sha256 $reviewedManifestDigest
 ```
 
 Use `native-boundary.prism.json` with the independently retained Prism checkout
 as `--root`. The Runner baseline is source revision
-`c08d0e027e38927cdf9a9f24a892e9bc71439f34`; the clean read-only Prism baseline is
+`2c8f57b99234c07c474442fb1cedfac3677dfd46`; the clean read-only Prism baseline is
 `d30bcfec3c5ca8f57814aad428979a2abe258e57`. The command verifies exact file bytes,
 not Git branch/HEAD provenance: `gitRevisionVerified` stays false. Bind the
 reviewed manifest digest and original source revision independently; computing a
 new digest from changed bytes is not inventory acceptance.
+
+Here `$snapshotRoot` is an independently retained checkout of the manifest's
+`sourceRevision`. The frozen Runner manifest still names the original PowerShell
+wire/ABI edges. Replay it with those original bytes; migrated current-source Rust
+controls require separate qualification and cannot use this old manifest as a
+current-checkout acceptance command.
 
 The manifests enumerate both Runner C controls and Prism's 40 C++ files plus its
 coupled C ABI source/header. Each file belongs to an explicit replacement family.

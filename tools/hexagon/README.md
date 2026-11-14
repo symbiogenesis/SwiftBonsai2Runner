@@ -70,6 +70,19 @@ invokes this native inventory directly under its process supervisor, without a
 PowerShell child. Native-source and executable digests identify migrated receipts;
 historical SDK receipts keep their original source identities.
 
+The public QAIC generation/mock-wire and Windows ARM64 queue ABI commands also
+run in native Rust. `public_qaic_oracle.ps1` and `windows_queue_abi.ps1` only
+forward to `hexagon-tools`'s `public-control` request. Each hosted lane supplies
+its own native executable and retains explicit Rust-source and supervisor
+identities. Windows ABI has no dependency on the SDK inventory, checked-policy
+job, signed package or device lanes. The hosted Linux source oracle uses an
+owned process group; Windows uses atomic Job ownership. Native supervision
+preserves the original aggregate allowances and 4 MiB combined output bound,
+retains failed controls and replay captures, and drops empty logs and successful
+build chatter. Public raw-source downloads require the reviewed HTTPS origin
+and reject redirects. No SDK, ABI, callback, cache, driver or profile qualification
+is inferred from matching wire bytes.
+
 The SDK lexical fixtures live in `sdk-reader/src/functional.rs`; the historical
 `test_sdk_functional_review.ps1 -Test NAME` command selects the corresponding
 Rust test. SDK metadata still establishes no license grant, SDK/public ABI
