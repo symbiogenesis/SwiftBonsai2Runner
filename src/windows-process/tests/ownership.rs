@@ -107,11 +107,12 @@ fn sandbox_rejects_invalid_grants_before_creating_evidence() -> io::Result<()> {
             Some(SandboxNetwork::Offline),
             Some(SandboxNetwork::HostLoopback),
         ] {
-            let error = match piped {
-                None => OwnedProcess::start_sandboxed(&spec, &policy).err(),
-                Some(network) => OwnedProcess::start_sandboxed_piped(&spec, &policy, network).err(),
-            }
-            .ok_or_else(|| io::Error::other("invalid sandbox policy launched a worker"))?;
+            let error = piped
+                .map_or_else(
+                    || OwnedProcess::start_sandboxed(&spec, &policy).err(),
+                    |network| OwnedProcess::start_sandboxed_piped(&spec, &policy, network).err(),
+                )
+                .ok_or_else(|| io::Error::other("invalid sandbox policy launched a worker"))?;
             assert_eq!(error.kind(), io::ErrorKind::InvalidInput);
             assert!(error.to_string().contains(reason), "{error}");
             assert!(!spec.stdout.exists());

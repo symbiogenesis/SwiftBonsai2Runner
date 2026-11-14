@@ -381,9 +381,9 @@ fn isolated_relay_cancellation_during_backpressure_grants_no_further_decode() ->
         let first = delivered
             .recv_timeout(Duration::from_secs(1))
             .map_err(io::Error::other)?;
-        if !first
+        if first
             .map_err(io::Error::other)?
-            .is_some_and(|frame| !frame.last)
+            .is_none_or(|frame| frame.last)
         {
             return Err(io::Error::other("Relay did not deliver its nonfinal frame"));
         }
