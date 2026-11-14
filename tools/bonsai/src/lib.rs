@@ -131,7 +131,7 @@ pub mod inference_lock;
 /// Model-free capability discovery from the exact pinned inference release.
 pub mod inference_capabilities;
 
-/// Native speech build locks and bounded source archive staging.
+/// Speech compiler pins, model provisioning and companion builds.
 pub mod speech_build;
 
 /// CI-only paired speech plans and bounded native memory-capture sessions.

@@ -548,7 +548,7 @@ This section covers contributor tooling. ASR builds require the pinned Rust
 compiler, Visual Studio 18 ARM64 C++ tools and Windows SDK. TTS builds through
 Cargo without GGML, CMake or external native source provisioning. These build tools
 are not required on a machine running the portable executable. Pinned LLVM
-ARM64/engine archives and all outputs stay outside Git; only child compiler settings
+ARM64 compiler archives and all outputs stay outside Git; only child compiler settings
 change. Downloads use the shared native Rust HTTPS client with Windows Schannel,
 HTTPS-only redirects and resumable verified partials; LLVM extraction uses
 `System32/tar.exe`. Downloads require no separately installed curl executable.
@@ -579,7 +579,7 @@ checked immutable snapshots when requested through `source-build`.
 
 Chat/broker outputs use `DataDirectory/build/chat/`; companions use
 `DataDirectory/build/native-speech/`. Source/build fingerprints and SHA-256 executable
-receipts skip Cargo, LLVM checks, source staging and VS setup when unchanged.
+receipts skip Cargo, LLVM checks and VS setup when unchanged.
 Speech receipts/output additionally bind CPU registry identity, Windows kernel
 and OS processor-feature observations: moving X1 data to X2 rebuilds native
 objects and CMake ISA probes. Missing mandatory host facts reject reuse/build.
@@ -589,8 +589,9 @@ Documentation and CI changes alone do not rebuild Rust. Cargo's
 content freshness handles preserved timestamps. Each variant has an atomic receipt,
 and short labels protect MSVC path space. Build locks protect cleanup of abandoned
 receipt temporaries, including obsolete identities. Compiler preparation removes
-abandoned extraction arenas under its namespace lock; failed source-copy scratch
-is removed when its owner exits. Valid build variants remain reusable.
+abandoned compiler extraction arenas under its namespace lock. Valid build variants
+remain reusable. The former TTS source ZIP staging and source-cache paths are removed;
+original Qwen/GGML source identities remain attribution data.
 A version probe is reused only for the executable digest checked during that launch.
 
 Root `.worktrees/` storage is excluded from the automatic source inventory, so

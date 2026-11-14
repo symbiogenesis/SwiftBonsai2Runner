@@ -284,7 +284,7 @@ variables. Caller identities are observed natively when omitted for supervised w
 
 `speech-models` validates the compiled native Qwen3-ASR 1.7B and Qwen3-TTS GGUF locks and
 returns the selected download plan and aggregate paths/byte total without
-networking or loading models. `speech-build` also owns native compiler/source
+networking or loading models. `speech-build` also owns native ASR compiler
 preparation, selected daemon builds and explicit model provisioning in Rust.
 Provisioning uses the shared native Rust HTTPS client, with Schannel and system
 certificate trust on Windows, for HTTPS-only resumable downloads. It validates
@@ -396,6 +396,12 @@ selects ASR, Rust TTS or both; `models` downloads and verifies the selected GGUF
 TTS-only builds use ordinary Cargo without LLVM, CMake, Qwen/GGML sources or
 native libraries. Bundled use receives prebuilt companions and app-owned model
 setup, without running these contributor commands.
+
+The retired TTS `stage-source` request is rejected before archive or filesystem
+intake. Its Qwen/GGML ZIP extraction, nested source-cache validation and publication
+paths are removed. Original source pins and license notices remain attribution
+data. ASR still uses its pinned registry-package native engine and compiler;
+`validate-names` retains the LLVM compiler archive path checks.
 
 The model-free `speech-build` request `{"operation":"host"}` returns the native
 Windows ARM64 `runner-native-speech-host` report and its full `HostCacheKey`.
