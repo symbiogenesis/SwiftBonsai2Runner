@@ -1150,6 +1150,46 @@ mod tests {
     }
 
     #[test]
+    fn segment_edges_allow_realtime_codec_supply_to_prime_at_both_rates() -> Result<(), Failure> {
+        let now = Instant::now();
+        for packet_bytes in [PACKET_BYTES, PACKET_BYTES_48K] {
+            let mut frames = SegmentFrames::with_frames(Frames {
+                packet_bytes,
+                ..Frames::default()
+            });
+            let mut buffered = Buffered::default();
+            // Tail holdback can defer a full packet until the next 80ms codec
+            // callback. It must still satisfy the existing supply jitter bound.
+            let codec_frame = vec![0; packet_bytes * 4 / 5];
+            for tick in 1..=10 {
+                frames.push(&codec_frame, |packet| {
+                    assert!(
+                        buffered
+                            .frame(packet, now + Duration::from_millis(tick * 80))?
+                            .is_none()
+                    );
+                    Ok(())
+                })?;
+                assert!(!buffered.slow);
+                if tick == 6 {
+                    assert_eq!(buffered.ready.len(), PREROLL_PACKETS);
+                }
+            }
+            frames.finish_segment(|packet| {
+                assert!(
+                    buffered
+                        .frame(packet, now + Duration::from_millis(800))?
+                        .is_none()
+                );
+                Ok(())
+            })?;
+            buffered.end()?;
+            assert_eq!(buffered.ready.len(), 8);
+        }
+        Ok(())
+    }
+
+    #[test]
     fn streaming_segment_input_waits_through_gaps_then_finishes_or_cancels() {
         let (sender, receiver) = mpsc::sync_channel(2);
         let current = AtomicU64::new(4);
