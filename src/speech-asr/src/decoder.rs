@@ -470,12 +470,21 @@ impl Session {
     /// # Errors
     /// Rejects invalid token IDs or the conditions from [`Self::step_audio`].
     pub fn step(&mut self, id: u32, cancel: &mut impl FnMut() -> bool) -> io::Result<Vec<f32>> {
+        self.step_token(id, true, cancel)
+    }
+
+    fn step_token(
+        &mut self,
+        id: u32,
+        project_logits: bool,
+        cancel: &mut impl FnMut() -> bool,
+    ) -> io::Result<Vec<f32>> {
         check(cancel)?;
         let row = self
             .model
             .embedding
             .row(usize::try_from(id).map_err(|_| invalid())?)?;
-        self.step_audio(&row, cancel)
+        self.advance(&row, project_logits, cancel)
     }
 
     /// Decode one encoder row or token embedding, then return tied-head logits.
@@ -490,6 +499,15 @@ impl Session {
     pub fn step_audio(
         &mut self,
         row: &[f32],
+        cancel: &mut impl FnMut() -> bool,
+    ) -> io::Result<Vec<f32>> {
+        self.advance(row, true, cancel)
+    }
+
+    fn advance(
+        &mut self,
+        row: &[f32],
+        project_logits: bool,
         cancel: &mut impl FnMut() -> bool,
     ) -> io::Result<Vec<f32>> {
         let c = self.model.config;
@@ -510,7 +528,11 @@ impl Session {
             provisional.push((keys, values));
         }
         let normalized = rms(&hidden, &self.model.output_norm, c.epsilon)?;
-        let logits = self.model.embedding.multiply(&normalized, cancel)?;
+        let logits = if project_logits {
+            self.model.embedding.multiply(&normalized, cancel)?
+        } else {
+            Vec::new()
+        };
         check(cancel)?;
         for (state, (keys, values)) in self.layers.iter_mut().zip(&provisional) {
             state
@@ -534,6 +556,8 @@ impl Session {
     ///
     /// On failure or unwind the entire attempted prompt is reset, including
     /// successful earlier rows. On success the complete prompt remains cached.
+    /// Only the final prompt row projects to vocabulary logits; earlier rows
+    /// retain the complete block, normalization and transactional cache checks.
     ///
     /// # Errors
     /// Rejects audio geometry, context or any token/step failure.
@@ -558,13 +582,14 @@ impl Session {
         finite(audio)?;
         let mut logits = Vec::new();
         for (position, id) in prompt.ids().iter().enumerate() {
+            let project_logits = position + 1 == prompt.ids().len();
             logits = if range.contains(&position) {
                 let start = (position - range.start) * hidden;
                 guard
                     .session
-                    .step_audio(&audio[start..start + hidden], cancel)?
+                    .advance(&audio[start..start + hidden], project_logits, cancel)?
             } else {
-                guard.session.step(*id, cancel)?
+                guard.session.step_token(*id, project_logits, cancel)?
             };
         }
         guard.success = true;

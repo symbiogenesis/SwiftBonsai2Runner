@@ -222,3 +222,57 @@ fn rust_asr_decoder_prompt_audio_injection_and_failed_prefill_reset() -> io::Res
     assert_eq!(prefilled.cache(0), Some((&[][..], &[][..])));
     Ok(())
 }
+
+#[test]
+fn rust_asr_decoder_prefill_omits_unused_heads_and_keeps_final_failure_atomic() -> io::Result<()> {
+    let mut model = Arc::try_unwrap(model()?).map_err(|_| io::Error::other("shared test model"))?;
+    // Prompt token 0 is zero. An unselected vocabulary row [2,2], together
+    // with the large final norm, overflows ONLY if an audio row's unused head
+    // is evaluated. The final zero prompt row has literal all-zero logits.
+    model.embedding = Projection::f32(2, 2, vec![0.0, 0.0, 2.0, 2.0])?;
+    model.output_norm = vec![f32::MAX; 2];
+    model.blocks[0].attention_out = projection(&[0.0; 4])?;
+    let model = Arc::new(model);
+    let prompt = PromptTokens::new([0; 6], [0; 3], 2)?.automatic_prompt(1, 512)?;
+    let mut session = model.session();
+    assert_eq!(
+        session.prefill(&prompt, &[1.0, 1.0], &mut || false)?,
+        [0.0; 2]
+    );
+    assert_eq!(session.position(), 16);
+    let (_, values) = session
+        .cache(0)
+        .ok_or_else(|| io::Error::other("missing test layer"))?;
+    let mut expected_values = [0.0; 32];
+    expected_values[18..20].copy_from_slice(&[0.5; 2]);
+    assert_eq!(values, expected_values);
+
+    // A requested step still evaluates that head, fails before append and
+    // leaves every previously committed K/V bit unchanged.
+    let (keys, values) = session
+        .cache(0)
+        .ok_or_else(|| io::Error::other("missing test layer"))?;
+    let original = (keys.to_vec(), values.to_vec());
+    assert!(session.step_audio(&[1.0, 1.0], &mut || false).is_err());
+    assert_eq!(session.position(), 16);
+    assert_eq!(
+        session.cache(0),
+        Some((original.0.as_slice(), original.1.as_slice()))
+    );
+
+    // Selecting that nonzero token at the final prompt position must still
+    // evaluate the failing head and reset all earlier successful prompt rows.
+    let failing = PromptTokens::new([0, 0, 1, 0, 0, 0], [0; 3], 2)?.automatic_prompt(1, 512)?;
+    assert!(
+        session
+            .prefill(&failing, &[1.0, 1.0], &mut || false)
+            .is_err()
+    );
+    assert_eq!(session.position(), 0);
+    assert_eq!(session.cache(0), Some((&[][..], &[][..])));
+    assert_eq!(
+        session.prefill(&prompt, &[1.0, 1.0], &mut || false)?,
+        [0.0; 2]
+    );
+    Ok(())
+}

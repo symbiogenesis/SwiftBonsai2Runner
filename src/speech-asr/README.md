@@ -112,6 +112,13 @@ binary16 rounding/overflow, uniform grouped attention, complete cache/reset and
 cancellation/unwind. `rust-decoder.json` identifies this scalar arithmetic
 separately from native activation requantization and flash attention.
 
+Prompt prefill evaluates the tied vocabulary projection only at the final
+position, matching the pinned native graph's selected output. Earlier positions
+retain all block, final-normalization and cache-commit validation; only their
+discarded vocabulary outputs are omitted. Literal controls cover unused-head
+overflow, exact cache contents, final-head failure/reset and fresh replay. This
+removes redundant source work without establishing measured model latency.
+
 `encoder.rs` now implements the full scalar CNN/transformer graph: three
 kernel-three stride-two convolutions, independently padded chunks, channel/frequency
 flattening, per-chunk positional sinusoids, ragged-tail trimming, full bidirectional

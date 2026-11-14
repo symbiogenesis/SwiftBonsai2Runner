@@ -26,7 +26,8 @@
     "attention": "causal-gqa-softmax-over-complete-committed-kv-plus-one-provisional-row",
     "ffn": "silu-gate-times-up-then-down-plus-residual",
     "output": "final-rmsnorm-and-tied-embedding-head",
-    "publication": "all-layers-and-logits-finite-before-any-layer-append",
+    "prefillOutput": "only-final-prompt-position-projects-vocabulary-logits-earlier-final-normalization-remains-validated",
+    "publication": "all-layers-normalization-and-requested-logits-finite-before-any-layer-append",
     "failedStep": "preserve-previous-position-and-every-kv-bit-including-unwind",
     "failedPrefill": "reset-every-layer-and-position-including-unwind",
     "nativeDefaultKv": "f16-not-f32"
