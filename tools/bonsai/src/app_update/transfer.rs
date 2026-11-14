@@ -1,12 +1,9 @@
 //! Bounded HTTPS transfers and immutable local staging files.
 
 use std::{
-    collections::BTreeMap,
     fs::{self, OpenOptions},
     io::Write as _,
     path::{Path, PathBuf},
-    sync::OnceLock,
-    time::Duration,
 };
 
 #[cfg(test)]
@@ -19,43 +16,16 @@ use super::{MAX_METADATA, external, policy::Asset};
 
 mod http;
 
-static CURL: OnceLock<PathBuf> = OnceLock::new();
-
 struct TemporaryBody(PathBuf);
 
 impl Drop for TemporaryBody {
     fn drop(&mut self) {
-        // Remove only this request's unpublished regular file. Keep diagnostics
-        // separately; neither failed HTTP responses nor partial JSON are cache.
+        // Remove only this write's unpublished regular file. Partial bytes must
+        // never become a published cache entry or handoff.
         if external(&self.0).is_ok() {
             let _removed = fs::remove_file(&self.0);
         }
     }
-}
-
-fn curl(working: &Path) -> crate::Result<PathBuf> {
-    if let Some(path) = CURL.get() {
-        return Ok(path.clone());
-    }
-    let path = crate::startup_download::system_tool("curl.exe")?;
-    let result = crate::startup_process::run(
-        path.as_os_str(),
-        &["--disable".into(), "--version".into()],
-        working,
-        &BTreeMap::new(),
-        Duration::from_secs(3),
-        &working.join(format!(
-            "curl-version-{}.log",
-            crate::startup_process::unique()
-        )),
-    )?;
-    if result.code != 0 || !crate::startup_download::compatible_curl(&result.stdout) {
-        return Err(
-            "Application updates require Windows curl 8.4 or newer for bounded downloads.".into(),
-        );
-    }
-    let _ = CURL.set(path.clone());
-    Ok(path)
 }
 
 pub(super) fn read_bounded(path: &Path, maximum: u64) -> crate::Result<Vec<u8>> {
@@ -184,12 +154,10 @@ pub(super) fn write_current(path: &Path, bytes: &[u8]) -> crate::Result<()> {
     published
 }
 
-fn require_successful_http(code: u32, status: &str) -> crate::Result<()> {
-    if code != 0 || status.trim() != "200" {
+fn require_successful_http(status: u16) -> crate::Result<()> {
+    if status != 200 {
         return Err(format!(
-            "GitHub update check failed (HTTP {}, tool {}). Your installed app is unchanged.",
-            status.trim(),
-            code
+            "GitHub update check failed (HTTP {status}). Your installed app is unchanged."
         ));
     }
     Ok(())
@@ -232,16 +200,9 @@ mod tests {
 
     #[test]
     fn update_http_failures_never_masquerade_as_an_empty_release_catalog() -> crate::Result<()> {
-        require_successful_http(0, "200\n")?;
-        for (code, status) in [
-            (0, "404"),
-            (0, "403"),
-            (0, "429"),
-            (0, "503"),
-            (28, "200"),
-            (6, "000"),
-        ] {
-            let error = require_successful_http(code, status)
+        require_successful_http(200)?;
+        for status in [0, 204, 304, 403, 404, 429, 503] {
+            let error = require_successful_http(status)
                 .err()
                 .ok_or("Accepted a failed update lookup.")?;
             assert!(error.contains("update check failed"));

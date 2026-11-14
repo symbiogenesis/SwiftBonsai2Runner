@@ -2,7 +2,6 @@
 
 use std::{
     collections::BTreeMap,
-    ffi::OsString,
     fs,
     io::Read as _,
     path::Path,
@@ -12,7 +11,7 @@ use std::{
 use serde::{Deserialize, Serialize};
 
 use super::super::policy::Asset;
-use super::{MAX_METADATA, TemporaryBody, external};
+use super::{MAX_METADATA, external};
 
 const MAX_HEADERS: u64 = 64 * 1024;
 const API_VERSION: &str = "2022-11-28";
@@ -100,23 +99,6 @@ fn discovery_cache(
     conditional: bool,
 ) -> Option<(Cached, Vec<u8>)> {
     conditional.then(|| cached(root, slot, url)).flatten()
-}
-
-fn headers(bytes: &[u8]) -> crate::Result<BTreeMap<String, String>> {
-    let text = std::str::from_utf8(bytes).map_err(|error| error.to_string())?;
-    let mut headers = BTreeMap::new();
-    for line in text.lines() {
-        // Ignore proxy CONNECT, informational and redirect response headers.
-        if line.starts_with("HTTP/") {
-            headers.clear();
-        } else if let Some((name, value)) = line.split_once(':') {
-            let value = value.trim();
-            if header_value(value) {
-                headers.insert(name.to_ascii_lowercase(), value.into());
-            }
-        }
-    }
-    Ok(headers)
 }
 
 fn decoded(bytes: &[u8], encoding: Option<&str>) -> crate::Result<Vec<u8>> {
@@ -227,64 +209,62 @@ fn store_cooldown(root: &Path, cooldown: &Cooldown) -> crate::Result<()> {
     )
 }
 
-fn arguments(url: &str, body: &Path, headers: &Path, cached: Option<&Cached>) -> Vec<OsString> {
-    let mut arguments = vec![
-        "--disable".into(),
-        "--silent".into(),
-        "--show-error".into(),
-        "--location".into(),
-        "--max-redirs".into(),
-        "3".into(),
-        "--proto".into(),
-        "=https".into(),
-        "--proto-redir".into(),
-        "=https".into(),
-        "--disallow-username-in-url".into(),
-        "--tlsv1.2".into(),
-        "--connect-timeout".into(),
-        "5".into(),
-        "--max-time".into(),
-        "10".into(),
-        "--max-filesize".into(),
-        MAX_METADATA.to_string().into(),
-        "--header".into(),
-        "Accept: application/vnd.github+json".into(),
-        "--header".into(),
-        format!("X-GitHub-Api-Version: {API_VERSION}").into(),
-        "--header".into(),
-        format!(
-            "User-Agent: SwiftBonsai2Runner/{}",
-            env!("CARGO_PKG_VERSION")
-        )
-        .into(),
-        // Decode gzip natively: older Windows curl only bounds the compressed
-        // bytes with --compressed. Both input and expansion stay independently bounded.
-        "--header".into(),
-        "Accept-Encoding: gzip, identity".into(),
-        "--write-out".into(),
-        "%{http_code}".into(),
-        "--dump-header".into(),
-        headers.as_os_str().to_owned(),
-        "--output".into(),
-        body.as_os_str().to_owned(),
+fn request_headers(cached: Option<&Cached>) -> Vec<(String, String)> {
+    let mut headers = vec![
+        ("Accept".into(), "application/vnd.github+json".into()),
+        ("X-GitHub-Api-Version".into(), API_VERSION.into()),
+        (
+            "User-Agent".into(),
+            format!("SwiftBonsai2Runner/{}", env!("CARGO_PKG_VERSION")),
+        ),
+        // The shared client disables automatic decoding. Bound compressed and
+        // expanded metadata independently before accepting a cache entry.
+        ("Accept-Encoding".into(), "gzip, identity".into()),
     ];
     if let Some(cached) = cached {
         if let Some(etag) = &cached.etag {
-            arguments.extend(["--header".into(), format!("If-None-Match: {etag}").into()]);
+            headers.push(("If-None-Match".into(), etag.clone()));
         } else if let Some(modified) = &cached.modified {
-            arguments.extend([
-                "--header".into(),
-                format!("If-Modified-Since: {modified}").into(),
-            ]);
+            headers.push(("If-Modified-Since".into(), modified.clone()));
         }
     }
-    arguments.push(url.into());
-    arguments
+    headers
+}
+
+fn record_failure(
+    root: &Path,
+    headers: &BTreeMap<String, String>,
+    previous: &Cooldown,
+) -> crate::Result<()> {
+    store_cooldown(
+        root,
+        &Cooldown {
+            until: cooldown_delay(headers, now(), previous.failures),
+            failures: previous.failures.saturating_add(1),
+        },
+    )
+}
+
+fn response_body(
+    response: &crate::https_transfer::Response,
+    cached: Option<&(Cached, Vec<u8>)>,
+) -> crate::Result<Vec<u8>> {
+    if response.status == 304 {
+        let (_, body) = cached
+            .filter(|(entry, _)| entry.etag.is_some() || entry.modified.is_some())
+            .ok_or("GitHub returned 304 without a valid conditional cache entry.")?;
+        return Ok(body.clone());
+    }
+    super::require_successful_http(response.status)?;
+    decoded(
+        &response.body,
+        response.headers.get("content-encoding").map(String::as_str),
+    )
 }
 
 pub(super) fn metadata(
     url: &str,
-    working: &Path,
+    _working: &Path,
     asset: Option<&Asset>,
     conditional: bool,
 ) -> crate::Result<Vec<u8>> {
@@ -311,64 +291,45 @@ pub(super) fn metadata(
             cooldown.until
         ));
     }
-    #[cfg(windows)]
-    let directory = bonsai_windows_credentials::PrivateDirectory::create(working)
-        .map_err(|error| error.to_string())?;
-    #[cfg(windows)]
-    let working = directory.path();
-    let body = working.join(format!(
-        "metadata-{}.body",
-        crate::startup_process::unique()
-    ));
-    let header = body.with_extension("headers");
-    external(&body)?;
-    external(&header)?;
-    let _body = TemporaryBody(body.clone());
-    let _headers = TemporaryBody(header.clone());
-    let curl = super::curl(working)?;
-    let result = crate::startup_process::run(
-        curl.as_os_str(),
-        &arguments(url, &body, &header, cached.as_ref().map(|(entry, _)| entry)),
-        working,
-        &BTreeMap::new(),
-        Duration::from_secs(11),
-        &body.with_extension("log"),
+    let result = crate::https_transfer::metadata(
+        url,
+        &request_headers(cached.as_ref().map(|(entry, _)| entry)),
+        Duration::from_secs(10),
+        MAX_METADATA,
     );
-    let headers = super::read_bounded(&header, MAX_HEADERS).and_then(|bytes| headers(&bytes));
-    let failed = !result
-        .as_ref()
-        .is_ok_and(|result| result.code == 0 && matches!(result.stdout.trim(), "200" | "304"));
-    if failed {
-        let empty = BTreeMap::new();
-        store_cooldown(
-            &root,
-            &Cooldown {
-                until: cooldown_delay(headers.as_ref().unwrap_or(&empty), now(), cooldown.failures),
-                failures: cooldown.failures.saturating_add(1),
-            },
-        )?;
-    }
-    let result = result?;
-    let headers = headers?;
-    if result.code == 0 && result.stdout.trim() == "304" {
-        let (_, body) = cached
-            .filter(|(entry, _)| entry.etag.is_some() || entry.modified.is_some())
-            .ok_or("GitHub returned 304 without a valid conditional cache entry.")?;
+    let response = match result {
+        Ok(response) => response,
+        Err(error) => {
+            record_failure(&root, &BTreeMap::new(), &cooldown)?;
+            return Err(error);
+        }
+    };
+    let body = match response_body(&response, cached.as_ref()) {
+        Ok(body) => body,
+        Err(error) => {
+            record_failure(&root, &response.headers, &cooldown)?;
+            return Err(error);
+        }
+    };
+    if response.status == 304 {
         if cooldown.failures != 0 || cooldown.until != 0 {
             store_cooldown(&root, &Cooldown::default())?;
         }
         return Ok(body);
     }
-    super::require_successful_http(result.code, &result.stdout)?;
-    let body = decoded(
-        &super::read_bounded(&body, MAX_METADATA)?,
-        headers.get("content-encoding").map(String::as_str),
-    )?;
     let descriptor = Cached {
         url: url.into(),
         sha256: crate::identity::sha256(&body),
-        etag: headers.get("etag").cloned(),
-        modified: headers.get("last-modified").cloned(),
+        etag: response
+            .headers
+            .get("etag")
+            .filter(|value| header_value(value))
+            .cloned(),
+        modified: response
+            .headers
+            .get("last-modified")
+            .filter(|value| header_value(value))
+            .cloned(),
     };
     super::write_current(&root.join(format!("{slot}.body")), &body)?;
     super::write_current(
@@ -404,21 +365,21 @@ mod tests {
             etag: Some("W/\"version\"".into()),
             modified: Some("date".into()),
         };
-        let arguments = arguments(
-            "https://example.invalid",
-            Path::new("body"),
-            Path::new("headers"),
-            Some(&entry),
-        );
+        let headers = request_headers(Some(&entry));
         assert!(
-            arguments
+            headers
                 .iter()
-                .any(|argument| argument == "If-None-Match: W/\"version\"")
+                .any(|(name, value)| name == "If-None-Match" && value == "W/\"version\"")
         );
+        assert!(!headers.iter().any(|(name, _)| name == "If-Modified-Since"));
+        let fallback = Cached {
+            etag: None,
+            ..entry
+        };
         assert!(
-            !arguments
+            request_headers(Some(&fallback))
                 .iter()
-                .any(|argument| argument.to_string_lossy().starts_with("If-Modified-Since:"))
+                .any(|(name, value)| name == "If-Modified-Since" && value == "date")
         );
     }
 
@@ -461,10 +422,40 @@ mod tests {
     }
 
     #[test]
-    fn update_http_headers_use_only_the_final_response() -> crate::Result<()> {
-        let headers = headers(b"HTTP/1.1 302 Found\r\nETag: old\r\nRetry-After: 9999\r\n\r\nHTTP/2 200\r\nETag: new\r\nContent-Encoding: gzip\r\n\r\n")?;
-        assert_eq!(headers.get("etag").map(String::as_str), Some("new"));
-        assert!(!headers.contains_key("retry-after"));
+    fn update_http_failed_or_invalid_responses_never_reuse_cached_success() -> crate::Result<()> {
+        let cached = (
+            Cached {
+                url: "https://example.invalid".into(),
+                sha256: crate::identity::sha256(b"cached catalog"),
+                etag: Some("\"validator\"".into()),
+                modified: None,
+            },
+            b"cached catalog".to_vec(),
+        );
+        let mut response = crate::https_transfer::Response {
+            status: 429,
+            headers: BTreeMap::from([("retry-after".into(), "7200".into())]),
+            body: Vec::new(),
+        };
+        assert!(response_body(&response, Some(&cached)).is_err());
+        assert_eq!(cooldown_delay(&response.headers, 100, 0), 7300);
+        response.status = 200;
+        response
+            .headers
+            .insert("content-encoding".into(), "gzip".into());
+        response.body = b"corrupt gzip".to_vec();
+        assert!(response_body(&response, Some(&cached)).is_err());
+        response.status = 304;
+        assert_eq!(response_body(&response, Some(&cached))?, b"cached catalog");
+        assert!(response_body(&response, None).is_err());
+        let cached_without_validator = (
+            Cached {
+                etag: None,
+                ..cached.0
+            },
+            cached.1,
+        );
+        assert!(response_body(&response, Some(&cached_without_validator)).is_err());
         Ok(())
     }
 
@@ -497,17 +488,8 @@ mod tests {
         // writable body/hash/validator triple cannot authorize a mutating gate.
         let fresh = discovery_cache(&root, "releases-1", &url, false);
         assert!(fresh.is_none());
-        let arguments = arguments(
-            &url,
-            Path::new("body"),
-            Path::new("headers"),
-            fresh.as_ref().map(|(entry, _)| entry),
-        );
-        assert!(
-            !arguments
-                .iter()
-                .any(|argument| argument.to_string_lossy().starts_with("If-"))
-        );
+        let headers = request_headers(fresh.as_ref().map(|(entry, _)| entry));
+        assert!(!headers.iter().any(|(name, _)| name.starts_with("If-")));
         assert!(discovery_cache(&root, "releases-1", "different-url", true).is_none());
         super::super::write_current(&root.join("releases-1.body"), b"partial publication")?;
         assert!(discovery_cache(&root, "releases-1", &url, true).is_none());
