@@ -5,6 +5,7 @@ Keep inputs and records required by the consumers below under the
 
 | Retained material | Current consumer |
 | --- | --- |
+| [Prism 0.1.28 delivery](prism-0.1.28-release.md) | Current runtime/source lock, original release receipt and independent lock-update replay |
 | `cpp-retirement-model-free.json` | [TTS decode-graph fixture provenance](../../src/speech-tts/tests/fixtures/decode-graph-v1.provenance.json) |
 | `weight-patch-sanity/` | [Initial four-fact adapter-cost smoke](weight-patch-sanity.md): independent answer, accounting, resource, supervision and power review |
 | `lora-weight-edit/` | [Direct LoRA weight edit](lora-weight-edit.md): independent edit derivation, candidate digest, complete factual, storage, supervision and power review |

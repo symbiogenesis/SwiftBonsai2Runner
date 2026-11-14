@@ -1,6 +1,6 @@
 # Hardware discovery and profile policy
 
-Runner's development default is Rust Prism 0.1.27 CPU inference with the fixed
+Runner's development default is Rust Prism 0.1.28 CPU inference with the fixed
 [X2 Hexagon policy](hexagon.md) when its signed package and driver are available.
 Discovery supplies host/runtime inventory and checked compatibility/evidence records;
 **automatic ranking and selection of qualified profiles is not connected to serving**.

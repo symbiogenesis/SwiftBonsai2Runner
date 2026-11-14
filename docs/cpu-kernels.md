@@ -7,16 +7,16 @@ run on native ARM64 as part of target-profile acceptance.
 This guide owns arithmetic, dispatch, qualification and the
 [X2 thread screen](#x2-cpu-thread-screen). Synthetic parity qualifies neither
 whole-model parity nor device speedup. Runner's active
-[release lock](../config/prism-inference.lock.json) pins Prism 0.1.27 at
-`1429a33772089dfd3a50a96c698b9dbe0b36836a`; source candidates retain separate identities. The fixed CPU
+[release lock](../config/prism-inference.lock.json) pins Prism 0.1.28 at
+`99671be7ab2be01e406a11b0c3d6caede398d96f`; later source candidates retain separate identities. The fixed CPU
 comparison baseline remains 0.1.23 with explicit FP16 KV. The current development repin
 does not qualify CPU performance; [PLAN.md](../PLAN.md#cpu-kernels) owns remaining work.
 
 ## Cross-generation CPU promotion
 
-Shared CPU work reductions may be enabled on X1 and X2 after matched CPU-only
+Shared CPU work reductions may be promoted across X1 and X2 after matched CPU-only
 complete-request benefit on one selected family and an applicability review of
-the other. This permits a common runtime repin; measured speed, energy and
+the other. This permits common runtime promotion; measured speed, energy and
 sustained-use claims remain specific to the tested device.
 
 The review must establish:
@@ -71,7 +71,9 @@ change neither the selected runtime nor the existing candidate/promotion order.
 
 ## Prompt and attention consumers
 
-These explicit source consumers are outside ordinary Runner launch policy:
+The pinned source includes these consumers. Parallel quantized attention serves
+the selected packed-cache path; explicit prompt tiles and sampled suffixes remain
+outside ordinary Runner launch policy:
 
 | Consumer | Contract |
 | --- | --- |
@@ -81,16 +83,18 @@ These explicit source consumers are outside ordinary Runner launch policy:
 
 The [algorithm contract](inference-algorithms.md#hybrid-cache-reuse-and-speculative-state)
 owns verifier and speculative-state requirements. Triangular GDN remains a
-separate profile. All candidates below require the
-[cross-generation gates](#cross-generation-cpu-promotion); source presence does
-not establish selection, benefit or a Runner repin. New helper APIs require
-publication before dependent runtime bundles and reviewed Runner locks.
+separate profile. The source changes below retain the
+[cross-generation gates](#cross-generation-cpu-promotion). The 0.1.28 binary
+delivery includes its source-bound helper implementations; it does not establish
+model parity, benefit or profile promotion. Changed helper registry APIs still
+require publication before dependent registry crates; binary delivery does not
+establish that separate publication.
 
 ## CPU preparation candidates
 
 ### Joined BF16 recurrent projections and four-bit KV lookup
 
-Local Prism commits `0d28f12` (BF16) and `24aaaa6` (KV lookup) target ordinary
+Pinned Prism source includes commits `0d28f12` (BF16) and `24aaaa6` (KV lookup) for ordinary
 CPU ingestion and decode on X1 without changing weight or cache precision:
 
 - Compatible BF16 sibling projections share one joined row-pool submission and
@@ -111,20 +115,19 @@ CPU ingestion and decode on X1 without changing weight or cache precision:
   consumption retain their existing paths. Runtime NEON detection, record bytes,
   failure publication and public helper APIs remain unchanged.
 
-These are source candidates without a measured X1 speedup. Require final-source
+These source changes supply no measured X1 speedup. Require separate final-source
 native ARM64 strict Release analysis, named arithmetic and failure controls,
 feature-disabled fallback, production linking and ARM64 codegen/stack review.
 In particular, inspect table-register residency and lookup/setup costs rather
 than inferring machine savings from source counts. Complete-model logits/state,
 adapter and cancellation parity and matched CPU-only complete-request benefit
 remain separate gates under [cross-generation promotion](#cross-generation-cpu-promotion).
-The changed NEON helper must be published before a dependent runtime release;
-application delivery needs a source-bound bundle and reviewed Runner repin.
-The published 0.1.27 runtime remains the rollback and current application pin.
+The reviewed 0.1.28 bundle delivers these paths without closing those gates.
+Changed NEON helper registry APIs retain their separate publication obligation.
 
 ### Joined BF16 prompt tiles and fused packed-KV scans
 
-Further local Prism candidates extend the ordinary CPU and explicit tiled-prefill
+The pinned source extends the ordinary CPU and explicit tiled-prefill
 paths without changing precision or selecting a device profile:
 
 - Compatible BF16 prompt projections share the existing joined row-worker
@@ -145,8 +148,8 @@ portable and feature-disabled controls, complete-model state/logit/adapter/
 cancellation parity and matched CPU-only benefit remain separate gates under
 [cross-generation promotion](#cross-generation-cpu-promotion). X1 applicability
 does not supply an X1 timing result. The fixed X2 CPU-bundle comparison cannot
-qualify these newer sources; publication needs a genuine source-bound bundle,
-reviewed Runner locks and a newly declared matching-candidate workload.
+qualify these sources. The 0.1.28 binary delivery does not replace a newly
+declared matching-source workload or its independent acceptance.
 
 ### Provisional GDN and prepared current-token KV
 
@@ -272,7 +275,7 @@ Verify the exact release lock and consumer before execution.
 
 ### Ordered packed-KV code selection
 
-Local Prism source `57de5193ce5aaad20eecfe6ce6c646b88ca7cabc` reduces
+Pinned Prism source includes `57de5193ce5aaad20eecfe6ce6c646b88ca7cabc`, which reduces
 repeated distance calculations during packed K/V encoding. Automatic encoding
 brackets the nearest entries in the existing ordered 8/16-entry codebook,
 compares the original rounded binary32 distances, and recovers the earliest
@@ -289,16 +292,15 @@ at centroid/midpoint boundaries, neighboring binary32 values, extreme rounded
 ties and deterministic finite bit patterns, then compare complete packed
 records across scale extremes and fitted-scale selection.
 
-This is a source candidate, not a measured X1 speedup or a Runner repin.
+The reviewed 0.1.28 bundle includes this source change without a measured X1 speedup.
 Strict native/fallback compilation, exact codec and failure controls do not
 replace complete-model state/logit/adapter/cancellation acceptance, codegen,
-resources or matched CPU-only complete-request benefit. Publication requires
-a genuine source-bound runtime bundle and reviewed Runner locks under the
+resources or matched CPU-only complete-request benefit under the
 [cross-generation promotion gates](#cross-generation-cpu-promotion).
 
 ### Head-scoped GDN decode and packed value result checks
 
-Two further local Prism candidates remove repeated work from ordinary CPU decode:
+The pinned source removes repeated work from ordinary CPU decode:
 
 - Eligible pinned GDN decode admits a complete head before traversing its
   eight-row groups. Geometry and baseline-NEON selection happen once per head;
@@ -325,13 +327,12 @@ execution, ARM64 codegen/resources, full-model state/logit/adapter/cancellation
 parity and matched CPU-only complete-request benefit remain pending. Apply the
 [cross-generation promotion gates](#cross-generation-cpu-promotion); X1 deployment
 and performance claims retain their applicability and measurement boundaries.
-Publish the changed NEON helper before a dependent runtime release, then prepare
-a genuine source-bound bundle and reviewed Runner repin. Runner's active 0.1.27
-bundle does not consume these local candidates.
+The reviewed 0.1.28 bundle consumes these paths; binary delivery does not qualify
+their benefit. Changed NEON helper registry APIs retain separate publication gates.
 
 ### Zero-weight packed values, temporal GDN heads and joined Q8 tiles
 
-The next shared CPU candidates extend ordinary packed-cache attention and the
+The pinned shared CPU source extends ordinary packed-cache attention and the
 explicit tiled-prefill consumer. They do not change cache or weight precision:
 
 - A private packed-value scan validates each record, weight and weighted scale
@@ -357,18 +358,17 @@ cancellation, adapter and integrated-consumer controls are independent of timing
 The zero-weight opportunity depends on the selected history's actual probabilities;
 head-scoped admission and fewer worker joins likewise establish no speedup alone.
 
-Delivery requires final-source native and fallback strict Release analysis and
+Qualification requires final-source native and fallback strict Release analysis and
 focused controls, ARM64 codegen/stack review, complete-model logits/state/adapter/
 cancellation acceptance, and a newly declared matching-source CPU-only request
 comparison under the [cross-generation gates](#cross-generation-cpu-promotion).
 Keep ordinary K4/V4 decode, exact tiled prefill and PTQ1 acceptance distinct.
-Publish a genuine runtime bundle and review Runner's locks only after the
-applicable gates pass. The fixed 0.1.23/0.1.25 comparison cannot qualify these
-candidates; the active 0.1.27 runtime remains the application pin and rollback.
+The fixed 0.1.23/0.1.25 comparison cannot qualify these paths, and their inclusion
+in the 0.1.28 development bundle does not close those independent gates.
 
 ### Compact KV rotations and joined Q8 decode siblings
 
-The next Prism source changes extend the shared CPU pathway:
+The pinned Prism source extends the shared CPU pathway:
 
 - Packed-cache rotation signs use 768 bytes of boolean masks instead of 3,072
   bytes of binary32 multipliers per quantizer. The native helper stages one row
@@ -399,19 +399,19 @@ It does not produce an admitted build/comparison packet: the fixed registry
 evaluator must reject candidate receipts. See Prism's
 [collector contract](https://github.com/symbiogenesis/prism-inference/blob/main/docs/cpu-bundle-comparison.md#current-source-cpu-profiles).
 
-These changes have source review and pinned formatting only. The predeclared
-local source diagnostic stopped at native supervisor process creation before
-Cargo or any test started; it was not retried. Native ARM64 strict Release analysis,
+The earlier predeclared local source diagnostic stopped at native supervisor
+process creation before Cargo or any test started; it was not retried. The
+source-bound 0.1.28 binary delivery does not convert that failed attempt into
+compiled-control acceptance. Separate native ARM64 strict Release analysis,
 helper tests, feature-disabled controls, collector linking, ARM64 codegen/stack,
 complete-model state/logit/adapter/cancellation and matched complete-request
-benefit remain pending. Publish the changed helper before its runtime, then
-verify a genuine source-bound bundle and review Runner's locks. No runtime pin,
-precision default, X1 timing or accelerator profile changes follow from source
-work counts or synthetic controls.
+benefit remain pending. Changed helper registry APIs retain their publication
+obligation. No precision default, X1 timing or accelerator-profile promotion
+follows from binary delivery, source work counts or synthetic controls.
 
 ### Scoped recurrent RMS weights
 
-The next ordinary CPU candidate validates immutable recurrent RMS weights once
+The pinned ordinary CPU source validates immutable recurrent RMS weights once
 per layer traversal or complete temporal tile. The borrowed scope retains the
 weights for all value heads, allowing native and portable square-sum scans to
 omit repeated weight loads and finite checks. Input, epsilon, geometry, scale
@@ -423,9 +423,8 @@ Independent arithmetic and failure controls cover repeated heads, row tails,
 signed zero, subnormals, invalid inputs and graph recovery. These controls and
 the reduced source work do not establish complete-model parity or X2 benefit.
 Require final-source native/portable/feature-disabled analysis, production
-linking, codegen/resources and matched CPU-only complete-request acceptance
-before publishing a bundle and reviewing Runner's runtime lock. The active
-0.1.27 bundle remains the application pin and rollback.
+linking, codegen/resources and matched CPU-only complete-request acceptance.
+Inclusion in the 0.1.28 development bundle does not close those gates.
 
 ### Current-source comparison admission
 
@@ -466,7 +465,7 @@ check selection, not authorization for another owner-device trial or CI run.
 
 ### Exact rotation butterflies, BF16 row pairs and recurrent validation
 
-The next X1-applicable CPU candidates retain the existing packed-cache and
+The pinned X1-applicable CPU source retains the existing packed-cache and
 recurrent arithmetic, without changing precision or memory admission:
 
 - Native packed-KV Hadamard rotation evaluates its first two ordered butterfly
@@ -503,9 +502,9 @@ storage. BF16 adds `bonsai_neon_dot::dot_bf16_rows`; the other changes add no
 public helper API. Deinterleaving and row-transpose costs, codegen/stack,
 strict native ARM64 analysis and linking, feature-disabled execution, complete-model
 state/logits/adapters/cancellation and matched CPU-only complete-request benefit
-remain independent gates. The changed NEON helper must be published before its
-dependent runtime. Retain the active 0.1.27 bundle until verified publication and
-reviewed Runner locks under [cross-generation promotion](#cross-generation-cpu-promotion).
+remain independent gates under [cross-generation promotion](#cross-generation-cpu-promotion).
+The source-bound 0.1.28 bundle includes the changed helper implementation;
+publishing its registry API before a dependent registry crate remains separate.
 
 The fixed local source check at Prism
 `5c99a51bcfcf970bb0b07857e807af3a4a4471e4` stopped after 57.007 seconds of its
@@ -525,7 +524,7 @@ original start, within the same 480-second allowance.
 ### Fusion witnesses, precision admission and few-token tiles
 
 The [ggml 1.0 reference review](research-register.md#ggml-10-execution-and-regression-references)
-adds selected controls to existing local Prism paths. Decode preparation reports
+adds selected controls to the pinned Prism paths. Decode preparation reports
 attempted/completed/fallback fusion counts separately from model-state commit and
 packed backend dispatch. Controls must assert the path actually executed and
 compare it to separately evaluated arithmetic. A completed CPU graph branch is
@@ -548,8 +547,8 @@ work observations, not latency or memory measurements.
 
 Native ARM64/feature-disabled analysis, scalar controls, production linking,
 full-model state/logit/adapter/cancellation acceptance and matched complete-request
-benefit remain required. Runner's published 0.1.27 pin does not consume these local
-changes. Keep its rollback until a genuine verified bundle and reviewed repin.
+benefit remain required. Runner's 0.1.28 development pin consumes these source
+changes without qualifying the named controls, model behavior or benefit.
 
 ## Execution and dispatch
 
@@ -666,7 +665,7 @@ correction before narrowing; Rust overflow flags do not check wrapping SIMD. App
 scale before accumulating later blocks. Malformed scales/noncanonical PTQ1 bytes reject even at
 zero scale.
 
-The local Prism PQ2 decode candidate accumulates signed product pairs in two
+The pinned Prism PQ2 decode source accumulates signed product pairs in two
 independent i16 vectors, then widens before the horizontal i32 reduction. Products
 are in `[-256, 254]`, pairs in `[-512, 508]`, each accumulator lane in
 `[-2048, 2032]`, and their combined lane in `[-4096, 4064]`. These bounds cover
@@ -675,12 +674,12 @@ No floating operation, quantizer, PTQ1 native lane reduction or dispatch eligibi
 changes. Fewer source-level widening operations require Release code-generation
 inspection and matched request measurements before a performance claim.
 
-The explicit tiled-prefill candidate selects baseline NEON integer reductions
+The explicit tiled-prefill runtime profile selects baseline NEON integer reductions
 over one decoded PQ2/PTQ1 block shared across the tile's tokens. It preserves odd
 PQ2 groups, PTQ1's four native integer lanes, ordered scales/FMAs, explicit scalar
 selection and unsupported-target fallback. The graph passes its requested backend
 into the tile; decoded vectors remain bounded stack storage, and preparation does
-not allocate unused PQ2 digit-plane activations. The follow-up source candidate
+not allocate unused PQ2 digit-plane activations. The pinned source also
 shares the graph's existing private row-worker pool across disjoint output slices,
 without transposition or a second pool. The original non-Sync cancellation callback
 stays on the caller; workers observe cancellation between rows and join before
@@ -937,7 +936,7 @@ Identity observations alone do not qualify an X2 profile.
 
 ## Parallel packed-cache prompt attention
 
-Reviewed local Prism source parallelizes token attention in the existing explicit
+The pinned Prism source parallelizes token attention in the existing explicit
 tiled-prefill path for K4/V4, fitted-value K4/V4 and K4/V3 caches. Each token uses
 its own causal history and one bounded score row; immutable packed history is
 shared across row workers without expanding the cache. Serial head order, codec,
@@ -945,8 +944,9 @@ softmax, reduction and current-token arithmetic remain unchanged. Provisional
 outputs clear on failure, and request checkpoints retain complete-state rollback.
 
 Tiled scratch now charges `tile_tokens * context_tokens * 4` score bytes in
-addition to ordinary graph/worker/checkpoint charges. The explicit opt-in and
-published runtime remain unchanged. Source controls compare serial and tiled
+addition to ordinary graph/worker/checkpoint charges. The runtime includes this
+path; ordinary Runner launch policy still does not select prompt tiles.
+Source controls compare serial and tiled
 causal results across page boundaries, raw packed rows, cancellation and late
 failure. Owning hosted analysis, production linking, complete-model parity,
 ARM64 code generation/resources and matched X2 complete-request benefit remain

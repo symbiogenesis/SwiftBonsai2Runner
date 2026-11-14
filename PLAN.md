@@ -73,7 +73,7 @@ adoption decisions without displacing native daily-use acceptance.
 - [ ] Qualify Prism's Foundation scheduling and source-package/Hexagon caches
   on matching hosted images, preserving complete correctness, mutation, packaging
   and independent ABI/SDK obligations.
-- [ ] **R1 — Qualify the Runner release candidate with pinned Prism 0.1.27.**
+- [ ] **R1 — Qualify the Runner release candidate with pinned Prism 0.1.28.**
   Complete actual-model, state, resource, quality and device acceptance using
   the source-bound package identities in the [distribution guide](docs/releases.md).
   Model-free release checks leave these development-runtime gates pending.
@@ -151,11 +151,9 @@ adoption decisions without displacing native daily-use acceptance.
 - [ ] Qualify pre-reply failure recovery with actual complex prompts: distinguish
   canonical request-size/schema rejections from counter/generation stage failures,
   preserve drafts/history and require confirmed cleanup before model retry.
-- [ ] Publish and pin the reviewed Prism ordinary-request deadline correction.
-  The current 0.1.27 private server still caps requests at ten minutes, including
-  prefill. Preserve explicit diagnostic deadlines, Stop/cancellation and bounded
-  intake/writes; qualify long-prefill completion and stage/cause diagnostics after
-  installing the verified release. Measure the supplied modest critique prompt
+- [ ] Qualify the pinned Prism ordinary-request deadline correction with actual
+  long-prefill completion, stage/cause diagnostics, explicit diagnostic deadlines,
+  Stop/cancellation and bounded intake/writes. Measure the supplied modest critique prompt
   before selecting prefill optimizations; keep its private text out of evidence.
 - [ ] Qualify compact message headers, thinking expansion, speech/iteration
   controls, styled Unicode/code selection, copying and Find geometry.
@@ -799,7 +797,7 @@ The tasks below do not displace native daily-use acceptance or reopen past trial
   native ARM64 strict Release analysis, exact arithmetic/failure and disabled-feature
   controls, production linking, ARM64 codegen/resources, complete-model
   state/logit/adapter/cancellation parity and matched CPU-only request benefit.
-  Publish the changed helper before its dependent runtime; retain 0.1.27 rollback.
+  Publish the changed helper before its dependent runtime; retain a verified runtime rollback.
 - [ ] Publish and qualify [ordered packed-KV code selection](docs/cpu-kernels.md#ordered-packed-kv-code-selection):
   exhaustive-search record identity, rounded first-code ties, atomic rejection,
   native/portable and feature-disabled controls, complete-model state/adapters/
@@ -854,7 +852,7 @@ The tasks below do not displace native daily-use acceptance or reopen past trial
   complete-model state/logit/adapter/cancellation parity and matching-source
   complete-request CPU benefit. Keep singleton exact-prefill convolution separate
   from ordinary decode. Publish the changed helper before its dependent runtime;
-  retain the active 0.1.27 bundle until verified publication and reviewed repin.
+  retain the active pinned bundle until verified publication and reviewed repin.
 - [ ] Qualify [grouped dispatch, half widening and exact LUT execution](docs/cpu-kernels.md#grouped-dispatch-hardware-half-widening-and-exact-lut-execution).
 - [ ] Qualify [complete-row SDOT, fixed attention lanes and bounded GDN phases](docs/cpu-kernels.md#complete-row-sdot-fixed-attention-lanes-and-bounded-gdn-phases).
 - [ ] Qualify [scoped PQ2 validation, tiled Q/K/V and temporal GDN](docs/cpu-kernels.md#scoped-pq2-validation-tiled-qkv-preparation-and-temporal-gdn).
@@ -924,11 +922,10 @@ The tasks below do not displace native daily-use acceptance or reopen past trial
 - [ ] Qualify the implemented six-arena/168-projection `native-q2` placement:
   exact selected tensors, adapter/full-state parity, arena admission, load costs,
   fallback, persistent lifecycle and complete-request benefit under [Hexagon policy](docs/hexagon.md).
-- [ ] Publish and qualify the model-thread initialization/readiness handshake
+- [ ] Qualify the pinned model-thread initialization/readiness handshake
   and `startup_projection` facts, including failed initialization, CPU/external
   executors, actual resident counts/bytes and Runner's bounded observation
-  parser. Require the new observation only after verified release repinning;
-  published 0.1.27 retains its legacy readiness contract.
+  parser. Preserve the legacy readiness contract for an explicit 0.1.27 rollback.
 - [ ] Qualify existing full-FFN chains, sibling packets, multi-tile N=1 and
   tile-major reuse independently. Implement true N>1 prefill only with a supported
   signed solver, causal state, bounded VTCM/DMA and measured total-cost benefit.

@@ -1,7 +1,7 @@
 # Hexagon deployment and execution contracts
 
-Runner pins [Prism 0.1.27](../config/prism-inference.lock.json), source
-`1429a33772089dfd3a50a96c698b9dbe0b36836a`. On Windows ARM64 Snapdragon X2 (`v81`),
+Runner pins [Prism 0.1.28](../config/prism-inference.lock.json), source
+`99671be7ab2be01e406a11b0c3d6caede398d96f`. On Windows ARM64 Snapdragon X2 (`v81`),
 `prism-inference-server` selects experimental `native-q2` resident NPU acceleration
 when the verified signed GenieX v0.10.0 package and CDSP driver are available.
 The expected DSP file is `<data_directory>/hexagon/runtime/libggml-htp-v81.so`.
@@ -24,15 +24,16 @@ for this fixed development policy. Full-model X1/X2 qualification and the
 with interactive/battery objectives remain separate work in [PLAN.md](../PLAN.md#hexagon-npu).
 `native-q2` uses
 bounded floating-point tolerance; it does not promise the bitwise PQ2/Q8_K
-parity of the independent block-preserving controls. The published runtime's
-authenticated serving readiness does not report effective NPU placement.
-Reviewed local Prism source adds a model-thread initialization handshake and a
-versioned `startup_projection` observation. Runner accepts that optional object
-only with consistent requested/effective placement, the fixed
+parity of the independent block-preserving controls. Prism 0.1.28 completes a
+model-thread initialization handshake before authenticated serving readiness
+and reports a versioned `startup_projection` observation. Runner requires that
+object for the reviewed 0.1.28 source, with consistent requested/effective
+placement, the fixed
 168-tensor/2,888,663,040-byte resident layout and bounded host metadata; CPU and
-external observations cannot assert resident weights. Missing observations remain
-compatible with the published 0.1.27 pin. This closes no device, performance or
-release gate; requiring the new object awaits a verified source-bound repin.
+external observations cannot assert resident weights. Explicit legacy 0.1.27
+source retains its older readiness contract and may omit the object. These
+startup facts do not qualify executed operations, model state, signed-device
+lifetimes, resources or performance.
 Multi-token prefill packets batch independent `N = 1` operations; a true
 `N > 1` matrix solver remains separate work.
 
@@ -60,7 +61,7 @@ publication. Unsupported shapes reject before submission. Failure faults the exe
 clears outputs and retains uncertain owners through terminal completion or supervised
 exit, without replay.
 
-The next local native-source correction seals each secondary weight arena after
+The pinned native source seals each secondary weight arena after
 its first DSP import. All of that arena's append-only weights must be prepared
 before import: a later initialization faults before its writer callback, byte
 mutation or handle publication. The supported pre-import cache-clean operation
@@ -68,7 +69,7 @@ cannot be treated as a fence for later writes to a persistent imported mapping.
 Unused secondary arenas remain dirty and unimported; already prepared views can
 still be submitted together after import. Primary-arena append preparation keeps
 its separate populated-prefix flush. Native fake-session controls exercise those
-boundaries; signed-driver coherency, complete serving and release acceptance
+boundaries; signed-driver coherency and complete serving acceptance
 remain independent.
 
 Source work counts establish no measured latency, memory or energy saving. Complete
@@ -78,7 +79,7 @@ qualification gates under [PLAN.md](../PLAN.md#hexagon-npu).
 
 ### Resident identity and bounded lookup
 
-The next Prism source candidate keeps resident projection records append-only
+The pinned Prism source keeps resident projection records append-only
 and uses a separately reserved sorted index for lookup. Cache identity includes
 immutable shared storage and matrix geometry; presentation names remain outside
 cache identity. Distinct matrix views sharing bytes cannot hide one another,
@@ -96,8 +97,9 @@ Model-free identity, stable-handle, shared-view, duplicate-sibling and capacity
 controls do not qualify signed execution, device lifetime or request benefit.
 Native/fallback compiled controls, production linking, full-model state/adapters,
 cancellation/resources and source-bound device acceptance remain required.
-The [local source-check limit](cpu-kernels.md#current-source-comparison-admission)
-also applies to this delivery: supervisor setup failed before compiled controls.
+The earlier [local source check](cpu-kernels.md#current-source-comparison-admission)
+failed during supervisor setup before compiled controls. The source-bound
+0.1.28 binary delivery does not supply that missing independent control acceptance.
 
 Guarded/model-probe whole-request reservation and explicit partial placement
 already exist in source. Their terminal 24,000-attempt policy remains separate

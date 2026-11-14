@@ -6,7 +6,7 @@ app, broker, provisioning and release integration. The
 [compiled release lock](../config/prism-inference.lock.json) is authoritative for
 the runtime version, source, archive and installed file identities.
 
-The development default is Prism **0.1.27**, original Swift PQ2, four CPU row
+The development default is Prism **0.1.28**, original Swift PQ2, four CPU row
 workers, K4/V4 cache and the standard adapter at scale 1.3. Supported X2 workers
 attempt [resident Hexagon `native-q2`](hexagon.md), retaining CPU execution when
 accelerator initialization is unavailable. Trusted `--placement cpu` explicitly
@@ -36,7 +36,7 @@ UI availability does not qualify inference.
 | Admission | Selected context and Job budget, 4 GiB running physical reserve and startup margin; the fixed 8K/11.5 GiB Job/15.5 GiB admission profile remains a separate qualification control |
 
 The verified runtime source is
-`1429a33772089dfd3a50a96c698b9dbe0b36836a`. Runtime and exact-source numerical
+`99671be7ab2be01e406a11b0c3d6caede398d96f`. Runtime and exact-source numerical
 capture locks advance together. A version string alone grants no capability;
 archive and installed file digests must match their compiled locks. Publishing
 the public runtime crate does not publish the private server or replace Runner's
@@ -176,19 +176,17 @@ acceptance and measured benefit remain pending.
 
 ### Long-request runtime deadline
 
-Runner's ordinary chat path supplies no total generation deadline. The pinned
-Prism 0.1.27 private HTTP server nevertheless imposes its own ten-minute deadline,
-including prompt ingestion before the first response headers. Expiry there can
-surface as `backend_generation_failed` with no reply, even when the request fits
-the byte and token limits. A reported failure after about ten minutes is consistent
-with this path; older empty backend logs do not establish its actual cause.
+Runner's ordinary chat path and the pinned Prism 0.1.28 private HTTP server impose
+no total generation deadline, including prefill. Explicit diagnostic deadlines,
+Stop/cancellation, bounded header/body intake and per-write limits remain in
+force. The verified source-bound release is documented in the
+[delivery record](evidence/prism-0.1.28-release.md).
 
-The runtime correction must preserve explicit diagnostic deadlines, cancellation,
-bounded header/body intake and per-write limits while removing the ordinary
-request cutoff. Local Prism source changes do not update the pinned installed
-runtime. A published, verified bundle and synchronized source/file locks are
-required before Runner can consume the fix. Actual-model acceptance remains
-separate from model-free deadline controls.
+The previous 0.1.27 private server imposed a ten-minute cutoff that could surface
+as `backend_generation_failed` before response headers. Older empty backend logs
+do not establish that as their cause. Long-prefill completion, stage/cause
+diagnostics and actual-model Stop/Retry remain independent acceptance gates;
+virtual-time controls and a release do not qualify them.
 
 The [conformance contract](prism-upstream-tests.md) preserves original source inputs,
 assertions, tolerances, unsupported results and production bridges. Full source

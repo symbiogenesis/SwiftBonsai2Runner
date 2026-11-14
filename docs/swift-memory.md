@@ -1,6 +1,6 @@
 # Swift artifacts, memory and PTQ1
 
-**Original PQ2 on native Rust Prism 0.1.27 is the development default**, with four
+**Original PQ2 on native Rust Prism 0.1.28 is the development default**, with four
 CPU row workers, standard adapter scale 1.3 and [X2 NPU placement](hexagon.md) when initialization
 succeeds. `--publisher-engine` explicitly selects rollback; PTQ1 remains opt-in.
 Creative quality, performance and daily-service isolation remain unqualified.
@@ -328,12 +328,12 @@ comparison uses source `73bfe6cc485554822f80c473a3c0c4f25e80f41b`.
 
 ### Native allocation candidates
 
-The newer local Rust allocation work removes redundant storage without changing
-the selected model weights, cache precision, floating-point operations or worker
-count. It requires a reviewed, published runtime bundle before Runner can consume
-it; the installed 0.1.27 bundle does not contain these changes.
+The source-bound Prism 0.1.28 bundle includes redundant-storage removals without
+changing the selected model weights, cache precision, floating-point operations
+or worker count. These source-derived payload counts do not establish measured
+process savings or authorize lower conservative admission charges.
 
-| Candidate | Source-derived storage reduction | Remaining boundary |
+| Source change | Source-derived storage reduction | Remaining boundary |
 | --- | ---: | --- |
 | Retain serialized A only for embedding lookup; retain decoded A for linear adapter sites | 6,029,312 bytes (5.75 MiB) for the approved adapter | Preserve factor validation, embedding row access and every linear reduction/scale/add stage. |
 | Preserve the loader's exact B-factor sharing in decoded immutable storage | 2,621,440 bytes (2.5 MiB) for the approved adapter | Share only matching kind/layout and the same immutable source allocation; preserve signed zero and dynamic scales. |

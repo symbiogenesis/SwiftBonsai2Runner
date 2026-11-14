@@ -11,12 +11,12 @@ owns remaining work.
 ## Source selection and current checks
 
 The safe codec API is `kv_quant::Quantizer::{new, scalar}`. Graph construction
-selects `graph::KvCachePolicy::{F16, Rotated4, Rotated4Keys3Values}` explicitly;
+selects `graph::KvCachePolicy::{F16, Rotated4, Rotated4FittedValues, Rotated4Keys3Values}` explicitly;
 generic graph constructors retain FP16 reference behavior. Normal Swift-session
 loaders, raw CLI generation with verified Swift weights and the private Swift
 service default to `rsq4`; other raw CLI models retain FP16.
 The raw generation CLI accepts
-`--kv-cache f16|rsq4|rsq4k3v` and records the policy and current graph identity in
+`--kv-cache f16|rsq4|rsq4vf|rsq4k3v` and records the policy and current graph identity in
 its completion metadata. Tokenize mode rejects this generation-only option.
 
 `SwiftSession::load_profile_with_kv_cache` and the private server's trusted
@@ -27,7 +27,7 @@ accurate when a later request changes the adapter scale. Runner's trusted launch
 policy selects the cache from the exact reviewed runtime source and checks the
 matching cache and startup graph identity. Application use requires a published, verified Prism bundle with that
 source identity. Trusted launch parsing accepts `--kv-cache f16|rsq4|rsq4k3v`
-without exposing precision in client request bodies. The current 0.1.27 pin admits
+without exposing precision in client request bodies. The current 0.1.28 pin admits
 `f16` and `rsq4`; `rsq4k3v` remains rejected until a separately reviewed, source-bound
 release delivers the K4/V3 profile and M1/M2 memory contract together. Its prepared
 planner charges 14,848 KV and 29,920 process bytes per token, retaining two complete
@@ -39,7 +39,7 @@ work; current cache selection relies on reviewed source and live readiness.
 
 The sibling Prism checkout owns `src/kv_quant.rs`,
 `src/graph/quantized_kv.rs` and its `docs/quantized-kv.md` runtime contract.
-Runner's 0.1.27 pin consumes the reviewed codec implementation. Model-free codec
+Runner's 0.1.28 pin consumes the reviewed codec implementation. Model-free codec
 and graph controls do not establish full-model quality, usable
 capacity, performance or device qualification. Require current-source owning
 checks and the complete packet below for each selected profile.
@@ -83,7 +83,7 @@ establish unbiased softmax, negligible quality loss or faster inference.
 
 ## Fitted-value scale candidate
 
-New local Prism source adds explicit `rsq4vf` (`Rotated4FittedValues`) for
+The Prism 0.1.28 runtime includes explicit `rsq4vf` (`Rotated4FittedValues`) for
 investigating reconstruction accuracy without increasing record size. Version-1
 K4 keys remain unchanged; V4 values use codec version 2's guarded fitted scale.
 After the existing normalization, rotation and code selection, the fitter proposes
@@ -102,22 +102,22 @@ unchanged. Future states can diverge through changed values.
 The guard precedes the rounded inverse transform and guarantees neither lower
 original-space/attention error nor better answers. Native encoding cost,
 complete-request cost and held-out model quality remain pending under K1.
-The candidate keeps the ordinary graph state ceiling and is not selected by
-Runner's trusted launch policy or its published runtime pin. The sibling Prism
+The candidate keeps the ordinary graph state ceiling. Runner's trusted launch
+policy does not expose or select `rsq4vf`; inclusion in the runtime bundle does
+not qualify that profile. The sibling Prism
 `docs/quantized-kv.md` specifies its complete numerical and selection contract.
 
 ## Snapdragon execution and state
 
 X1 and X2 share a runtime-detected 128-bit NEON execution path with an explicit
 scalar reference. There is no SKU-specific timing or thread-count tuning.
-The published 0.1.27 compressed-attention path streams query heads serially.
-New local Prism source distributes independent query heads over the existing
+The pinned 0.1.28 source distributes independent query heads over the existing
 private row-worker pool. Each head retains its score, softmax, value and inverse
 transform order; joined workers return the earliest failing head chunk. The
-candidate adds no cache expansion or second pool, and cancellation retains the
+path adds no cache expansion or second pool, and cancellation retains the
 ordinary synchronous-token boundary. Complete-model state/adapter/recovery,
-resource and matched request-time qualification remain required before delivery.
-This source change is not in Runner's current runtime bundle. X2 qualification
+resource and matched request-time qualification remain required; binary delivery
+does not close those gates. X2 qualification
 cannot establish an X1 speedup, and source concurrency is not a measured benefit.
 
 Checkpoint/restore must preserve the **exact bytes of the selected quantized
@@ -126,12 +126,13 @@ position. That is exact restoration of an approximate profile, not exact recover
 of the original FP16 values. Failed append/allocation, cancellation, edited-prefix
 reuse and adapter changes must preserve transaction atomicity and provenance.
 State export must identify reconstructed quantized rows instead of labelling
-them as original FP16 observations. New local CPU tiles support these profiles
+them as original FP16 observations. The pinned source's explicit CPU tiles support these profiles
 by sharing surrounding projections while retaining causal per-token quantized
 attention and encoded append. The same route supplies each target-verification
 position. It adds no FP16 history expansion or additional worker pool. Ordinary
 sequential ingestion remains supported, and triangular GDN stays a separate FP16
-profile. Neither tile nor sampled suffix selection is in Runner's current bundle.
+profile. Neither tile nor sampled suffix selection is exposed by ordinary Runner
+launch policy; runtime source presence does not activate them.
 
 Full-context admission must charge packed records and scales, page tables,
 retained checkpoint pages/tails, transform/codebook storage and scratch. Keep
