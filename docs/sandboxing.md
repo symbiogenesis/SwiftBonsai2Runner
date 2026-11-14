@@ -1,6 +1,6 @@
 # Windows integration and worker sandboxing
 
-The native UI requires containment for owned inference, ASR and TTS workers.
+The native UI requires containment for owned inference, ASR, TTS and file-decoder workers.
 `bonsai-windows-process` combines pinned **MXC 1.0.1** Process Security Environment
 (PSEC), suspended creation,
 verified Job ownership before resume, exact worker PID, resource limits and
@@ -20,6 +20,45 @@ policy rejection during diagnosis.
 The UI stops capture on observed revocation. Deadlines/revocation are cooperative,
 not an OS-enforced recording quota while the UI/processes are suspended. Model
 capability reports grant no Windows permissions. See [speech operation](development-guide.md#speech-setup-and-operation).
+
+### Input capabilities
+
+Explicit microphone, picker and clipboard actions belong to the trusted native
+UI. Windows microphone consent remains authoritative and is checked at capture
+transitions and during recording; no cached sandbox result grants device access.
+Picker and pasted-file paths authorize only the selected input for that import.
+They do not restrict the filesystem authority of the trusted UI itself.
+
+Compressed audio is decoded by one offline MXC helper for the complete import.
+The parent retains the selected read-only file and ancestor guards through helper
+teardown. The helper receives exact file/runtime grants, private scratch and
+restricted standard handles, without microphone, picker or host-loopback grants.
+Bounded binary pipe frames carry normalized audio; ASR receives WAV bytes and
+Swift receives transcript text. Failure to admit or initialize the helper stops
+import without an in-process decoding fallback. Media Foundation compatibility
+with the headless policy requires native qualification.
+
+### Boundary work and overhead
+
+Every new and existing authority boundary must keep work proportional to the
+operation it protects. Apply process, Job and complete sandbox admission once
+per worker creation, then retain their owners; a throwaway empty environment is
+reserved for an explicit availability diagnostic. Retain immutable file identities
+instead of reopening attacker-replaceable paths. Preserve required authenticity,
+authentication, framing, resource, cancellation and revocation checks.
+
+Streaming boundaries use bounded buffers and backpressure, borrowed payloads
+where their lifetimes allow, and incremental scans. Do not create a process,
+reverify a complete artifact, serialize audio as JSON/base64 or stage a complete
+recording for each frame or segment. One sequential decoder serves an import;
+the existing ASR lease can amortize model startup independently. Device permission
+decisions must not be cached across explicit actions to improve timing.
+
+Negligible overhead is a measured acceptance gate, covering existing boundaries
+as well as additions. Source-level allocation/work controls do not establish it.
+Follow the [boundary overhead acceptance](validation.md#boundary-overhead-acceptance)
+contract, including separate cold startup and steady-state observations. Failed
+performance acceptance requires optimization while keeping enforcement intact.
 
 ## Technology selection
 
@@ -83,9 +122,11 @@ policy, while daily-service isolation remains unqualified under the
 
 ## Native integration contract
 
-Probes require PSEC 1.1 and container-hosted loopback, then create/dispose a real
-minimal environment; versions or exports alone are insufficient. The complete
-policy must also pass admission before launch. There are no audit/learning modes,
+Explicit availability probes require PSEC 1.1 and container-hosted loopback, then
+create/dispose a real minimal environment; versions or exports alone are
+insufficient. Ordinary launches admit the complete policy once, without that
+throwaway preflight. HTTP workers require host-loopback support; offline decoders
+require PSEC 1.1 without requesting or probing loopback authority. There are no audit/learning modes,
 SDK backend dispatch, DACL augmentation, global loopback exemptions or weaker
 fallbacks. Host Firewall restrictions remain independent.
 

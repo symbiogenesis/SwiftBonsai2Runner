@@ -228,6 +228,18 @@ adoption decisions without displacing native daily-use acceptance.
 
 ### Isolation, transport and recovery
 
+- [ ] Qualify the [input capability boundary](docs/sandboxing.md#input-capabilities):
+  exact selected-file/ancestor lifetime, offline same-executable MXC decoder,
+  native Media Foundation under Win32k denial, denied unrelated files/devices/
+  networking, malformed/flooded/truncated pipes, Stop/close and confirmed teardown
+  or bounded quarantine. Cover portable and installed app identities and Windows
+  microphone consent/revocation independently; no in-process decoder fallback.
+- [ ] Qualify [negligible boundary overhead](docs/validation.md#boundary-overhead-acceptance)
+  for existing microphone/file, process, artifact/credential and authenticated
+  transport paths as well as new isolation. Measure cold setup separately from
+  representative warm operations, with the 1% warm-operation target, identical
+  inputs, independent correctness and eligible power conditions. Source work/
+  allocation controls and removed duplicate probes alone provide no timing verdict.
 - [ ] Establish [restricted inference authority](docs/sandboxing.md#worker-authority):
   approved read-only artifacts, bounded private cache/temp, denied unrelated
   files/credentials and egress, broker-only communication and no same-user bypass.

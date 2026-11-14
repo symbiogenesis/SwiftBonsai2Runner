@@ -467,6 +467,39 @@ Existing HTML caches/machine settings are untouched. Recheck the
 on toolchain changes. Ordinary validation builds neither browsable docs nor doctests;
 complete tests retain their CI guard.
 
+## Boundary overhead acceptance
+
+Permission, file, process and authenticated transport boundaries share the same
+overhead requirement. Review and measure both existing paths and new paths; an
+isolated helper or a successful source check supplies no blanket performance
+verdict. The target is at most 1% additional complete-operation time attributable
+to boundary work on representative warm operations. Report cold startup and short
+inputs separately, with absolute latency as well as ratios, so model loading or
+long inference cannot hide an interactive regression. User time in a permission
+prompt or picker is excluded from machine latency and reported separately.
+
+| Boundary | Required independent observations |
+| --- | --- |
+| Microphone | Permission/start/finalize and observed revocation latency; active capture polling, bounded memory and Stop/close. |
+| Picker and pasted files | Selected-file/ancestor admission, cold helper creation, first decoded segment, complete short/long import and cancellation/cleanup; unrelated-file and network denial. |
+| Model and speech processes | Real policy admission, Job/identity verification, cold start and reused-service requests; no duplicate empty-environment probe during ordinary launch. |
+| Authenticated chat and speech transport | Header/authentication/framing work, multipart collision scanning, payload copies/allocations, fragmented reads/writes, backpressure and cancellation. |
+| Artifact and credential handoff | Required full verification and retained identity lifetime, separate from per-request/stream work; changed identities must still reject. |
+
+Run timing benchmarks only in owner-authorized CI. Use an immutable reviewed
+baseline/candidate pair, identical inputs and release/compiler identities, and
+separate cold/warm cases. Retain losing results and confidence/noise limits; a
+ratio within measurement noise stays inconclusive. Owner-device comparisons also
+require the predeclared aggregate allowance and aggregate/per-arm power endpoints;
+unknown or mismatched conditions cannot qualify performance. Do not disable
+containment, authentication, dynamic consent or admission in the application to
+meet the target. Native negative controls and byte/sample identity remain
+independent correctness gates.
+
+The current source changes remove redundant launch probes and reduce multipart
+scan work, while keeping one decoder process per import and bounded pipe frames.
+These mechanisms do not yet qualify the 1% target or cold helper latency.
+
 ## Focused local checks
 
 Keep scripts/logs/captures/native working directories in a unique system-temp
@@ -506,6 +539,7 @@ to run a complete module or reconstruct a suite locally.
 
 | Area / source | Regression coverage |
 | --- | --- |
+| Input capability [`isolated`](../src/chat-ui/src/audio_import/isolated.rs) and process [`containment`](../src/windows-process/src/native/containment.rs) | Bounded binary frame lengths, canonical PCM/sample identity, timestamps, truncation and buffered-frame flushing; selected-file/ancestor sharing; offline policy without loopback authority and unchanged headless restrictions. Pipe tests cover byte/EOF identity and noninheritable parent endpoints; the typed failed-start marker distinguishes unknown cleanup. These controls do not qualify native Media Foundation initialization or measured overhead. |
 | Broker [`request_buffer`](../src/broker/src/request_buffer.rs), [`backend` storage/payload tests](../src/broker/src/backend/) and [`response` memory tests](../src/broker/src/response/memory_tests.rs) | Final-destination/spare-tail reads, bounded growth, fragments/coalesced prefixes/chunk tails, empty reads, sticky truncation/I/O failure, exact-cap overflow probes, framing, deadlines and cancellation. Eligible payloads bypass 8 KiB staging. |
 | UI [`model_lifecycle`](../src/chat-ui/src/window/model_lifecycle.rs) and [`window` lifecycle regressions](../src/chat-ui/src/window/tests.rs) | Explicit model states; late readiness, completion and teardown notices cannot reopen Send in the wrong phase. Retry waits for teardown and explicit action; terminal failure stays unavailable. Stop preserves completed history, retained effort drafts and newer composer text. Recoverable rejections preserve newer drafts. These model-free checks do not qualify actual-model lifecycle behavior. |
 | UI [`bounded_json`](../src/chat-ui/src/bounded_json.rs), [`client` memory tests](../src/chat-ui/src/client/memory_tests.rs), [`recovery`](../src/chat-ui/src/recovery.rs) and [`persistence`](../src/chat-ui/src/window/persistence.rs) | Escaped-byte limits before full encoding; immutable body sharing with independent turn vectors; request bytes retained through partial write/flush and released before response reads/on failure; snapshot reservation through encryption/save; busy saves skip encoding. Exact restore counts reject extra objects before fields and preserve the live workspace. |

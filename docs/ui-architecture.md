@@ -292,9 +292,17 @@ the [speech scheduling contract](streaming-resources.md#speech-scheduling-and-pl
 No audio upload or inference precedes complete finalized-WAV validation.
 
 The composer's native plus button selects one audio file; Ctrl+V in the focused
-composer accepts files copied from Explorer. A cancellable owned worker reads and
-normalizes MP3/WAV and Windows-supported M4A/AAC/FLAC/WMA to in-memory mono 16 kHz
+composer accepts files copied from Explorer. Selection stays in the trusted UI;
+retained file/ancestor handles bind that authorization through decoder cleanup.
+One offline MXC process normalizes MP3/WAV and Windows-supported M4A/AAC/FLAC/WMA
+to in-memory mono 16 kHz
 PCM16 WAV through one persistent asynchronous Media Foundation source reader.
+The existing chat executable has a private headless decoder entry point, admitted
+only inside an actual AppContainer. It adds no package executable or public API.
+The parent grants only the selected input, executable/runtime and private scratch,
+with no device, presentation or network capability. Binary pipe frames are bounded
+and validated before ASR use; no complete recording is staged or base64 encoded.
+Native initialization/admission failures stop import without decoding in the UI.
 The reader advances sequentially, without reopening, seeking or recreating a
 transcoder for each ASR request. File size and recording duration have no fixed
 admission cap: available physical RAM and commit govern decoder buffers and
@@ -316,9 +324,15 @@ poll cancellation and share one deadline
 per segment. Unsupported output-format changes, timeline gaps and decoder failures
 stop import explicitly. Native source creation and release remain synchronous OS
 calls; asynchronous sample waits do not make those calls preemptible.
-Reader teardown waits at most two seconds for Flush and callback quiescence.
-Unconfirmed cleanup retains one Media Foundation startup reference for process
-safety, reports failure and closes further file-import admission until restart.
+Reader teardown in the helper waits at most two seconds for Flush and callback
+quiescence. The parent requires successful helper exit and an empty Job before
+accepting final audio, and stops the helper on cancellation or a segment deadline.
+Its explicit cleanup wait is two seconds; the shared native owner's best-effort
+Drop may wait a further ten seconds. Unconfirmed cleanup retains one bounded
+quarantine of source/executable guards, scratch and pipe-thread ownership until
+application exit, reports failure and closes file-import admission until restart.
+Native Media Foundation/Win32k compatibility and measured boundary overhead remain
+separate [acceptance gates](validation.md#boundary-overhead-acceptance).
 File input needs no microphone permission. A native composer card shows Cancel,
 persistent actionable failures and the current segment range against an estimated
 total duration. Its completed-audio bar appears only when the duration estimate
