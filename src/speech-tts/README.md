@@ -80,6 +80,16 @@ provisional append to the previous key/value lengths and position. Invalid cache
 head and projection/bias geometry rejects before publication. These layer-level
 controls do not replace complete-model cancellation and recovery qualification.
 
+Codec encoder/decoder transformer positions are also transactional across every
+layer and the final normalization/projection. Attention reads only the selected
+causal window while eviction waits for a complete finite result. Errors and
+unwinding restore all original cache lengths and the committed position, including
+signed-zero bits; rollback retains length checkpoints rather than copied KV
+tensors. Invalid previous-position geometry rejects before mutation. Four focused
+`codec_transaction_` controls retain literal two-layer outputs/cache states,
+full-window late failures, cold/fresh recovery and unwind behavior. They supply
+model-free correctness controls, not pinned-codec parity or device acceptance.
+
 ## Build boundary
 
 Cargo uses the pinned Rust compiler and ordinary Windows linking tools, without

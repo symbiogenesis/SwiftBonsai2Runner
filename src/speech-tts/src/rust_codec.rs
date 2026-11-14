@@ -171,6 +171,76 @@ struct TransformerState {
     layers: Vec<KvState>,
 }
 
+// Append without evicting until the complete transformer position succeeds.
+// Rollback only needs original lengths, never a second copy of the KV tensors.
+struct TransformerAppend<'a> {
+    state: &'a mut TransformerState,
+    lengths: Vec<(usize, usize)>,
+    next: usize,
+    keep: Option<usize>,
+    committed: bool,
+}
+
+impl<'a> TransformerAppend<'a> {
+    fn new(
+        state: &'a mut TransformerState,
+        stride: usize,
+        window: Option<usize>,
+    ) -> io::Result<Self> {
+        let next = state.position.checked_add(1).ok_or_else(invalid)?;
+        let retained = window.map_or(state.position, |window| state.position.min(window));
+        let expected = retained.checked_mul(stride).ok_or_else(invalid)?;
+        let keep = window
+            .map(|window| window.checked_mul(stride).ok_or_else(invalid))
+            .transpose()?;
+        if stride == 0
+            || window == Some(0)
+            || (state.layers.is_empty() && state.position != 0)
+            || state
+                .layers
+                .iter()
+                .any(|layer| layer.keys.len() != expected || layer.values.len() != expected)
+        {
+            return Err(invalid());
+        }
+        Ok(Self {
+            lengths: state
+                .layers
+                .iter()
+                .map(|layer| (layer.keys.len(), layer.values.len()))
+                .collect(),
+            state,
+            next,
+            keep,
+            committed: false,
+        })
+    }
+
+    fn commit(mut self) {
+        if let Some(keep) = self.keep {
+            for layer in &mut self.state.layers {
+                let discard = layer.keys.len().saturating_sub(keep);
+                layer.keys.drain(..discard);
+                layer.values.drain(..discard);
+            }
+        }
+        self.state.position = self.next;
+        self.committed = true;
+    }
+}
+
+impl Drop for TransformerAppend<'_> {
+    fn drop(&mut self) {
+        if !self.committed {
+            for (layer, &(keys, values)) in self.state.layers.iter_mut().zip(&self.lengths) {
+                layer.keys.truncate(keys);
+                layer.values.truncate(values);
+            }
+            self.state.layers.truncate(self.lengths.len());
+        }
+    }
+}
+
 struct Transformer {
     // Reuse the service's projection team for both codec graphs; waveform frame
     // order and mutable attention/convolution state remain sequential.
@@ -317,6 +387,12 @@ impl Transformer {
     }
 
     fn step(&self, input: &[f32], state: &mut TransformerState) -> io::Result<Vec<f32>> {
+        let stride = self
+            .kv_heads
+            .checked_mul(self.head_dim)
+            .ok_or_else(invalid)?;
+        let append = TransformerAppend::new(state, stride, self.window)?;
+        let state = &mut *append.state;
         if state.layers.is_empty() {
             state
                 .layers
@@ -330,7 +406,7 @@ impl Transformer {
         } else {
             input.to_vec()
         };
-        if hidden.len() != self.hidden {
+        if hidden.len() != self.hidden || input.iter().any(|value| !value.is_finite()) {
             return Err(invalid());
         }
         for (layer, cache) in self.layers.iter().zip(&mut state.layers) {
@@ -358,7 +434,7 @@ impl Transformer {
                 state.position,
                 self.theta,
             )?;
-            let attended = causal_attention(
+            let attended = append_attention(
                 &q,
                 &k,
                 &v,
@@ -398,13 +474,16 @@ impl Transformer {
                 *dst += value * scale;
             }
         }
-        state.position = state.position.checked_add(1).ok_or_else(invalid)?;
         if let Some(norm) = &self.final_norm {
             hidden = rms_norm(&hidden, norm, self.eps)?;
         }
         if let Some(proj) = &self.output {
             hidden = proj.forward_vec_parallel(&hidden, None, self.threads)?;
         }
+        if hidden.iter().any(|value| !value.is_finite()) {
+            return Err(invalid());
+        }
+        append.commit();
         Ok(hidden)
     }
 }
@@ -441,7 +520,8 @@ fn normalize(
     clippy::too_many_arguments,
     reason = "Keep query/key/value geometry and owned cache explicit."
 )]
-fn causal_attention(
+// The enclosing TransformerAppend owns rollback and delayed window eviction.
+fn append_attention(
     query: &[f32],
     key: &[f32],
     value: &[f32],
@@ -451,31 +531,31 @@ fn causal_attention(
     window: Option<usize>,
     state: &mut KvState,
 ) -> io::Result<Vec<f32>> {
-    let stride = kv_heads * width;
+    let stride = kv_heads.checked_mul(width).ok_or_else(invalid)?;
+    let query_width = heads.checked_mul(width).ok_or_else(invalid)?;
     if heads == 0
         || kv_heads == 0
         || width == 0
         || !heads.is_multiple_of(kv_heads)
-        || query.len() != heads * width
+        || query.len() != query_width
         || key.len() != stride
         || value.len() != stride
         || state.keys.len() != state.values.len()
         || !state.keys.len().is_multiple_of(stride)
         || window == Some(0)
+        || query
+            .iter()
+            .chain(key)
+            .chain(value)
+            .any(|value| !value.is_finite())
     {
         return Err(invalid());
     }
     state.keys.extend_from_slice(key);
     state.values.extend_from_slice(value);
-    let mut frames = state.keys.len() / stride;
-    if let Some(window) = window
-        && frames > window
-    {
-        let discard = (frames - window) * stride;
-        state.keys.drain(..discard);
-        state.values.drain(..discard);
-        frames = window;
-    }
+    let total = state.keys.len() / stride;
+    let frames = window.map_or(total, |window| total.min(window));
+    let first = total - frames;
     let mut output = vec![0.0; query.len()];
     let mut scores = vec![0.0; frames];
     let scale = 1.0 / count_float(width)?.sqrt();
@@ -483,7 +563,7 @@ fn causal_attention(
         let kv_head = head / (heads / kv_heads);
         let q = &query[head * width..(head + 1) * width];
         for (frame, score) in scores.iter_mut().enumerate() {
-            let offset = frame * stride + kv_head * width;
+            let offset = (first + frame) * stride + kv_head * width;
             *score = q
                 .iter()
                 .zip(&state.keys[offset..offset + width])
@@ -503,7 +583,7 @@ fn causal_attention(
             return Err(invalid());
         }
         for (frame, score) in scores.iter().enumerate() {
-            let offset = frame * stride + kv_head * width;
+            let offset = (first + frame) * stride + kv_head * width;
             for (dst, &value) in output[head * width..(head + 1) * width]
                 .iter_mut()
                 .zip(&state.values[offset..offset + width])
@@ -511,6 +591,9 @@ fn causal_attention(
                 *dst = (score / sum).mul_add(value, *dst);
             }
         }
+    }
+    if output.iter().any(|value| !value.is_finite()) {
+        return Err(invalid());
     }
     Ok(output)
 }
@@ -1173,8 +1256,12 @@ impl Speaker {
 }
 
 #[cfg(test)]
+#[path = "rust_codec/transaction_tests.rs"]
+mod transaction_tests;
+
+#[cfg(test)]
 mod tests {
-    use super::{KvState, causal_attention, codebook_major_to_frames, gelu_erf, normalize};
+    use super::{KvState, append_attention, codebook_major_to_frames, gelu_erf, normalize};
 
     fn transformer_projection(
         input: usize,
@@ -1410,7 +1497,7 @@ mod tests {
         let mut state = KvState::default();
         let query = [0.0; 4];
         for (value, expected) in [(2.0_f32, 2.0_f32), (4.0, 3.0), (8.0, 6.0)] {
-            let result = causal_attention(
+            let result = append_attention(
                 &query,
                 &[0.0; 4],
                 &[value, value + 1.0, value * 10.0, value.mul_add(10.0, 1.0)],
@@ -1430,8 +1517,10 @@ mod tests {
                 ]
             );
         }
-        assert_eq!(state.keys.len(), 8);
-        assert_eq!(state.values.len(), 8);
+        // Physical eviction belongs to the complete transformer commit. The
+        // last result already excludes the first frame before that commit.
+        assert_eq!(state.keys.len(), 12);
+        assert_eq!(state.values.len(), 12);
         Ok(())
     }
 
