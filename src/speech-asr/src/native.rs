@@ -320,7 +320,7 @@ mod tests {
         assert!(validate_identity(ARCHITECTURE, VARIANT, 16_000, true).is_ok());
         for (architecture, variant, sample_rate, english) in [
             (ARCHITECTURE, "qwen3-asr-0.6b", 16_000, true),
-            ("canary_qwen", "canary-qwen-2.5b", 16_000, true),
+            ("unsupported_asr", "unsupported-variant", 16_000, true),
             (ARCHITECTURE, VARIANT, 48_000, true),
             (ARCHITECTURE, VARIANT, 16_000, false),
         ] {
@@ -336,7 +336,7 @@ mod tests {
         header.extend(20_u64.to_le_bytes());
         header.extend(b"general.architecture");
         header.extend(8_u32.to_le_bytes());
-        for architecture in ["canary_qwen", "whisper", "qwen3"] {
+        for architecture in ["unsupported_asr", "whisper", "qwen3"] {
             let mut wrong = header.clone();
             wrong.extend(
                 u64::try_from(architecture.len())

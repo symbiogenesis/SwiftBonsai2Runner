@@ -1106,13 +1106,13 @@ mod tests {
     }
 
     #[test]
-    fn qwen_asr_rejects_the_previous_recognizer_identity() -> io::Result<()> {
+    fn qwen_asr_rejects_an_unsupported_recognizer_identity() -> io::Result<()> {
         let listener = TcpListener::bind((std::net::Ipv4Addr::LOCALHOST, 0))?;
         let (_credentials, client) = client(listener.local_addr()?.port())?;
         let server = thread::spawn(move || -> io::Result<()> {
             for response in [
-                br#"{"model":"nvidia/canary-qwen-2.5b","ready":true,"sample_rate":16000,"max_clip_seconds":30,"input_format":"pcm_s16le_wav","channels":1}"#.as_slice(),
-                br#"{"text":"Wrong recognizer","model":"nvidia/canary-qwen-2.5b"}"#.as_slice(),
+                br#"{"model":"unsupported/recognizer","ready":true,"sample_rate":16000,"max_clip_seconds":30,"input_format":"pcm_s16le_wav","channels":1}"#.as_slice(),
+                br#"{"text":"Wrong recognizer","model":"unsupported/recognizer"}"#.as_slice(),
             ] {
                 let (mut stream, _) = listener.accept()?;
                 let _request = request(&mut stream)?;

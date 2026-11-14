@@ -558,7 +558,7 @@ artifact paths without building or launching companions. `speech-build` with
 `operation: "models"` and `model: "QwenAsr"` or `"QwenTts"` selects one engine.
 The legacy `"Canary"` selector, `CanaryModelPath` result and `--canary-*` connection
 options name Qwen3-ASR. The explicit `provision` operation `speech-reference`
-downloads original reference snapshots, which the app does not use.
+downloads only the original Qwen TTS reference snapshot, which the app does not use.
 `--no-tts` skips automatic TTS preparation; `--no-speech-models` skips all automatic
 speech preparation. `--asr-path PATH` and `--tts-path PATH` select built executables;
 services still verify their models.

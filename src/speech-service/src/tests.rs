@@ -358,8 +358,8 @@ fn multipart_audio_for_model(model: &str) -> Vec<u8> {
 }
 
 #[test]
-fn qwen_asr_rejects_legacy_canary_before_inference() -> io::Result<()> {
-    let body = multipart_audio_for_model("nvidia/canary-qwen-2.5b");
+fn qwen_asr_rejects_unsupported_recognizer_before_inference() -> io::Result<()> {
+    let body = multipart_audio_for_model("unsupported/recognizer");
     let (response, calls) = exchange(
         Kind::Canary,
         "POST /v1/audio/transcriptions",

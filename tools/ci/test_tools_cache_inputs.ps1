@@ -92,7 +92,7 @@ function Invoke-ToolsEnvironmentFixture([object[]]$Scenarios) {
 }
 $cases=[ordered]@{
  real_dependency_embedded_closure_hashed={ $files=@(Get-RequiredToolsFiles $repository); Assert-CiEqual @(Get-UncoveredToolsFiles $files (Get-ToolsHashPatterns)) @(); foreach ($file in $files) { Assert-Ci (Test-Path -LiteralPath (Join-Path $repository $file) -PathType Leaf) $file } }
- missing_audio_and_embedded_input_detected={ $files=@(Get-RequiredToolsFiles $repository); $patterns=Get-ToolsHashPatterns; foreach ($path in @('src/audio/src/lib.rs','tools/canary-asr/model.lock.json','tools/canary-asr/tokenizer.lock.json','tools/qwen-tts/model.lock.json','tools/hexagon/diagnostic.manifest','src/chat-ui/assets/bonsai.ico','LICENSE','NOTICE')) { Assert-Ci ($path -cin $files) $path; $reduced=@($patterns | Where-Object { -not [Management.Automation.WildcardPattern]::new($_).IsMatch($path) }); Assert-Ci ($path -cin @(Get-UncoveredToolsFiles $files $reduced)) $path } }
+ missing_audio_and_embedded_input_detected={ $files=@(Get-RequiredToolsFiles $repository); $patterns=Get-ToolsHashPatterns; foreach ($path in @('src/audio/src/lib.rs','src/speech-asr/model.lock.json','src/speech-tts/model.lock.json','tools/qwen-tts/model.lock.json','tools/hexagon/diagnostic.manifest','src/chat-ui/assets/bonsai.ico','LICENSE','NOTICE')) { Assert-Ci ($path -cin $files) $path; $reduced=@($patterns | Where-Object { -not [Management.Automation.WildcardPattern]::new($_).IsMatch($path) }); Assert-Ci ($path -cin @(Get-UncoveredToolsFiles $files $reduced)) $path } }
  traversal_and_literals_use_manifest_owner={
     $scratch=New-CiScratch 'bonsai-cache-closure-'
     try {

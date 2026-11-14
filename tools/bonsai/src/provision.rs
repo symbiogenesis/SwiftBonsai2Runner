@@ -992,90 +992,55 @@ fn capabilities(_data: &Path) -> crate::Result<Value> {
 
 fn reference_plan(data: &Path, selection: &str) -> crate::Result<Vec<Value>> {
     let selected = selection.to_ascii_lowercase();
-    if !["all", "canary", "qwentts"].contains(&selected.as_str()) {
+    if !["all", "qwentts"].contains(&selected.as_str()) {
         return Err("Unsupported reference speech model selection.".into());
     }
-    let mut snapshots = Vec::new();
-    for (kind, directory, source, model, revision, names) in [
-        (
-            "Canary",
-            "canary",
-            include_str!("../../canary-asr/model.lock.json"),
-            "nvidia/canary-qwen-2.5b",
-            "b1469e1bba1cfe140205529c79c434ca47180960",
-            &["config.json", "model.safetensors"][..],
-        ),
-        (
-            "CanaryTokenizer",
-            "canary-tokenizer",
-            include_str!("../../canary-asr/tokenizer.lock.json"),
-            "Qwen/Qwen3-1.7B",
-            "70d244cc86ccca08cf5af4e1e306ecf908b1ad5e",
-            &[
-                "config.json",
-                "generation_config.json",
-                "merges.txt",
-                "tokenizer_config.json",
-                "vocab.json",
-                "tokenizer.json",
-            ][..],
-        ),
-        (
-            "QwenTts",
-            "qwen-tts",
-            include_str!("../../qwen-tts/model.lock.json"),
-            "Qwen/Qwen3-TTS-12Hz-1.7B-VoiceDesign",
-            "5ecdb67327fd37bb2e042aab12ff7391903235d3",
-            &[
-                "config.json",
-                "generation_config.json",
-                "merges.txt",
-                "tokenizer_config.json",
-                "vocab.json",
-                "model.safetensors",
-                "preprocessor_config.json",
-                "speech_tokenizer/config.json",
-                "speech_tokenizer/configuration.json",
-                "speech_tokenizer/model.safetensors",
-                "speech_tokenizer/preprocessor_config.json",
-            ][..],
-        ),
-    ] {
-        if selected == "canary" && kind == "QwenTts" || selected == "qwentts" && kind != "QwenTts" {
-            continue;
-        }
-        let lock: Value = serde_json::from_str(source).map_err(|error| error.to_string())?;
-        let files = lock["files"]
-            .as_object()
-            .ok_or("Invalid reference speech file inventory.")?;
-        if lock["schema_version"] != 1
-            || lock["model"] != model
-            || lock["revision"] != revision
-            || files.len() != names.len()
-            || names.iter().any(|name| !files.contains_key(*name))
-        {
-            return Err("Invalid immutable reference speech model lock.".into());
-        }
-        let snapshot = data.join("speech").join(directory).join(revision);
-        let mut plans = Vec::new();
-        for (name, pin) in files {
-            let url = format!("https://huggingface.co/{model}/resolve/{revision}/{name}");
-            if pin["url"] != url
-                || pin["bytes"]
-                    .as_u64()
-                    .is_none_or(|bytes| bytes == 0 || bytes > i64::MAX.unsigned_abs())
-                || !is_lower_hex(text(pin, "sha256")?, 64)
-            {
-                return Err(
-                    "Reference speech artifact differs from its immutable URL, length or SHA-256."
-                        .into(),
-                );
-            }
-            plans.push(json!({"Name": name, "Path": snapshot.join(name), "Uri": url, "Bytes": pin["bytes"], "Sha256": pin["sha256"]}));
-        }
-        snapshots.push(json!({"Kind": kind, "SnapshotPath": snapshot, "Files": plans}));
+    let model = "Qwen/Qwen3-TTS-12Hz-1.7B-VoiceDesign";
+    let revision = "5ecdb67327fd37bb2e042aab12ff7391903235d3";
+    let names = [
+        "config.json",
+        "generation_config.json",
+        "merges.txt",
+        "tokenizer_config.json",
+        "vocab.json",
+        "model.safetensors",
+        "preprocessor_config.json",
+        "speech_tokenizer/config.json",
+        "speech_tokenizer/configuration.json",
+        "speech_tokenizer/model.safetensors",
+        "speech_tokenizer/preprocessor_config.json",
+    ];
+    let lock: Value = serde_json::from_str(include_str!("../../qwen-tts/model.lock.json"))
+        .map_err(|error| error.to_string())?;
+    let files = lock["files"]
+        .as_object()
+        .ok_or("Invalid reference speech file inventory.")?;
+    if lock["schema_version"] != 1
+        || lock["model"] != model
+        || lock["revision"] != revision
+        || files.len() != names.len()
+        || names.iter().any(|name| !files.contains_key(*name))
+    {
+        return Err("Invalid immutable reference speech model lock.".into());
     }
-    Ok(snapshots)
+    let snapshot = data.join("speech/qwen-tts").join(revision);
+    let mut plans = Vec::new();
+    for (name, pin) in files {
+        let url = format!("https://huggingface.co/{model}/resolve/{revision}/{name}");
+        if pin["url"] != url
+            || pin["bytes"]
+                .as_u64()
+                .is_none_or(|bytes| bytes == 0 || bytes > i64::MAX.unsigned_abs())
+            || !is_lower_hex(text(pin, "sha256")?, 64)
+        {
+            return Err(
+                "Reference speech artifact differs from its immutable URL, length or SHA-256."
+                    .into(),
+            );
+        }
+        plans.push(json!({"Name": name, "Path": snapshot.join(name), "Uri": url, "Bytes": pin["bytes"], "Sha256": pin["sha256"]}));
+    }
+    Ok(vec![json!({"Kind": "QwenTts", "SnapshotPath": snapshot, "Files": plans})])
 }
 
 fn snapshot_entries(snapshot: &Value, partial: bool) -> crate::Result<()> {
@@ -1145,16 +1110,10 @@ fn reference_speech(request: &Request, working: &Path) -> crate::Result<Value> {
     for snapshot in &snapshots {
         snapshot_entries(snapshot, !request.verify_only)?;
     }
-    let mut result = json!({"Status": "verified", "CanarySnapshotPath": null,
-        "CanaryTokenizerSnapshotPath": null, "TtsSnapshotPath": null, "TotalBytes": 0});
+    let mut result = json!({"Status": "verified", "TtsSnapshotPath": null, "TotalBytes": 0});
     let mut total = 0_u64;
     for snapshot in &snapshots {
-        let property = match text(snapshot, "Kind")? {
-            "Canary" => "CanarySnapshotPath",
-            "CanaryTokenizer" => "CanaryTokenizerSnapshotPath",
-            _ => "TtsSnapshotPath",
-        };
-        result[property] = snapshot["SnapshotPath"].clone();
+        result["TtsSnapshotPath"] = snapshot["SnapshotPath"].clone();
         for file in snapshot["Files"]
             .as_array()
             .ok_or("Missing reference speech plan.")?
@@ -1426,15 +1385,13 @@ mod tests {
     }
 
     #[test]
-    fn reference_speech_selection_keeps_recognizer_and_tokenizer_together() -> crate::Result<()> {
+    fn reference_speech_selection_keeps_only_the_current_tts_reference() -> crate::Result<()> {
         let root = std::env::temp_dir().join("Bonsai-reference-plan-only");
         let all = reference_plan(&root, "All")?;
-        let canary = reference_plan(&root, "Canary")?;
-        assert_eq!(all.len(), 3);
-        assert_eq!(canary.len(), 2);
-        assert_eq!(canary[0]["Kind"], "Canary");
-        assert_eq!(canary[1]["Kind"], "CanaryTokenizer");
-        assert_eq!(reference_plan(&root, "QwenTts")?.len(), 1);
+        assert_eq!(all.len(), 1);
+        assert_eq!(all[0]["Kind"], "QwenTts");
+        assert_eq!(all, reference_plan(&root, "QwenTts")?);
+        assert!(reference_plan(&root, "Canary").is_err());
         assert!(reference_plan(&root, "CanaryTokenizer").is_err());
         Ok(())
     }

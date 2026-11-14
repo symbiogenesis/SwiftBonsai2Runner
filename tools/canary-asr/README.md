@@ -14,9 +14,8 @@ ASR/TTS exclusion, service lifetime and resource limits.
 
 The native [model lock](../../src/speech-asr/model.lock.json) pins the conversion,
 source model revision, exact size and SHA-256. Qwen3-ASR and this conversion are
-Apache-2.0 licensed; retain attribution and the model license. The tools-directory
-`model.lock.json` and `tokenizer.lock.json` belong to the explicit
-`speech-reference` provisioning operation. Public option/output names such as
+Apache-2.0 licensed; retain attribution and the model license.
+Public option/output names such as
 `--canary-key-file`, `CanaryModelPath` and the `Canary` service kind select Qwen3-ASR.
 
 ## Developer-managed service

@@ -150,8 +150,6 @@
         "config/hexagon-dispatch.lock.json",
         "config/native-speech.lock.json",
         ".github/workflows/tts-evaluation.yml",
-        "tools/canary-asr/model.lock.json",
-        "tools/canary-asr/tokenizer.lock.json",
         "tools/qwen-tts/model.lock.json",
         ".github/workflows/ptq1-packing-qualification.yml",
         "tools/native-reference/**",

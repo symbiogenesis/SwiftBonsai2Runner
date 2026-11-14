@@ -278,9 +278,8 @@ mod tests {
             ("sha256", json!("bad")),
             ("revision", json!("main")),
             ("model", json!("unreviewed/model")),
-            ("model", json!("nvidia/canary-qwen-2.5b")),
             ("model", json!("Qwen/Qwen3-ASR-0.6B")),
-            ("architecture", json!("canary_qwen")),
+            ("architecture", json!("unsupported_asr")),
             ("quantization", json!("Q4_K_M")),
         ] {
             let mut pin: Value =
