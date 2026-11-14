@@ -32,6 +32,18 @@
     "testFilter": "rust_asr_engine_",
     "pinnedModelParity": false, "qualityAcceptance": false, "performanceAcceptance": false
   },
+  "observationBoundary": {
+    "entryPoint": "RustRecognizer::transcribe_observed",
+    "provider": "current-rust-execution-only-no-independent-native-verdict",
+    "schedule": ["complete-bin-major-mel", "complete-trimmed-time-major-encoder", "exact-prompt-ids-and-audio-range", "every-complete-decoder-logit-greedy-id-and-all-layer-kv-including-eos"],
+    "stateInventory": "Session::layer_count-and-every-cache-in-position-kv-head-head-dim-order",
+    "storage": "synchronous-immutable-borrows-no-engine-owned-capture-or-duplicate-kv",
+    "callerBindings": ["reviewed-source-revision", "compiler-target-and-executable-sha256", "verified-model-lock-and-file-identity", "original-pcm-bytes-and-identity", "arithmetic-identity-and-f16-kv-policy", "ordered-observation-schedule", "independent-expected-provider-source-input-output-identities", "complete-dimensions-float-bits-tolerances-and-exclusions"],
+    "failure": "callback-error-unwind-or-cancellation-resets-all-state-no-partial-transcript-and-emitted-capture-remains-incomplete",
+    "budget": "callback-and-retention-work-share-original-aggregate-workload-power-and-cleanup-allowance",
+    "testFilter": "rust_asr_observer_",
+    "testProvider": "mathematical-two-layer-tiny-graph-with-distinct-f16-cache-values-no-model-or-native-observation"
+  },
   "semantics": {
     "load": "absolute-regular-nonreparse-file-with-one-write-delete-denying-handle-across-all-intake",
     "callerAuthority": "verified-lock-digest-and-ancestor-guards-required",

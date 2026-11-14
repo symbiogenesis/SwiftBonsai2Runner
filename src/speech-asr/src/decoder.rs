@@ -436,6 +436,12 @@ pub struct Session {
 }
 
 impl Session {
+    /// Number of immutable decoder layers whose complete K/V must be observed.
+    #[must_use]
+    pub const fn layer_count(&self) -> usize {
+        self.layers.len()
+    }
+
     /// Number of successfully published token/audio positions.
     #[must_use]
     pub const fn position(&self) -> usize {

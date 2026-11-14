@@ -8,14 +8,42 @@
 use crate::{
     decoder::{CachePrecision, Model, Session},
     encoder::{Encoded, Encoder},
-    frontend::Frontend,
-    protocol::{DecodeStop, PromptTokens, completed_transcript},
+    frontend::{Frontend, MelSpectrogram},
+    protocol::{DecodeStop, Prompt, PromptTokens, completed_transcript},
     tokenizer::Tokenizer,
 };
 use std::{fs::OpenOptions, io, path::Path, sync::Arc};
 
 /// Independent arithmetic identity; not the native GGML/flash-attention identity.
 pub const ARITHMETIC_IDENTITY: &str = "rust-asr-scalar-f32-v1-f16-kv-f64-erfc-gelu";
+
+/// Borrowed numerical observations for an independently retained replay packet.
+///
+/// These are observations of this Rust provider only. The caller binds the
+/// exact reviewed source/compiler/executable, verified model and PCM identities
+/// before collecting them, and supplies independent expected observations and
+/// tolerances. Neither an event nor a successful request establishes parity.
+/// Values are borrowed for one synchronous callback; the engine retains no
+/// capture, copies no cache and exposes no mutable model or session authority.
+pub enum Observation<'a> {
+    /// Complete normalized bin-major mel features, before encoder execution.
+    Frontend(&'a MelSpectrogram),
+    /// Complete trimmed time-major encoder output, before prompt injection.
+    Encoder(&'a Encoded),
+    /// Exact model-specific token IDs and audio-placeholder injection range.
+    Prompt(&'a Prompt),
+    /// One complete decoder state and tied-head logit vector, including EOS.
+    Decoder {
+        /// Zero for prefill, then the number of previously generated text IDs.
+        generation_index: usize,
+        /// Every vocabulary logit, in token-ID order.
+        logits: &'a [f32],
+        /// Lowest-ID finite greedy selection; EOS is observed but not decoded.
+        token: u32,
+        /// Complete committed K/V for every layer, before the request reset.
+        state: &'a Session,
+    },
+}
 
 fn invalid() -> io::Error {
     io::Error::new(
@@ -128,10 +156,39 @@ impl RustRecognizer {
         pcm: &[f32],
         cancel: &mut impl FnMut() -> bool,
     ) -> io::Result<String> {
+        self.transcribe_observed(pcm, cancel, &mut |_| Ok(()))
+    }
+
+    /// Recognize with synchronous observations of every numerical boundary.
+    ///
+    /// The observer may stream original float bits, complete cache contents and
+    /// IDs to caller-owned replay storage without accumulating duplicate state
+    /// here. The caller must bind source, model, input and comparison identities
+    /// as described by [`Observation`]. Captures from failed, cancelled or
+    /// unwound requests remain incomplete; no partial transcript is returned.
+    /// Callback work shares the caller's original absolute workload allowance.
+    /// Ordinary serving neither installs an observer nor retains these values.
+    ///
+    /// # Errors
+    /// Returns [`Self::transcribe_cancellable`] failures or an observer error.
+    /// Every exit, including observer failure or unwind, clears all K/V and
+    /// positions. Observation callbacks grant no native inference fallback.
+    pub fn transcribe_observed(
+        &mut self,
+        pcm: &[f32],
+        cancel: &mut impl FnMut() -> bool,
+        observe: &mut impl FnMut(Observation<'_>) -> io::Result<()>,
+    ) -> io::Result<String> {
         self.decoder.reset();
         let guard = ClearSession(&mut self.decoder);
         check(cancel)?;
-        let audio = self.encoder.encode_pcm(&self.frontend, pcm, cancel)?;
+        let mel = self.frontend.compute(pcm, &mut *cancel)?;
+        observe(Observation::Frontend(&mel))?;
+        check(cancel)?;
+        let audio = self.encoder.encode(&mel, cancel)?;
+        drop(mel);
+        observe(Observation::Encoder(&audio))?;
+        check(cancel)?;
         decode_audio(
             guard.0,
             &self.tokenizer,
@@ -139,6 +196,7 @@ impl RustRecognizer {
             self.context,
             &audio,
             cancel,
+            observe,
         )
     }
 }
@@ -177,9 +235,12 @@ fn decode_audio(
     context: usize,
     audio: &Encoded,
     cancel: &mut impl FnMut() -> bool,
+    observe: &mut impl FnMut(Observation<'_>) -> io::Result<()>,
 ) -> io::Result<String> {
     let prompt = tokens.automatic_prompt(audio.rows(), context)?;
     let budget = decode_budget(audio.rows(), prompt.ids().len(), context)?;
+    observe(Observation::Prompt(&prompt))?;
+    check(cancel)?;
     let mut logits = session.prefill(&prompt, audio.values(), cancel)?;
     let mut generated = Vec::new();
     generated
@@ -188,6 +249,13 @@ fn decode_audio(
     for index in 0..budget {
         check(cancel)?;
         let token = argmax(&logits)?;
+        observe(Observation::Decoder {
+            generation_index: index,
+            logits: &logits,
+            token,
+            state: session,
+        })?;
+        check(cancel)?;
         if token == tokenizer.eos() {
             let raw = tokenizer.decode(&generated)?;
             let transcript = completed_transcript(&raw, DecodeStop::EndOfSequence)?.to_owned();

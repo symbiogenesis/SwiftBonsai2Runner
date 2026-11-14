@@ -175,3 +175,35 @@ Independent numerical observations and actual-model comparisons remain necessary
 before replacing default serving or removing native dependencies. Owning-crate
 build/link and miniature graph controls do not establish native arithmetic,
 transcript/state parity, microphone integration, quality, listening or resources.
+
+### Independent numerical replay boundary
+
+`RustRecognizer::transcribe_observed` exposes the Rust provider's complete
+normalized mel features, trimmed encoder rows, exact prompt IDs/audio injection
+range, and every generation position's full vocabulary logits, greedy selection
+and all layers' committed K/V. The EOS decision is observed before unconditional
+request reset. `Session::layer_count` defines the complete cache inventory; each
+layer is read in `[position, kv_head, head_dim]` order. Values are borrowed only
+during the synchronous callback. The engine allocates no capture or duplicate
+cache and does not expose mutable state. Normal service inference installs no
+capture writer.
+
+The caller owns the independent observation provider and replay packet. Before
+collecting any values, bind the reviewed source revision, compiler/target and
+executable digest, complete verified model lock/file identity, exact PCM bytes,
+`ARITHMETIC_IDENTITY`, F16 KV policy and ordered observation schedule. Retain the
+original expected observations, their independent provider/source identities,
+dimensions, float bits, tolerances and exclusions; hashes alone cannot replace
+the replay inputs. This API supplies observations of Rust execution and grants no
+native parity verdict. Native frontend/layerwise/logit/KV captures still require
+an independent provider and owning qualification.
+
+Callbacks may compare or stream data without retaining an entire second cache.
+Their work, power observations, output and cleanup share the original declared
+workload allowance. Callback errors, panic and cancellation clear all committed
+state and publish no partial transcript; previously emitted events remain an
+incomplete failed capture. Four focused `rust_asr_observer_` controls check literal
+mel/encoder/prompt/logit answers, all bits of distinct two-layer F16 caches,
+every generation step, refusal at each boundary, unwind, cancellation and fresh
+replay. These are mathematical miniature-graph controls, with no model loading or
+native inference observation.
