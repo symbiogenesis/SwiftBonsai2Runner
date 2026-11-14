@@ -2287,13 +2287,57 @@ const WHITESPACE: &[u32] = &[
     0x002009, 0x00200A, 0x002028, 0x002029, 0x00202F, 0x00205F, 0x003000,
 ];
 
+// Derive the common path from the same pinned definition as non-ASCII text.
+// Host Unicode predicates would change the model's tokenizer contract.
+const ASCII_FLAGS: [u16; 128] = {
+    let mut result = [0; 128];
+    let mut index = 0;
+    let mut cp = 0;
+    let mut range = 0;
+    while index < result.len() {
+        while RANGES[range + 1].0 <= cp {
+            range += 1;
+        }
+        result[index] = RANGES[range].1;
+        let mut whitespace = 0;
+        while whitespace < WHITESPACE.len() {
+            if WHITESPACE[whitespace] == cp {
+                result[index] |= 0x100;
+                break;
+            }
+            whitespace += 1;
+        }
+        index += 1;
+        cp += 1;
+    }
+    result
+};
+
 pub(super) fn flags(ch: char) -> u16 {
     let cp = u32::from(ch);
+    if let Some(&flags) = ASCII_FLAGS.get(usize::try_from(cp).unwrap_or(usize::MAX)) {
+        return flags;
+    }
     let index = RANGES.partition_point(|(start, _)| *start <= cp);
     let base = RANGES[index.saturating_sub(1)].1;
     base | if WHITESPACE.binary_search(&cp).is_ok() {
         0x100
     } else {
         0
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{RANGES, WHITESPACE, flags};
+
+    #[test]
+    fn rust_asr_tokenizer_ascii_flags_match_pinned_ranges() {
+        for byte in 0..=127 {
+            let cp = u32::from(byte);
+            let range = RANGES.partition_point(|(start, _)| *start <= cp);
+            let expected = RANGES[range - 1].1 | if WHITESPACE.contains(&cp) { 0x100 } else { 0 };
+            assert_eq!(flags(char::from(byte)), expected, "{byte:#x}");
+        }
     }
 }
