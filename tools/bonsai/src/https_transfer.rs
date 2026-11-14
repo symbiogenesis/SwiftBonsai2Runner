@@ -736,6 +736,96 @@ mod tests {
         stalled_body(Stop::Deadline)
     }
 
+    fn cached_metadata(
+        uri: &str,
+        stop: &AtomicBool,
+        timeout: Duration,
+    ) -> (crate::Result<Response>, bool) {
+        // Use the production per-owner cache with loopback-only fixture transport.
+        AGENT.with(|cached| *cached.borrow_mut() = Some(new_agent(true)));
+        let until = Instant::now() + timeout;
+        let response = owned(
+            agent(),
+            until,
+            &mut || {
+                if stop.load(Ordering::Acquire) {
+                    Err("Synthetic owner cancellation.".into())
+                } else {
+                    Ok(())
+                }
+            },
+            |agent, cancelled| metadata_with(agent, uri, &[], until, 5, cancelled),
+        );
+        (response, AGENT.with(|cached| cached.borrow().is_some()))
+    }
+
+    fn pending_metadata(listener: &TcpListener) -> crate::Result<TcpStream> {
+        listener.set_nonblocking(true).map_err(|e| e.to_string())?;
+        let until = Instant::now() + Duration::from_secs(5);
+        let mut stream = loop {
+            match listener.accept() {
+                Ok((stream, _)) => break stream,
+                Err(e) if e.kind() == std::io::ErrorKind::WouldBlock => {
+                    remaining(until)?;
+                    thread::sleep(Duration::from_millis(5));
+                }
+                Err(e) => return Err(e.to_string()),
+            }
+        };
+        request(&mut stream)?;
+        stream
+            .write_all(b"HTTP/1.1 200 OK\r\nContent-Length: 5\r\n\r\n")
+            .map_err(|e| e.to_string())?;
+        Ok(stream)
+    }
+
+    #[test]
+    fn native_https_cancelled_cached_owner_preserves_peer_connection() -> crate::Result<()> {
+        let cancelled_listener = TcpListener::bind("127.0.0.1:0").map_err(|e| e.to_string())?;
+        let peer_listener = TcpListener::bind("127.0.0.1:0").map_err(|e| e.to_string())?;
+        let cancelled_uri = format!(
+            "http://{}/cancelled",
+            cancelled_listener.local_addr().map_err(|e| e.to_string())?
+        );
+        let peer_uri = format!(
+            "http://{}/peer",
+            peer_listener.local_addr().map_err(|e| e.to_string())?
+        );
+        let stop = AtomicBool::new(false);
+        let peer_stop = AtomicBool::new(false);
+        thread::scope(|scope| {
+            let cancelled_owner =
+                scope.spawn(|| cached_metadata(&cancelled_uri, &stop, Duration::from_secs(1)));
+            let peer_owner =
+                scope.spawn(|| cached_metadata(&peer_uri, &peer_stop, Duration::from_secs(5)));
+            let mut cancelled_socket = pending_metadata(&cancelled_listener)
+                .map_err(|e| format!("Cancelled owner fixture: {e}"))?;
+            let mut peer_socket =
+                pending_metadata(&peer_listener).map_err(|e| format!("Peer owner fixture: {e}"))?;
+            // Both owners now have a live response body. Keep the peer blocked
+            // until cancellation has shut down and joined the other owner.
+            stop.store(true, Ordering::Release);
+            let (cancelled, retained) = cancelled_owner
+                .join()
+                .map_err(|_| "Cancelled HTTPS owner panicked.")?;
+            assert!(matches!(cancelled, Err(error) if error == "Synthetic owner cancellation."));
+            assert!(!retained, "An aborted owner retained its shut-down agent.");
+            let mut byte = [0];
+            match cancelled_socket.read(&mut byte) {
+                Ok(0) => {}
+                Err(e) if e.kind() == std::io::ErrorKind::ConnectionReset => {}
+                result => return Err(format!("Cancelled owner retained its socket: {result:?}")),
+            }
+            peer_socket.write_all(b"alive").map_err(|e| e.to_string())?;
+            let (peer, retained) = peer_owner
+                .join()
+                .map_err(|_| "Peer HTTPS owner panicked.")?;
+            assert_eq!(peer?.body, b"alive");
+            assert!(retained, "Successful peer lost its reusable agent.");
+            Ok(())
+        })
+    }
+
     fn stalled_body(stop: Stop) -> crate::Result<()> {
         let listener = TcpListener::bind("127.0.0.1:0").map_err(|e| e.to_string())?;
         let uri = format!(

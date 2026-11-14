@@ -70,8 +70,10 @@ adoption decisions without displacing native daily-use acceptance.
   proxies, CI baseline lookup with Windows system trust, patched-client address
   fallback, HTTPS-only credential-free redirects, interrupted and ignored-Range
   transfers, strict length/range bounds, cancellation and aggregate deadlines
-  through actual provisioning and updates. Local checks establish no measured
-  binary-size, latency or throughput improvement.
+  through actual provisioning and updates. Diagnose the Windows loopback
+  stalled-body cancellation that joined only at its operation deadline; cached
+  owner isolation coverage does not qualify prompt cancellation. Local checks
+  establish no measured binary-size, latency or throughput improvement.
 - [ ] Qualify automatic startup/15-minute release discovery, conditional metadata
   requests, compression, server-directed backoff and manual checks. Cover paginated
   numeric/prerelease selection, incomplete/no-release/network failures, changed
