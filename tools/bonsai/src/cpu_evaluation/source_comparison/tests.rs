@@ -299,7 +299,9 @@ fn source_comparison_rejects_non_extreme_x2_observations() -> Result<()> {
     let mut fixture = fixture()?;
     for index in 0..SCHEDULE.len() {
         let reference = fixture.owner["arms"][index]["supervision"].clone();
-        let name = reference["path"].as_str().ok_or("Missing supervisor path.")?;
+        let name = reference["path"]
+            .as_str()
+            .ok_or("Missing supervisor path.")?;
         let mut supervisor = json_bytes(
             &std::fs::read(fixture.root.join(name)).map_err(|error| error.to_string())?,
         )?;

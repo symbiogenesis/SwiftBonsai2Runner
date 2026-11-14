@@ -644,7 +644,8 @@ pub(super) fn replay(request: &Value) -> crate::Result<Value> {
             .collect::<Result<Vec<_>, _>>()
             .map_err(|error| error.to_string())?;
         require(
-            (2..=4).contains(&version.len()) && version.iter().all(|part|*part<=i32::MAX.unsigned_abs())
+            (2..=4).contains(&version.len())
+                && version.iter().all(|part| *part <= i32::MAX.unsigned_abs())
                 && version.as_slice() >= [7, 6].as_slice(),
             "retained producer PowerShell differs",
         )?;

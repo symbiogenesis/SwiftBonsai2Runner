@@ -23,7 +23,9 @@ fn publisher_startup_requires_native_x2_elite_extreme() -> crate::Result<()> {
         ),
     ] {
         let mut invalid = native.clone();
-        *invalid.pointer_mut(pointer).ok_or("Missing fixture field.")? = value;
+        *invalid
+            .pointer_mut(pointer)
+            .ok_or("Missing fixture field.")? = value;
         assert!(target_host(&invalid).is_err(), "{pointer}");
     }
     Ok(())

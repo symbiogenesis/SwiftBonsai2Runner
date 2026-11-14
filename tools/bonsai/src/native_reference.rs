@@ -347,11 +347,17 @@ fn compare_bytes(
     reason = "The compatibility operation ledger keeps each admitted historical fixture adapter explicit."
 )]
 pub fn run(request: &Value) -> crate::Result<Value> {
-    let output=request.get("output").map(|value| {
-        let name=value.as_str().filter(|name|!name.is_empty()).ok_or("reference output path is required")?;
-        require(!Path::new(name).exists(),"reference output must be fresh")?;
-        Ok::<_,String>(name)
-    }).transpose()?;
+    let output = request
+        .get("output")
+        .map(|value| {
+            let name = value
+                .as_str()
+                .filter(|name| !name.is_empty())
+                .ok_or("reference output path is required")?;
+            require(!Path::new(name).exists(), "reference output must be fresh")?;
+            Ok::<_, String>(name)
+        })
+        .transpose()?;
     let report = match text(request, "operation")? {
         "native-compare" => native::compare(request)?,
         "row-compare" => row::compare(request)?,

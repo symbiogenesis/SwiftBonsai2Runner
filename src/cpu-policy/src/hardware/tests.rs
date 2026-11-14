@@ -27,10 +27,7 @@ fn snapdragon_evidence_preserves_x2_extreme_and_rejects_family_relabeling() {
             SnapdragonFamily::from_evidence(family.device_model(), Some(name)),
             Some(family)
         );
-        for other in [
-            SnapdragonFamily::XElite,
-            SnapdragonFamily::X2EliteExtreme,
-        ] {
+        for other in [SnapdragonFamily::XElite, SnapdragonFamily::X2EliteExtreme] {
             if other != family {
                 assert_eq!(
                     SnapdragonFamily::from_evidence(other.device_model(), Some(name)),

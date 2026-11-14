@@ -1040,7 +1040,9 @@ fn reference_plan(data: &Path, selection: &str) -> crate::Result<Vec<Value>> {
         }
         plans.push(json!({"Name": name, "Path": snapshot.join(name), "Uri": url, "Bytes": pin["bytes"], "Sha256": pin["sha256"]}));
     }
-    Ok(vec![json!({"Kind": "QwenTts", "SnapshotPath": snapshot, "Files": plans})])
+    Ok(vec![
+        json!({"Kind": "QwenTts", "SnapshotPath": snapshot, "Files": plans}),
+    ])
 }
 
 fn snapshot_entries(snapshot: &Value, partial: bool) -> crate::Result<()> {

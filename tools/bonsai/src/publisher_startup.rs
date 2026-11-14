@@ -32,7 +32,8 @@ fn target_host(native: &Value) -> crate::Result<()> {
             != Some(SnapdragonFamily::X2EliteExtreme)
     {
         return Err(
-            "Candidate startup requires observed native Snapdragon X2 Elite Extreme identity.".into(),
+            "Candidate startup requires observed native Snapdragon X2 Elite Extreme identity."
+                .into(),
         );
     }
     Ok(())
