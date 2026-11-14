@@ -205,6 +205,10 @@ impl Request {
                 "Require at least two fit rows, one development row and rank <= fit rows.".into(),
             );
         }
+        self.validate_output()
+    }
+
+    fn validate_output(&self) -> crate::Result<()> {
         if let Some(path) = &self.output_path {
             bonsai_artifacts::validate_external_path(path).map_err(|error| error.to_string())?;
         }
