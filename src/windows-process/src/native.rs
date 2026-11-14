@@ -84,6 +84,18 @@ pub(super) fn opencl_inventory() -> io::Result<crate::OpenClInventory> {
     opencl::query()
 }
 
+pub(super) fn opencl_pq2_kernel_source() -> &'static str {
+    opencl::kernel_source()
+}
+
+pub(super) fn opencl_pq2_projection(
+    selection: &crate::OpenClProjectionSelection,
+    weights: &[u8],
+    codes: &[u8],
+) -> io::Result<crate::OpenClPq2Projection> {
+    opencl::project(selection, weights, codes)
+}
+
 pub(super) fn cpu_sets() -> io::Result<Vec<crate::CpuSet>> {
     cpu::query()
 }

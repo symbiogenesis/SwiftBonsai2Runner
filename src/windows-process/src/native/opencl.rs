@@ -10,6 +10,20 @@ use windows_sys::Win32::System::LibraryLoader::{GetProcAddress, LoadLibraryExW};
 
 use crate::{OpenClDevice, OpenClInventory, OpenClPlatform};
 
+mod projection;
+
+pub(super) fn kernel_source() -> &'static str {
+    projection::SOURCE
+}
+
+pub(super) fn project(
+    selection: &crate::OpenClProjectionSelection,
+    weights: &[u8],
+    codes: &[u8],
+) -> io::Result<crate::OpenClPq2Projection> {
+    projection::run(selection, weights, codes)
+}
+
 const MAX_PLATFORMS: usize = 8;
 const MAX_DEVICES: usize = 16;
 const MAX_TEXT: usize = 16 * 1024;
@@ -256,7 +270,7 @@ impl Api {
     }
 }
 
-pub(super) fn query() -> io::Result<OpenClInventory> {
+fn validate_environment() -> io::Result<()> {
     if !cfg!(target_arch = "aarch64")
         || std::env::vars_os().any(|(name, _)| {
             let name = name.to_string_lossy().to_ascii_uppercase();
@@ -265,9 +279,14 @@ pub(super) fn query() -> io::Result<OpenClInventory> {
     {
         return Err(io::Error::new(
             io::ErrorKind::Unsupported,
-            "native ARM64 OpenCL inventory rejects environment overrides",
+            "native ARM64 OpenCL access rejects environment overrides",
         ));
     }
+    Ok(())
+}
+
+pub(super) fn query() -> io::Result<OpenClInventory> {
+    validate_environment()?;
     let api = Api::load()?;
     let mut platforms = [std::ptr::null_mut(); MAX_PLATFORMS];
     let mut count = 0;

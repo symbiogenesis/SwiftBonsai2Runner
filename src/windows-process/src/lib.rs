@@ -388,6 +388,64 @@ pub fn opencl_inventory() -> io::Result<OpenClInventory> {
     native::opencl_inventory()
 }
 
+/// Exact operator-selected OpenCL platform, GPU and driver for the fixed pilot.
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct OpenClProjectionSelection {
+    /// Exact platform name, without a first-device or alternate-driver fallback.
+    pub platform_name: String,
+    /// Exact reported Adreno X2 device name; no silicon qualification is implied.
+    pub device_name: String,
+    /// Exact driver version reported by the selected device.
+    pub driver_version: String,
+    /// Exact reported vendor identifier.
+    pub vendor_id: u32,
+}
+
+/// Completed per-block integer dots from the standalone original-PQ2 pilot.
+#[derive(Debug)]
+pub struct OpenClPq2Projection {
+    /// System loader pathname for a separate bounded file-identity observation.
+    pub loader_path: PathBuf,
+    /// Driver-reported selected device, without a backend-qualification claim.
+    pub device: OpenClDevice,
+    /// One signed integer dot per original 128-weight block, in row-major order.
+    pub integer_dots: Vec<i32>,
+    /// Native release results for kernel, program, three buffers, queue, context.
+    pub cleanup_codes: [i32; 7],
+}
+
+/// Fixed OpenCL C 1.2 source whose digest must be reviewed before pilot execution.
+#[must_use]
+pub fn opencl_pq2_kernel_source() -> &'static str {
+    native::opencl_pq2_kernel_source()
+}
+
+/// Execute one fixed K=5120, M=17408 PQ2/Q8_K integer projection on Adreno X2.
+///
+/// The original 34-byte PQ2 blocks remain unchanged. `codes` contains 5120
+/// already-prepared signed Q8_K codes represented as two's-complement bytes.
+/// Original half scales, Q8_K scales and ordered FMA reduction stay with the
+/// caller. This opens a context, compiles the fixed OpenCL C 1.2 kernel and
+/// allocates at most 26,465,280 explicit device-buffer bytes. Driver/compiler
+/// resources are additional and have no verified native memory budget.
+///
+/// Call only inside an externally deadline-owned child with the ordinary worker
+/// mitigations. Driver calls have no intrinsic timeout. A failed terminal fence
+/// retains every uncertain owner until supervised process exit. This primitive
+/// confers no model, adapter, state, performance or application qualification.
+///
+/// # Errors
+/// Rejects non-ARM64 execution, environment overrides, wrong fixed input lengths,
+/// ambiguous/changed/unavailable device identity, unsupported reported allocation
+/// limits, failed program build, submission or terminal readback.
+pub fn opencl_pq2_projection(
+    selection: &OpenClProjectionSelection,
+    weights: &[u8],
+    codes: &[u8],
+) -> io::Result<OpenClPq2Projection> {
+    native::opencl_pq2_projection(selection, weights, codes)
+}
+
 /// One observed Windows CPU Set; processor indices are relative to `group`.
 ///
 /// Efficiency and scheduling classes are raw operating-system observations,

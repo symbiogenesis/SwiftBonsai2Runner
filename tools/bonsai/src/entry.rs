@@ -147,6 +147,8 @@ fn dispatch(command: &str, request: serde_json::Value) -> bonsai_tools::Result<s
         "host-gpu-query" => bonsai_tools::host_gpu::query(&request),
         "host-opencl" => bonsai_tools::host_opencl::run(&request),
         "host-opencl-query" => bonsai_tools::host_opencl::query(&request),
+        "opencl-projection" => bonsai_tools::opencl_projection::run(&request),
+        "opencl-projection-worker" => bonsai_tools::opencl_projection::worker(&request),
         "cpu-evaluation" => bonsai_tools::cpu_evaluation::run(request),
         "cpu-check-plan" => bonsai_tools::completion::cpu_check_plan(request),
         "cpu-check-report" => bonsai_tools::completion::cpu_check_report(request),

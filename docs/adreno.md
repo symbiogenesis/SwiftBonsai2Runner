@@ -156,6 +156,11 @@ projections, `3,967,856,640` bytes) onto Adreno X2-90 `Q2_0+FWHT` while keeping 
 state and `lm_head` on CPU. This is a placement plan, not Adreno dispatch or
 qualified application admission.
 
+The opt-in [standalone original-PQ2 OpenCL pilot](adreno-pilot.md) implements one
+real Swift FFN-gate shape with exact per-128 integer dots and CPU ordered-FMA
+reduction, an independent scalar control and unchanged-policy child supervision.
+It has not established device execution or a qualified backend.
+
 The [Prism pilot contract](../PLAN.md#adreno-vulkan) requires one real Swift packed-projection shape
 against scalar CPU arithmetic and proven unchanged-policy worker access before execution. New
 kernels require reviewed builds, arithmetic/device and partial-placement transfer/state/fallback

@@ -20,6 +20,7 @@ pub const COMMANDS: &[&str] = &[
     "host-cpu",
     "host-gpu",
     "host-opencl",
+    "opencl-projection",
     "cpu-evaluation",
     "cpu-check-plan",
     "cpu-check-report",
@@ -89,6 +90,9 @@ pub mod host_gpu;
 
 /// Bounded model-free `OpenCL` feasibility observations, without backend selection.
 pub mod host_opencl;
+
+/// Explicit, fixed-shape original-PQ2 OpenCL projection with scalar replay.
+pub mod opencl_projection;
 
 /// Bounded paired CPU tuning plans for the X2 Elite Extreme CI lane.
 pub mod cpu_evaluation;
