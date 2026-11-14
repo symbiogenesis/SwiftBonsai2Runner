@@ -238,6 +238,49 @@ to justify; upstream speed ratios against older publisher builds do not measure
 the current Rust runtime. BitNet, T-MAC and Vec-LUT remain existing research
 sources, not newly discovered missing consumers.
 
+### Small edits around cheaper execution
+
+Primary-source review as of 2026-11-14 supports W8's distinction between
+capability edits and execution compression. These are applicability judgments,
+not a qualified Swift ranking; the [direct-edit contract](weight-space-programming.md#direct-edit-evaluation-contract)
+owns controls and [PLAN.md](../PLAN.md#direct-lora-weight-editing) owns work.
+
+| Reference and date | Useful mechanism and Swift transfer limit |
+| --- | --- |
+| [SLiM](https://arxiv.org/abs/2410.09615), ICML 2025; first preprint 2024-10-12 | Compute low-rank compensation against the **combined** sparse/quantized residual rather than compensate each approximation in isolation. Its 2:4 INT4 NVIDIA implementation is not a packed ternary ARM64 kernel. Reuse the objective, with Swift's retained packed weights immutable, and select a structured omission the native runtime can actually execute and unload. |
+| [LaCo](https://aclanthology.org/2026.acl-long.1342/), ACL July 2026 | Sequential hidden-state reconstruction targets error accumulation after pruning. It motivates fitting compensation on inputs produced by the already-changed prefix, with original-model targets retained separately. Its recovery-memory/data results concern training, not serving RAM; this is gradient-based recovery, not direct gradient-free programming. |
+| [COEC v1](https://arxiv.org/abs/2608.21142v1), 2026-08-21 | Calibration-statistic compensation after structured column pruning uses constrained rotations and rescaling without LLM backpropagation. It warns that unconstrained least-squares reconstruction can overfit limited calibration. Its retained-weight transformations do not directly preserve Swift's immutable packed base; study regularization and geometry controls rather than adopt its artifact pipeline. |
+| [TokenGate v1](https://arxiv.org/abs/2610.26754v1), 2026-10-19 | Learned prompt-token retention plus rank-16 Q/V LoRA explicitly supports Qwen3.5-2B's attention/Gated DeltaNet hybrid. This is a serious long-prefill candidate: compare full context, the same retention without new compensation, and frozen compensated retention. The hybrid result is task-specific BF16 GPU prefill against a fine-tuned baseline, not a Swift CPU/decode result or general reasoning improvement; training uses A100 GPUs. |
+| [WSP-Scope v1](https://arxiv.org/abs/2611.09382v1), 2026-11-06 | Direct edits on Qwen3.5-0.8B/9B show localized held-out gains and uneven cross-task transfer; six of sixteen trajectories retain the original weights. Gains at 9B are generally smaller. Inspect diagnosed mechanisms and include an unchanged candidate; do not transfer the 0.8B loop repair, selected layer/head or success rate to packed 27B Swift. Small edits alone remove no model work. |
+| [Deletion Tuning v1](https://arxiv.org/abs/2611.10866v1), 2026-11-07 | Learns a gate-projection binary mask through RL/SFT/distillation, with compact updates and less forgetting in the evaluated settings. This is gradient training on H200/L40S GPUs, not a gradient-free mask discovery recipe. Deleting under 0.05% of weights is a behavioral edit, not material dense-kernel acceleration or removal of corresponding resident matrices. An immutable-base overlay also needs explicit packed-basis handling. |
+
+For short-context decode, structured FFN omission plus bounded low-rank
+reconstruction is the more direct hypothesis for removing both packed-weight
+traffic and resident weight payload. For long prefill, learned token retention
+can remove upper-layer work and KV entries without removing base parameters.
+Neither is selected by paper headline speedups: first attribute the selected
+request's cost and distinguish removed operations, unmapped/unloaded weights,
+smaller KV and additional compensation storage.
+
+TokenGate's hybrid details matter for native design. A pre-gate Gated DeltaNet
+state summarizes the full prompt and cannot be pruned by deleting token rows;
+post-gate recurrent layers process the retained sequence. Its paper adapts Q/V
+only at full-attention layers, leaving Gated DeltaNet unadapted. Gate scores,
+retained original positions, attention bias, recurrent history and prefix/cache
+invalidation therefore belong to a new execution profile. A smaller transformer
+KV cache does not establish a smaller recurrent matrix state or compatible
+checkpoint. Keep long-context retrieval, multi-turn edits and continuation in
+held-out review before any general chat claim.
+
+Fit reconstruction on disjoint calibration/development groups and freeze edits
+before held-out reasoning, knowledge, instruction and creative-answer review.
+Measure improved capability independently from preserving the original graph's
+quality: an approximation that recovers baseline answers has not demonstrated
+greater cognitive ability. None of these sources establishes all three of
+lower useful-answer latency, lower actual-process memory and better Swift
+held-out quality. Calibration/training cost remains a separately bounded task;
+paper GPU workloads are outside the owner-laptop trial allowance.
+
 ### Hybrid recurrence, prefix caching and speculative decoding
 
 | Reference | Useful question and boundary |
