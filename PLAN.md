@@ -648,12 +648,15 @@ nor editing the available Abliteration factors.
   and adapter 1.3. Keep thread screening and one-token attribution separate.
 - [ ] Qualify CPU/prefill changes already consumed by the comparison baseline
   without requiring another repin; release newer candidates with exact source locks.
-- [ ] Prepare a checked current-source CPU comparison using Prism's separate
-  `cpu_candidate_check` collector: exact source/compiler/helper/executable locks,
-  matching cache/context/tile/scratch and approved adapter, fixed complete workload,
-  native resource/cleanup supervision and aggregate/per-arm power. Keep its
-  schema-2 receipts separate from the frozen 0.1.23/0.1.25 evaluator. Qualify short
-  requests and long prefill independently; collector output alone is no packet.
+- [ ] Finish the checked current-source CPU comparison producer and native owner
+  collection path for Prism's separate `cpu_candidate_check` collector and
+  Runner's [offline admission](docs/cpu-kernels.md#current-source-comparison-admission).
+  Freeze exact source/compiler/helper/executable locks, matching cache/context/
+  tile/scratch and approved adapter, fixed complete workload, native resource/
+  cleanup supervision and aggregate/per-arm power. Qualify the evaluator's
+  positive/rejection controls and producer provenance; keep schema-2 receipts
+  separate from the frozen 0.1.23/0.1.25 evaluator. Qualify short requests and
+  long prefill independently; collector output alone is no packet.
 - [ ] Qualify [scan-owned values and joined prompt projections](docs/cpu-kernels.md#scan-owned-packed-values-and-joined-prompt-projections).
 - [ ] Publish and qualify [joined BF16 recurrent projections and four-bit KV lookup](docs/cpu-kernels.md#joined-bf16-recurrent-projections-and-four-bit-kv-lookup):
   native/x64 strict Release analysis, exact arithmetic/failure and disabled-feature
@@ -699,6 +702,11 @@ nor editing the available Abliteration factors.
   controls. Preserve the closed local supervisor-start failure separately; it
   ran no Cargo commands or tests. Publish the changed helper before its runtime
   and retain the pinned runtime until verified bundle delivery and reviewed repin.
+- [ ] Publish and qualify [scoped recurrent RMS weights](docs/cpu-kernels.md#scoped-recurrent-rms-weights):
+  native/portable and feature-disabled arithmetic/failure controls, graph
+  recovery, strict ARM64/x64 Release analysis/linking, codegen/resources,
+  complete-model state/logits/adapters/cancellation and matched CPU-only request
+  benefit. Publish a verified source-bound bundle before reviewing Runner's pin.
 - [ ] Qualify [CPU preparation candidates](docs/cpu-kernels.md#cpu-preparation-candidates),
   [dispatch and attention preparation](docs/cpu-kernels.md#dispatch-and-attention-preparation) and
   [tiled dispatch and adapters](docs/cpu-kernels.md#tiled-dispatch-and-adapter-preparation), retaining each
@@ -775,9 +783,16 @@ nor editing the available Abliteration factors.
   shapes, tokens, adapters, logits and complete state. Preserve original Q8_K and
   per-128 FMA, every-limb/plane comparisons, selected DSP identity, cleanup and
   source-bound numerical acceptance under [packed arithmetic](docs/hexagon.md#packed-arithmetic-and-graph-state).
-- [ ] Resolve persistent guarded-bridge session admission through explicit partial
-  placement or a reviewed supported lifetime/fused design. Account for all prompt/
-  output/attempted operations; resets must not replenish the terminal cap.
+- [ ] Publish and qualify [bounded resident projection lookup](docs/hexagon.md#resident-identity-and-bounded-lookup):
+  native-Q2/HMX shared-storage geometry, name-sensitive selection, stable handles,
+  sibling reuse and complete metadata reservations; native/fallback controls,
+  strict Release analysis/linking, signed execution, full-model state/adapters,
+  cancellation/resources and matched complete-request benefit.
+- [ ] Qualify persistent guarded-bridge session admission through the implemented
+  explicit partial placement and whole-request reservation or a separately
+  reviewed supported lifetime/fused design. Account for all prompt/output/attempted
+  operations; resets must not replenish the terminal cap. Keep the default native-Q2
+  persistent-session policy separate from guarded/model-probe controls.
 
 ### Promotion sequence
 

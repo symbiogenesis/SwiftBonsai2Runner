@@ -65,6 +65,35 @@ model state/logit/adapter and cancellation acceptance, ARM64 code generation, si
 vendor lifetimes/resources and matched complete-request benefit remain independent
 qualification gates under [PLAN.md](../PLAN.md#hexagon-npu).
 
+### Resident identity and bounded lookup
+
+The next Prism source candidate keeps resident projection records append-only
+and uses a separately reserved sorted index for lookup. Cache identity includes
+immutable shared storage and matrix geometry; presentation names remain outside
+cache identity. Distinct matrix views sharing bytes cannot hide one another,
+and inserting a lower search key cannot invalidate saved projection indices.
+Native-Q2 repeated sibling references reuse one prepared weight extent while
+every submitted operation still consumes its own capacity. The HMX cache uses
+the same bounded lookup design instead of a linear scan.
+
+All vector capacities, including the new indirection, count against the existing
+metadata reservation. Fewer entries may fit; a full index admits no further
+record, preserving the existing executor admission and fallback rules.
+Selected tensor admission remains
+name-sensitive and distinguishes shared-storage views independently of caching.
+Model-free identity, stable-handle, shared-view, duplicate-sibling and capacity
+controls do not qualify signed execution, device lifetime or request benefit.
+Native/fallback compiled controls, production linking, full-model state/adapters,
+cancellation/resources and source-bound device acceptance remain required.
+The [local source-check limit](cpu-kernels.md#current-source-comparison-admission)
+also applies to this delivery: supervisor setup failed before compiled controls.
+
+Guarded/model-probe whole-request reservation and explicit partial placement
+already exist in source. Their terminal 24,000-attempt policy remains separate
+from default native-Q2 persistent serving, which selects a distinct session
+lifetime policy. Reset cannot replenish the guarded cap. Neither those source
+controls nor this cache change qualifies persistent service admission.
+
 ## Device and route boundaries
 
 X1/v73 and X2/v81 qualify independently. Receipts bind actual SKU/capabilities,

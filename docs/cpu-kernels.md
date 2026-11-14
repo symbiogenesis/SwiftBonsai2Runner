@@ -406,6 +406,61 @@ verify a genuine source-bound bundle and review Runner's locks. No runtime pin,
 precision default, X1 timing or accelerator profile changes follow from source
 work counts or synthetic controls.
 
+### Scoped recurrent RMS weights
+
+The next ordinary CPU candidate validates immutable recurrent RMS weights once
+per layer traversal or complete temporal tile. The borrowed scope retains the
+weights for all value heads, allowing native and portable square-sum scans to
+omit repeated weight loads and finite checks. Input, epsilon, geometry, scale
+and output checks remain per invocation. The defensive RMS operations retain
+their existing validation; the scope adds no persistent scratch, new ISA or
+precision change. RMS reduction, normalization and SwiGLU ordering are unchanged.
+
+Independent arithmetic and failure controls cover repeated heads, row tails,
+signed zero, subnormals, invalid inputs and graph recovery. These controls and
+the reduced source work do not establish complete-model parity or X2 benefit.
+Require final-source native/portable/feature-disabled analysis, production
+linking, codegen/resources and matched CPU-only complete-request acceptance
+before publishing a bundle and reviewing Runner's runtime lock. The active
+0.1.27 bundle remains the application pin and rollback.
+
+### Current-source comparison admission
+
+Runner's separate `cpu-evaluation evaluate-source-comparison` operation checks
+schema-2 current-source collector packets. It binds independently reviewed
+preparation and owner digests, matching cache/context/tile/full scratch, exact
+build and helper identities, fixed messages, reversed source pairs, original
+aggregate and arm clocks, native observations, output identity and cleanup.
+The [packet contract](../tools/cpu-bundle/README.md#current-source-offline-admission)
+defines its format and producer trust boundary. Its offline admission does not
+run models, authenticate a producer, qualify continuous power stability or
+permit a default change. It cannot admit the frozen registry collector's
+schema-1 receipts or establish long-prefill acceptance.
+
+A reviewed preparation producer and an owner-operated native collection path
+remain necessary before a real candidate comparison. Prepare helpers before
+the declared device allowance, retain failed/no-go outcomes and compare only
+matching eligible power conditions. Keep original-PQ2, PTQ1, explicit tiled
+prefill, packed-cache and full-state gates independent.
+
+These source changes have pinned formatting, whitespace and owned-language
+checks, with compiled acceptance pending. The predeclared ten-minute local
+diagnostic stopped after about 63 seconds while linking its temporary native
+supervisor against a metadata-only cached library. No Cargo command, analyzer
+or test started, and the attempt was not retried. AC was connected at both
+aggregate endpoints, battery saver was off and charge changed from 42% to 43%;
+uninterrupted power stability remains unknown. A concise local summary retains
+the original source identities, allowance, failure and cleanup. The changed
+source and later review corrections still require their own owning checks.
+
+The named model-free filters are `recurrent_rms_weight_scope` in Prism's library,
+`resident_cache_index` in `bonsai-hexagon-runtime`, and `source_comparison_` in
+Runner's `bonsai-tools` library. CPU coverage includes serial execution without
+`parallel-rows` and a separate feature-enabled four-worker control. Select these
+under the owning repositories' focused Release check recipes; include the
+applicable native/fallback analyzer and feature-disabled branches. This is a
+check selection, not authorization for another owner-device trial or CI run.
+
 ## Execution and dispatch
 
 The default `experimental-neon` feature uses [`fearless_simd` 1.1.0][fearless]'s safe core API under
