@@ -480,10 +480,8 @@ fn inspect_archive<R: Read + Seek>(
         let entry = archive
             .by_index(index)
             .map_err(|_| ArtifactError::Archive)?;
-        let name = archive_name(
-            &entry.name().map_err(|_| ArtifactError::Archive)?,
-            entry.is_dir(),
-        )?;
+        let raw_name = entry.name().map_err(|_| ArtifactError::Archive)?;
+        let name = archive_name(&raw_name, entry.is_dir())?;
         if !names.insert(name.to_ascii_lowercase()) {
             return Err(ArtifactError::Archive);
         }
@@ -510,18 +508,18 @@ fn inspect_archive<R: Read + Seek>(
                 if server.is_some() {
                     return Err(ArtifactError::Archive);
                 }
-                server = Some(root.join(&name));
+                server = Some(root.join(name));
             }
             expected_files.insert(
                 name.to_ascii_lowercase(),
                 Entry {
                     index,
-                    name: name.clone(),
+                    name: name.to_owned(),
                     bytes: entry.size(),
                 },
             );
         }
-        let mut parent = Path::new(&name).parent();
+        let mut parent = Path::new(name).parent();
         while let Some(path) = parent {
             if !path.as_os_str().is_empty() {
                 expected_directories.insert(
@@ -622,7 +620,7 @@ fn verify_installed_files<R: Read + Seek>(
     Ok((server, files))
 }
 
-fn archive_name(raw: &str, directory: bool) -> Result<String, ArtifactError> {
+fn archive_name(raw: &str, directory: bool) -> Result<&str, ArtifactError> {
     let name = if directory {
         raw.strip_suffix('/').ok_or(ArtifactError::Archive)?
     } else {
@@ -643,22 +641,23 @@ fn archive_name(raw: &str, directory: bool) -> Result<String, ArtifactError> {
             .split('.')
             .next()
             .unwrap_or_default()
-            .trim_end_matches(' ')
-            .to_ascii_uppercase();
+            .trim_end_matches(' ');
         if part.is_empty()
             || part == "."
             || part == ".."
             || part.ends_with('.')
             || part.ends_with(' ')
-            || ["CON", "PRN", "AUX", "NUL"].contains(&stem.as_str())
-            || ((stem.starts_with("COM") || stem.starts_with("LPT"))
-                && stem.len() == 4
+            || ["CON", "PRN", "AUX", "NUL"]
+                .iter()
+                .any(|reserved| stem.eq_ignore_ascii_case(reserved))
+            || (stem.len() == 4
+                && (stem[..3].eq_ignore_ascii_case("COM") || stem[..3].eq_ignore_ascii_case("LPT"))
                 && stem.as_bytes()[3].is_ascii_digit())
         {
             return Err(ArtifactError::Archive);
         }
     }
-    Ok(name.to_owned())
+    Ok(name)
 }
 
 fn enumerate_installation(
@@ -816,7 +815,7 @@ mod tests {
         ] {
             assert_eq!(archive_name(name, false), Err(ArtifactError::Archive));
         }
-        assert_eq!(archive_name("a/b.dll", false), Ok("a/b.dll".to_owned()));
+        assert_eq!(archive_name("a/b.dll", false), Ok("a/b.dll"));
     }
     #[test]
     fn bounded_hash_rejects_short_and_long_streams() {
