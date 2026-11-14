@@ -82,8 +82,10 @@ file identities, including GGML, build inputs and notices. Its
 [Rust verifier](../../tools/ci/README.md#native-source-inventory) binds the original
 archive checksum and Cargo lock. Selected compiled/preprocessed/generated-source
 closure remains separate. A failed local Cargo-lock control exposed the use of a
-TOML value parser for a document; the document-parser correction compiles under
-strict Release Clippy, with runtime recheck and actual package verification pending.
+TOML value parser for a document. The document-parser correction passes its
+owning-crate runtime control and strict Clippy; local verification also admits all
+1,718 pinned package files and the original archive checksum. Owning hosted
+acceptance and complete selected compiler/link closure remain pending.
 
 `tokenizer.rs` now provides bounded Qwen2 pretokenization, ranked byte-level BPE
 and literal GPT-2 byte decoding, with a GGUF extraction entry point that first

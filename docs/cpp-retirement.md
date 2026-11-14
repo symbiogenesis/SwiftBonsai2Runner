@@ -41,6 +41,10 @@ retained observations and Rust assertions satisfy their owning contracts.
 Speech's licensed Philox, sampling, tokenizer and lifetime observations live in
 `src/speech-tts/tests/fixtures/`. Keep their provenance, replay inputs and independent
 assertions. [Speech documentation](../src/speech-tts/README.md) owns serving behavior.
+Philox, sampler and graph-lifetime replay now use safe Rust directly; their three
+obsolete C ABI adapters are removed. Historical graph-cache fixtures exercise a
+test-only cache and do not qualify the current serving graphs. Tokenizer ABI
+lifetime replay remains separately test-only.
 
 ## Prism checked-in native files
 
