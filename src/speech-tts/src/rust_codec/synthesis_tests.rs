@@ -124,6 +124,74 @@ fn assert_stream_reset(codec: &Codec) {
 }
 
 #[test]
+fn codec_reference_admission_precedes_even_an_exact_warm_cache_hit() -> io::Result<()> {
+    let mut negative = vec![[0; 16]];
+    negative[0][15] = -1;
+    let mut excess_code = vec![[0; 16]];
+    excess_code[0][15] = 2048;
+    // The reference limit is thirty seconds at 12.5 codec frames/second.
+    for codes in [Vec::new(), negative, excess_code, vec![[0; 16]; 376]] {
+        let mut synthesizer = warm_synthesizer()?;
+        let codec = &mut synthesizer.codec;
+        codec.primed = Some((codes.clone(), codec.state.clone()));
+        codec.state.audio.pos = 11;
+        codec.state.audio.pre_conv[0] = 9.0;
+        assert!(
+            codec
+                .prime_reference(&codes)
+                .is_err_and(|error| error.kind() == io::ErrorKind::InvalidData)
+        );
+        assert_eq!(codec.state.audio.pos, 11);
+        assert_eq!(codec.state.audio.pre_conv, [9.0]);
+        assert_eq!(codec.state.transformer.position, 1);
+        assert_eq!(
+            codec.state.transformer.layers[0].keys[0].to_bits(),
+            (-0.0_f32).to_bits()
+        );
+        assert!(codec.primed.as_ref().is_some_and(|(saved, state)| {
+            saved == &codes && state.audio.pos == 7 && state.audio.pre_conv == [2.0]
+        }));
+    }
+    Ok(())
+}
+
+#[test]
+fn codec_reference_maximum_cache_hit_restores_the_committed_snapshot() -> io::Result<()> {
+    let mut synthesizer = warm_synthesizer()?;
+    let codec = &mut synthesizer.codec;
+    let reference = vec![
+        [
+            0, 2047, 0, 2047, 0, 2047, 0, 2047, 0, 2047, 0, 2047, 0, 2047, 0, 2047
+        ];
+        375
+    ];
+    codec.primed = Some((reference.clone(), codec.state.clone()));
+    codec.state.audio.pos = 99;
+    codec.state.audio.pre_conv.fill(-3.0);
+    codec.state.transformer.position = 42;
+    codec.state.transformer.layers.clear();
+    // A cache hit executes no graph: this fixture checks admission and state
+    // restoration, independently of model or acoustic correctness.
+    codec.prime_reference(&reference)?;
+    assert_eq!(codec.state.audio.pos, 7);
+    assert_eq!(codec.state.audio.pre_conv, [2.0]);
+    assert_eq!(codec.state.transformer.position, 1);
+    assert_eq!(codec.state.transformer.layers.len(), 1);
+    assert_eq!(
+        codec.state.transformer.layers[0].keys[0].to_bits(),
+        (-0.0_f32).to_bits()
+    );
+    assert_eq!(codec.state.transformer.layers[0].values, [3.0]);
+    assert!(
+        codec
+            .primed
+            .as_ref()
+            .is_some_and(|(saved, _)| saved == &reference)
+    );
+    Ok(())
+}
+
+#[test]
 fn synthesis_observer_conditioning_refusal_and_unwind_discard_warm_reuse() -> io::Result<()> {
     for stop in [1, 2] {
         for unwind in [false, true] {
