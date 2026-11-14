@@ -14,6 +14,8 @@ mod screen;
 #[cfg(test)]
 mod tests;
 
+pub(crate) use basis::linear_a_ranges;
+
 use std::collections::{BTreeMap, HashSet};
 use std::fs::{File, OpenOptions};
 use std::io::Read as _;

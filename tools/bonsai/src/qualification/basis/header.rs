@@ -16,7 +16,7 @@ struct Tensor {
     bytes: usize,
 }
 
-type Payloads<'a> = BTreeMap<String, (Vec<usize>, &'a [u8])>;
+type Ranges = BTreeMap<String, (Vec<usize>, std::ops::Range<usize>)>;
 
 impl Reader<'_> {
     fn take(&mut self, size: usize) -> Result<&[u8]> {
@@ -121,7 +121,7 @@ impl Reader<'_> {
     }
 }
 
-fn payloads(bytes: &[u8]) -> Result<Payloads<'_>> {
+fn ranges(bytes: &[u8]) -> Result<Ranges> {
     let mut reader = Reader { bytes, position: 0 };
     require(
         reader.take(4)? == b"GGUF" && reader.u32()? == 3,
@@ -158,11 +158,11 @@ fn payloads(bytes: &[u8]) -> Result<Payloads<'_>> {
         let end = begin
             .checked_add(tensor.bytes)
             .ok_or("GGUF tensor extent overflow.")?;
-        let payload = bytes
+        bytes
             .get(begin..end)
             .ok_or("GGUF adapter tensor extends beyond the file.")?;
         extents.push((begin, end));
-        payloads.insert(tensor.name, (tensor.dimensions, payload));
+        payloads.insert(tensor.name, (tensor.dimensions, begin..end));
     }
     extents.sort_unstable();
     require(
@@ -174,7 +174,7 @@ fn payloads(bytes: &[u8]) -> Result<Payloads<'_>> {
 
 pub(super) fn ssm_vectors(bytes: &[u8]) -> Result<BTreeMap<u32, &[u8]>> {
     let mut vectors = BTreeMap::new();
-    for (name, (dimensions, payload)) in payloads(bytes)? {
+    for (name, (dimensions, range)) in ranges(bytes)? {
         if let Some(block) = name
             .strip_prefix("blk.")
             .and_then(|name| name.strip_suffix(".ssm_out.weight.lora_a"))
@@ -185,7 +185,7 @@ pub(super) fn ssm_vectors(bytes: &[u8]) -> Result<BTreeMap<u32, &[u8]>> {
                 "SSM adapter A shape differs from [6144,1].",
             )?;
             require(
-                vectors.insert(block, payload).is_none(),
+                vectors.insert(block, &bytes[range]).is_none(),
                 "Duplicate SSM site.",
             )?;
         }
@@ -198,7 +198,7 @@ pub(super) fn ssm_vectors(bytes: &[u8]) -> Result<BTreeMap<u32, &[u8]>> {
 }
 
 pub(super) fn direction_vectors(bytes: &[u8]) -> Result<BTreeMap<String, &[u8]>> {
-    let mut payloads = payloads(bytes)?;
+    let mut payloads = ranges(bytes)?;
     let mut vectors = BTreeMap::new();
     let mut sites = vec![("token_embd.weight".to_owned(), vec![1, 248_320])];
     for block in 0_u32..64 {
@@ -214,18 +214,31 @@ pub(super) fn direction_vectors(bytes: &[u8]) -> Result<BTreeMap<String, &[u8]>>
         let (shape_a, _) = payloads
             .remove(&format!("{site}.lora_a"))
             .ok_or("Approved adapter lacks a required A factor.")?;
-        let (shape_b, vector) = payloads
+        let (shape_b, range) = payloads
             .remove(&format!("{site}.lora_b"))
             .ok_or("Approved adapter lacks a required B factor.")?;
         require(
             shape_a == expected_a && shape_b == [1, 5120],
             "Approved adapter factor dimensions differ from the fixed writer inventory.",
         )?;
-        vectors.insert(site, vector);
+        vectors.insert(site, &bytes[range]);
     }
     require(
         payloads.is_empty(),
         "Approved adapter contains unexpected factors.",
     )?;
     Ok(vectors)
+}
+
+/// Exact byte ranges for the verified inventory's linear A factors.
+pub(crate) fn linear_a_ranges(bytes: &[u8]) -> Result<Vec<(String, std::ops::Range<usize>)>> {
+    direction_vectors(bytes)?;
+    Ok(ranges(bytes)?
+        .into_iter()
+        .filter_map(|(name, (_, range))| {
+            name.strip_suffix(".lora_a")
+                .filter(|site| *site != "token_embd.weight")
+                .map(|site| (site.to_owned(), range))
+        })
+        .collect())
 }

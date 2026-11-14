@@ -48,6 +48,20 @@ convergence grants no behavioral qualification or permission to install a patch.
 See the [research contract](../../docs/weight-space-programming.md#offline-fitting-and-an-explicit-native-research-path)
 for capture identities, basis, bounds and the separate experimental native path.
 
+`adapter-edit` edits the existing approved adapter's floating-point weights,
+retaining all 129 sites, the rank-one B directions, embedding and alpha. A request
+supplies `schemaVersion: 1`, `operation: "inspect"` or `"create"`, exact-source
+`adapterPath`, and a rational `keepNumerator` / `keepDenominator` in `(0,1]` with
+denominator at most 1024. Per linear site it retains the largest absolute A
+coefficients, rounding the keep count upward and resolving ties by original
+index. Other coefficients become exact zeros. `inspect` reports per-site/family
+weight-space error and predicted sparse payloads without writing. `create`
+requires a new external `outputPath` and atomically publishes a separate GGUF;
+it cannot replace or install the approved adapter. Zeroing F32 payloads leaves
+the GGUF byte length unchanged. Native sparse execution is separately required
+for memory or arithmetic savings. Neither retained weight energy nor a factual
+smoke establishes broad quality or an inference-speed improvement.
+
 `pe-closure` audits ARM64 PE files without loading them. Supply `bundleDirectory`
 and `systemDirectory`; omitted/null `aliases` reads `apisetschema.dll`. It follows
 candidate normal/delay imports and recursive system normal imports, rejects GUI
@@ -111,6 +125,7 @@ bonsai-tools runtime-verify --request ABSOLUTE_JSON_PATH
 bonsai-tools completion --request ABSOLUTE_JSON_PATH
 bonsai-tools qualification --request ABSOLUTE_JSON_PATH
 bonsai-tools weight-patch --request ABSOLUTE_JSON_PATH
+bonsai-tools adapter-edit --request ABSOLUTE_JSON_PATH
 bonsai-tools speech-models --request ABSOLUTE_JSON_PATH
 bonsai-tools inference-lock --request ABSOLUTE_JSON_PATH
 bonsai-tools inference-capabilities --request ABSOLUTE_JSON_PATH

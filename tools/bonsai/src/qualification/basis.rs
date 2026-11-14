@@ -26,6 +26,7 @@ const ADAPTER_SHA256: &str = "f1669534803d340a496015f5c45125f3437b4d13ec764f40e3
 const MODEL_SHA256: &str = "e658f0f0736a03a4549535a439f9b07254ebf8ab88ae27cbe6e52d098ca5d1f5";
 
 pub(super) use direction::run as check_direction;
+pub(crate) use header::linear_a_ranges;
 
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]

@@ -31,6 +31,7 @@ pub const COMMANDS: &[&str] = &[
     "completion",
     "qualification",
     "weight-patch",
+    "adapter-edit",
     "runtime-promotion",
     "kv-promotion",
     "evidence-archive",
@@ -99,6 +100,9 @@ pub mod qualification;
 
 /// Offline, source-bound research fitting for independent rank-one FFN patches.
 pub mod weight_patch;
+
+/// Offline, separately published edits to the approved adapter's F32 A factors.
+pub mod adapter_edit;
 
 /// Exact standard-profile promotion policy and offline evidence completeness review.
 pub mod runtime_promotion;

@@ -59,6 +59,7 @@ fn version_advertises_policy_commands_and_compiled_inference_without_request_fil
         "runtime-verify",
         "runtime-promotion",
         "weight-patch",
+        "adapter-edit",
         "speech-models",
         "inference-lock",
         "inference-capabilities",
