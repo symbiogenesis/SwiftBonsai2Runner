@@ -43,6 +43,7 @@ fn startup_command(command: &str, request: &serde_json::Value) -> bool {
     matches!(
         command,
         "source-build"
+            | "acceptance-driver"
             | "chat-launch"
             | "chat-prepare"
             | "hexagon-tools"
@@ -193,6 +194,7 @@ fn dispatch(command: &str, request: serde_json::Value) -> bonsai_tools::Result<s
         "native-link-verify" => bonsai_tools::native_link::run(request),
         "release-tool" => bonsai_tools::release_tool::run(&request),
         "native-reference" => bonsai_tools::native_reference::run(&request),
+        "acceptance-driver" => bonsai_tools::acceptance_driver::run(&request),
         "startup-diagnostics" => bonsai_tools::startup_diagnostics::run(request),
         _ => Err("Unknown maintenance command.".into()),
     }

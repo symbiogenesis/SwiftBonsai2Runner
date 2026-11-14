@@ -62,6 +62,7 @@ pub const COMMANDS: &[&str] = &[
     "native-link-verify",
     "release-tool",
     "native-reference",
+    "acceptance-driver",
 ];
 
 /// Returns the native maintenance protocol capabilities without reading a request.
@@ -205,6 +206,9 @@ pub mod release_tool;
 
 /// Bounded independent reference format readers and complete-state comparisons.
 pub mod native_reference;
+
+/// Native owner-workflow profiles, original-budget bridges and process ownership.
+pub mod acceptance_driver;
 
 /// Retained caller identity for cancellation of native startup work.
 pub mod startup_cancel;

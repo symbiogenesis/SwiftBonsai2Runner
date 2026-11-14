@@ -237,6 +237,21 @@ original producer and ZIP bytes before replay. See the
 [reference guide](../native-reference/README.md) for source selections, focused
 controls and the public arithmetic contract. No command here runs model inference.
 
+`acceptance-driver` owns the two native owner-workflow entry points. Its `ptq1`
+and `acceptance` operations consume the existing workflow environment and require
+the exact main-only Windows ARM64 lane, original pre-bootstrap job clocks and
+prebuilt source-bound helpers. Profile/case admission, package retention,
+fractional bridge charging, absolute hard/work deadlines, child-only credential
+removal, complete Job ownership and fixed startup-marker scoring stay in Rust.
+The independent thirty-second postprocessing and ten-second cleanup reserves
+remain inside the original allowance. The acceptance package's five exact files
+and receipt are rechecked and held through the selected test and teardown.
+
+Focused source-only controls are
+`cargo test --offline -p bonsai-tools --lib acceptance_driver::`. These include
+inert native process ownership, child-only credential removal and original
+deadline expiry. They execute no model and establish no device qualification.
+
 `pe-closure` audits ARM64 PE files without loading them. Supply `bundleDirectory`
 and `systemDirectory`; omitted/null `aliases` reads `apisetschema.dll`. It follows
 candidate normal/delay imports and recursive system normal imports, rejects GUI

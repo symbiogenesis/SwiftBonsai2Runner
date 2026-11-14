@@ -193,6 +193,19 @@ suppress that artifact. Base acceptance receipts
 remain separate. `host.json` stores fixed startup stage/error/exit markers without
 raw exceptions, arguments or keys; the harness exit is recorded separately.
 
+The source-bound native `acceptance-driver` owns workflow profile/case admission,
+held package identities, direct budget calculation and process-tree supervision
+for runtime acceptance and PTQ1 captures. Fractional preparation and native
+handshake costs can only shorten the original absolute job/owner deadlines;
+there is no PowerShell process-lifetime or deadline-arithmetic bridge. Its five
+credential removals apply only to the test/capture child, preserving the caller's
+Actions environment for retained artifacts. A bounded Job-accounting grace is
+charged to the same deadline before confirming an empty process tree.
+Native driver entry/exit power snapshots supplement each arm's observations;
+pre-bootstrap setup power remains separately observed or explicitly unknown.
+Neither these source changes nor their inert process fixtures qualify a device
+trial, uninterrupted power stability or a performance comparison.
+
 Model-free `native_` acceptance regressions in
 [`tools/bonsai/tests`](../tools/bonsai/tests/) own usage/framing, profile selection,
 deadline/reserve admission, partial receipts, worker identities, response/resource

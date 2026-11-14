@@ -77,10 +77,11 @@ The owning workflow uses `operation: "capture"` and adds existing
 `dataDirectory`, `captureToolsDirectory`, `workBudgetSeconds` and the original
 `workDeadlineTick`. Source pins, hosted tool receipts, native ABI checks, model
 admission, each owned capture and bounded atomic partial receipts live in Rust.
-The independent PowerShell 7.6 full-state decoder and packaged Rust arithmetic helper remain owned,
-deadline-bound children of the Rust command. The hosted-prepared helper is required; no compiler
-runs
-inside a device trial.
+The independent Rust full-state decoder and comparison remain owned,
+deadline-bound native work. Hosted-prepared source-bound helpers are required;
+no compiler runs inside a device trial. The workflow forwards to the native
+`acceptance-driver` command, which preserves the original whole-job and inherited
+owner clocks and strips credentials only from its contained child environment.
 
 Actual execution belongs only to the main-only manual `native-ptq1-numerics.yml` workflow on a
 native ARM64 Snapdragon ephemeral runner with only the `ptq1-numerics-<run_id>` label,
@@ -130,7 +131,7 @@ tracked inventory is copied producer metadata; it supplies expected identities
 for the cloud check and does not itself prove that retained payloads match.
 
 After checking the original comparator source as immutable data by SHA-256, the
-audit replays the Rust/PowerShell replacement against retained native/Rust data
+audit replays the native replacement against retained native/Rust data
 and requires its complete report to
 equal the original comparison, including payload, native-state, control/stdout
 hashes and the explicit NEON/four-worker/standard-1.3 condition. Its artifact
