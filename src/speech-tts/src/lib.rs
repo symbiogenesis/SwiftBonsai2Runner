@@ -13,10 +13,6 @@ use std::{
 };
 
 #[cfg(test)]
-#[allow(
-    unsafe_code,
-    reason = "Replay the retained Rust ABI controls without linking a foreign engine."
-)]
 mod native;
 mod rust_codec;
 mod rust_talker;

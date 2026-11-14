@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "purpose": "Source identities and assertion disposition for the Rust tokenizer loading/lifetime replacement; no retired C++ fixture is compiled by Rust tests.",
+  "purpose": "Source identities and assertion disposition for safe Rust tokenizer loading/lifetime replay; retired C++ controls and opaque C ABI adapters are not compiled.",
   "source_repository": "https://github.com/symbiogenesis/SwiftBonsai2Runner",
   "source_revision": "a5afa99bdf02302804ed7e5e50eee28fc527ba97",
   "retired_controls": [
@@ -27,49 +27,49 @@
     "path": "include/gguf.h",
     "bytes_normalized_lf": 11355,
     "sha256_normalized_lf": "e56714aab702e5ce62ee587a409643c08f7e93e8fbb77f48ef7cc85075f96fa4",
-    "boundary": "The external GGML reader remains native. Rust owns its metadata context lifetime and all tokenizer intake, replacement and result lifetime."
+    "boundary": "Historical native-reader provenance only. Serving and replay now use the bounded safe Rust GGUF reader; no external reader or generated native holder remains."
   },
   "retained_obligations": [
     {
       "original": "BPETokenizer is neither copy-constructible nor move-constructible.",
-      "replacement": "Identical static_asserts now compile in the actual generated native holder, together with deleted copy/move operations."
+      "replacement": "Rust Tokenizer owns its tables without Copy or Clone and borrowed byte/ID spans cannot escape their safe Rust lifetimes. The generated holder and raw pointer adapter are removed."
     },
     {
       "original": "Missing file does not create or publish an owner; success loads all token and merge indices including duplicates and releases GGUF metadata.",
-      "replacement": "Production Rust Gguf adapter and transactional loader; fake ABI observes exact token/merge read indices, native tiny GGUF confirms duplicate token IDs and successful load without weights."
+      "replacement": "Shared serving metadata intake and transactional safe owner replacement; metadata fixture observes exact token/merge read indices, and a real tiny GGUF confirms duplicate IDs and production required-special intake without weights."
     },
     {
       "original": "Failures at new, token insertion, merge insertion and finish release the candidate exactly once, preserve the old pointer, and release metadata.",
-      "replacement": "Test-only stage faults exercise the actual loader/new-owner functions and real Box<Owner> Drop counters; each failure compares old pointer, creation/release deltas and metadata open/close totals."
+      "replacement": "Test-only stage faults exercise the shared serving constructor. Real Tokenizer Drop counters verify exactly-once candidate cleanup, unchanged old-owner identity, metadata release and encoding recovery after construction/token/merge/finish/required-special failure."
     },
     {
       "original": "Missing tokens or merges, null token/merge strings and oversized counts fail without replacing the owner.",
-      "replacement": "Same-path adapter faults cover each original case, plus wrong array/element types before typed native getters."
+      "replacement": "Same-path typed metadata faults retain every missing token/merge, invalid string, oversized count and wrong array/element type case. Required special keys, scalar types and unsigned IDs outside i32 also reject without replacement."
     },
     {
       "original": "Special keys skip missing names, preserve [1,-1,1] signed conversion and request order; direct special spelling/ID and registration failures are surfaced.",
-      "replacement": "Rust special intake records exact signed sequence, tests actual registration/encode, and injected rejection. Native tiny GGUF covers UINT32 special fields. ABI status preserves missing-file false versus registration error."
+      "replacement": "Historical optional-key request order and signed [1,-1,1] observations replay directly through add_special_id. Direct special registration and real empty/oversized failures remain covered. Serving separately preserves mandatory keys and strict unsigned-to-i32 admission."
     },
     {
       "original": "Encoding forwards embedded NUL text and EOS mode; empty results require no data; nonempty results are copied independently.",
-      "replacement": "Actual encode_to ABI observes a\\0b through known IDs and both EOS modes. Vec storage guarantees a nonnull initialized span whenever count is positive and uses null for empty output."
+      "replacement": "The safe serving encoder observes a\\0b through known IDs and both EOS modes. Results are owned Vec values; independent results survive tokenizer destruction and cannot represent inconsistent pointer/count pairs."
     },
     {
       "original": "Null result and null data errors clean up without leaking result storage.",
-      "replacement": "Rust never constructs null-result or inconsistent data/count owners: encoding errors return before callback, while copy refusal/missing callback reports failure and releases the real Vec. Test counters verify drops on success, empty output, callback failure and caught safe-Rust unwind."
+      "replacement": "Safe Rust makes null handles, missing callbacks and inconsistent pointer/count owners unrepresentable. Encoding errors return before the safe copy closure; real result-owner Drop counters retain success/empty/copy-refusal/unwind cleanup, followed by successful reuse."
     },
     {
       "original": "Successful replacement frees the old owner, permits encoding recovery and balances final owners/results/GGUF contexts.",
-      "replacement": "Actual Rust pointer-slot replacement publishes only a finalized Box and drops the displaced Box. Both fake ABI and real tiny GGUF tests retain failure recovery and final drop balances."
+      "replacement": "Safe Option<Box<Tokenizer>> replacement publishes only a complete serving candidate and drops the displaced actual Tokenizer. Fixture metadata and real tiny GGUF controls retain unchanged old-owner identity on failure, successful replacement, recovery and final balances."
     }
   ],
   "focused_checks": [
     "rust_gguf_loader_owns_metadata_candidates_and_transactional_replacement",
     "rust_special_intake_preserves_order_signed_ids_errors_and_cleanup",
     "rust_encoding_owns_results_through_copy_failure_empty_output_and_unwind",
-    "real_pinned_gguf_reader_reloads_rust_owned_tables_without_model_weights",
-    "rust_tokenizer_core_and_abi_match_captured_native_observations",
+    "real_rust_gguf_reader_reloads_owned_tables_without_model_weights",
+    "rust_tokenizer_matches_captured_native_observations",
     "tokenizer_setup_and_result_owners_preserve_their_lifetimes"
   ],
-  "qualification_boundary": "Focused replacement checks must pass before deleting the three native controls. Full hosted owning-crate build/link, actual pinned vocabulary captures, full-model speech quality, lifecycle, resource and distribution qualification remain pending. The small metadata file is model-free and does not infer."
+  "qualification_boundary": "Safe Rust replacement controls replay immutable native observations and production metadata intake, with no live C ABI holder or native reader. Focused local checks leave hosted owning-crate build/link, actual pinned vocabulary captures, full-model speech quality, lifecycle, resource and distribution qualification pending."
 }

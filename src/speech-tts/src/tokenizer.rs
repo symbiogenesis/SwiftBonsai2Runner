@@ -11,6 +11,7 @@
 
 use std::{collections::HashMap, io, ops::Range};
 
+mod loading;
 #[path = "tokenizer/scanner.rs"]
 mod scanner;
 
@@ -60,40 +61,7 @@ pub(super) struct Tokenizer {
 impl Tokenizer {
     /// Load bounded pinned tokenizer tables without a native metadata API.
     pub(super) fn load(path: &std::path::Path) -> io::Result<Self> {
-        let metadata = crate::gguf::Gguf::open(path)?;
-        let token_key = metadata
-            .find(b"tokenizer.ggml.tokens")
-            .ok_or_else(crate::gguf::invalid)?;
-        let merge_key = metadata
-            .find(b"tokenizer.ggml.merges")
-            .ok_or_else(crate::gguf::invalid)?;
-        let mut owner = Self::new();
-        for index in 0..metadata.string_count(token_key)? {
-            owner.add_token(
-                metadata.string(token_key, index)?,
-                i32::try_from(index).map_err(io::Error::other)?,
-            )?;
-        }
-        for index in 0..metadata.string_count(merge_key)? {
-            owner.add_merge(
-                metadata.string(merge_key, index)?,
-                i32::try_from(index).map_err(io::Error::other)?,
-            )?;
-        }
-        owner.finish()?;
-        for name in [
-            b"qwen3-tts.text.im_start_id".as_slice(),
-            b"qwen3-tts.text.im_end_id",
-            b"qwen3-tts.text.tts_pad_id",
-            b"qwen3-tts.text.tts_bos_id",
-            b"qwen3-tts.text.tts_eos_id",
-        ] {
-            let key = metadata.find(name).ok_or_else(crate::gguf::invalid)?;
-            owner.add_special_id(
-                i32::try_from(metadata.u32_value(key)?).map_err(io::Error::other)?,
-            )?;
-        }
-        Ok(owner)
+        loading::load(path)
     }
 
     #[cfg(test)]
@@ -108,6 +76,8 @@ impl Tokenizer {
 
     /// Create an empty owner without allocating model tables.
     pub(super) fn new() -> Self {
+        #[cfg(test)]
+        loading::owner_created();
         Self {
             vocabulary: HashMap::new(),
             merges: HashMap::new(),

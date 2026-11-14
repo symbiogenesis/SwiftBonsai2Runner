@@ -126,8 +126,7 @@ capture digests and input schedules. The former graph-cache lifetime assertions
 also run directly on the safe Rust cache: eviction precedes rebuilding, compute
 leases prevent replacement, partial failures clean up and owners stay isolated.
 Rust closures and `Drop` now provide the builder/destructor pairing; no raw graph
-handles, exported symbols or C callbacks remain in these replay paths. Tokenizer
-ABI lifetime replay remains a separate test-only adapter.
+handles, exported symbols or C callbacks remain in these replay paths.
 
 ## Rust speech tokenizer
 
@@ -137,6 +136,16 @@ Prism's text tokenizer. Bounds are 64 KiB UTF-8 input, 4 KiB spellings, one mill
 IDs/ranks/table entries, 64 special tokens, 64 MiB unique spelling bytes and
 64 million merge-pair probes per encoding. Invalid metadata/encoding publishes
 no partial IDs.
+
+All 1,810 captured tokenizer requests now call the safe serving tokenizer directly,
+with the original metadata, request schedule, expected IDs and capture digests.
+The obsolete opaque tokenizer C ABI adapter is removed. Loading controls share
+serving's bounded GGUF intake and exercise candidate cleanup, transactional owner
+replacement, duplicate indices, metadata/type failures and all required speech
+specials. Owned results remain valid after the tokenizer drops; copy refusal and
+safe Rust unwinding release temporary results. Historical optional-key/signed-ID
+observations remain separately replayed; production still requires every speech
+special key and rejects unsigned IDs outside `i32`.
 
 ## Native waveform ownership
 

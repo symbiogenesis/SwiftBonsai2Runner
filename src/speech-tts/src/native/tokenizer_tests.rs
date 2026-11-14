@@ -2,18 +2,13 @@
 //!
 //! The complete original input schedule and native metadata/chunk/ID bytes are
 //! retained in `tests/fixtures/tokenizer-v1.*`; provenance binds source and target.
-//! Rust loading and result lifetime regressions exercise the production GGUF adapter.
+//! Rust loading and ownership regressions exercise the serving GGUF intake path.
 #![forbid(unsafe_code)]
 
-use std::{error::Error, ffi::c_void, io};
+use std::error::Error;
 
 use sha2::{Digest, Sha256};
 
-use super::tokenizer::{
-    bonsai_qt_bpe_add_merge, bonsai_qt_bpe_add_special, bonsai_qt_bpe_add_special_id,
-    bonsai_qt_bpe_add_token, bonsai_qt_bpe_finish, bonsai_qt_bpe_free, bonsai_qt_bpe_new,
-    encode_copy_for_test,
-};
 use crate::tokenizer::{Tokenizer, pretokenize};
 
 type Result<T> = std::result::Result<T, Box<dyn Error>>;
@@ -36,61 +31,6 @@ struct Fixture {
     requested_keys: Vec<String>,
     specials: Vec<(Vec<u8>, i32)>,
     requests: Vec<(Vec<u8>, bool)>,
-}
-
-struct NativeTokenizer(*mut c_void);
-
-impl NativeTokenizer {
-    fn new(fixture: &Fixture) -> Result<Self> {
-        let owner = Self(bonsai_qt_bpe_new());
-        assert!(!owner.0.is_null());
-        for (id, token) in fixture.tokens.iter().enumerate() {
-            assert!(bonsai_qt_bpe_add_token(
-                owner.0,
-                token.as_ptr(),
-                token.len(),
-                i32::try_from(id)?,
-            ));
-        }
-        for (rank, merge) in fixture.merges.iter().enumerate() {
-            assert!(bonsai_qt_bpe_add_merge(
-                owner.0,
-                merge.as_ptr(),
-                merge.len(),
-                i32::try_from(rank)?,
-            ));
-        }
-        assert!(bonsai_qt_bpe_finish(owner.0));
-        for key in &fixture.requested_keys {
-            if let Some((_, id)) = fixture.keys.iter().find(|(name, _)| name == key) {
-                assert!(bonsai_qt_bpe_add_special_id(
-                    owner.0,
-                    i32::from_le_bytes(id.to_le_bytes()),
-                ));
-            }
-        }
-        for (token, id) in &fixture.specials {
-            assert!(bonsai_qt_bpe_add_special(
-                owner.0,
-                token.as_ptr(),
-                token.len(),
-                *id
-            ));
-        }
-        Ok(owner)
-    }
-
-    fn encode(&self, text: &[u8], eos: bool) -> Result<Vec<i32>> {
-        encode_copy_for_test(self.0, text, eos).ok_or_else(|| {
-            io::Error::other("Native Rust tokenizer rejected a reference case.").into()
-        })
-    }
-}
-
-impl Drop for NativeTokenizer {
-    fn drop(&mut self) {
-        bonsai_qt_bpe_free(self.0);
-    }
 }
 
 fn safe_tokenizer(fixture: &Fixture) -> Result<Tokenizer> {
@@ -414,7 +354,7 @@ impl<'a> Reader<'a> {
 }
 
 #[test]
-fn rust_tokenizer_core_and_abi_match_captured_native_observations() -> Result<()> {
+fn rust_tokenizer_matches_captured_native_observations() -> Result<()> {
     let fixtures = fixtures()?;
     assert_eq!(fixtures.len(), 5);
     assert!(fixtures.iter().all(|fixture| fixture.requests.len() == 362));
@@ -430,7 +370,6 @@ fn rust_tokenizer_core_and_abi_match_captured_native_observations() -> Result<()
     let mut reader = Reader(CAPTURED_OUTPUTS);
     for (model_index, fixture) in fixtures.iter().enumerate() {
         let safe = safe_tokenizer(fixture)?;
-        let native = NativeTokenizer::new(fixture)?;
         // Retain/consume original loader metadata observations without replacing
         // its n_vocab, reverse-hole or special-registration decisions in Rust.
         let _native_vocabulary = reader.word()?;
@@ -457,11 +396,6 @@ fn rust_tokenizer_core_and_abi_match_captured_native_observations() -> Result<()
                 expected,
                 "captured safe tokenizer mismatch in model {model_index} request {request_index}"
             );
-            assert_eq!(
-                native.encode(text, *eos)?,
-                expected,
-                "captured native ABI mismatch in model {model_index} request {request_index}"
-            );
         }
     }
     assert_eq!(reader.0, [0_u8; 0]);
@@ -473,13 +407,11 @@ fn malformed_and_oversized_input_reject_without_poisoning_the_tokenizer() -> Res
     let mut fixtures = fixtures()?;
     let fixture = fixtures.remove(0);
     let safe = safe_tokenizer(&fixture)?;
-    let native = NativeTokenizer::new(&fixture)?;
     for bytes in [vec![0xc3], vec![0xff], vec![0xe2, 0x80], vec![b'a'; 65537]] {
         assert!(safe.encode(&bytes, false).is_err());
         assert!(pretokenize(&bytes).is_err());
-        assert!(native.encode(&bytes, false).is_err());
     }
-    assert_eq!(safe.encode(b"abc", true)?, native.encode(b"abc", true)?);
+    assert_eq!(safe.encode(b"abc", true)?, [257, 263]);
     Ok(())
 }
 
@@ -499,18 +431,13 @@ fn tokenizer_setup_and_result_owners_preserve_their_lifetimes() -> Result<()> {
     assert!(safe.add_merge(b"a a", 0).is_err());
     assert_eq!(safe.encode(b"a", false)?, [0]);
 
-    let owner = NativeTokenizer(bonsai_qt_bpe_new());
-    assert!(!owner.0.is_null());
-    assert!(encode_copy_for_test(owner.0, b"a", false).is_none());
-    assert!(!bonsai_qt_bpe_add_token(owner.0, b"a".as_ptr(), 1, -1));
-    assert!(bonsai_qt_bpe_add_token(owner.0, b"a".as_ptr(), 1, 0));
-    assert!(bonsai_qt_bpe_finish(owner.0));
-    assert!(!bonsai_qt_bpe_finish(owner.0));
-    assert!(!bonsai_qt_bpe_add_token(owner.0, b"b".as_ptr(), 1, 1));
-    assert!(!bonsai_qt_bpe_add_special(owner.0, std::ptr::null(), 0, 0));
-    assert_eq!(encode_copy_for_test(owner.0, b"", false), Some(Vec::new()));
-    assert_eq!(encode_copy_for_test(owner.0, b"a", false), Some(vec![0]));
-    drop(owner);
-    bonsai_qt_bpe_free(std::ptr::null_mut());
+    assert!(safe.add_special(b"", 0).is_err());
+    assert_eq!(safe.encode(b"", false)?, Vec::<i32>::new());
+    let mut owned_ids = safe.encode(b"a", false)?;
+    let independent_ids = safe.encode(b"a", false)?;
+    owned_ids[0] = 17;
+    drop(safe);
+    assert_eq!(owned_ids, [17]);
+    assert_eq!(independent_ids, [0]);
     Ok(())
 }
