@@ -1260,6 +1260,10 @@ impl Speaker {
 mod transaction_tests;
 
 #[cfg(test)]
+#[path = "rust_codec/synthesis_tests.rs"]
+mod synthesis_tests;
+
+#[cfg(test)]
 mod tests {
     use super::{KvState, append_attention, codebook_major_to_frames, gelu_erf, normalize};
 

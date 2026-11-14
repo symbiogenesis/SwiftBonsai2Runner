@@ -863,7 +863,7 @@ fn invalid(message: &'static str) -> io::Error {
 }
 
 #[cfg(test)]
-mod tests {
+pub(crate) mod tests {
     use super::{
         Geometry, MAX_PREFILL_CACHE_BYTES, MAX_PREFILL_ROWS, PrefillCache, Prompt, REFERENCE_TEXT,
         Reference, Specials, Talker, align_icl, embedding_row,
@@ -873,7 +873,7 @@ mod tests {
         tokenizer::Tokenizer,
     };
 
-    fn prompt_fixture(base: bool) -> std::io::Result<Talker> {
+    pub(crate) fn prompt_fixture(base: bool) -> std::io::Result<Talker> {
         let mut tokenizer = Tokenizer::new();
         tokenizer.finish()?;
         for (text, id) in [
