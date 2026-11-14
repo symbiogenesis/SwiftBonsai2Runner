@@ -109,7 +109,7 @@ impl VerifiedArtifacts {
             archive_path: data.join("downloads").join(&pins.runtime.asset.filename),
             runtime_directory: data.join("runtime").join(&pins.runtime.commit),
             archive_bytes: pins.runtime.asset.bytes,
-            archive_sha256: pins.runtime.asset.sha256,
+            archive_sha256: pins.runtime.asset.sha256.clone(),
         };
         let runtime = VerifiedRuntime::verify(&spec)?;
         let (model, model_guard) = Self::verify_selected_model(data, profile, use_repacked_ptq1)?;
