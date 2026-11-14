@@ -6,6 +6,7 @@ Keep inputs and records required by the consumers below under the
 | Retained material | Current consumer |
 | --- | --- |
 | `cpp-retirement-model-free.json` | [TTS decode-graph fixture provenance](../../src/speech-tts/tests/fixtures/decode-graph-v1.provenance.json) |
+| `weight-patch-sanity/` | [Initial four-fact adapter-cost smoke](weight-patch-sanity.md): independent answer, accounting, resource, supervision and power review |
 | `hexagon-public-qaic-41171859264/` | [Signed-Q2 source lock](../../config/hexagon-signed-q2-candidate.lock.json), public-wire review and [Windows ABI replay inputs](../../tools/hexagon/windows_queue_abi.ps1) |
 | `hexagon-public-qaic-41169481882/provenance.json` | Supplemental template notices referenced by the current [QAIC provenance](hexagon-public-qaic-41171859264/provenance.json) |
 | Hexagon operation, traffic, session-budget and K-tiling ledgers | [Static policy verifiers](../../tools/hexagon/README.md) |

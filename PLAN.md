@@ -365,6 +365,9 @@ under [AGENTS.md](AGENTS.md).
   FFN research path only after selecting a reproducible fault; qualify the
   original activation basis, additive composition, constant-steering control,
   held-out complete-answer quality, rollback and resources before serving.
+  The [initial CPU factual smoke](docs/evidence/weight-patch-sanity.md) passed
+  four facts with and without the adapter but found no speed win from omission;
+  it does not qualify a pruned/edited adapter or change the selected profile.
 
 ### Memory and profiles
 
