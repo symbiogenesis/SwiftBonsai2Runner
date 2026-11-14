@@ -46,14 +46,32 @@ pub(super) struct Speech<'a> {
     response_format: Cow<'a, str>,
 }
 
+struct SpeechObject;
+
+impl<'de> serde::de::Visitor<'de> for SpeechObject {
+    type Value = Speech<'de>;
+
+    fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        formatter.write_str("a speech request object")
+    }
+
+    fn visit_map<A: serde::de::MapAccess<'de>>(self, map: A) -> Result<Self::Value, A::Error> {
+        // Derived structs also accept positional arrays. Require named fields
+        // while retaining duplicate detection and borrowing of unescaped text.
+        Speech::deserialize(serde::de::value::MapAccessDeserializer::new(map))
+    }
+}
+
 pub(super) fn synthesize<'a>(media: &str, bytes: &'a [u8]) -> Result<Speech<'a>, Error> {
     if !media.eq_ignore_ascii_case("application/json")
         && !media.eq_ignore_ascii_case("application/json; charset=utf-8")
     {
         return Err(Error::new(415, "unsupported_media_type"));
     }
-    let speech: Speech<'_> =
-        serde_json::from_slice(bytes).map_err(|_| Error::bad("invalid_json"))?;
+    let mut input = serde_json::Deserializer::from_slice(bytes);
+    let speech = serde::Deserializer::deserialize_map(&mut input, SpeechObject)
+        .map_err(|_| Error::bad("invalid_json"))?;
+    input.end().map_err(|_| Error::bad("invalid_json"))?;
     if speech.model != TTS_MODEL {
         return Err(Error::bad("unsupported_model"));
     }

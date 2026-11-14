@@ -438,6 +438,36 @@ fn malformed_framing_and_browser_headers_never_reach_the_engine() -> io::Result<
 }
 
 #[test]
+fn synthesis_rejects_positional_arrays_before_inference() -> io::Result<()> {
+    for format in ["wav", "pcm"] {
+        let body = serde_json::to_vec(&serde_json::json!([
+            crate::TTS_MODEL,
+            "Hello.",
+            "Warm and clear.",
+            "Auto",
+            format
+        ]))?;
+        assert_eq!(
+            request::synthesize("application/json", &body).err(),
+            Some(http::Error::bad("invalid_json"))
+        );
+        let (response, calls) = exchange(
+            Kind::QwenTts,
+            "POST /v1/audio/speech",
+            &[
+                ("Content-Type", "application/json"),
+                ("Content-Length", &body.len().to_string()),
+            ],
+            &body,
+        )?;
+        assert_eq!(calls, 0);
+        assert!(response.starts_with(b"HTTP/1.1 400"));
+        assert!(response.ends_with(br#"{"error":{"code":"invalid_json"}}"#));
+    }
+    Ok(())
+}
+
+#[test]
 fn strict_json_and_wave_validation_rejects_untrusted_payloads() {
     for bytes in [
         b"null".as_slice(),
