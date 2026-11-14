@@ -1,12 +1,9 @@
-//! Exact former lifetime obligations on the production Rust cache ABI.
+//! Former native lifetime obligations on the safe Rust cache.
 #![forbid(unsafe_code)]
 
-use std::{cell::RefCell, ffi::c_void, rc::Rc};
+use std::{cell::RefCell, rc::Rc};
 
-use super::decode_graph::{
-    bonsai_qt_decode_cache_begin, bonsai_qt_decode_cache_complete, bonsai_qt_decode_cache_free,
-    bonsai_qt_decode_cache_new,
-};
+use crate::decode_graph::Cache;
 
 #[derive(Default)]
 struct State {
@@ -41,23 +38,12 @@ struct Builder {
     partial_failure: bool,
 }
 
-std::thread_local! {
-    static ACTIVE_BUILDER: RefCell<Option<Builder>> = const { RefCell::new(None) };
-    static GRAPHS: RefCell<Vec<Option<Graph>>> = const { RefCell::new(Vec::new()) };
-}
-
-extern "C" fn build(data: *mut c_void) -> *mut c_void {
-    if data.addr() != 1 {
-        return std::ptr::null_mut();
-    }
-    let Some(builder) = ACTIVE_BUILDER.with(|active| active.borrow().clone()) else {
-        return std::ptr::null_mut();
-    };
+fn build(builder: &Builder) -> Option<Graph> {
     let mut state = builder.state.borrow_mut();
     let live = state.live;
     state.before_build_live.push(live);
     if builder.fail {
-        return std::ptr::null_mut();
+        return None;
     }
     state.allocations += 1;
     state.live += 1;
@@ -71,81 +57,41 @@ extern "C" fn build(data: *mut c_void) -> *mut c_void {
         // The actual native builder also cleans partial GGML allocations
         // before returning null; no incomplete graph transfers to Rust.
         drop(graph);
-        return std::ptr::null_mut();
+        return None;
     }
-    let handle = GRAPHS.with(|graphs| {
-        let mut graphs = graphs.borrow_mut();
-        graphs.push(Some(graph));
-        graphs.len()
-    });
-    std::ptr::without_provenance_mut(handle)
+    Some(graph)
 }
 
-extern "C" fn destroy(graph: *mut c_void) {
-    let slot = graph.addr().checked_sub(1);
-    GRAPHS.with(|graphs| {
-        let mut graphs = graphs.borrow_mut();
-        if let Some(entry) = slot.and_then(|index| graphs.get_mut(index)) {
-            let _ = entry.take();
-        }
-    });
-}
-
-struct Owner(*mut c_void);
+struct Owner(RefCell<Cache<Graph>>);
 
 impl Owner {
-    fn new() -> Self {
-        Self(bonsai_qt_decode_cache_new(16))
+    fn new() -> Result<Self, &'static str> {
+        Ok(Self(RefCell::new(
+            Cache::new(16).ok_or("Valid cache rejected")?,
+        )))
     }
 
-    fn begin(&self, tokens: i32, width: i32, builder: &mut Builder) -> *mut c_void {
+    fn begin(&self, tokens: i32, width: i32, builder: &mut Builder) -> Option<(usize, i32)> {
         builder.width = width;
-        ACTIVE_BUILDER.with(|active| *active.borrow_mut() = Some(builder.clone()));
-        let pointer = bonsai_qt_decode_cache_begin(
-            self.0,
-            tokens,
-            width,
-            std::ptr::without_provenance_mut(1),
-            Some(build),
-            Some(destroy),
-        );
-        ACTIVE_BUILDER.with(|active| *active.borrow_mut() = None);
-        pointer
+        self.0
+            .borrow_mut()
+            .begin(tokens, width, || build(builder))
+            .map(|graph| (graph.id, graph.width))
     }
 
     fn complete(&self) {
-        bonsai_qt_decode_cache_complete(self.0);
+        assert!(self.0.borrow_mut().complete());
     }
 }
 
-impl Drop for Owner {
-    fn drop(&mut self) {
-        bonsai_qt_decode_cache_free(self.0);
-    }
+fn id(graph: Option<(usize, i32)>) -> usize {
+    assert!(graph.is_some());
+    graph.map_or(0, |(id, _)| id)
 }
 
-fn id(graph: *mut c_void) -> usize {
-    assert!(!graph.is_null());
-    let index = graph.addr() - 1;
-    GRAPHS.with(|graphs| {
-        graphs
-            .borrow()
-            .get(index)
-            .and_then(Option::as_ref)
-            .map_or(0, |entry| entry.id)
-    })
-}
-
-fn graph_width(graph: *mut c_void) -> i32 {
-    assert!(!graph.is_null());
-    let index = graph.addr() - 1;
-    GRAPHS.with(|graphs| {
-        graphs
-            .borrow()
-            .get(index)
-            .and_then(Option::as_ref)
-            .map_or(0, |entry| entry.width)
-    })
+fn graph_width(graph: Option<(usize, i32)>) -> i32 {
+    assert!(graph.is_some());
+    graph.map_or(0, |(_, width)| width)
 }
 
 fn builder() -> Builder {
@@ -158,9 +104,8 @@ fn builder() -> Builder {
 }
 
 #[test]
-fn rust_owned_decode_cache_preserves_every_native_lifetime_assertion() {
-    let cache = Owner::new();
-    assert!(!cache.0.is_null());
+fn rust_owned_decode_cache_preserves_every_native_lifetime_assertion() -> Result<(), &'static str> {
+    let cache = Owner::new()?;
     let mut builder = builder();
     let first = id(cache.begin(256, 1, &mut builder));
     cache.complete();
@@ -169,7 +114,7 @@ fn rust_owned_decode_cache_preserves_every_native_lifetime_assertion() {
     assert_eq!(builder.state.borrow().allocations, 1);
     assert_eq!(builder.state.borrow().releases, 0);
     for window in (512..=4096).step_by(256) {
-        assert!(!cache.begin(window, 1, &mut builder).is_null());
+        assert!(cache.begin(window, 1, &mut builder).is_some());
         cache.complete();
         let state = builder.state.borrow();
         assert_eq!(state.live, 1);
@@ -183,24 +128,24 @@ fn rust_owned_decode_cache_preserves_every_native_lifetime_assertion() {
     cache.complete();
     assert_eq!(builder.state.borrow().allocations, before_width_change + 1);
     builder.fail = true;
-    assert!(cache.begin(1024, 1, &mut builder).is_null());
+    assert!(cache.begin(1024, 1, &mut builder).is_none());
     assert_eq!(builder.state.borrow().live, 0);
     assert_eq!(
         builder.state.borrow().releases,
         builder.state.borrow().allocations
     );
     builder.fail = false;
-    assert!(!cache.begin(1024, 1, &mut builder).is_null());
+    assert!(cache.begin(1024, 1, &mut builder).is_some());
     cache.complete();
     builder.fail = true;
-    assert!(cache.begin(1024, 2, &mut builder).is_null());
+    assert!(cache.begin(1024, 2, &mut builder).is_none());
     assert_eq!(builder.state.borrow().live, 0);
     assert_eq!(
         builder.state.borrow().releases,
         builder.state.borrow().allocations
     );
     builder.fail = false;
-    assert!(!cache.begin(1024, 2, &mut builder).is_null());
+    assert!(cache.begin(1024, 2, &mut builder).is_some());
     cache.complete();
     drop(cache);
     let state = builder.state.borrow();
@@ -208,60 +153,63 @@ fn rust_owned_decode_cache_preserves_every_native_lifetime_assertion() {
     assert_eq!(state.releases, state.allocations);
     assert!(state.before_build_live.iter().all(|&live| live == 0));
     assert!(!state.released_during_compute);
+    Ok(())
 }
 
 #[test]
-fn rust_owned_decode_cache_preserves_compute_lease_partial_failure_and_isolation() {
-    let first = Owner::new();
-    let second = Owner::new();
+fn rust_owned_decode_cache_preserves_compute_lease_partial_failure_and_isolation()
+-> Result<(), &'static str> {
+    let first = Owner::new()?;
+    let second = Owner::new()?;
     let mut a = builder();
     let mut b = builder();
-    assert!(!first.begin(256, 1, &mut a).is_null());
+    assert!(first.begin(256, 1, &mut a).is_some());
     a.state.borrow_mut().computing = true;
-    assert!(first.begin(4096, 2, &mut a).is_null());
-    assert!(first.begin(256, 1, &mut a).is_null());
+    assert!(first.begin(4096, 2, &mut a).is_none());
+    assert!(first.begin(256, 1, &mut a).is_none());
     assert_eq!(a.state.borrow().live, 1);
     assert_eq!(a.state.borrow().releases, 0);
-    assert!(!second.begin(4096, 2, &mut b).is_null());
+    assert!(second.begin(4096, 2, &mut b).is_some());
     second.complete();
     a.state.borrow_mut().computing = false;
     first.complete();
     a.partial_failure = true;
-    assert!(first.begin(512, 1, &mut a).is_null());
+    assert!(first.begin(512, 1, &mut a).is_none());
     assert_eq!(a.state.borrow().live, 0);
     assert_eq!(a.state.borrow().releases, a.state.borrow().allocations);
     assert_eq!(b.state.borrow().live, 1);
     a.partial_failure = false;
-    assert!(!first.begin(512, 1, &mut a).is_null());
+    assert!(first.begin(512, 1, &mut a).is_some());
     first.complete();
     drop(first);
     drop(second);
     assert_eq!(a.state.borrow().live, 0);
     assert_eq!(b.state.borrow().live, 0);
     assert!(!a.state.borrow().released_during_compute);
+    Ok(())
 }
 
 #[test]
-fn rust_owned_decode_cache_rejects_invalid_calls_without_build_or_eviction() {
-    assert!(bonsai_qt_decode_cache_new(0).is_null());
-    bonsai_qt_decode_cache_free(std::ptr::null_mut());
-    let cache = Owner::new();
+fn rust_owned_decode_cache_rejects_invalid_calls_without_build_or_eviction()
+-> Result<(), &'static str> {
+    assert!(Cache::<Graph>::new(0).is_none());
+    let cache = Owner::new()?;
     let mut builder = builder();
     for (tokens, width) in [(0, 1), (-1, 1), (4097, 1), (256, 0), (256, -1)] {
-        assert!(cache.begin(tokens, width, &mut builder).is_null());
+        assert!(cache.begin(tokens, width, &mut builder).is_none());
     }
     assert_eq!(builder.state.borrow().before_build_live, [0_usize; 0]);
-    assert!(!cache.begin(256, 1, &mut builder).is_null());
+    assert!(cache.begin(256, 1, &mut builder).is_some());
     cache.complete();
-    let callbacks: [Option<super::decode_graph::Build>; 2] = [None, Some(build)];
-    for callback in callbacks {
-        assert!(
-            bonsai_qt_decode_cache_begin(cache.0, 256, 1, std::ptr::null_mut(), callback, None)
-                .is_null()
-        );
+    // A Rust builder closure and Graph's Drop are mandatory at the type boundary;
+    // missing C callbacks and null owner handles no longer exist. Bad geometry
+    // still must reject without evicting the completed cached resource.
+    for (tokens, width) in [(0, 1), (-1, 1), (4097, 1), (256, 0), (256, -1)] {
+        assert!(cache.begin(tokens, width, &mut builder).is_none());
     }
     assert_eq!(builder.state.borrow().live, 1);
     assert_eq!(builder.state.borrow().releases, 0);
     drop(cache);
     assert_eq!(builder.state.borrow().live, 0);
+    Ok(())
 }

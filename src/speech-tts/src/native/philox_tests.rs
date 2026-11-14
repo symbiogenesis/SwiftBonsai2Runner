@@ -1,4 +1,4 @@
-//! Model-free exact ABI comparisons with independently captured Philox draws.
+//! Exact safe-Rust comparisons with independently captured Philox draws.
 //!
 //! The frozen record format and original-source/compiler identities are in
 //! `tests/fixtures/philox-v1.provenance.json`. Expected bits were captured before
@@ -53,7 +53,7 @@ fn draw_cases() -> Vec<(i64, i64, u32)> {
 }
 
 #[test]
-fn rust_philox_scalar_abi_matches_captured_bits() -> Result<(), Box<dyn Error>> {
+fn rust_philox_scalar_matches_captured_bits() -> Result<(), Box<dyn Error>> {
     // Fixed framing and the independent original input schedule prevent silent
     // truncation, case reordering or replacement with a smaller passing corpus.
     let digest: [u8; 32] = Sha256::digest(FIXTURE).into();
@@ -81,7 +81,7 @@ fn rust_philox_scalar_abi_matches_captured_bits() -> Result<(), Box<dyn Error>> 
             "Captured Philox input identity differs at record {index}.",
         );
         assert_eq!(
-            super::philox::bonsai_qt_philox_uniform(seed, subsequence, counter).to_bits(),
+            crate::philox::uniform(seed, subsequence, counter).to_bits(),
             expected,
             "Philox bits differ at record {index}: seed={seed}, subsequence={subsequence}, counter={counter}.",
         );

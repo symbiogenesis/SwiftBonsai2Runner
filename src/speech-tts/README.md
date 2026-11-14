@@ -119,6 +119,16 @@ Reserved semantic tokens except EOS are suppressed. Exhausting token/context
 budgets without EOS fails. Independent scalar fixtures retain tie ordering,
 exceptional-float observations and source provenance.
 
+Philox and sampler fixtures call the same safe Rust functions as serving. Their
+obsolete C ABI adapters have been removed; all 4,411 Philox draws, 722 masking/
+penalty cases (36,540 output words) and 714 greedy cases still bind the original
+capture digests and input schedules. The former graph-cache lifetime assertions
+also run directly on the safe Rust cache: eviction precedes rebuilding, compute
+leases prevent replacement, partial failures clean up and owners stay isolated.
+Rust closures and `Drop` now provide the builder/destructor pairing; no raw graph
+handles, exported symbols or C callbacks remain in these replay paths. Tokenizer
+ABI lifetime replay remains a separate test-only adapter.
+
 ## Rust speech tokenizer
 
 `tokenizer.rs` preserves the reviewed byte encoder, pretokenization, ranked merges,

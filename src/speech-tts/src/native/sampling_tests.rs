@@ -1,4 +1,4 @@
-//! Exact ABI replay of independently captured pinned masking, penalty and greedy observations.
+//! Safe-Rust replay of independently captured pinned masking, penalty and greedy observations.
 //!
 //! The immutable record formats and original source/compiler identities are in
 //! `tests/fixtures/sampling-v1.provenance.json` and `greedy-v1.provenance.json`.
@@ -9,9 +9,8 @@ use std::error::Error;
 
 use sha2::{Digest, Sha256};
 
-use super::sampling::{
-    bonsai_qt_apply_repetition_penalty, bonsai_qt_apply_suppress, bonsai_qt_greedy_argmax,
-    bonsai_qt_sample_top_k_p,
+use crate::sampling::{
+    SampleTopKPParams, greedy_argmax, repetition_penalty, sample_top_k_p, suppress,
 };
 
 const SAMPLING_FIXTURE: &[u8] = include_bytes!("../../tests/fixtures/sampling-v1.bin");
@@ -165,22 +164,14 @@ fn rust_sampler_helpers_match_captured_bits() -> Result<(), Box<dyn Error>> {
         }
         let mut logits = case.logits;
         let mut workspace = vec![255; logits.len()];
-        bonsai_qt_apply_suppress(
-            logits.as_mut_ptr(),
-            vocabulary,
-            case.low,
-            case.high,
-            case.keep,
-        );
+        suppress(&mut logits, case.low, case.high, case.keep);
         assert_bits(&logits, &mut remaining, index)?;
-        bonsai_qt_apply_repetition_penalty(
-            logits.as_mut_ptr(),
-            vocabulary,
-            case.history.as_ptr(),
-            history_count,
+        assert!(repetition_penalty(
+            &mut logits,
+            &case.history,
             case.penalty,
-            workspace.as_mut_ptr(),
-        );
+            &mut workspace,
+        ));
         assert_bits(&logits, &mut remaining, index)?;
         output_words += logits.len() * 2;
     }
@@ -211,101 +202,88 @@ fn rust_greedy_argmax_matches_captured_arm64_bits() -> Result<(), Box<dyn Error>
         let expected_dump_bits = word(&mut remaining)?;
         assert_eq!(expected_dump_bits, (-1.0_f32).to_bits());
         assert_eq!(
-            bonsai_qt_greedy_argmax(case.logits.as_ptr(), vocabulary),
-            expected,
+            greedy_argmax(&case.logits),
+            usize::try_from(expected)?,
             "Greedy case {index}."
         );
         let mut logits_copy = case.logits;
         let mut dump_u = 123.0_f32;
-        let sampled = bonsai_qt_sample_top_k_p(
-            logits_copy.as_mut_ptr(),
-            vocabulary,
-            0.0,
-            0,
-            1.0,
-            1.0,
-            std::ptr::null(),
-            0,
-            0,
-            0,
-            &raw mut dump_u,
-            std::ptr::null_mut(),
+        let sampled = sample_top_k_p(
+            &mut logits_copy,
+            SampleTopKPParams {
+                temperature: 0.0,
+                top_k: 0,
+                top_p: 1.0,
+                repetition_penalty: 1.0,
+                seed: 0,
+                philox_subseq: 0,
+            },
+            &[],
+            &mut [],
+            Some(&mut dump_u),
         );
-        assert_eq!(sampled, expected, "Sample greedy case {index}.");
+        assert_eq!(
+            sampled,
+            Some(usize::try_from(expected)?),
+            "Sample greedy case {index}."
+        );
         assert_eq!(dump_u.to_bits(), expected_dump_bits);
     }
     assert_eq!(remaining, [0_u8; 0]);
     // Empty storage is the explicit Rust boundary, omitted by the native capture.
-    assert_eq!(bonsai_qt_greedy_argmax(std::ptr::null(), 0), 0);
+    assert_eq!(greedy_argmax(&[]), 0);
     let mut empty_dump = 99.0_f32;
     assert_eq!(
-        bonsai_qt_sample_top_k_p(
-            std::ptr::null_mut(),
-            0,
-            0.0,
-            0,
-            1.0,
-            1.0,
-            std::ptr::null(),
-            0,
-            0,
-            0,
-            &raw mut empty_dump,
-            std::ptr::null_mut(),
+        sample_top_k_p(
+            &mut [],
+            SampleTopKPParams {
+                temperature: 0.0,
+                top_k: 0,
+                top_p: 1.0,
+                repetition_penalty: 1.0,
+                seed: 0,
+                philox_subseq: 0,
+            },
+            &[],
+            &mut [],
+            Some(&mut empty_dump),
         ),
-        0
+        Some(0)
     );
     assert_eq!(empty_dump.to_bits(), (-1.0_f32).to_bits());
     Ok(())
 }
 
 #[test]
-fn empty_and_no_op_sampler_abi_calls_accept_null_storage() {
-    bonsai_qt_apply_suppress(std::ptr::null_mut(), 0, i32::MIN, i32::MAX, -1);
-    for history_count in [-1, 0] {
-        bonsai_qt_apply_repetition_penalty(
-            std::ptr::null_mut(),
-            8,
-            std::ptr::null(),
-            history_count,
-            2.0,
-            std::ptr::null_mut(),
-        );
-    }
-    bonsai_qt_apply_repetition_penalty(
-        std::ptr::null_mut(),
-        8,
-        std::ptr::null(),
-        8,
-        1.0,
-        std::ptr::null_mut(),
-    );
-    bonsai_qt_apply_repetition_penalty(
-        std::ptr::null_mut(),
-        0,
-        std::ptr::null(),
-        8,
-        2.0,
-        std::ptr::null_mut(),
+fn empty_and_no_op_sampler_calls_need_no_workspace_and_rejection_is_atomic() {
+    suppress(&mut [], i32::MIN, i32::MAX, -1);
+    let mut original = [-20.0, 15.0, -20.0, -20.0];
+    assert!(repetition_penalty(&mut original, &[], 2.0, &mut []));
+    assert!(repetition_penalty(&mut original, &[0, 2], 1.0, &mut []));
+    assert!(repetition_penalty(&mut [], &[0, 2], 2.0, &mut []));
+    assert!(!repetition_penalty(&mut original, &[0, 2], 2.0, &mut []));
+    assert_eq!(
+        original.map(f32::to_bits),
+        [-20.0_f32, 15.0, -20.0, -20.0].map(f32::to_bits)
     );
     let mut logits = [-20.0_f32, 15.0, -20.0, -20.0];
     let history = [0_i32, 2];
     let mut seen = [0_u8; 4];
     let mut dump_u = -1.0_f32;
-    let choice = bonsai_qt_sample_top_k_p(
-        logits.as_mut_ptr(),
-        4,
-        0.6,
-        2,
-        0.9,
-        1.05,
-        history.as_ptr(),
-        2,
-        42,
-        1,
-        &raw mut dump_u,
-        seen.as_mut_ptr(),
+    let choice = sample_top_k_p(
+        &mut logits,
+        SampleTopKPParams {
+            temperature: 0.6,
+            top_k: 2,
+            top_p: 0.9,
+            repetition_penalty: 1.05,
+            seed: 42,
+            philox_subseq: 1,
+        },
+        &history,
+        &mut seen,
+        Some(&mut dump_u),
     );
-    assert_eq!(choice, 1);
+    assert_eq!(choice, Some(1));
     assert!(dump_u > 0.0 && dump_u <= 1.0);
 }

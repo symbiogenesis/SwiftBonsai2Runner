@@ -18,7 +18,7 @@
 /// captured `sampling-v1.bin` controls (whose maximum history length is 66).
 #[expect(
     clippy::redundant_pub_crate,
-    reason = "Sampler policy is private to the speech crate and its native ABI module."
+    reason = "Sampler policy is private to the speech crate and captured-observation replay."
 )]
 pub(super) const REPETITION_PENALTY_WINDOW: usize = 72;
 
@@ -28,7 +28,7 @@ const ISORT_MAX: usize = 32;
 #[derive(Clone, Copy, Debug)]
 #[expect(
     clippy::redundant_pub_crate,
-    reason = "Sampler policy is private to the speech crate and its native ABI module."
+    reason = "Sampler policy is private to the speech crate and captured-observation replay."
 )]
 pub(super) struct SampleTopKPParams {
     pub(super) temperature: f32,
@@ -59,10 +59,10 @@ struct TokenProb {
 /// broader compiler/target and owning-crate qualification remain separate gates.
 #[expect(
     clippy::redundant_pub_crate,
-    reason = "Sampler policy is private to the speech crate and its native ABI module."
+    reason = "Sampler policy is private to the speech crate and captured-observation replay."
 )]
 pub(super) fn greedy_argmax(logits: &[f32]) -> usize {
-    // The private C ABI limits vocabulary to positive c_int, so the native
+    // The admitted GGUF vocabulary is bounded below i32::MAX, so the native
     // 2^32-vector index-wrap portion boundary cannot be reached.
     let vector_end = logits.len() / 4 * 4;
     let mut best = 0;
@@ -91,7 +91,7 @@ pub(super) fn greedy_argmax(logits: &[f32]) -> usize {
 /// Mask the clipped half-open interval, preserving the optional kept token.
 #[expect(
     clippy::redundant_pub_crate,
-    reason = "Sampler policy is private to the speech crate and its native ABI module."
+    reason = "Sampler policy is private to the speech crate and captured-observation replay."
 )]
 pub(super) fn suppress(logits: &mut [f32], low: i32, high: i32, keep: i32) {
     let low = usize::try_from(low.max(0)).unwrap_or(usize::MAX);
@@ -108,12 +108,12 @@ pub(super) fn suppress(logits: &mut [f32], low: i32, high: i32, keep: i32) {
 /// [`REPETITION_PENALTY_WINDOW`] history slice.
 ///
 /// The caller supplies one workspace byte per logit. A smaller workspace is
-/// rejected before mutation; the audited native wrapper always supplies the
+/// rejected before mutation; the serving model geometry supplies the
 /// complete vocabulary extent.
 #[expect(
     clippy::redundant_pub_crate,
     clippy::float_cmp,
-    reason = "Sampler policy is private to the speech crate and its native ABI module."
+    reason = "Sampler policy is private to the speech crate and captured-observation replay."
 )]
 pub(super) fn repetition_penalty(
     logits: &mut [f32],
@@ -373,7 +373,7 @@ fn msvc_nth_element<T: Copy, F: Fn(T, T) -> bool>(mut slice: &mut [T], mut nth: 
 /// Apply the pinned top-k cutoff in place (`0 < top_k < logits.len()`).
 #[expect(
     clippy::redundant_pub_crate,
-    reason = "Sampler policy is private to the speech crate and its native ABI module."
+    reason = "Sampler policy is private to the speech crate and captured-observation replay."
 )]
 pub(super) fn top_k_mask(logits: &mut [f32], top_k: i32) {
     if let Ok(k) = usize::try_from(top_k)
@@ -394,7 +394,7 @@ pub(super) fn top_k_mask(logits: &mut [f32], top_k: i32) {
 /// Apply the pinned top-p nucleus mask in place (`0.0 < top_p < 1.0`).
 #[expect(
     clippy::redundant_pub_crate,
-    reason = "Sampler policy is private to the speech crate and its native ABI module."
+    reason = "Sampler policy is private to the speech crate and captured-observation replay."
 )]
 pub(super) fn top_p_mask(logits: &mut [f32], top_p: f32) {
     if !(top_p > 0.0 && top_p < 1.0) || logits.is_empty() {
@@ -447,7 +447,7 @@ pub(super) fn top_p_mask(logits: &mut [f32], top_p: f32) {
 /// 6. Sequential `expf` softmax and Philox4x32-10 uniform multinomial draw.
 #[expect(
     clippy::redundant_pub_crate,
-    reason = "Sampler policy is private to the speech crate and its native ABI module."
+    reason = "Sampler policy is private to the speech crate and captured-observation replay."
 )]
 pub(super) fn sample_top_k_p(
     logits: &mut [f32],
