@@ -586,7 +586,7 @@ nor editing the available Abliteration factors.
   installation before reconsidering [PTQ1 default promotion](docs/swift-memory.md#release-decision).
 - [ ] Qualify source request-timing attribution after owning hosted checks; use
   actual operation measurements before selecting hotspots.
-- [ ] Publish and qualify native adapter allocation reuse: omit unused serialized
+- [ ] Qualify native adapter allocation reuse: omit unused serialized
   linear A copies and preserve exact decoded B sharing. Verify the calculated
   8.25 MiB approved-adapter payload reduction against process resources and
   unchanged request performance, rounding/order, dynamic scales and
@@ -624,7 +624,7 @@ nor editing the available Abliteration factors.
 - [ ] If allocation measurements identify avoidable retained workspace or overlap,
   remove it and qualify actual usable savings. Credit PTQ1 resident savings and
   unique-page sharing only when measured, without double-counting physical bytes.
-- [ ] Publish and qualify packed-attention score reuse across serial heads within
+- [ ] Qualify packed-attention score reuse across serial heads within
   each worker chunk: exact per-head/state/failure behavior, retained capacities,
   adapters, cancellation and unchanged complete-request performance. The
   [native allocation candidate](docs/swift-memory.md#native-allocation-candidates)
@@ -771,12 +771,12 @@ The tasks below do not displace native daily-use acceptance or reopen past trial
   portable Q4/Q8 shared weight decoding and 2/3/7/9/17/24-token tails/recovery.
   Require native/feature-disabled strict Release analysis and focused controls,
   ARM64 scalar fallback, full-model state/logits/adapters and matched request
-  benefit before a genuine source-bound runtime bundle and reviewed repin.
+  benefit before promotion of the selected execution path.
 - [ ] Qualify final-source exact/failure controls, strict native ARM64 Release
   analysis/linking, disabled-feature fallback, ARM64 codegen/resources, complete
   model state/logits/adapters/cancellation and matched CPU-only request benefit
   under [CPU acceptance](docs/cpu-kernels.md#numerical-and-resource-acceptance).
-  Publish helpers before dependent runtimes; apply [cross-generation promotion](docs/cpu-kernels.md#cross-generation-cpu-promotion)
+  Preserve matching helper/runtime source identities; apply [cross-generation promotion](docs/cpu-kernels.md#cross-generation-cpu-promotion)
   only within its reviewed shared-path scope.
 - [ ] Publish and run the prepared [native CPU bundle comparison](tools/cpu-bundle/README.md):
   retain its fixed 0.1.23 baseline versus registry 0.1.25, FP16 cache, four workers
@@ -793,66 +793,66 @@ The tasks below do not displace native daily-use acceptance or reopen past trial
   separate from the frozen 0.1.23/0.1.25 evaluator. Qualify short requests and
   long prefill independently; collector output alone is no packet.
 - [ ] Qualify [scan-owned values and joined prompt projections](docs/cpu-kernels.md#scan-owned-packed-values-and-joined-prompt-projections).
-- [ ] Publish and qualify [joined BF16 recurrent projections and four-bit KV lookup](docs/cpu-kernels.md#joined-bf16-recurrent-projections-and-four-bit-kv-lookup):
+- [ ] Qualify [joined BF16 recurrent projections and four-bit KV lookup](docs/cpu-kernels.md#joined-bf16-recurrent-projections-and-four-bit-kv-lookup):
   native ARM64 strict Release analysis, exact arithmetic/failure and disabled-feature
   controls, production linking, ARM64 codegen/resources, complete-model
   state/logit/adapter/cancellation parity and matched CPU-only request benefit.
-  Publish the changed helper before its dependent runtime; retain a verified runtime rollback.
-- [ ] Publish and qualify [ordered packed-KV code selection](docs/cpu-kernels.md#ordered-packed-kv-code-selection):
+  Retain matching helper/runtime identities and a verified runtime rollback.
+- [ ] Qualify [ordered packed-KV code selection](docs/cpu-kernels.md#ordered-packed-kv-code-selection):
   exhaustive-search record identity, rounded first-code ties, atomic rejection,
   native/portable and feature-disabled controls, complete-model state/adapters/
-  cancellation and matched CPU-only complete-request benefit before repinning.
-- [ ] Publish and qualify [joined BF16 prompt tiles and fused packed-KV scans](docs/cpu-kernels.md#joined-bf16-prompt-tiles-and-fused-packed-kv-scans):
+  cancellation and matched CPU-only complete-request benefit before promotion.
+- [ ] Qualify [joined BF16 prompt tiles and fused packed-KV scans](docs/cpu-kernels.md#joined-bf16-prompt-tiles-and-fused-packed-kv-scans):
   final-source native/portable and feature-disabled arithmetic, adapter, failure
   and recovery controls, strict Release analysis/linking, codegen/resources and
   complete-model parity. Use a matching-candidate complete-request packet for
   X1 benefit; the frozen X2 bundle lane and source work counts supply no verdict.
-- [ ] Publish and qualify [head-scoped GDN decode and packed value result checks](docs/cpu-kernels.md#head-scoped-gdn-decode-and-packed-value-result-checks):
+- [ ] Qualify [head-scoped GDN decode and packed value result checks](docs/cpu-kernels.md#head-scoped-gdn-decode-and-packed-value-result-checks):
   compiled native/portable arithmetic and failure controls, feature-disabled
   fallback, strict ARM64 Release analysis/linking, codegen/resources,
   complete-model parity and matched X2 CPU-only request benefit. Preserve the
   earlier failed Cargo diagnostic separately from source-bound tool-Job checks;
   retain the pinned runtime as rollback.
-- [ ] Publish and qualify [provisional GDN and prepared current-token KV](docs/cpu-kernels.md#provisional-gdn-and-prepared-current-token-kv):
+- [ ] Qualify [provisional GDN and prepared current-token KV](docs/cpu-kernels.md#provisional-gdn-and-prepared-current-token-kv):
   native/portable exact arithmetic, late-failure rollback, stale-record rejection,
   selected-cache and FP16 state/adapter/cancellation parity, codegen/resources and
   matched CPU-only complete-request benefit. Retain the pinned runtime as rollback.
 - [ ] Qualify [prepared packed-KV queries and CPU preparation reuse](docs/cpu-kernels.md#prepared-packed-kv-queries-and-cpu-preparation-reuse).
-- [ ] Publish and qualify [parallel packed-cache prompt attention](docs/cpu-kernels.md#parallel-packed-cache-prompt-attention):
+- [ ] Qualify [parallel packed-cache prompt attention](docs/cpu-kernels.md#parallel-packed-cache-prompt-attention):
   serial/tiled causal logits and complete-state parity, sealed-page boundaries,
   raw-row identity, cancellation/late-failure rollback, strict Release analysis,
   worker/score-scratch bounds and matched X2 complete-request benefit. Preserve
   the explicit tiled-prefill opt-in and published runtime rollback.
-- [ ] Publish and qualify [zero-weight packed values, temporal GDN heads and joined Q8 tiles](docs/cpu-kernels.md#zero-weight-packed-values-temporal-gdn-heads-and-joined-q8-tiles):
+- [ ] Qualify [zero-weight packed values, temporal GDN heads and joined Q8 tiles](docs/cpu-kernels.md#zero-weight-packed-values-temporal-gdn-heads-and-joined-q8-tiles):
   exact native/portable and feature-disabled controls, strict ARM64 Release
   analysis/linking, codegen/stack and resource review, complete-model
   logits/state/adapters/cancellation and matched CPU-only complete-request benefit.
   Keep ordinary K4/V4 decode, explicit tiled prefill and PTQ1 gates separate;
-  retain the pinned runtime as rollback until a verified bundle and reviewed repin.
-- [ ] Publish and qualify [compact KV rotations and joined Q8 decode siblings](docs/cpu-kernels.md#compact-kv-rotations-and-joined-q8-decode-siblings):
+  retain a verified rollback while qualifying the selected execution path.
+- [ ] Qualify [compact KV rotations and joined Q8 decode siblings](docs/cpu-kernels.md#compact-kv-rotations-and-joined-q8-decode-siblings):
   native ARM64 strict Release analysis, helper/runtime arithmetic and failure
   controls, feature-disabled execution, production collector linking, codegen/
   stack/resources, complete-model state/logits/adapters/cancellation and matched
   complete-request benefit. Include the independent integrated temporal GDN
   controls. Preserve the closed local supervisor-start failure separately; it
-  ran no Cargo commands or tests. Publish the changed helper before its runtime
-  and retain the pinned runtime until verified bundle delivery and reviewed repin.
-- [ ] Publish and qualify [scoped recurrent RMS weights](docs/cpu-kernels.md#scoped-recurrent-rms-weights):
+  ran no Cargo commands or tests. Preserve matching helper/runtime source identities
+  and a verified rollback while qualifying the selected execution path.
+- [ ] Qualify [scoped recurrent RMS weights](docs/cpu-kernels.md#scoped-recurrent-rms-weights):
   native/portable and feature-disabled arithmetic/failure controls, graph
   recovery, strict ARM64 Release analysis/linking, codegen/resources,
   complete-model state/logits/adapters/cancellation and matched CPU-only request
-  benefit. Publish a verified source-bound bundle before reviewing Runner's pin.
+  benefit before promoting the selected execution path.
 - [ ] Qualify [CPU preparation candidates](docs/cpu-kernels.md#cpu-preparation-candidates),
   [dispatch and attention preparation](docs/cpu-kernels.md#dispatch-and-attention-preparation) and
   [tiled dispatch and adapters](docs/cpu-kernels.md#tiled-dispatch-and-adapter-preparation), retaining each
   path's independent integration, numerical, fallback and benefit gates.
-- [ ] Publish and qualify [exact rotation butterflies, BF16 row pairs and recurrent validation](docs/cpu-kernels.md#exact-rotation-butterflies-bf16-row-pairs-and-recurrent-validation):
+- [ ] Qualify [exact rotation butterflies, BF16 row pairs and recurrent validation](docs/cpu-kernels.md#exact-rotation-butterflies-bf16-row-pairs-and-recurrent-validation):
   final-source native ARM64 strict Release analysis and linking, independent
   scalar-bit/failure and disabled-feature controls, ARM64 codegen/stack/resources,
   complete-model state/logit/adapter/cancellation parity and matching-source
   complete-request CPU benefit. Keep singleton exact-prefill convolution separate
-  from ordinary decode. Publish the changed helper before its dependent runtime;
-  retain the active pinned bundle until verified publication and reviewed repin.
+  from ordinary decode. Preserve matching helper/runtime source identities
+  and a verified rollback while qualifying the selected execution path.
 - [ ] Qualify [grouped dispatch, half widening and exact LUT execution](docs/cpu-kernels.md#grouped-dispatch-hardware-half-widening-and-exact-lut-execution).
 - [ ] Qualify [complete-row SDOT, fixed attention lanes and bounded GDN phases](docs/cpu-kernels.md#complete-row-sdot-fixed-attention-lanes-and-bounded-gdn-phases).
 - [ ] Qualify [scoped PQ2 validation, tiled Q/K/V and temporal GDN](docs/cpu-kernels.md#scoped-pq2-validation-tiled-qkv-preparation-and-temporal-gdn).
@@ -916,7 +916,7 @@ The tasks below do not displace native daily-use acceptance or reopen past trial
   unused arenas stay dirty/unimported and preprepared views remain usable after
   import. Verify primary append-after-warm flushes and independent shape identity,
   native ARM64 strict Release analysis, owning compiled controls and signed-device
-  coherency/lifecycle acceptance before a source-bound release and repin.
+  coherency/lifecycle acceptance before device-profile promotion.
 - [ ] Close applicable [signed-runtime/SDK/Windows ABI prerequisites](docs/hexagon-source-audit.md)
   and independent raw-byte replay before expanding a selected device workload.
 - [ ] Qualify the implemented six-arena/168-projection `native-q2` placement:
@@ -936,7 +936,7 @@ The tasks below do not displace native daily-use acceptance or reopen past trial
   shapes, tokens, adapters, logits and complete state. Preserve original Q8_K and
   per-128 FMA, every-limb/plane comparisons, selected DSP identity, cleanup and
   source-bound numerical acceptance under [packed arithmetic](docs/hexagon.md#packed-arithmetic-and-graph-state).
-- [ ] Publish and qualify [bounded resident projection lookup](docs/hexagon.md#resident-identity-and-bounded-lookup):
+- [ ] Qualify [bounded resident projection lookup](docs/hexagon.md#resident-identity-and-bounded-lookup):
   native-Q2/HMX shared-storage geometry, name-sensitive selection, stable handles,
   sibling reuse and complete metadata reservations; native/fallback controls,
   strict Release analysis/linking, signed execution, full-model state/adapters,
