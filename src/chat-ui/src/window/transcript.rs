@@ -108,6 +108,9 @@ pub(super) struct Message {
     #[cfg(test)]
     #[serde(skip)]
     highlight_range_visits: std::cell::Cell<usize>,
+    #[cfg(test)]
+    #[serde(skip)]
+    history_checks: std::cell::Cell<usize>,
 }
 
 #[expect(
@@ -227,6 +230,8 @@ impl Transcript {
             underline_layouts: 0,
             #[cfg(test)]
             highlight_range_visits: std::cell::Cell::new(0),
+            #[cfg(test)]
+            history_checks: std::cell::Cell::new(0),
         });
         self.trim();
     }

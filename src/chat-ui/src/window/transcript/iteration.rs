@@ -12,14 +12,20 @@ impl Message {
                     && !self.body.trim().is_empty()
                     && crate::window::draft_buffer::fits(&self.body)
             })
-        } else {
+        } else if self.interrupted {
             self.committed_index(history)
-                .filter(|index| self.interrupted && *index > 0 && history[index - 1].role == "user")
+                .filter(|index| *index > 0 && history[index - 1].role == "user")
                 .map(|index| index - 1)
+        } else {
+            // Every displayed message checks retry availability while measuring
+            // its card. Ordinary replies need no full text/history comparison.
+            None
         }
     }
 
     fn matches_history(&self, message: &client::Message) -> bool {
+        #[cfg(test)]
+        self.history_checks.set(self.history_checks.get() + 1);
         message.role
             == match self.role {
                 Role::User => "user",
@@ -320,6 +326,29 @@ mod tests {
             content: text.into(),
             reasoning_content: None,
         }
+    }
+
+    #[test]
+    fn retry_layout_skips_completed_history_and_still_verifies_interrupted_answers() {
+        let mut history = vec![entry("user", "Question"), entry("assistant", "Answer")];
+        history[1].reasoning_content = Some("Private reasoning".into());
+        let mut transcript = Transcript::from_committed(&history);
+        let answer = &mut transcript.messages[1];
+        for _ in 0..8 {
+            assert_eq!(answer.retry_prefix(&history), None);
+        }
+        assert_eq!(answer.history_checks.get(), 0);
+
+        answer.interrupted = true;
+        assert_eq!(answer.retry_prefix(&history), Some(0));
+        assert_eq!(answer.history_checks.get(), 1);
+
+        history[1].reasoning_content = Some("Different reasoning".into());
+        assert_eq!(answer.retry_prefix(&history), None);
+        assert_eq!(answer.history_checks.get(), 2);
+        history[1].reasoning_content = Some("Private reasoning".into());
+        history[0].role = "assistant";
+        assert_eq!(answer.retry_prefix(&history), None);
     }
 
     #[test]
