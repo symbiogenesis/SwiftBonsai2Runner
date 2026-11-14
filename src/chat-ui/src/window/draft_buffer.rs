@@ -48,19 +48,32 @@ impl<'a> Buffer<'a> {
         });
         // Undo/redo holds egui's undo mutex while calling TextBuffer methods.
         // Snapshot before TextEdit handles events; never lock it in a mutation.
-        // Pointer motion and idle frames require no history copy.
+        // Pointer motion, idle frames and navigation keys require no history
+        // copy. Keep other keys conservative: egui also supports editing through
+        // shortcuts such as Ctrl+H/K/U/W, not just Backspace/Delete and undo.
         let undoer = ctx
             .input(|input| {
-                input.events.iter().any(|event| {
-                    matches!(
-                        event,
-                        egui::Event::Text(_)
-                            | egui::Event::Paste(_)
-                            | egui::Event::Cut
-                            | egui::Event::Key { pressed: true, .. }
-                            | egui::Event::Ime(_)
-                            | egui::Event::AccessKitActionRequest(_)
-                    )
+                input.events.iter().any(|event| match event {
+                    egui::Event::Text(_)
+                    | egui::Event::Paste(_)
+                    | egui::Event::Cut
+                    | egui::Event::Ime(_)
+                    | egui::Event::AccessKitActionRequest(_) => true,
+                    egui::Event::Key {
+                        key, pressed: true, ..
+                    } => !matches!(
+                        key,
+                        egui::Key::ArrowLeft
+                            | egui::Key::ArrowRight
+                            | egui::Key::ArrowUp
+                            | egui::Key::ArrowDown
+                            | egui::Key::Home
+                            | egui::Key::End
+                            | egui::Key::PageUp
+                            | egui::Key::PageDown
+                            | egui::Key::Escape
+                    ),
+                    _ => false,
                 })
             })
             .then(|| previous.undoer());
@@ -151,6 +164,81 @@ impl TextBuffer for Buffer<'_> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn draft_navigation_preserves_history_without_copying_undo_snapshots() -> std::io::Result<()> {
+        let ctx = egui::Context::default();
+        let id = egui::Id::unique("draft-navigation");
+        let cursor = egui::text::CCursorRange::one(egui::text::CCursor::new(0));
+        let older = (cursor, "Earlier café 🌱 draft".to_owned());
+        let current = (cursor, "Current 界 draft".to_owned());
+        let mut undoer = TextEditUndoer::default();
+        undoer.add_undo(&older);
+        undoer.add_undo(&current);
+        let mut state = TextEditState::default();
+        state.set_undoer(undoer);
+        state.store(&ctx, id);
+
+        for key in [
+            egui::Key::ArrowLeft,
+            egui::Key::ArrowRight,
+            egui::Key::ArrowUp,
+            egui::Key::ArrowDown,
+            egui::Key::Home,
+            egui::Key::End,
+            egui::Key::PageUp,
+            egui::Key::PageDown,
+            egui::Key::Escape,
+        ] {
+            let mut text = current.1.clone();
+            let _ = ctx.run_pass(
+                egui::RawInput {
+                    events: vec![egui::Event::Key {
+                        key,
+                        physical_key: None,
+                        pressed: true,
+                        repeat: false,
+                        modifiers: egui::Modifiers::SHIFT | egui::Modifiers::CTRL,
+                    }],
+                    ..Default::default()
+                },
+                |ctx| {
+                    let buffer = Buffer::new(&mut text, ctx, id, 100);
+                    assert!(buffer.undoer.is_none());
+                },
+            );
+            assert_eq!(text, current.1);
+        }
+        let mut history = TextEditState::load(&ctx, id)
+            .ok_or_else(|| std::io::Error::other("Draft undo state missing"))?
+            .undoer();
+        assert_eq!(history.undo(&current), Some(&older));
+        assert_eq!(history.redo(&older), Some(&current));
+
+        // An editing event in the same frame must still take a rollback
+        // snapshot, even when navigation precedes it.
+        let mut text = current.1.clone();
+        let _ = ctx.run_pass(
+            egui::RawInput {
+                events: vec![
+                    egui::Event::Key {
+                        key: egui::Key::ArrowLeft,
+                        physical_key: None,
+                        pressed: true,
+                        repeat: false,
+                        modifiers: egui::Modifiers::NONE,
+                    },
+                    egui::Event::Paste("Replacement".to_owned()),
+                ],
+                ..Default::default()
+            },
+            |ctx| {
+                let buffer = Buffer::new(&mut text, ctx, id, 100);
+                assert!(buffer.undoer.is_some());
+            },
+        );
+        Ok(())
+    }
 
     #[test]
     fn draft_buffer_keeps_complete_unicode_at_limit_and_rejects_next_character() {
