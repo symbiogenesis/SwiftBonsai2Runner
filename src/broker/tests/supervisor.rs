@@ -598,6 +598,78 @@ fn backend_failures_before_response_report_counting_or_generation_stage() {
 }
 
 #[test]
+fn backend_failure_diagnostics_preserve_stage_and_redact_private_values() {
+    use std::process::{Child, Command, Stdio};
+
+    // Direct writes to stderr bypass libtest's capture. Replay only the named,
+    // already bounded in-memory fixture in a child; no environment mutation or
+    // recursive invocation of this test is needed.
+    struct Replay(Option<Child>);
+
+    impl Drop for Replay {
+        fn drop(&mut self) {
+            if let Some(mut child) = self.0.take() {
+                let _killed = child.kill();
+                let _joined = child.wait();
+            }
+        }
+    }
+
+    let mut replay = Replay(Some(
+        Command::new(std::env::current_exe().unwrap())
+            .args([
+                "--exact",
+                "backend_failures_before_response_report_counting_or_generation_stage",
+                "--nocapture",
+            ])
+            .stdin(Stdio::null())
+            .stdout(Stdio::piped())
+            .stderr(Stdio::piped())
+            .spawn()
+            .unwrap(),
+    ));
+    let until = std::time::Instant::now() + Duration::from_secs(10);
+    while replay.0.as_mut().unwrap().try_wait().unwrap().is_none() {
+        assert!(
+            std::time::Instant::now() < until,
+            "Diagnostic replay timed out."
+        );
+        std::thread::sleep(Duration::from_millis(10));
+    }
+    let output = replay.0.take().unwrap().wait_with_output().unwrap();
+    assert!(output.status.success(), "{output:?}");
+    let stderr = String::from_utf8(output.stderr).unwrap();
+    let observed = stderr
+        .lines()
+        .map(|line| {
+            let (category, elapsed) = line.split_once(", elapsed_ms=").unwrap();
+            // Require one complete, numeric elapsed observation on each record.
+            elapsed.strip_suffix('.').unwrap().parse::<u128>().unwrap();
+            category
+        })
+        .collect::<Vec<_>>();
+    assert_eq!(
+        observed,
+        [
+            "Local model request failed: stage=token-count, error=Io",
+            "Local model request failed: stage=token-count, error=Metadata",
+            "Local model request failed: stage=token-count, error=CountSchema",
+            "Local model request failed: stage=generation, error=Io",
+            "Local model request failed: stage=generation, error=Metadata",
+            "Local model request failed: stage=generation, error=WireSyntax",
+        ]
+    );
+    for private in [
+        CLIENT_KEY,
+        BACKEND_KEY,
+        "private diagnostic",
+        "Keep the rain",
+    ] {
+        assert!(!stderr.contains(private));
+    }
+}
+
+#[test]
 fn truncated_generation_does_not_append_an_admission_error() {
     run(async {
         let counter = BackendStream::new(response(COUNT, false));
