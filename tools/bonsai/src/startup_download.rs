@@ -6,8 +6,6 @@
 
 use std::{
     cell::Cell,
-    collections::BTreeMap,
-    ffi::OsString,
     fs::{self, File, OpenOptions},
     io::{Seek as _, SeekFrom},
     path::{Path, PathBuf},
@@ -64,16 +62,6 @@ fn repair_remaining(until: Instant) -> crate::Result<Duration> {
         .checked_duration_since(Instant::now())
         .filter(|duration| !duration.is_zero())
         .ok_or_else(|| "Pinned download repair exceeded its aggregate allowance.".into())
-}
-
-fn repair_process_allowance(until: Instant) -> crate::Result<Duration> {
-    // startup_process retains up to five seconds for owned descendant teardown.
-    repair_remaining(until)?
-        .checked_sub(Duration::from_secs(5))
-        .filter(|duration| !duration.is_zero())
-        .ok_or_else(|| {
-            "Download repair has insufficient time left for safe process cleanup.".into()
-        })
 }
 
 fn expected(bytes: u64, sha256: &str) -> crate::Result<()> {
@@ -134,18 +122,7 @@ pub(crate) fn verify_length(path: &Path, bytes: u64) -> crate::Result<()> {
 }
 
 fn download_uri(uri: &str) -> crate::Result<()> {
-    let authority = uri
-        .strip_prefix("https://")
-        .and_then(|suffix| suffix.split(['/', '?', '#']).next())
-        .filter(|authority| !authority.is_empty())
-        .ok_or("A public HTTPS artifact URL is required.")?;
-    if authority.contains(['@', '%', '\\'])
-        || uri.chars().any(char::is_whitespace)
-        || uri.chars().any(char::is_control)
-    {
-        return Err("Artifact URL contains credentials or ambiguous characters.".into());
-    }
-    Ok(())
+    crate::https_transfer::validate_uri(uri)
 }
 
 pub(crate) fn system_tool(name: &str) -> crate::Result<PathBuf> {
@@ -161,75 +138,6 @@ pub(crate) fn system_tool(name: &str) -> crate::Result<PathBuf> {
     Ok(path)
 }
 
-fn curl_arguments(uri: &str, partial: &Path, offset: u64, bytes: u64) -> Vec<OsString> {
-    let mut arguments: Vec<OsString> = [
-        "--disable",
-        "--fail",
-        "--silent",
-        "--show-error",
-        "--location",
-        "--max-redirs",
-        "10",
-        "--disallow-username-in-url",
-        "--proto",
-        "=https",
-        "--proto-redir",
-        "=https",
-        "--header",
-        "Accept-Encoding: identity",
-        "--connect-timeout",
-        "60",
-        "--max-time",
-        "7200",
-        "--max-filesize",
-    ]
-    .into_iter()
-    .map(OsString::from)
-    .collect();
-    arguments.push(bytes.saturating_sub(offset).to_string().into());
-    if offset > 0 {
-        arguments.extend([OsString::from("--continue-at"), offset.to_string().into()]);
-    }
-    arguments.extend([
-        OsString::from("--output"),
-        partial.as_os_str().to_owned(),
-        uri.into(),
-    ]);
-    arguments
-}
-
-pub(crate) fn compatible_curl(output: &str) -> bool {
-    let mut words = output.split_whitespace();
-    if words.next() != Some("curl") {
-        return false;
-    }
-    let mut version = words.next().unwrap_or_default().split('.');
-    matches!((version.next().and_then(|part| part.parse::<u64>().ok()), version.next().and_then(|part| part.parse::<u64>().ok())),
-        (Some(major), Some(minor)) if major > 8 || (major == 8 && minor >= 4))
-}
-
-fn download_tool(working: &Path) -> crate::Result<PathBuf> {
-    let curl = system_tool("curl.exe")?;
-    let result = crate::startup_process::run(
-        curl.as_os_str(),
-        &["--disable".into(), "--version".into()],
-        working,
-        &BTreeMap::new(),
-        Duration::from_secs(10),
-        &working.join(format!(
-            "curl-version-{}.log",
-            crate::native_startup::nonce()?
-        )),
-    )?;
-    if result.code != 0 || !compatible_curl(&result.stdout) {
-        return Err(
-            "Artifact provisioning requires Windows curl 8.4 or newer for bounded downloads."
-                .into(),
-        );
-    }
-    Ok(curl)
-}
-
 fn transfer(
     uri: &str,
     partial: &Path,
@@ -237,46 +145,15 @@ fn transfer(
     bytes: u64,
     working: &Path,
 ) -> crate::Result<()> {
-    let curl = download_tool(working)?;
-    let log = working.join(format!("download-{}.log", crate::native_startup::nonce()?));
-    let mut result = crate::startup_process::run(
-        curl.as_os_str(),
-        &curl_arguments(uri, partial, offset, bytes),
-        working,
-        &BTreeMap::new(),
-        Duration::from_secs(7_230),
-        &log,
-    )?;
-    if result.code == 33 && offset > 0 {
-        // curl refuses to append a full response when a server ignores Range.
-        // Restart this same locked partial rather than combining responses.
-        validate_external_path(partial).map_err(|error| error.to_string())?;
-        OpenOptions::new()
-            .write(true)
-            .truncate(true)
-            .open(partial)
-            .map_err(|error| error.to_string())?;
-        result = crate::startup_process::run(
-            curl.as_os_str(),
-            &curl_arguments(uri, partial, 0, bytes),
-            working,
-            &BTreeMap::new(),
-            Duration::from_secs(7_230),
-            &working.join(format!(
-                "download-restart-{}.log",
-                crate::native_startup::nonce()?
-            )),
-        )?;
-    }
-    if result.code != 0 {
-        return Err(format!(
-            "Pinned download failed ({}): {}; partial bytes retained at {}",
-            result.code,
-            result.stderr.trim(),
-            partial.display()
-        ));
-    }
-    Ok(())
+    let requested = Instant::now()
+        .checked_add(Duration::from_secs(7_200))
+        .ok_or("Invalid pinned download allowance.")?;
+    let until = REPAIR_DEADLINE.with(|deadline| {
+        deadline
+            .get()
+            .map_or(requested, |outer| outer.min(requested))
+    });
+    transfer_repair_until(uri, partial, offset, bytes, working, until)
 }
 
 /// Downloads a pinned artifact, resuming partial bytes and publishing exclusively.
@@ -338,76 +215,32 @@ pub(crate) fn receive_repair_with_timeout(
     })
 }
 
-fn repair_download_tool(working: &Path, until: Instant) -> crate::Result<PathBuf> {
-    let curl = system_tool("curl.exe")?;
-    let allowance = repair_process_allowance(until)?.min(Duration::from_secs(10));
-    let result = crate::startup_process::run_with_checkpoint(
-        curl.as_os_str(),
-        &["--disable".into(), "--version".into()],
-        working,
-        &BTreeMap::new(),
-        allowance,
-        &working.join(format!(
-            "curl-version-{}.log",
-            crate::startup_process::unique()
-        )),
-        || repair_remaining(until).map(|_| ()),
-    )?;
-    if result.code != 0 || !compatible_curl(&result.stdout) {
-        return Err(
-            "Artifact provisioning requires Windows curl 8.4 or newer for bounded downloads."
-                .into(),
-        );
-    }
-    Ok(curl)
-}
-
 fn transfer_repair_until(
     uri: &str,
     partial: &Path,
-    mut offset: u64,
+    offset: u64,
     bytes: u64,
-    working: &Path,
+    _working: &Path,
     until: Instant,
 ) -> crate::Result<()> {
-    let curl = repair_download_tool(working, until)?;
-    loop {
-        let allowance = repair_process_allowance(until)?;
-        let mut arguments = curl_arguments(uri, partial, offset, bytes);
-        let position = arguments
-            .iter()
-            .position(|value| value == "--max-time")
-            .ok_or("Missing download deadline argument.")?;
-        arguments[position + 1] = allowance.as_secs_f64().to_string().into();
-        let result = crate::startup_process::run_with_checkpoint(
-            curl.as_os_str(),
-            &arguments,
-            working,
-            &BTreeMap::new(),
-            allowance,
-            &working.join(format!("download-{}.log", crate::startup_process::unique())),
-            || repair_remaining(until).map(|_| ()),
-        )?;
-        repair_remaining(until)?;
-        if result.code == 33 && offset > 0 {
-            // A server that ignores Range gets one fresh request within this
-            // same absolute allowance; no partial responses are concatenated.
-            repair_file(partial)?
-                .set_len(0)
-                .map_err(|error| error.to_string())?;
-            offset = 0;
-            continue;
-        }
-        if result.code != 0 {
-            return Err(format!(
-                "Pinned download failed ({}): {}; partial bytes retained at {}",
-                result.code,
-                result.stderr.trim(),
-                partial.display()
-            ));
-        }
-        return Ok(());
+    let until =
+        REPAIR_DEADLINE.with(|deadline| deadline.get().map_or(until, |outer| outer.min(until)));
+    repair_remaining(until)?;
+    let _parents = repair_parents(partial)?;
+    let mut file = repair_file_with_creation(partial, offset == 0)?;
+    if file.metadata().map_err(|error| error.to_string())?.len() != offset {
+        return Err("Partial download length changed before transfer; bytes are retained.".into());
     }
+    let result = crate::https_transfer::download(uri, &mut file, offset, bytes, until, &mut || {
+        repair_remaining(until).map(|_| ())
+    });
+    repair_remaining(until)?;
+    result.map_err(|error| {
+        format!(
+            "Pinned download failed: {error}; partial bytes retained at {}",
+            partial.display()
+        )
+    })
 }
 
 enum CachedArtifact {
@@ -472,10 +305,14 @@ fn repair_parents(path: &Path) -> crate::Result<Vec<File>> {
 }
 
 fn repair_file(path: &Path) -> crate::Result<File> {
+    repair_file_with_creation(path, false)
+}
+
+fn repair_file_with_creation(path: &Path, create: bool) -> crate::Result<File> {
     repair_checkpoint()?;
     validate_external_path(path).map_err(|error| error.to_string())?;
     let mut options = OpenOptions::new();
-    options.read(true).write(true);
+    options.read(true).write(true).create(create);
     #[cfg(windows)]
     {
         use std::os::windows::fs::OpenOptionsExt as _;
@@ -701,7 +538,9 @@ pub(crate) fn receive_with_timeout(
     working: &Path,
     timeout: Duration,
 ) -> crate::Result<()> {
-    let started = Instant::now();
+    let until = Instant::now()
+        .checked_add(timeout)
+        .ok_or("Invalid pinned download allowance.")?;
     receive_with(
         uri,
         path,
@@ -709,53 +548,7 @@ pub(crate) fn receive_with_timeout(
         sha256,
         working,
         |uri, partial, offset, bytes, working| {
-            let remaining = || {
-                crate::startup_cancel::checkpoint()?;
-                timeout
-                    .checked_sub(started.elapsed())
-                    .filter(|value| !value.is_zero())
-                    .ok_or_else(|| "Pinned download exceeded its aggregate allowance.".to_owned())
-            };
-            remaining()?;
-            let curl = download_tool(working)?;
-            let mut current_offset = offset;
-            loop {
-                let allowance = remaining()?;
-                let mut arguments = curl_arguments(uri, partial, current_offset, bytes);
-                let position = arguments
-                    .iter()
-                    .position(|value| value == "--max-time")
-                    .ok_or("Missing download deadline argument.")?;
-                arguments[position + 1] = allowance.as_secs_f64().to_string().into();
-                let result = crate::startup_process::run_with_checkpoint(
-                    curl.as_os_str(),
-                    &arguments,
-                    working,
-                    &BTreeMap::new(),
-                    allowance,
-                    &working.join(format!("download-{}.log", crate::startup_process::unique())),
-                    || remaining().map(|_| ()),
-                )?;
-                if result.code == 33 && current_offset > 0 {
-                    validate_external_path(partial).map_err(|error| error.to_string())?;
-                    OpenOptions::new()
-                        .write(true)
-                        .truncate(true)
-                        .open(partial)
-                        .map_err(|error| error.to_string())?;
-                    current_offset = 0;
-                    continue;
-                }
-                if result.code != 0 {
-                    return Err(format!(
-                        "Pinned download failed ({}): {}; partial bytes retained at {}",
-                        result.code,
-                        result.stderr.trim(),
-                        partial.display()
-                    ));
-                }
-                return Ok(());
-            }
+            transfer_repair_until(uri, partial, offset, bytes, working, until)
         },
     )
 }
@@ -860,7 +653,6 @@ fn receive_with(
 mod tests {
     use super::*;
     use sha2::{Digest as _, Sha256};
-    use std::io::Read as _;
 
     fn recovery_fixture() -> crate::Result<(PathBuf, PathBuf, PathBuf, String)> {
         let working = std::env::temp_dir().join(format!(
@@ -973,7 +765,7 @@ mod tests {
                 Ok(())
             })?;
             assert_eq!(REPAIR_DEADLINE.with(Cell::get), Some(outer));
-            assert!(repair_process_allowance(Instant::now() + Duration::from_secs(4)).is_err());
+            assert!(repair_remaining(Instant::now()).is_err());
             Ok(())
         })?;
         assert_eq!(REPAIR_DEADLINE.with(Cell::get), None);
@@ -1646,31 +1438,25 @@ mod tests {
         assert!(download_uri("https://codeload.github.com/owner/repo/zip/revision").is_ok());
         assert!(expected(0, &"0".repeat(64)).is_err());
         assert!(expected(1, "bad").is_err());
-        assert!(compatible_curl("curl 8.4.0 (Windows) libcurl/8.4.0"));
-        assert!(compatible_curl("curl 9.0.0"));
-        assert!(!compatible_curl("curl 8.3.1"));
-        assert!(!compatible_curl("curl 7.99.0"));
-        assert!(!compatible_curl("curl 8"));
-        assert!(!compatible_curl("curl 8.bad.0"));
-        assert!(!compatible_curl("curl 18446744073709551616.4.0"));
-        assert!(!compatible_curl("other 8.4.0"));
-        assert!(!compatible_curl("unknown"));
-        let arguments = curl_arguments("https://example.com/file", Path::new("partial"), 7, 11);
-        assert!(
-            arguments
-                .array_windows()
-                .any(|pair| *pair == ["--max-filesize", "4"])
+    }
+
+    #[test]
+    fn native_transfer_rejects_changed_partial_length_before_network() -> crate::Result<()> {
+        let (working, _, partial, _) = recovery_fixture()?;
+        let result = transfer_repair_until(
+            "https://example.invalid/artifact",
+            &partial,
+            2,
+            5,
+            &working,
+            Instant::now() + Duration::from_secs(60),
         );
-        assert!(
-            arguments
-                .array_windows()
-                .any(|pair| *pair == ["--continue-at", "7"])
+        assert!(result.is_err_and(|error| error.contains("length changed")));
+        assert_eq!(
+            fs::read(&partial).map_err(|error| error.to_string())?,
+            b"wrong"
         );
-        assert!(
-            arguments
-                .array_windows()
-                .any(|pair| *pair == ["--proto-redir", "=https"])
-        );
+        fs::remove_dir_all(working).map_err(|error| error.to_string())
     }
 
     #[test]
@@ -1728,125 +1514,6 @@ mod tests {
             b"too long"
         );
         fs::remove_dir_all(working).map_err(|error| error.to_string())?;
-        Ok(())
-    }
-
-    #[cfg(windows)]
-    fn range_request(stream: &mut std::net::TcpStream) -> crate::Result<String> {
-        // Windows accepts can retain the listener's nonblocking mode. A read
-        // timeout only bounds blocking reads; explicitly restore that mode.
-        stream
-            .set_nonblocking(false)
-            .map_err(|error| error.to_string())?;
-        stream
-            .set_read_timeout(Some(Duration::from_secs(3)))
-            .map_err(|error| error.to_string())?;
-        stream
-            .set_write_timeout(Some(Duration::from_secs(3)))
-            .map_err(|error| error.to_string())?;
-        let mut request = [0; 4096];
-        let mut count = 0;
-        while !request[..count].ends_with(b"\r\n\r\n") {
-            if count == request.len() {
-                return Err("Range fixture request headers exceeded their bound.".into());
-            }
-            match stream.read(&mut request[count..]) {
-                Ok(0) => return Err("Range fixture request headers ended early.".into()),
-                Ok(read) => count += read,
-                Err(error) if error.kind() == std::io::ErrorKind::Interrupted => {}
-                Err(error) => return Err(error.to_string()),
-            }
-        }
-        String::from_utf8(request[..count].to_vec()).map_err(|error| error.to_string())
-    }
-
-    #[test]
-    fn range_fixture_waits_for_fragmented_request_headers() -> crate::Result<()> {
-        use std::{io::Write as _, net::TcpListener, thread};
-        let listener = TcpListener::bind("127.0.0.1:0").map_err(|error| error.to_string())?;
-        let mut client =
-            std::net::TcpStream::connect(listener.local_addr().map_err(|error| error.to_string())?)
-                .map_err(|error| error.to_string())?;
-        let (mut accepted, _) = listener.accept().map_err(|error| error.to_string())?;
-        accepted
-            .set_nonblocking(true)
-            .map_err(|error| error.to_string())?;
-        let server = thread::spawn(move || range_request(&mut accepted));
-        for fragment in [
-            b"GET /artifact HTTP/1.1\r\nRan".as_slice(),
-            b"ge: bytes=5-\r\n\r\n",
-        ] {
-            thread::sleep(Duration::from_millis(20));
-            client
-                .write_all(fragment)
-                .map_err(|error| error.to_string())?;
-        }
-        let request = server.join().map_err(|_| "Range fixture panicked.")??;
-        assert_eq!(request, "GET /artifact HTTP/1.1\r\nRange: bytes=5-\r\n\r\n");
-        Ok(())
-    }
-
-    #[test]
-    fn curl_resumes_with_a_bound_on_remaining_response_bytes() -> crate::Result<()> {
-        use std::{io::Write as _, net::TcpListener, thread, time::Instant};
-        let working = std::env::temp_dir().join(format!(
-            "Bonsai-RangeTest-{}",
-            crate::native_startup::nonce()?
-        ));
-        validate_external_path(&working).map_err(|error| error.to_string())?;
-        fs::create_dir(&working).map_err(|error| error.to_string())?;
-        let partial = working.join("artifact.partial");
-        fs::write(&partial, b"hello").map_err(|error| error.to_string())?;
-        let listener = TcpListener::bind("127.0.0.1:0").map_err(|error| error.to_string())?;
-        let port = listener
-            .local_addr()
-            .map_err(|error| error.to_string())?
-            .port();
-        listener
-            .set_nonblocking(true)
-            .map_err(|error| error.to_string())?;
-        let server = thread::spawn(move || -> crate::Result<String> {
-            let deadline = Instant::now() + Duration::from_secs(10);
-            while Instant::now() < deadline {
-                match listener.accept() {
-                    Ok((mut stream, _)) => {
-                        let request = range_request(&mut stream)?;
-                        stream.write_all(b"HTTP/1.1 206 Partial Content\r\nContent-Length: 5\r\nContent-Range: bytes 5-9/10\r\nConnection: close\r\n\r\nworld").map_err(|error| error.to_string())?;
-                        return Ok(request);
-                    }
-                    Err(error) if error.kind() == std::io::ErrorKind::WouldBlock => {
-                        thread::sleep(Duration::from_millis(10));
-                    }
-                    Err(error) if error.kind() == std::io::ErrorKind::Interrupted => {}
-                    Err(error) => return Err(error.to_string()),
-                }
-            }
-            Err("Range fixture received no request.".into())
-        });
-        let uri = format!("http://127.0.0.1:{port}/artifact");
-        let mut arguments = curl_arguments(&uri, &partial, 5, 10);
-        // Isolate curl's resume semantics on loopback. Production arguments
-        // remain HTTPS-only and the receiver rejects this fixture's URL.
-        for argument in &mut arguments {
-            if argument == "=https" {
-                *argument = "=http".into();
-            }
-        }
-        let output = crate::startup_process::run(
-            system_tool("curl.exe")?.as_os_str(),
-            &arguments,
-            &working,
-            &BTreeMap::new(),
-            Duration::from_secs(10),
-            &working.join("range.log"),
-        )?;
-        let request = server.join().map_err(|_| "Range fixture panicked.")??;
-        assert_eq!(output.code, 0, "{}", output.stderr);
-        assert!(request.to_ascii_lowercase().contains("range: bytes=5-"));
-        assert_eq!(
-            fs::read(&partial).map_err(|error| error.to_string())?,
-            b"helloworld"
-        );
         Ok(())
     }
 }
