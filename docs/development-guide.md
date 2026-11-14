@@ -585,6 +585,9 @@ and OS processor-feature observations: moving X1 data to X2 rebuilds native
 objects and CMake ISA probes. Missing mandatory host facts reject reuse/build.
 Source, embedded/configuration pins, locks, local dependencies, build environment
 or executable changes invalidate receipts; unknown embedded inputs disable reuse.
+Unrepresentable native environment names, build-affecting values or fingerprinted
+paths disable reuse instead of hashing lossy replacement text. Supported Unicode
+inputs keep their exact spelling, including canonically equivalent sequences.
 Documentation and CI changes alone do not rebuild Rust. Cargo's
 content freshness handles preserved timestamps. Each variant has an atomic receipt,
 and short labels protect MSVC path space. Build locks protect cleanup of abandoned

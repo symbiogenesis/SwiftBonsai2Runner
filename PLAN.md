@@ -43,6 +43,8 @@ adoption decisions without displacing native daily-use acceptance.
 - [ ] Complete owning-lane compiler/analyzer and focused regression acceptance
   for centralized UI bounded reads, atomic settings publication and transcript
   insertion and popup shortcut ownership; speech synthesis object-only intake;
+  complete-event UTF-8 validation, HTTP/MIME whitespace, Unicode mandatory speech
+  breaks, pinned ASR ASCII/decode paths and lossless startup-cache identities;
   TTS numerical/GGUF primitives, checked projection layouts, packed-half F32
   operand/range/long-sum controls and invalid sampler distribution rejection;
   and tools bounded intake, selected nonblank startup

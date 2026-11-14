@@ -4,6 +4,34 @@ Runner bounds work and storage from model output through local HTTP to native
 presentation. These contracts preserve model/sampler numerics and speech PCM
 conversion. Limits include JSON escaping and protocol framing where stated.
 
+## Unicode boundaries
+
+Wire/storage limits count bytes; editor and synthesis character limits count
+Unicode scalar values. Neither unit counts user-perceived grapheme clusters.
+Source offsets, copied text and model input retain their original spelling;
+normalization and full case folding are not implicit preprocessing. Find uses
+the scalar lowercase matching described below. Changing that behavior requires
+an explicit matching contract and source-offset mapping. See
+[UAX #29](https://www.unicode.org/reports/tr29/) for grapheme boundaries and
+[UAX #15](https://www.unicode.org/reports/tr15/) for normalization semantics.
+Native IME, bidirectional editing and accessibility retain their separate
+[qualification gates](ui-architecture.md#review-and-validation).
+
+HTTP media types and multipart field syntax accept only ASCII space/tab around
+tokens, following [RFC 9110 whitespace](https://www.rfc-editor.org/rfc/rfc9110.html#section-5.6.3).
+Payload text and supported Unicode filenames retain their exact contents.
+Each complete SSE event must be valid UTF-8, including ignored JSON fields,
+before publishing any delta; network fragments may split encoded scalars.
+Unescaped JSON strings still borrow the validated event storage.
+
+ASR classification uses its pinned Unicode table, with a compile-time ASCII
+cache derived from that same table. Token decoding joins raw bytes before UTF-8
+validation and bounds reservations by remaining decoded-byte capacity. Host Rust
+Unicode upgrades do not redefine either model tokenizer. Windows native values
+remain lossless `OsString`/UTF-16 at OS boundaries; a Unicode-only receipt cannot
+substitute replacement characters into an identity. See Rust's
+[lossless Windows conversion](https://doc.rust-lang.org/std/os/windows/ffi/trait.OsStringExt.html#tymethod.from_wide).
+
 ## Broker HTTP storage
 
 | Boundary | Storage and work contract |
@@ -85,6 +113,11 @@ reuse; widgets still acquire the owned galley references their APIs require.
 | Playback | Combines immediately queued text, including adjacent sentences, up to 256 characters/request before the two-entry synthesis channel and again at request intake, retaining paragraph separators. No batching timer delays available text. PCM uses 100 ms frames, 400 ms startup pre-roll and 16 seconds of producer lookahead. Supply-speed checks follow the Rust codec's 80 ms callbacks, allowing 40 ms jitter; slow supply/underrun switches to buffering validated complete segments. Playback consumes already queued PCM before declaring an underrun. Staging is capped at 5,760,000 PCM bytes, plus 768,000-byte producer/38,400-byte native queues and two 4,800-byte frame buffers. Short completed segments drain without more text. Independent synthesis segments receive 5 ms raised-cosine fades to/from zero, including the first/last clip and exact packet endings. A fixed 480-byte tail plus one split byte and 480-byte onset scratch cover 24/48 kHz; no samples are removed, overlapped or added. Callback fragmentation does not change the ramp samples. Stateful codec callbacks inside a segment remain continuous. |
 | PCM reuse | Successful WinMM unprepare returns 4,800-byte packets to synthesis through a nonblocking queue. Reuse spans segments without retaining old audio. At most eight spares (38,400 bytes) are cached beyond playback bounds; full/disconnected queues discard excess without delaying Stop/playback. |
 | Playback descriptors | At most eight boxed WinMM descriptors circulate between the active queue and an empty spare pool, avoiding per-packet boxes. Successful unprepare releases PCM for recycling and clears every descriptor field. Still-playing/failed unprepare retains both active allocations; teardown keeps bounded quarantine for driver refusal. Spares retain no PCM. |
+
+Complete and streamed segmentation preserve internal CRLF, CR, LF, VT, FF, NEL,
+LINE SEPARATOR and PARAGRAPH SEPARATOR as mandatory breaks, following
+[UAX #14](https://www.unicode.org/reports/tr14/). Breaks count toward scalar clip
+limits; separator-only input never creates a synthesis request.
 
 Paragraph separators cue the model when adjacent pieces fit in a coalesced
 request. Separate requests trim outer whitespace and receive no synthesized

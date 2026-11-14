@@ -95,7 +95,7 @@ It does not recognize special-looking input as prompt controls; decoding retains
 their literal spellings. The pinned Unicode category table is part of the
 tokenizer definition and does not change with the host Rust Unicode version.
 Only absent/empty/`qwen2` pretokenizer metadata is admitted by this replacement.
-Seven `rust_asr_tokenizer_` controls use literal Unicode splits, byte answers and
+Focused `rust_asr_tokenizer_` controls use literal Unicode splits, byte answers and
 hand-calculated miniature merge schedules; `rust-tokenizer.json` binds their
 source and scope. Native serving still owns tokenization and inference. Complete
 pinned-vocabulary observations and owning-crate acceptance remain necessary.
