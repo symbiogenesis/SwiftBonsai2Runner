@@ -110,7 +110,7 @@ fn ordinary(path: &Path) -> crate::Result<()> {
     Ok(())
 }
 
-fn input_file(path: &Path) -> crate::Result<fs::File> {
+pub(crate) fn input_file(path: &Path) -> crate::Result<fs::File> {
     if !path.is_absolute()
         || path
             .to_str()

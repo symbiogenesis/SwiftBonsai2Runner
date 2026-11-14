@@ -56,6 +56,7 @@ fn startup_command(command: &str, request: &serde_json::Value) -> bool {
             Some("models" | "environment" | "build")
         ))
         || (command == "speech-evaluation" && request["operation"] == "evaluate")
+        || (command == "cpu-evaluation" && request["operation"] == "bundle-prepare")
         || (command == "chat-package"
             && matches!(request["operation"].as_str(), Some("launch" | "start")))
 }
@@ -208,7 +209,11 @@ fn needs_caller(command: &str, request: &serde_json::Value) -> bool {
             | "server-plan"
             | "native-qualification"
             | "publisher-startup"
-    ) || (command == "cpu-evaluation" && request["operation"] == "capture")
+    ) || (command == "cpu-evaluation"
+        && matches!(
+            request["operation"].as_str(),
+            Some("capture" | "bundle-capture")
+        ))
         || (command == "speech-evaluation" && request["operation"] == "session")
         || (command == "qualification"
             && matches!(

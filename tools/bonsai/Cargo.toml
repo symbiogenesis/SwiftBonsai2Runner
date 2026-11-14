@@ -57,6 +57,7 @@ httparse.workspace = true
 serde = { workspace = true, features = ["derive"] }
 serde_json.workspace = true
 zip.workspace = true
+tar = { version = "=0.4.46", default-features = false }
 
 [target.'cfg(windows)'.dependencies]
 bonsai-windows-process.workspace = true

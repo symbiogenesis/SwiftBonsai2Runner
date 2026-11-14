@@ -319,6 +319,7 @@ pub(crate) fn run_with_checkpoint(
             args,
             working,
             environment,
+            removed: &[],
             timeout,
             log,
         },
@@ -361,6 +362,7 @@ pub(crate) fn run_strict_with_checkpoint(
             args,
             working,
             environment,
+            removed: &[],
             timeout,
             log,
         },
@@ -369,11 +371,36 @@ pub(crate) fn run_strict_with_checkpoint(
     )
 }
 
+pub(crate) fn run_strict_with_removed(
+    executable: &OsStr,
+    args: &[OsString],
+    working: &Path,
+    environment: &BTreeMap<String, String>,
+    removed: &[String],
+    timeout: Duration,
+    log: &Path,
+) -> crate::Result<ProcessOutput> {
+    run_owned(
+        &RunSpec {
+            executable,
+            args,
+            working,
+            environment,
+            removed,
+            timeout,
+            log,
+        },
+        ExitPolicy::RejectSurvivors,
+        crate::startup_cancel::checkpoint,
+    )
+}
+
 struct RunSpec<'a> {
     executable: &'a OsStr,
     args: &'a [OsString],
     working: &'a Path,
     environment: &'a BTreeMap<String, String>,
+    removed: &'a [String],
     timeout: Duration,
     log: &'a Path,
 }
@@ -400,6 +427,7 @@ fn run_owned(
         args,
         working,
         environment,
+        removed,
         timeout,
         log,
     } = spec;
@@ -415,22 +443,31 @@ fn run_owned(
     let executable = resolve(executable)?;
     checkpoint()?;
     #[cfg(windows)]
-    let child = OwnedProcess::start_tool(&ToolProcessSpec {
+    let tool_spec = ToolProcessSpec {
         executable,
         arguments: args.to_vec(),
         working_directory: working.to_owned(),
         stdout: stdout_path.clone(),
         stderr: stderr_path.clone(),
         environment: environment.clone(),
-    })
+    };
+    #[cfg(windows)]
+    let child = if removed.is_empty() {
+        OwnedProcess::start_tool(&tool_spec)
+    } else {
+        OwnedProcess::start_tool_with_removed(&tool_spec, removed)
+    }
     .map_err(|error| error.to_string())?;
     #[cfg(not(windows))]
     let child = {
         let stdout = capture(&stdout_path)?;
         let stderr = capture(&stderr_path)?;
-        Command::new(&executable)
-            .args(args)
-            .current_dir(working)
+        let mut command = Command::new(&executable);
+        command.args(args).current_dir(working);
+        for name in removed {
+            command.env_remove(name);
+        }
+        command
             .envs(environment)
             .stdin(Stdio::null())
             .stdout(stdout)

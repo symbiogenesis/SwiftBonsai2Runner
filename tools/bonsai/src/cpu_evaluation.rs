@@ -6,6 +6,7 @@ use serde_json::{Value, json};
 
 use crate::Result;
 
+mod bundle;
 mod capture;
 mod conditions;
 mod source_comparison;
@@ -119,6 +120,12 @@ fn arguments(model: &str, threads: Threads, prompt: &str) -> Result<Vec<String>>
 /// Rejects unknown fields, unsupported operations/devices, unbounded CPU counts,
 /// unavailable candidate budgets and invalid compiled CPU plans.
 pub fn run(request: Value) -> Result<Value> {
+    if request["operation"]
+        .as_str()
+        .is_some_and(|operation| operation.starts_with("bundle-"))
+    {
+        return bundle::run(&request);
+    }
     if request["operation"] == "evaluate-source-comparison" {
         return source_comparison::run(request);
     }

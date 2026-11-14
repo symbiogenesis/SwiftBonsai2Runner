@@ -200,7 +200,7 @@ fn read(path: &Path, sha256: &str, maximum: u64) -> Result<Vec<u8>> {
     Ok(bytes)
 }
 
-fn json_bytes(bytes: &[u8]) -> Result<Value> {
+pub(super) fn json_bytes(bytes: &[u8]) -> Result<Value> {
     // The protocol uses typed envelopes, and checks nested collector/supervisor
     // values for duplicate names before Value would silently discard them.
     let unique: Unique = serde_json::from_slice(bytes).map_err(|error| error.to_string())?;

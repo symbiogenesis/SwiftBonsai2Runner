@@ -117,26 +117,49 @@ cleanup failures, path escape, duplicate JSON and changed raw proof bytes.
 
 ## Hosted preparation and offline replay
 
-[`cpu_bundle.ps1`](cpu_bundle.ps1) verifies registry archives, locked dependency
-subsets and positive controls. Preparation requires published Runner/Prism sources;
+[`cpu_bundle.ps1`](cpu_bundle.ps1) forwards to the native Rust
+[`cpu_evaluation::bundle`](../bonsai/src/cpu_evaluation/bundle.rs) policy.
+Rust verifies registry archives, locked dependency subsets and positive controls,
+prepares the collectors, and scores complete owner receipts. Preparation requires published Runner/Prism sources;
 it performs no push and refuses local preparation before Cargo/model execution.
 
 - `-Operation prepare -BaselineRoot ABSOLUTE_PATH -ToolingRoot ABSOLUTE_PATH
   -CandidateRegistryVersion 0.1.25 -RunnerRevision EXACT_SHA -Output NEW_ABSOLUTE_PATH`
 - `-Operation evaluate -Preparation ABSOLUTE_JSON -Owner ABSOLUTE_JSON`
 
-Schema-2 packets retain `preparation.json`, `messages.json` and `evaluator.ps1`,
-including evaluator SHA-256 and PowerShell language identity. Replay uses
+Historical schema-2 packets retain their original `preparation.json`,
+`messages.json` and `evaluator.ps1`, including their original evaluator hash and
+PowerShell language identity. Those bytes and owner receipts stay unchanged;
+their original script remains the exact historical replay implementation.
+
+New schema-2 packets retain those three files plus `native-evaluator.exe`.
+The explicit `native_evaluator` object fixes `format: bonsai-tools-cpu-bundle-v1`,
+`language: Rust`, the exact relative `path`, `bytes`, lowercase `sha256` and
+`source_revision`. Its revision must match both orchestrator source declarations.
+The recorded four-member inventory, retained bytes and executing native helper
+must all agree; missing/changed helpers, unsupported formats and mixed historical/
+current inventories reject. The helper is a required independent replay input.
+The retained PowerShell script is now a forwarding entry point and always selects
+that packet's native evaluator for a new packet, independent of ambient helpers.
+Its PowerShell language/hash fields identify the entry point; the native object
+identifies the policy implementation. Existing owner preparation digests cannot
+be reassigned to a new packet form.
+
+Replay can call the exact retained native executable directly with
+`cpu-evaluation --json '{"operation":"bundle-evaluate","preparationPath":"...","ownerPath":"..."}'`,
+or invoke the retained entry point:
 `pwsh -NoLogo -NoProfile -File evaluator.ps1 -Operation evaluate
 -Preparation ABSOLUTE_PREPARATION_JSON -Owner ABSOLUTE_OWNER_JSON`.
-The bounded .NET tar reader compares extracted Cargo files with authenticated
+The bounded Rust tar reader compares extracted Cargo files with approved
 archive bytes without extracting archive paths. Admission validates the complete
 ABBA set, source/artifact identities, outputs, original deadline, host/power,
 resources and cleanup. Hosted preparation and device acceptance remain separate.
 
 A focused local check is
 `pwsh -NoLogo -NoProfile -File tools/cpu-bundle/test_cpu_bundle.ps1 -Test archive`.
-The full inventory belongs to the owning workflow.
+The full inventory belongs to the owning workflow. This entry invokes named
+Rust fixtures; `-Test` selects an exact documented Rust test name and rejects
+unknown selectors. No fixture loads models or opens a device.
 
 ## Owner-device workload
 
@@ -153,12 +176,16 @@ all arms, cleanup and upload share that original deadline under
 longer fits; never retry, resume or shrink the fixed input/32-token reservation.
 
 Before starting the ephemeral runner, create the deadline and native power receipt
-on the same physical machine using PowerShell 7.6+ and the actual dispatched run:
+on the same physical machine using an already checked native helper for the
+selected Runner source, PowerShell 7.6+ and the actual dispatched run. The helper,
+its schema-3 `receipt.json`, and `bonsai-reference-numerics.exe` must be present
+outside a Git checkout before starting the allowance; this adapter never builds:
 
 ```powershell
 $runId = '<actual-dispatched-run-id>'
 $runnerRevision = '<exact-published-Runner-main-SHA>'
 $ownerReceipt = Join-Path $env:TEMP ('cpu-bundle-owner-' + $runId + '.json')
+$env:BONSAI_TOOLS_PATH = '<absolute-checked-tools-path>'
 ./scripts/Invoke-CpuBundleComparison.ps1 -CreateOwnerStartReceipt `
     -RunId $runId -RunnerCommit $runnerRevision `
     -CandidateCommit 99bab71270b1e6a6fb6d47eec2e34b8097cdcd4c `
