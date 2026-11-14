@@ -63,7 +63,8 @@ for memory or arithmetic savings. Neither retained weight energy nor a factual
 smoke establishes broad quality or an inference-speed improvement.
 
 `ffn-surrogate` fits an offline low-rank replacement of a whole FFN branch for
-W8. Unlike an FFN-down LoRA, `y = B*(A^T*x)` consumes the original normalized
+W8, or a recovery adapter for structured FFN omission. Unlike an FFN-down LoRA,
+`y = B*(A^T*x)` consumes the original normalized
 5,120-wide FFN input and predicts the complete 5,120-wide branch delta, including
 the teacher's frozen adapter contribution. A future replacement must omit that
 site's original gate/up/down and adapter work; applying the skipped adapter again
@@ -105,6 +106,51 @@ establish neither actual process RAM nor latency nor complete-answer quality.
 Final held-out answers, source-authenticated capture, runtime state/rollback,
 real weight omission and the original/cheap/compensated comparison remain separate
 acceptance requirements under the [research contract](../../docs/weight-space-programming.md).
+
+For structured omission, supply `schemaVersion: 2` with the same `source` and
+controls. The site instead uses `targetBasis: "teacher-minus-retained-ffn-branch"`.
+Add `studentExecution` with the distinct
+`executionProfile: "experimental-ffn-group-omission-cpu-scalar-unfused-v1"`,
+`graphIdentity` and `prefixPolicySha256`, plus the producer's `captureSha256`.
+`omission` requires `groupWidth: 1024`, `originalHiddenWidth: 17408`, sorted
+distinct `omittedGroups` in 0–16 with at least one group retained,
+`transform: "independent-contiguous-1024-signed-hadamard-v1"`, and
+`retainedAdapterPolicy: "zero-omitted-original-hidden-before-standard-adapter"`.
+Its `signIdentity` contains `fullSignsSha256` for the complete metadata sign
+array in canonical I32-le order, `downSignOffset: 11264` and
+`downSignCount: 17408`.
+
+Each row replaces `target` with `teacherTarget`, `retainedBranch` and
+`originalPrefixTeacherTarget`, all width 5120. The full and retained branches
+must share the supplied normalized student `input`; `sharedInputSha256` is
+verified against its F32-le bytes. `studentPrefixSha256` and
+`originalPrefixSha256` identify their separate replay histories. Samples,
+content groups, identical inputs and prefix identities cannot cross the
+fit/development boundary. Identities bind declarations; the offline fitter
+cannot authenticate the runtime, branches, signs or content independence.
+
+The fitter uses F64 subtraction of the supplied F32 teacher/retained values
+and evaluates exported F32 factors against complete teacher-branch energy.
+It reports the uncompensated error and original-prefix drift separately.
+Schema 2 withholds publication and returns `status: "development-rejected"`
+if either split has zero teacher energy, development relative squared error
+exceeds 0.1, its gap above fit exceeds 0.05, or compensation worsens development
+error versus the retained branch. A passing algebraic screen leaves behavior,
+prefix-drift recovery, performance and process RAM unqualified. Resource
+estimates distinguish PQ2 34-byte and PTQ1 28-byte blocks; all-64-site figures
+are geometry only. Existing schema-1 behavior remains available.
+
+Prism's source-only `ffn_probe` collector accepts
+`captureKind: "ffn-group-omission"` and `omittedGroups` in its version-1 request
+and emits schema 2 directly. It replays the original graph, resets the same
+model, then replays the group-omitted graph using the same fixed token IDs.
+Both passes share its original deadline and 256-token total cap. The capture
+loads every weight and executes the complete teacher FFN, then propagates the
+retained branch. It applies no recovery factors and establishes no savings.
+Retain its exact request and source-bound build identity for independent replay;
+`captureSha256` is the producer's domain-framed packet digest before insertion
+of that field, not the capture file's SHA-256. Runtime publication, compensated
+rollout, multiple edited sites and free-generation acceptance remain pending.
 
 `native-link-verify` binds retained native link inputs, real ARM64 PE import tables
 and an exact flat package to a separately reviewed schema-3 compiler-source

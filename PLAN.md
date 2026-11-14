@@ -445,21 +445,30 @@ evaluation controls without making the pruned candidate a prerequisite for W8.
   adapter cannot replace a whole skipped FFN while still requiring its hidden
   activations. Consider expert-routing edits only for a separately authenticated
   compatible MoE model; current dense Swift has no expert router.
-- [ ] **W8.1 — Screen input-to-residual FFN replacement capacity.** Qualify the
-  native complete-branch capture and `ffn-surrogate` fitter on final source,
-  including exact original normalized inputs, pre-add teacher deltas with the
-  frozen adapter, failed-token discard, disjoint groups and exported-F32 errors.
+- [ ] **W8.1 — Screen structured FFN omission with small recovery adapters.**
+  Prioritize retaining most nonlinear computation over replacing a complete FFN
+  with a linear map. Qualify paired full/retained branch capture on the same
+  changed-prefix normalized input and the native `ffn-surrogate` compensation
+  fitter. Bind complete 1,024-coordinate groups, original Hadamard signs/stride,
+  retained standard-adapter semantics, original-prefix teacher drift,
+  failed-token discard, disjoint groups and exported-F32 errors.
   Follow the [selected investigation](docs/weight-space-programming.md#selected-w8-investigation-recover-omitted-ffn-computation).
   Attribute one actual bottleneck and predeclare one feasible site/capture before
   device work; stop at the development-error gate before building a serving
-  profile. Scalar teacher reconstruction does not qualify production NEON.
+  profile. Reject compensation that loses to the uncompensated branch or fails
+  the fixed development-error/generalization gates. Keep whole-FFN replacement
+  as a separate capacity experiment. Scalar reconstruction does not qualify
+  production NEON or complete-answer quality.
 - [ ] **W8.2 — Turn a viable FFN candidate into removed work and allocations.**
   Add a distinct opt-in graph/loading identity with selective packed-payload
   admission, surviving adapter semantics and complete state/reset/rollback
   isolation. Compare original, omitted-without-recovery and frozen-recovery
-  profiles. If whole-FFN rank capacity fails, scope 1,024-coordinate Hadamard
-  group omission and teacher-minus-retained-branch fitting instead of unbounded
-  ranks. Measure real process resources; a bypass retaining tensors saves no RAM.
+  profiles. Preserve original sign slices and down-column strides when compacting
+  complete Hadamard groups. Size the omission policy against net factor/payload
+  cost: two groups at all 64 sites cannot meet W8.4's 512 MiB RAM target even
+  before adding compensation. Qualify selected sites independently and their
+  changed-prefix composition. Measure real process resources; a bypass retaining
+  tensors saves no RAM.
 - [ ] **W8.3 — Evaluate learned prompt retention only for a long-prefill hotspot.**
   Use the [TokenGate hybrid reference](docs/research-register.md#small-edits-around-cheaper-execution)
   to scope retained positions, gate bias, pre-/post-gate GDN history, attention
@@ -471,7 +480,10 @@ evaluation controls without making the pruned candidate a prerequisite for W8.
   targets before owner-operated CI. Distinguish recovered baseline quality from
   improved reasoning/instructions/creative quality. Investigate a diagnosed
   behavioral correction separately, then compare its composition against the
-  same compensated graph without it. Retain all no-go outcomes, per-category
+  same compensated graph without it. Include an equal-resource comparison that
+  spends saved work on useful reasoning while retaining absolute useful-answer
+  latency and memory gates; shorter answers alone cannot establish ability.
+  Retain all no-go outcomes, per-category
   review, source-bound resources and matched power; promote only after existing
   release/application gates. No simultaneous Swift benefit is established yet.
 

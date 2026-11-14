@@ -201,24 +201,50 @@ application acceptance follow the existing promotion and owner-push workflow.
 
 ## Selected W8 investigation: recover omitted FFN computation
 
-The first implementation tests whether a small input-to-residual map can recover
-one complete FFN branch. It is a capacity screen before selective loading or a
-serving kernel is built. The related [literature review](research-register.md#small-edits-around-cheaper-execution)
-also identifies structured FFN omission and learned prompt retention as distinct
-opportunities; this selection does not establish a measured Swift bottleneck.
-Whole-FFN replacement is easy to screen and carries substantial capacity risk.
-If its development error is unacceptable, prefer retaining most nonlinear FFN
-computation rather than increasing ranks without a resource bound.
+The primary investigation retains most nonlinear FFN computation and fits a
+small input-to-residual adapter for the contribution of omitted groups. This
+offers a more plausible capacity tradeoff than replacing an entire nonlinear
+branch with a low-rank linear map. The related
+[literature review](research-register.md#small-edits-around-cheaper-execution)
+supports the mechanism and its controls; it establishes neither a measured
+Swift bottleneck nor improved Swift capability. Capacity screening precedes
+selective loading and serving kernels.
 
-For a selected layer, capture `x = RMSNorm(residual_after_attention)` in the
-original, unfolded width-5,120 basis and the complete FFN branch `t` immediately
-before residual addition. Fit `t_hat = B * (A^T * x)` and eventually substitute
-`residual_after_attention + t_hat`. A and B are new editable F32 factors. This
-replaces the FFN; it is not an extra correction after executing the full FFN.
-The target includes the teacher's FFN-down adapter at its exact frozen scale.
-That skipped adapter cannot also run: its width-17,408 input no longer exists.
-Other adapter sites survive unchanged. Scale changes require a new candidate
-or an explicitly qualified scale-dependent design.
+At one selected site, capture the original, unfolded normalized input
+`x = RMSNorm(residual_after_attention)` from the changed-prefix execution.
+Evaluate the full teacher branch `t(x)` and retained branch `r(x)` on that same
+input, then fit `t(x) - r(x) = B * (A^T * x)`. Future execution adds the small
+correction to the retained branch. The full teacher includes its standard
+FFN-down adapter at the frozen scale. The retained branch applies that adapter
+only to retained original-basis hidden coordinates, treating omitted coordinates
+as zero. Its missing contribution belongs in the fitting target; it must not be
+applied a second time. Other adapter sites survive unchanged. New A/B factors
+consume width-5,120 normalized input, not the existing width-17,408 down-adapter
+input. These are distinct targets and cannot share factors by assumption.
+
+Keep the original-prefix teacher branch separately. The difference between its
+output and `t(x)` diagnoses prefix drift; fitting local omitted work does not
+correct that drift automatically. Sequential composition and freely generated
+continuations remain independent tests. Teacher-forced matching token IDs and
+matching sample names alone cannot establish matching hidden inputs.
+
+Prism's source-only `ffn_probe` collector now prepares these paired rows by
+replaying the untouched probe, resetting the same loaded model and replaying
+one fixed group-omitted site on the same token IDs. Both passes count against
+its existing 256-token cap and original deadline. It propagates the retained
+branch without recovery, retaining original teacher targets separately. It
+still loads every weight and executes the full teacher FFN, so this capture
+has no speed or RAM benefit. Compensated rollout, multi-site composition and
+free generation require later support and acceptance. The released Runner
+runtime does not expose this experiment; the
+[tool contract](../tools/bonsai/README.md) describes the producer/consumer fields.
+
+Whole-FFN replacement remains a separate capacity experiment. Schema 1 fits
+`t_hat = B * (A^T * x)` for the complete branch immediately before residual
+addition, eventually substituting `residual_after_attention + t_hat`. A future
+replacement omits that site's entire gate/up/down and standard adapter; the
+teacher target already includes the adapter. Scale changes require a new
+candidate or an explicitly qualified scale-dependent design in both experiments.
 
 The existing post-SwiGLU capture is a different basis and cannot supply these
 inputs. Capture the branch directly, because subtracting the residual after its
@@ -228,13 +254,17 @@ remain provisional until a complete token succeeds; discard them on failure.
 ### Source-derived opportunity
 
 Swift has 64 FFNs, each with packed gate/up/down matrices of shape
-5,120 by 17,408. These counts exclude norms, adapters, scratch and state:
+5,120 by 17,408. The following original-PQ2 counts exclude norms, adapters,
+scratch and state:
 
 | Quantity | Calculated work or payload |
 | --- | ---: |
 | One original FFN | 267,386,880 weight MACs/token; 67.734375 MiB packed weights |
 | All 64 original FFNs | 4.2333984375 GiB packed weights |
+| One omitted 1,024-coordinate group at one site | 15,728,640 removed base-weight MACs/token; 3.984375 MiB packed payload |
 | One rank-16 replacement | 163,840 factor MACs/token; 640 KiB F32 factors |
+| Two omitted groups at all 64 sites, rank-16 recovery/site | 510 MiB gross; 470 MiB net packed/factor payload opportunity |
+| Three omitted groups at all 64 sites, rank-16 recovery/site | 765 MiB gross; 725 MiB net packed/factor payload opportunity |
 | Eight rank-16 replacements | 536.875 MiB net weight/factor payload opportunity |
 | Sixteen rank-16 replacements | 1.048583984375 GiB net weight/factor payload opportunity |
 
@@ -247,10 +277,24 @@ payloads from allocation, and prove no model/graph owner retains them. The
 original on-disk GGUF remains unchanged. FFN omission removes neither KV entries
 nor recurrent state.
 
+Two groups at every site cannot reach the 512 MiB private-commit target even
+before adding recovery factors. Three groups provide a more useful eventual
+resource envelope, with higher fidelity risk. These all-site calculations are
+not a selected multi-site trial: each site's capacity and the composed model
+must pass independently. Metadata, alignment, surviving adapters and temporary
+copies reduce net benefit further.
+
+Current-weight PTQ1 uses 28-byte blocks where PQ2 uses 34 bytes. Three omitted
+groups at all 64 sites therefore offer 630 MiB gross and 590 MiB net payload
+with rank-16 recovery per site; two groups offer 420 MiB gross and 380 MiB net.
+Representation-specific geometry cannot be reused as process-memory evidence.
+
 ### Bounded native capacity screen
 
-`bonsai-tools ffn-surrogate` fits a single site from at most 64 supplied
-input/target pairs, rank 1 through 16, with a finite positive ridge penalty.
+`bonsai-tools ffn-surrogate` fits a single site from at most 64 supplied rows,
+rank 1 through 16, with a finite positive ridge penalty. Schema 1 accepts complete
+branch targets; schema 2 accepts paired full/retained branches for structured
+omission and records the original-prefix teacher separately.
 It uses a deterministic pivoted output basis and a dual ridge solve rather than
 gradient training or a whole-model weight expansion. Only fit rows construct
 the basis and coefficients. Development groups assess reconstruction after
@@ -268,8 +312,12 @@ Keep the output factors, digest, source/capture derivation and reconstruction
 summary only if a candidate or an actionable no-go needs them.
 
 A prospective initial screen should reject a candidate whose development
-squared error exceeds 10% of teacher branch energy, or whose development
-relative error exceeds fit relative error by more than five percentage points.
+squared error exceeds 10% of teacher branch energy, whose development
+relative squared error exceeds fit relative squared error by more than five
+percentage points, or whose compensated development error exceeds the
+uncompensated retained branch's error. All relative errors use complete teacher
+branch energy, not the much smaller omitted-contribution energy. A schema-2
+rejection retains diagnostics without publishing candidate factors.
 Require nonzero teacher energy and independent development groups; do not hide
 a failed site in an average. These conservative screening thresholds are design
 choices, not answer-quality guarantees. No actual-model screen has been run.
@@ -277,18 +325,18 @@ Choose a single site and fixed capture workload only after source-bound helpers
 and feasible setup/capture/cleanup estimates exist. Repeated ranks, sites or
 ridge sweeps are a matrix and remain owner-operated CI work.
 
-### Capacity-preserving and long-prefill alternatives
+### Structured geometry and the long-prefill alternative
 
 For structured FFN omission, Swift's folded down-projection Hadamard basis rules
 out arbitrary original-neuron slicing. Complete contiguous 1,024-coordinate
-groups respect the current independent transform blocks. Omitting two of the
-17 groups at all 64 FFNs offers 510 MiB gross packed payload, before compensation
-factors. It needs explicit retained group/sign identities, gate/up row omission,
-original-stride down columns and selective loading. The current whole-FFN fitter
-does not yet consume teacher-minus-retained-FFN targets. That extension needs
-paired inputs from the same changed-prefix execution, with original teacher
-targets retained separately; original-prefix reconstruction alone can hide
-accumulated error across multiple edited layers.
+groups respect the current independent transform blocks. A native compact
+profile needs gate/up row omission, original-stride down columns and selective
+loading. Keep canonical group ordering and each group's original signs; slicing
+the first signs for a shorter compact width changes the function. The current
+sign array places down-projection signs at offset 11,264, count 17,408. Bind its
+canonical I32-le digest and the normalized, sign-before-transform recipe to the
+model/source identity. Group omission changes accumulation order, so it has a
+distinct numerical profile even when each group's algebra is preserved.
 
 [TokenGate](https://arxiv.org/abs/2610.26754v1) is a separate long-prefill
 candidate, including a Qwen3.5 hybrid experiment. It combines learned prompt
@@ -316,7 +364,11 @@ review where required. A capability edit must start from a diagnosed failure
 and survive untouched complete-answer evaluation against the original model,
 the cheaper graph without compensation, and the frozen compensated graph.
 If a separate behavioral edit is composed, also compare the compensated graph
-before that edit to attribute the gain. Prompt/sampler controls remain necessary;
+before that edit to attribute the gain. For relative ability, add an
+equal-resource comparison that reinvests saved work in useful reasoning, with
+the same frozen task/rubric and complete answers. Keep this attribution separate
+from the absolute latency/RAM gates: spending every saved millisecond does not
+demonstrate faster answers. Prompt/sampler controls remain necessary;
 shorter answers or repaired termination alone cannot count as better reasoning.
 Nothing in the November literature establishes this three-way result for Swift.
 
