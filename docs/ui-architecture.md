@@ -343,6 +343,39 @@ Service failure exposes setup guidance without substituting a recognizer or
 Windows voice. Images, video and image generation remain unavailable in the
 pinned Swift profile.
 
+## Candidate native improvements
+
+The [native application and writing references](research-register.md#native-application-and-writing-references)
+identify candidate mechanisms, not implemented features or selected dependencies.
+[PLAN.md](../PLAN.md) owns their implementation and qualification order. Source
+reuse requires a reviewed immutable revision, license and compatibility with the
+current egui version; native Rust presentation and broker policy remain binding.
+
+For long transcripts, hello_egui's variable-height list is a reference for lazy row
+measurement, bounded layout work and preserving the first visible item through
+width, display-scale and font changes. Runner already caches layouts and culls
+painting. A candidate must bound invalidation work without losing exact source
+offsets, Find targets, selection or streamed-tail updates; estimated heights must
+not silently relocate the active result.
+
+Ferrite's grouped edit operations suggest a byte-bounded undo log in place of
+complete draft snapshots. Any change must preserve whole-edit rejection, cursor
+and undo restoration, IME composition and atomic source insertion. Keep independent
+byte limits for retained operations and transaction scratch. cosmic-text supplies
+multilingual and bidirectional editing cases rather than a selected replacement
+text engine. A draft comparison using similar would calculate Unicode-aware diffs
+in bounded, cancellable background work; presentation and explicit user acceptance
+must retain source text and branch ownership, without silently merging drafts.
+
+Spindle's scene packets and SillyTavern's context cards motivate an optional native
+writing-context design: user-approved character/world facts, scene relevance,
+explicit insertion order and a visible token budget with inclusion/exclusion
+reasons. Generated canon changes remain proposals until accepted. Local encrypted
+storage and saving opt-out must cover any retained writing context. Exact broker
+counting remains authoritative over the assembled request; budget overflow cannot
+silently trim committed history. These references select neither an MCP tool
+surface nor a web UI, and authorize no external manuscript transmission.
+
 ## Review and validation
 
 Review native Rust presentation and protocol preservation through native builds,

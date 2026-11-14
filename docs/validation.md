@@ -523,6 +523,36 @@ Foundation's maintenance crate checks) uses synthetic bundles without a model. C
 cannot promote a pin; follow the
 [lock-update review](development-guide.md#prepare-a-runtime-lock-update).
 
+### Candidate reference-guided controls
+
+The [native application references](research-register.md#native-application-and-writing-references)
+and [reliability references](research-register.md#reliability-and-distribution-references)
+suggest additional controls; they are not installed test dependencies or completed
+acceptance. [PLAN.md](../PLAN.md) owns outstanding work. Pin and review each source
+before adapting a control, and use the existing focused-check, device-budget and
+evidence-retention rules.
+
+uiautomation-rs can inform a native Windows UI Automation helper that binds queries
+to the exact application process and observes labels, control patterns, enabled
+states, modal ownership and focus return. Real OS observations complement
+`egui_kittest`; neither screenshots nor a UIA tree alone replace Narrator,
+keyboard/IME and high-contrast review. Adapt cosmic-text's multilingual insertion,
+deletion and bidirectional selection cases to the current editor, checking exact
+contents and byte/scalar/grapheme boundaries without claiming a text-engine change.
+
+Shuttle can inform narrowly scoped cancellation, ownership and shutdown schedule
+exploration with reproducible failing schedules. Supplement the existing broker
+scheduler model and late-event controls rather than replacing their independent
+oracles. Controlled Rust scheduling establishes no native Job, process teardown,
+driver or actual-model verdict; passing sampled schedules is not an exhaustive
+concurrency proof.
+
+Codex's retained no-reparse directory handles provide an independent source review
+for existing artifact/staging ancestor guards. Adapt rename, sharing and reparse
+mutation attempts with outside-containment negative controls and observable final
+file/handle state. An invalid attack control or unknown cleanup cannot count as a
+denial pass, and source similarity alone establishes no Windows isolation result.
+
 ## Acceptance limits
 
 | Boundary | What focused/native evidence establishes |
