@@ -9,7 +9,7 @@ use crate::canary::{Call, Failure};
 use bonsai_windows_credentials::PrivateDirectory;
 use bonsai_windows_process::{
     OwnedProcess, ProcessSpec, SandboxPolicy, available_memory_bytes, listener_process_id,
-    native_sandbox_available,
+    validate_sandbox_environment,
 };
 use std::{
     ffi::OsString,
@@ -41,6 +41,16 @@ fn sandbox_support_failure(kind: io::ErrorKind) -> Failure {
     } else {
         Failure::Message(
             "The required native Windows sandbox is unavailable for speech. Update Windows to a build with process containment and container-hosted loopback support. Text chat remains available.",
+        )
+    }
+}
+
+fn sandbox_start_failure(kind: io::ErrorKind) -> Failure {
+    if kind == io::ErrorKind::Unsupported {
+        sandbox_support_failure(kind)
+    } else {
+        Failure::Message(
+            "Could not apply the native speech sandbox or start its executable. Check the retained service evidence; text chat remains available.",
         )
     }
 }
@@ -232,7 +242,10 @@ impl Service {
     ) -> Result<Self, Failure> {
         let call = Call::new(generation, current, Duration::from_mins(15));
         call.check()?;
-        native_sandbox_available().map_err(|error| sandbox_support_failure(error.kind()))?;
+        // Reject ambient credentials before provisioning. The real worker launch
+        // admits its complete PSEC policy; do not create/discard an empty PSEC
+        // environment first or cache a prior admission result.
+        validate_sandbox_environment().map_err(|error| sandbox_support_failure(error.kind()))?;
         if listener_process_id(port)
             .map_err(|_| Failure::Message("Could not check the local speech port."))?
             .is_some()
@@ -249,7 +262,7 @@ impl Service {
             record(service_diagnostic(&evidence_directory, None));
         }
         let process = OwnedProcess::start_sandboxed(&specification, &policy)
-            .map_err(|_| Failure::Message("Could not apply the native speech sandbox or start its executable. Check the retained service evidence; text chat remains available."))?;
+            .map_err(|error| sandbox_start_failure(error.kind()))?;
         let mut service =
             Self::monitored_in(Arc::new(process), available_memory_bytes, Some(directory))?;
         service.diagnostic_sink = diagnostic_sink;
@@ -610,6 +623,14 @@ fn main() -> std::io::Result<()> {
         for kind in [io::ErrorKind::Unsupported, io::ErrorKind::Other] {
             assert!(matches!(super::sandbox_support_failure(kind),
                     Failure::Message(message) if message.contains("Update Windows") && message.contains("loopback")));
+        }
+        assert!(
+            matches!(super::sandbox_start_failure(io::ErrorKind::Unsupported),
+                Failure::Message(message) if message.contains("Update Windows") && message.contains("loopback"))
+        );
+        for kind in [io::ErrorKind::InvalidInput, io::ErrorKind::PermissionDenied] {
+            assert!(matches!(super::sandbox_start_failure(kind),
+                    Failure::Message(message) if message.contains("retained service evidence") && !message.contains("parent environment")));
         }
     }
     #[test]

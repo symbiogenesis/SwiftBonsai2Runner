@@ -22,7 +22,7 @@ use crate::{
 use bonsai_windows_credentials::{PrivateCredentials, validate_external_path};
 use bonsai_windows_process::{
     OwnedProcess, ProcessMemory, ProcessSpec, SandboxPolicy, available_memory_bytes,
-    listener_process_id, native_sandbox_available,
+    listener_process_id, native_sandbox_available, validate_sandbox_environment,
 };
 use std::{
     cell::Cell,
@@ -619,7 +619,13 @@ impl LaunchConfig {
         if self.check_only {
             return Err(LaunchError::Arguments);
         }
-        self.check_sandbox_support()?;
+        if self.requires_native_sandbox() {
+            // Keep early credential rejection, then admit the actual complete
+            // PSEC policy in start_process. Creating a throwaway environment
+            // here duplicates admission without qualifying the later launch.
+            validate_sandbox_environment()
+                .map_err(|error| Self::sandbox_support_error(error.kind()))?;
+        }
         self.validate_paths()?;
         // Resolve policy before creating secrets or loading any native code.
         let pending_key = self.evidence_parent.join("not-created.key");
