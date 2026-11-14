@@ -193,8 +193,8 @@ defect or qualified fix.
 [SuffixDecoding](https://arxiv.org/abs/2411.04975) proposes tokens from prompt/history suffixes.
 [SpecLA](https://arxiv.org/abs/2607.16673) retains verification factors and delays commit to
 reconstruct accepted recurrent states. The generic greedy block verifier does not
-qualify this tape-based approach or stochastic verification. SpecLA's
-trained drafter/H100 evidence and reported FP32 state differences do not establish Bonsai
+qualify this tape-based approach or stochastic verification. SpecLA's GPU
+experiments with a trained drafter and reported FP32 state differences do not establish Bonsai
 compatibility or exact replay.
 
 Stochastic speculation needs proven acceptance/rejection correction, as in [Leviathan et
@@ -274,7 +274,7 @@ drafters, not another peer-reviewed paper; learned components remain separate ar
 
 Published [Bonsai 2-specific DFlash2 drafters](https://huggingface.co/naklitechie/Qwen3.8-27B-DFlash2-ternary-bonsai2)
 make compatible-artifact screening concrete. The author reports workload-dependent
-results, slower creative chat in one Apple comparison and changed greedy CUDA
+results, slower creative chat in one comparison and changed greedy GPU
 output near ties during batched verification. These observations qualify neither
 Swift's adapter profile nor its stochastic sampler or Snapdragon execution.
 Validate tokenizer, transformed basis, shared embeddings/head and feature taps

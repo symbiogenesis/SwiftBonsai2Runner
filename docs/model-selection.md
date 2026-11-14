@@ -83,7 +83,8 @@ supplies design references, not Snapdragon qualification:
   reserves dense/shared and router weights, context/recurrent state, workspace,
   metadata, staging and host headroom before sizing expert caches. Unequal experts
   use each layer's maximum resident size. Count retained host/device copies and
-  shared physical GPU/NPU RAM once; separate discrete memory only when established.
+  Snapdragon's shared physical CPU/GPU/NPU RAM once, including any duplicated
+  allocations within that pool.
   Keep arithmetic checked and unknown capacity explicit. Capacity coverage does
   not establish cache hit rate or admission.
 - Hot/warm/cold placement may keep frequently used experts on an accelerator,
