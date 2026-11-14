@@ -812,10 +812,12 @@ impl OwnedProcess {
     /// Starts a contained worker with bounded anonymous-pipe standard streams.
     ///
     /// Returns the owner, parent stdin writer and parent stdout reader. Only the
-    /// worker endpoints and its newly created `stderr` file enter the inherited
-    /// handle list. `spec.stdout` remains a validated reserved name and no file
-    /// is created there. Each pipe requests a 64 KiB kernel buffer; the protocol
-    /// must independently bound messages and apply backpressure.
+    /// worker endpoints and a write-only `NUL` stderr handle enter the inherited
+    /// handle list. `spec.stdout` and `spec.stderr` remain validated reserved
+    /// names and no files are created there. The binary protocol must carry
+    /// bounded errors; an untrusted worker cannot fill a stderr log on disk.
+    /// Each pipe requests a 64 KiB kernel buffer; the protocol must independently
+    /// bound messages and apply backpressure.
     ///
     /// The caller must supervise blocking pipe operations off its UI thread and
     /// stop the worker before joining a stalled reader. Dropping the parent

@@ -455,6 +455,7 @@ impl NativeProcess {
                 win_size::<JOBOBJECT_EXTENDED_LIMIT_INFORMATION>(),
             )
         })?;
+        let piped = pipes.is_some();
         let (input, output) = if let Some(pipes) = pipes {
             pipes
         } else {
@@ -473,12 +474,23 @@ impl NativeProcess {
                 )?,
             )
         };
-        let error = standard_file(
-            spec.stderr.as_os_str(),
-            0x4000_0000,
-            FILE_SHARE_READ,
-            CREATE_NEW,
-        )?;
+        // Binary pipe workers return bounded errors in their protocol. A NUL
+        // handle avoids giving untrusted codecs an unbounded disk-log sink.
+        let error = if piped {
+            standard_file(
+                OsStr::new("NUL"),
+                0x4000_0000,
+                FILE_SHARE_READ | FILE_SHARE_WRITE,
+                OPEN_EXISTING,
+            )?
+        } else {
+            standard_file(
+                spec.stderr.as_os_str(),
+                0x4000_0000,
+                FILE_SHARE_READ,
+                CREATE_NEW,
+            )?
+        };
         let attributes = CreationAttributes::new(
             job.as_raw_handle(),
             [
