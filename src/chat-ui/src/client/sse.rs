@@ -323,7 +323,12 @@ impl Reply {
                 "The response continued after its completion marker.",
             ));
         }
-        let chunk: Chunk<'_> = serde_json::from_slice(frame.data)
+        // Ignored JSON fields need not materialize strings, so from_slice alone
+        // can accept invalid UTF-8 there. Validate the complete event once;
+        // from_str retains borrowing and skips redundant string UTF-8 checks.
+        let data = std::str::from_utf8(frame.data)
+            .map_err(|_| Failure::Message("The model returned an invalid streaming event."))?;
+        let chunk: Chunk<'_> = serde_json::from_str(data)
             .map_err(|_| Failure::Message("The model returned an invalid streaming event."))?;
         if chunk.error.is_some() || matches!(chunk.choices, Choices::Many) {
             return Err(Failure::Message(
@@ -375,6 +380,67 @@ impl Reply {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn invalid_utf8_in_ignored_fields_cannot_publish_an_event() -> Result<()> {
+        for template in [
+            r#"{"ignored":"INVALID","choices":[{"delta":{"content":"visible"},"finish_reason":"stop"}]}"#,
+            r#"{"choices":[{"ignored":{"nested":["INVALID"]},"delta":{"content":"visible"},"finish_reason":"stop"}]}"#,
+            r#"{"choices":[{"delta":{"ignored":"INVALID","content":"visible"},"finish_reason":"stop"}]}"#,
+        ] {
+            let (prefix, suffix) = template
+                .split_once("INVALID")
+                .ok_or(Failure::Message("Missing invalid UTF-8 fixture marker"))?;
+            for invalid in [b"\xff".as_slice(), b"\xc0\xaf", b"\xf0\x9f"] {
+                let wire = [
+                    b"data: ",
+                    prefix.as_bytes(),
+                    invalid,
+                    suffix.as_bytes(),
+                    b"\n\n",
+                ]
+                .concat();
+                for fragment in [1, 2, 7, wire.len()] {
+                    let mut sse = Sse::default();
+                    let mut published = 0;
+                    let result = wire.chunks(fragment).try_for_each(|bytes| {
+                        sse.push(bytes, &mut |_, _| {
+                            published += 1;
+                            Ok(())
+                        })
+                    });
+                    assert!(result.is_err());
+                    assert_eq!(published, 0);
+                    assert!(sse.finish().is_err());
+                    assert_eq!(sse.into_answer(), (String::new(), String::new()));
+                }
+            }
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn fragmented_unicode_events_preserve_exact_source_and_borrowing() -> Result<()> {
+        let expected = "雨🌱e\u{301}👩\u{200d}🔬עברית\u{2028}";
+        let wire = format!(
+            "data: {{\"ignored\":\"非ASCII🌱\",\"choices\":[{{\"delta\":{{\"content\":\"{expected}\"}},\"finish_reason\":\"stop\"}}]}}\r\n\r\ndata: [DONE]\r\n\r\n"
+        );
+        for fragment in [1, 2, 3, 7, wire.len()] {
+            let mut sse = Sse::default();
+            let mut published = String::new();
+            for bytes in wire.as_bytes().chunks(fragment) {
+                sse.push(bytes, &mut |text, _| {
+                    assert!(matches!(text, Cow::Borrowed(_)));
+                    published.push_str(&text);
+                    Ok(())
+                })?;
+            }
+            assert_eq!(sse.finish()?, Completion::Finished);
+            assert_eq!(published, expected);
+            assert_eq!(sse.into_answer(), (expected.into(), String::new()));
+        }
+        Ok(())
+    }
 
     #[test]
     fn terminal_payloads_are_validated_before_delivery() -> Result<()> {
