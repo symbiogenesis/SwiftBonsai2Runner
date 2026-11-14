@@ -276,3 +276,40 @@ fn source_comparison_rejects_duplicate_json_fields_and_changed_proof_bytes() -> 
     assert!(super::super::run(request).is_err());
     Ok(())
 }
+
+#[test]
+fn source_comparison_rejects_overflowed_and_underflowed_timing_ratios() -> Result<()> {
+    for indices in [[0, 3], [1, 2]] {
+        let mut fixture = fixture()?;
+        for index in indices {
+            let reference = fixture.owner["arms"][index]["receipt"].clone();
+            let name = reference["path"].as_str().ok_or("Missing receipt path.")?;
+            let mut receipt = json_bytes(
+                &std::fs::read(fixture.root.join(name)).map_err(|error| error.to_string())?,
+            )?;
+            for field in [
+                "load_milliseconds",
+                "preparation_milliseconds",
+                "request_milliseconds",
+                "elapsed_milliseconds",
+            ] {
+                receipt[field] = json!(f64::from_bits(1));
+            }
+            fixture.owner["arms"][index]["receipt"] = save(&fixture.root, name, &receipt)?;
+            let reference = fixture.owner["arms"][index]["supervision"].clone();
+            let name = reference["path"]
+                .as_str()
+                .ok_or("Missing supervisor path.")?;
+            let mut supervisor = json_bytes(
+                &std::fs::read(fixture.root.join(name)).map_err(|error| error.to_string())?,
+            )?;
+            supervisor["WallMilliseconds"] = json!(f64::from_bits(1));
+            fixture.owner["arms"][index]["supervision"] = save(&fixture.root, name, &supervisor)?;
+        }
+        let result = super::super::run(fixture.request()?);
+        assert!(
+            matches!(result, Err(error) if error.contains("Timing ratio overflowed or underflowed"))
+        );
+    }
+    Ok(())
+}

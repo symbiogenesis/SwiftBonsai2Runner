@@ -22,7 +22,7 @@ source collection alone supplies no performance or promotion result.
 
 ## Current-source offline admission
 
-Pass a JSON request on stdin to `bonsai-tools cpu-evaluation`:
+Pass a JSON request on stdin to `bonsai-tools cpu-evaluation --request -`:
 
 ```json
 {
@@ -72,7 +72,8 @@ The schema-1 `prism-cpu-source-comparison-preparation` contains:
   Commands must match the evaluator's exact phase templates, beginning with
   `cargo +<toolchain>`; execution-suppressing or extra flags reject admission.
   The templates require locked/offline Release execution, explicit package selection
-  and strict all-target Clippy for each analyzer, scalar library checking,
+  and strict all-target Clippy for runtime/helper analysis, strict collector-example
+  Clippy, scalar library checking,
   the exact named graph state control, all three current-source collector tests
   and production collector linking. Test names use their sorted full Rust names.
 

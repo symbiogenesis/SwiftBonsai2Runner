@@ -724,12 +724,7 @@ fn evaluate(packet: &Preparation, owner: &Owner, owner_root: &Path) -> Result<Va
                 + positive(&receipt["request_milliseconds"])?,
         );
     }
-    Ok(comparison_result(
-        &outputs,
-        &process_times,
-        &owned_times,
-        &request_times,
-    ))
+    comparison_result(&outputs, &process_times, &owned_times, &request_times)
 }
 
 fn comparison_result(
@@ -737,17 +732,20 @@ fn comparison_result(
     process_times: &[f64],
     owned_times: &[f64],
     request_times: &[f64],
-) -> Value {
-    let process = ratios(process_times);
-    let owned = ratios(owned_times);
-    json!({"schema_version":1,"kind":"prism-cpu-source-comparison","status":"admitted",
+) -> Result<Value> {
+    let process = ratios(process_times)?;
+    let owned = ratios(owned_times)?;
+    let request = ratios(request_times)?;
+    Ok(
+        json!({"schema_version":1,"kind":"prism-cpu-source-comparison","status":"admitted",
         "short_request_benefit_observed":process.iter().all(|ratio| *ratio <= 0.90) && owned.iter().all(|ratio| *ratio <= 1.10),
         "candidate_over_baseline_process_wall_ratios":process,"candidate_over_baseline_owned_arm_ratios":owned,
-        "candidate_over_baseline_request_ratios":ratios(request_times),"pairs":2,
+        "candidate_over_baseline_request_ratios":request,"pairs":2,
         "complete_answer_observed":outputs.iter().all(|output| output[5] == "stop"),
         "continuous_power_stability_proven":false,"promotion_qualified":false,"benefit_gate_qualified":false,
         "default_may_change":false,"individual_optimization_verdicts":false,"long_prefill_qualified":false,
-        "scope":"Two reversed bounded short-request source pairs with identical cache/tile/scratch. Build producer authentication, complete state/logits/adapters, quality, sustained use and promotion remain independent gates."})
+        "scope":"Two reversed bounded short-request source pairs with identical cache/tile/scratch. Build producer authentication, complete state/logits/adapters, quality, sustained use and promotion remain independent gates."}),
+    )
 }
 
 fn milliseconds(ticks: u64, frequency: u64) -> Result<f64> {
@@ -755,8 +753,13 @@ fn milliseconds(ticks: u64, frequency: u64) -> Result<f64> {
     Ok(positive(&json!(ticks))? * 1000.0 / positive(&json!(frequency))?)
 }
 
-fn ratios(values: &[f64]) -> [f64; 2] {
-    [values[1] / values[0], values[2] / values[3]]
+fn ratios(values: &[f64]) -> Result<[f64; 2]> {
+    let ratios = [values[1] / values[0], values[2] / values[3]];
+    require(
+        ratios.iter().all(|ratio| ratio.is_finite() && *ratio > 0.0),
+        "Timing ratio overflowed or underflowed its positive finite range.",
+    )?;
+    Ok(ratios)
 }
 
 pub(super) fn run(value: Value) -> Result<Value> {
