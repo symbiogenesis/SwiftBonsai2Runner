@@ -37,6 +37,28 @@ fn attribute<'a>(tag: &'a str, name: &str) -> Result<Option<&'a str>> {
     ))
 }
 
+fn attributes(tag: &str, allowed: &[&str]) -> Result<()> {
+    let mut rest = tag
+        .split_once(' ')
+        .ok_or("Missing SVG attributes.")?
+        .1
+        .trim_end_matches('/')
+        .trim();
+    while !rest.is_empty() {
+        let (name, value) = rest.split_once("=\"").ok_or("Invalid SVG attribute.")?;
+        if !allowed.contains(&name) {
+            return Err(format!("Unsupported SVG attribute: {name}"));
+        }
+        rest = value
+            .split_once('"')
+            .ok_or("Unterminated SVG attribute.")?
+            .1
+            .trim_start();
+        attribute(tag, name)?;
+    }
+    Ok(())
+}
+
 fn number(tokens: &[&str], index: &mut usize) -> Result<f64> {
     let value = tokens
         .get(*index)
@@ -55,11 +77,18 @@ fn point(tokens: &[&str], index: &mut usize) -> Result<Point> {
         y: number(tokens, index)?,
     })
 }
-fn cubic(a: Point, b: Point, c: Point, d: Point, t: f64) -> Point {
+fn cubic(start: Point, control1: Point, control2: Point, end: Point, t: f64) -> Point {
     let u = 1.0 - t;
+    let weights = [u * u * u, 3.0 * u * u * t, 3.0 * u * t * t, t * t * t];
+    let coordinate = |a, b, c, d| {
+        weights[3].mul_add(
+            d,
+            weights[2].mul_add(c, weights[1].mul_add(b, weights[0] * a)),
+        )
+    };
     Point {
-        x: u * u * u * a.x + 3.0 * u * u * t * b.x + 3.0 * u * t * t * c.x + t * t * t * d.x,
-        y: u * u * u * a.y + 3.0 * u * u * t * b.y + 3.0 * u * t * t * c.y + t * t * t * d.y,
+        x: coordinate(start.x, control1.x, control2.x, end.x),
+        y: coordinate(start.y, control1.y, control2.y, end.y),
     }
 }
 
@@ -74,6 +103,7 @@ fn parse(source: &str) -> Result<Vec<Shape>> {
         return Err("Unsupported application SVG root or extent.".into());
     }
     let mut shapes = Vec::new();
+    let mut root_seen = false;
     for element in source.split('<').skip(1) {
         let (tag, trailing) = element.split_once('>').ok_or("Unterminated SVG tag.")?;
         if !trailing.trim().is_empty() {
@@ -83,26 +113,20 @@ fn parse(source: &str) -> Result<Vec<Shape>> {
             continue;
         }
         if tag.starts_with("svg ") {
-            if attribute(tag, "viewBox")? != Some("0 0 24 24") {
+            attributes(tag, &["xmlns", "viewBox", "width", "height"])?;
+            if root_seen
+                || attribute(tag, "viewBox")? != Some("0 0 24 24")
+                || attribute(tag, "xmlns")? != Some("http://www.w3.org/2000/svg")
+            {
                 return Err("SVG requires viewBox 0 0 24 24.".into());
             }
+            root_seen = true;
             continue;
         }
         if !tag.starts_with("path ") || !tag.ends_with('/') || shapes.len() >= 8 {
             return Err("Only bounded self-closing SVG paths supported.".into());
         }
-        let mut rest = tag.trim_start_matches("path ").trim_end_matches('/').trim();
-        while !rest.is_empty() {
-            let (name, value) = rest.split_once("=\"").ok_or("Invalid SVG attribute.")?;
-            if !["d", "fill", "stroke", "stroke-width"].contains(&name) {
-                return Err(format!("Unsupported SVG attribute: {name}"));
-            }
-            rest = value
-                .split_once('"')
-                .ok_or("Unterminated SVG attribute.")?
-                .1
-                .trim_start();
-        }
+        attributes(tag, &["d", "fill", "stroke", "stroke-width"])?;
         let fill = match attribute(tag, "fill")? {
             Some("#2e8555") => true,
             Some("none") => false,
@@ -180,7 +204,7 @@ fn segments(shape: &Shape) -> impl Iterator<Item = (Point, Point)> + '_ {
 fn inside(shape: &Shape, p: Point) -> bool {
     let mut winding = 0_i32;
     for (a, b) in segments(shape) {
-        let cross = (b.x - a.x) * (p.y - a.y) - (p.x - a.x) * (b.y - a.y);
+        let cross = (p.x - a.x).mul_add(-(b.y - a.y), (b.x - a.x) * (p.y - a.y));
         if a.y <= p.y && b.y > p.y && cross > 0.0 {
             winding += 1;
         }
@@ -194,17 +218,17 @@ fn on_stroke(shape: &Shape, p: Point) -> bool {
     segments(shape).any(|(a, b)| {
         let dx = b.x - a.x;
         let dy = b.y - a.y;
-        let length = dx * dx + dy * dy;
+        let length = dy.mul_add(dy, dx * dx);
         if length == 0.0 {
             return false;
         }
-        let t = ((p.x - a.x) * dx + (p.y - a.y) * dy) / length;
+        let t = (p.y - a.y).mul_add(dy, (p.x - a.x) * dx) / length;
         if !(0.0..=1.0).contains(&t) {
             return false;
         }
-        let x = p.x - (a.x + t * dx);
-        let y = p.y - (a.y + t * dy);
-        x * x + y * y <= shape.stroke * shape.stroke / 4.0
+        let x = p.x - t.mul_add(dx, a.x);
+        let y = p.y - t.mul_add(dy, a.y);
+        y.mul_add(y, x * x) <= shape.stroke * shape.stroke / 4.0
     })
 }
 fn rasterize(shapes: &[Shape], size: u32) -> Result<Vec<u8>> {
@@ -249,14 +273,14 @@ fn crc32(bytes: &[u8]) -> u32 {
     }
     !crc
 }
-fn chunk(png: &mut Vec<u8>, kind: &[u8; 4], bytes: &[u8]) -> Result<()> {
+fn chunk(png: &mut Vec<u8>, kind: [u8; 4], bytes: &[u8]) -> Result<()> {
     png.extend_from_slice(
         &u32::try_from(bytes.len())
             .map_err(|e| e.to_string())?
             .to_be_bytes(),
     );
     let start = png.len();
-    png.extend_from_slice(kind);
+    png.extend_from_slice(&kind);
     png.extend_from_slice(bytes);
     png.extend_from_slice(&crc32(&png[start..]).to_be_bytes());
     Ok(())
@@ -266,17 +290,17 @@ fn png(shapes: &[Shape], size: u32) -> Result<Vec<u8>> {
     let mut header = Vec::from(size.to_be_bytes());
     header.extend_from_slice(&size.to_be_bytes());
     header.extend_from_slice(&[8, 6, 0, 0, 0]);
-    chunk(&mut png, b"IHDR", &header)?;
+    chunk(&mut png, *b"IHDR", &header)?;
     let mut compressed = ZlibEncoder::new(Vec::new(), Compression::best());
     compressed
         .write_all(&rasterize(shapes, size)?)
         .map_err(|e| e.to_string())?;
     chunk(
         &mut png,
-        b"IDAT",
+        *b"IDAT",
         &compressed.finish().map_err(|e| e.to_string())?,
     )?;
-    chunk(&mut png, b"IEND", &[])?;
+    chunk(&mut png, *b"IEND", &[])?;
     Ok(png)
 }
 fn ico(frames: &[Vec<u8>]) -> Result<Vec<u8>> {
@@ -346,6 +370,7 @@ mod tests {
             SOURCE.replace("fill=", "transform="),
             SOURCE.replace("21.5", "999"),
             SOURCE.replace("24 24", "48 48"),
+            SOURCE.replace("<svg ", "<svg transform=\"translate(2 2)\" "),
         ] {
             assert!(parse(&changed).is_err());
         }
@@ -376,8 +401,10 @@ mod tests {
         }
         assert_eq!(payload.len(), 16 * 65);
         let pixels: Vec<_> = payload
-            .chunks_exact(65)
-            .flat_map(|row| row[1..].chunks_exact(4))
+            .as_chunks::<65>()
+            .0
+            .iter()
+            .flat_map(|row| row[1..].as_chunks::<4>().0.iter())
             .collect();
         assert!(pixels.iter().all(|p| p[..3] == [0x2e, 0x85, 0x55]));
         for alpha in [0, 255] {
