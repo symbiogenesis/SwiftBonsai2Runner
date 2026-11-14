@@ -20,7 +20,7 @@ Native IME, bidirectional editing and accessibility retain their separate
 HTTP media types and multipart field syntax accept only ASCII space/tab around
 tokens, following [RFC 9110 whitespace](https://www.rfc-editor.org/rfc/rfc9110.html#section-5.6.3).
 Payload text and supported Unicode filenames retain their exact contents.
-Each complete SSE event must be valid UTF-8, including ignored JSON fields,
+Each complete SSE data payload must be valid UTF-8, including ignored JSON fields,
 before publishing any delta; network fragments may split encoded scalars.
 Unescaped JSON strings still borrow the validated event storage.
 
