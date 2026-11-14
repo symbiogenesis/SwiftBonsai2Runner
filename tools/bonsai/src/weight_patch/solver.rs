@@ -1,4 +1,8 @@
 //! Bounded primal-dual fitting with an independently evaluated numerical gap.
+#![expect(
+    clippy::suboptimal_flops,
+    reason = "The PDHG recurrence and conservative error bounds retain explicit multiplication/addition rounding."
+)]
 
 use std::time::{Duration, Instant};
 
@@ -165,10 +169,6 @@ fn certificate(
 
 /// PDHG solves the L1 plus target/preservation hinge objective. No held-out rows
 /// enter this routine. The returned certificate evaluates rounded F32 factors.
-#[expect(
-    clippy::too_many_lines,
-    reason = "The fixed PDHG recurrence and both independent stopping bounds form one operation."
-)]
 pub(super) fn solve(rows: &[Row<'_>], controls: Controls) -> Result<Solution, String> {
     const MAX_CELL_VISITS: u64 = 500_000_000;
     let started = Instant::now();

@@ -29,7 +29,7 @@ fn fixture() -> Value {
         "direction":vector(OUTPUT_WIDTH,1.0),"directionSourceSha256":"d".repeat(64),
         "controls":{"lambda":1.0,"targetPenalty":2.0,"preservePenalty":2.0,
             "delta":1.0,"epsilon":0.0,"maxIterations":5000,
-            "relativeGapTolerance":0.000001,"timeBudgetMilliseconds":2000}})
+            "relativeGapTolerance":0.000_001,"timeBudgetMilliseconds":2000}})
 }
 
 #[test]
