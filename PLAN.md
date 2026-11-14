@@ -589,14 +589,20 @@ nor editing the available Abliteration factors.
 - [ ] Publish and qualify [head-scoped GDN decode and packed value result checks](docs/cpu-kernels.md#head-scoped-gdn-decode-and-packed-value-result-checks):
   compiled native/portable arithmetic and failure controls, feature-disabled
   fallback, strict ARM64/x64 Release analysis/linking, codegen/resources,
-  complete-model parity and matched X2 CPU-only request benefit. Resolve the
-  supervised Cargo startup failure before claiming a local compiled-check pass;
+  complete-model parity and matched X2 CPU-only request benefit. Preserve the
+  earlier failed Cargo diagnostic separately from source-bound tool-Job checks;
   retain the pinned runtime as rollback.
 - [ ] Publish and qualify [provisional GDN and prepared current-token KV](docs/cpu-kernels.md#provisional-gdn-and-prepared-current-token-kv):
   native/portable exact arithmetic, late-failure rollback, stale-record rejection,
   selected-cache and FP16 state/adapter/cancellation parity, codegen/resources and
   matched CPU-only complete-request benefit. Retain the pinned runtime as rollback.
 - [ ] Qualify [prepared packed-KV queries and CPU preparation reuse](docs/cpu-kernels.md#prepared-packed-kv-queries-and-cpu-preparation-reuse).
+- [ ] Publish and qualify [zero-weight packed values, temporal GDN heads and joined Q8 tiles](docs/cpu-kernels.md#zero-weight-packed-values-temporal-gdn-heads-and-joined-q8-tiles):
+  exact native/portable and feature-disabled controls, strict ARM64/x64 Release
+  analysis/linking, codegen/stack and resource review, complete-model
+  logits/state/adapters/cancellation and matched CPU-only complete-request benefit.
+  Keep ordinary K4/V4 decode, explicit tiled prefill and PTQ1 gates separate;
+  retain the pinned runtime as rollback until a verified bundle and reviewed repin.
 - [ ] Qualify [CPU preparation candidates](docs/cpu-kernels.md#cpu-preparation-candidates),
   [dispatch and attention preparation](docs/cpu-kernels.md#dispatch-and-attention-preparation) and
   [tiled dispatch and adapters](docs/cpu-kernels.md#tiled-dispatch-and-adapter-preparation), retaining each

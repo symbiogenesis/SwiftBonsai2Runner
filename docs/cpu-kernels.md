@@ -307,6 +307,43 @@ Publish the changed NEON helper before a dependent runtime release, then prepare
 a genuine source-bound bundle and reviewed Runner repin. Runner's active 0.1.27
 bundle does not consume these local candidates.
 
+### Zero-weight packed values, temporal GDN heads and joined Q8 tiles
+
+The next shared CPU candidates extend ordinary packed-cache attention and the
+explicit tiled-prefill consumer. They do not change cache or weight precision:
+
+- A private packed-value scan validates each record, weight and weighted scale
+  before skipping decoding and all 256 channel updates when the weighted scale
+  rounds to either signed zero. The scan owns its initial positive-zero sum;
+  separate finite binary32 additions cannot introduce negative zero. Public
+  single-record operations retain their defensive arithmetic for caller-owned
+  negative-zero destinations. Invalid records still poison the entire scan.
+- Exact temporal GDN prefill admits immutable token geometry and selects native
+  execution once for a complete 128- or 256-row square head. Every eight-row
+  group retains its existing temporal kernel, staging and publication order.
+  A failed native group replays the defensive row-major path from committed
+  source; unsupported targets and geometry retain their existing grouping.
+- Joined prompt projections also admit PTQ1, odd-group PQ2 and short row tails
+  through their existing exact row kernels. Each format retains its activation
+  quantizer and arithmetic. Original-basis transforms, targeted adapters and
+  external executors retain their existing admission and fallback. This extends
+  the explicit prompt consumer; ordinary decode does not acquire prompt tiles.
+
+These changes add no persistent scratch, expanded weights, optional ISA or helper
+API. Scalar-bit, signed-zero/subnormal, corrupt-record, late-failure, recovery,
+cancellation, adapter and integrated-consumer controls are independent of timing.
+The zero-weight opportunity depends on the selected history's actual probabilities;
+head-scoped admission and fewer worker joins likewise establish no speedup alone.
+
+Delivery requires final-source native and fallback strict Release analysis and
+focused controls, ARM64 codegen/stack review, complete-model logits/state/adapter/
+cancellation acceptance, and a newly declared matching-source CPU-only request
+comparison under the [cross-generation gates](#cross-generation-cpu-promotion).
+Keep ordinary K4/V4 decode, exact tiled prefill and PTQ1 acceptance distinct.
+Publish a genuine runtime bundle and review Runner's locks only after the
+applicable gates pass. The fixed 0.1.23/0.1.25 comparison cannot qualify these
+candidates; the active 0.1.27 runtime remains the application pin and rollback.
+
 ## Execution and dispatch
 
 The default `experimental-neon` feature uses [`fearless_simd` 1.1.0][fearless]'s safe core API under
