@@ -1024,6 +1024,183 @@ mod tests {
     };
     use crate::tts::Failure;
 
+    fn render_smoothed_segment(pcm: &[u8], packet_bytes: usize) -> Result<Vec<u8>, Failure> {
+        let mut frames = SegmentFrames::with_frames(Frames {
+            packet_bytes,
+            ..Frames::default()
+        });
+        let mut output = Vec::new();
+        frames.push(pcm, |packet| {
+            output.extend(packet);
+            Ok(())
+        })?;
+        frames.finish_segment(|packet| {
+            output.extend(packet);
+            Ok(())
+        })?;
+        Ok(output)
+    }
+
+    #[test]
+    fn prosody_fades_are_smooth_monotone_and_never_amplify_signed_pcm() -> Result<(), Failure> {
+        for amplitude in [i16::MIN, -24_000, -1, 0, 1, 24_000, i16::MAX] {
+            let pcm = amplitude.to_le_bytes().repeat(2_400);
+            let output = render_smoothed_segment(&pcm, PACKET_BYTES)?;
+            let samples: Vec<_> = output
+                .as_chunks::<2>()
+                .0
+                .iter()
+                .map(|sample| i32::from(i16::from_le_bytes(*sample)))
+                .collect();
+            let magnitude = i32::from(amplitude).abs();
+            assert!(samples.iter().all(|sample| sample.abs() <= magnitude));
+            assert!(samples.iter().all(|sample| {
+                *sample == 0 || sample.signum() == i32::from(amplitude).signum()
+            }));
+            let onset = &samples[..120];
+            let offset = &samples[samples.len() - 120..];
+            assert!(
+                onset[..119]
+                    .iter()
+                    .zip(&onset[1..])
+                    .all(|(before, after)| before.abs() <= after.abs())
+            );
+            assert!(
+                offset[..119]
+                    .iter()
+                    .zip(&offset[1..])
+                    .all(|(before, after)| before.abs() >= after.abs())
+            );
+            if magnitude >= 24_000 {
+                // Independent broad Hann anchors reject linear ramps, hard
+                // mutes and steps without duplicating the implementation formula.
+                assert!((12 * magnitude..=17 * magnitude).contains(&(onset[29].abs() * 100)));
+                assert!((48 * magnitude..=52 * magnitude).contains(&(onset[59].abs() * 100)));
+                assert!((82 * magnitude..=87 * magnitude).contains(&(onset[89].abs() * 100)));
+                let largest_step = onset[..119]
+                    .iter()
+                    .zip(&onset[1..])
+                    .map(|(before, after)| (after - before).abs())
+                    .max()
+                    .unwrap_or_default();
+                assert!(largest_step <= magnitude / 60 + 1);
+            }
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn prosody_fade_window_tracks_five_milliseconds_at_each_sample_rate() -> Result<(), Failure> {
+        // These sample counts come from time * sample rate, independently of
+        // packet geometry or the production edge-window calculation.
+        for (packet_bytes, fade_samples, samples) in
+            [(PACKET_BYTES, 120, 2_400), (PACKET_BYTES_48K, 240, 4_800)]
+        {
+            let pcm = 24_000_i16.to_le_bytes().repeat(samples);
+            let output = render_smoothed_segment(&pcm, packet_bytes)?;
+            let decoded: Vec<_> = output
+                .as_chunks::<2>()
+                .0
+                .iter()
+                .map(|sample| i16::from_le_bytes(*sample))
+                .collect();
+            assert_eq!(decoded.len(), samples);
+            assert!(
+                decoded[..fade_samples - 1]
+                    .iter()
+                    .all(|sample| *sample < 24_000)
+            );
+            assert!(
+                decoded[samples - fade_samples + 1..]
+                    .iter()
+                    .all(|sample| *sample < 24_000)
+            );
+            assert!(
+                decoded[fade_samples - 1..=samples - fade_samples]
+                    .iter()
+                    .all(|sample| *sample == 24_000)
+            );
+            assert_eq!(decoded[0], 0);
+            assert_eq!(decoded[samples - 1], 0);
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn prosody_recycled_segments_reset_across_varied_lengths_and_empty_callbacks()
+    -> Result<(), Failure> {
+        for packet_bytes in [PACKET_BYTES, PACKET_BYTES_48K] {
+            let (returned, recycled) = mpsc::sync_channel(super::RECYCLED_PACKETS);
+            let mut frames = SegmentFrames::reusing_with_packet_bytes(recycled, packet_bytes);
+            for (samples, amplitude) in [
+                (1, i16::MIN),
+                (packet_bytes / 2, i16::MAX),
+                (17, 0),
+                (packet_bytes + 13, -24_000),
+                (121, 24_000),
+            ] {
+                let pcm = amplitude.to_le_bytes().repeat(samples);
+                let expected = render_smoothed_segment(&pcm, packet_bytes)?;
+                let mut actual = Vec::new();
+                // Empty callbacks between bytes must leave split samples and
+                // each segment's onset intact, including with recycled storage.
+                for fragment in pcm.chunks(17) {
+                    frames.push(&[], |_| Err(super::AUDIO_FAILURE))?;
+                    frames.push(fragment, |packet| {
+                        actual.extend_from_slice(&packet);
+                        super::recycle(&returned, packet);
+                        Ok(())
+                    })?;
+                }
+                frames.finish_segment(|packet| {
+                    actual.extend_from_slice(&packet);
+                    super::recycle(&returned, packet);
+                    Ok(())
+                })?;
+                assert_eq!(actual, expected);
+                // A second flush must neither replay the tail nor influence
+                // the next independent voice segment.
+                frames.finish_segment(|_| Err(super::AUDIO_FAILURE))?;
+            }
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn prosody_segment_output_refusal_propagates_during_streaming_and_final_flush() {
+        let failure = Failure::Message("Synthetic output refusal");
+        for packet_bytes in [PACKET_BYTES, PACKET_BYTES_48K] {
+            let mut frames = SegmentFrames::with_frames(Frames {
+                packet_bytes,
+                ..Frames::default()
+            });
+            let mut calls = 0;
+            assert_eq!(
+                frames.push(&vec![0; packet_bytes * 2], |_| {
+                    calls += 1;
+                    Err(failure)
+                }),
+                Err(failure)
+            );
+            assert_eq!(calls, 1);
+
+            let mut frames = SegmentFrames::with_frames(Frames {
+                packet_bytes,
+                ..Frames::default()
+            });
+            assert_eq!(frames.push(&[0; 24], |_| Err(failure)), Ok(()));
+            calls = 0;
+            assert_eq!(
+                frames.finish_segment(|_| {
+                    calls += 1;
+                    Err(failure)
+                }),
+                Err(failure)
+            );
+            assert_eq!(calls, 1);
+        }
+    }
+
     #[test]
     fn segment_edges_reach_silence_at_both_rates_without_changing_duration() -> Result<(), Failure>
     {
@@ -1327,6 +1504,67 @@ mod tests {
         assert_eq!(receiver.try_recv(), Ok(expected));
         assert!(queued.is_empty());
         Ok(())
+    }
+
+    #[test]
+    fn prosody_coalescing_preserves_unicode_paragraph_prefix_after_overcap_deferral() {
+        let first = format!("{}?!", "🙂".repeat(super::super::MAX_SEGMENT - 3));
+        let (sender, receiver) = mpsc::sync_channel(3);
+        assert!(sender.send(first.clone()).is_ok());
+        assert!(sender.send("\n中".to_owned()).is_ok());
+        assert!(sender.send("続き？".to_owned()).is_ok());
+        drop(sender);
+        let current = AtomicU64::new(4);
+        let stop = AtomicBool::new(false);
+        let mut pending = None;
+        // The two-character continuation exceeds the scalar-character cap by
+        // exactly one, even though the first piece occupies many more bytes.
+        assert_eq!(
+            super::next_segment(&receiver, &mut pending, 4, &current, &stop),
+            Ok(Some(first))
+        );
+        assert_eq!(pending.as_deref(), Some("\n中"));
+        assert_eq!(
+            super::next_segment(&receiver, &mut pending, 4, &current, &stop),
+            Ok(Some("\n中 続き？".to_owned()))
+        );
+        assert_eq!(pending, None);
+        assert_eq!(
+            super::next_segment(&receiver, &mut pending, 4, &current, &stop),
+            Ok(None)
+        );
+    }
+
+    #[test]
+    fn prosody_paragraphs_survive_a_full_channel_and_later_refeed() {
+        let (sender, receiver) = mpsc::sync_channel(2);
+        assert!(sender.send("Earlier one.".to_owned()).is_ok());
+        assert!(sender.send("Earlier two.".to_owned()).is_ok());
+        let (_complete, finished) = mpsc::channel();
+        let mut pipeline = super::Pipeline {
+            segments: Some(sender),
+            finished,
+            cancelled: Arc::new(AtomicBool::new(false)),
+            playing: Arc::new(AtomicBool::new(false)),
+            notified_playing: false,
+            worker: None,
+        };
+        let mut queued = VecDeque::from([
+            "\r\n\r\n「First?!」".to_owned(),
+            "\n\nSecond; still the same sentence.".to_owned(),
+            "Third…".to_owned(),
+        ]);
+        let expected = "\r\n\r\n「First?!」\n\nSecond; still the same sentence. Third…";
+        pipeline.feed(&mut queued, true);
+        assert_eq!(queued, [expected.to_owned()]);
+        assert!(pipeline.segments.is_some());
+        assert_eq!(receiver.try_recv(), Ok("Earlier one.".to_owned()));
+        assert_eq!(receiver.try_recv(), Ok("Earlier two.".to_owned()));
+        pipeline.feed(&mut queued, true);
+        assert_eq!(receiver.try_recv(), Ok(expected.to_owned()));
+        assert_eq!(queued, VecDeque::<String>::new());
+        assert!(pipeline.segments.is_none());
+        assert!(receiver.try_recv().is_err());
     }
 
     #[test]
