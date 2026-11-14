@@ -110,13 +110,12 @@ fn canonical_asset(version: &str, name: &str) -> String {
 }
 
 fn asset(release: &Value, version: &str, name: &str, limit: u64) -> crate::Result<Asset> {
-    let matches: Vec<_> = release["assets"]
+    let mut matches = release["assets"]
         .as_array()
         .ok_or("Missing published release assets.")?
         .iter()
-        .filter(|asset| asset["name"] == name)
-        .collect();
-    let [entry] = matches.as_slice() else {
+        .filter(|asset| asset["name"] == name);
+    let (Some(entry), None) = (matches.next(), matches.next()) else {
         return Err(format!("Release asset is missing or repeated: {name}"));
     };
     let bytes = entry["size"]
@@ -349,13 +348,12 @@ fn application(
     if !crate::identity::is_lower_hex(source, 40) {
         return Err("Release source revision is invalid.".into());
     }
-    let assets: Vec<_> = manifest["assets"]
+    let mut assets = manifest["assets"]
         .as_array()
         .ok_or("Release manifest assets are missing.")?
         .iter()
-        .filter(|asset| asset["name"] == candidate.msi.name)
-        .collect();
-    let [entry] = assets.as_slice() else {
+        .filter(|asset| asset["name"] == candidate.msi.name);
+    let (Some(entry), None) = (assets.next(), assets.next()) else {
         return Err("Manifest application asset is missing or repeated.".into());
     };
     if entry["bytes"] != candidate.msi.bytes
