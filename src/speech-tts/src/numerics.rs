@@ -73,3 +73,60 @@ pub(super) fn axpy_simd<S: Simd>(simd: S, scale: f32, x: &[f32], dst: &mut [f32]
         *di = scale.mul_add(xi, *di);
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::{axpy_simd, f32_dot_simd};
+    use fearless_simd::{Level, dispatch};
+
+    #[test]
+    fn shared_dot_preserves_two_accumulators_lane_reduction_and_fused_tail() {
+        let level = Level::new();
+        // 2^24 + 1 rounds down before the independent -2^24 accumulator
+        // joins it. A single accumulator would retain the final 1 instead.
+        let rows: &[(&[f32], &[f32], f32)] = &[
+            (&[], &[], 0.0),
+            (
+                &[
+                    16_777_216.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    -16_777_216.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    1.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.25,
+                ],
+                &[1.0; 13],
+                0.25,
+            ),
+            // Adjacent lane pairs round separately before their sums join.
+            (&[16_777_216.0, 1.0, -16_777_216.0, 1.0], &[1.0; 4], 1.0),
+            // (1+2^-23)*(1-2^-23)-1 is exactly -2^-46 with FMA.
+            (
+                &[1.0, 0.0, 0.0, 0.0, f32::from_bits(0x3f80_0001)],
+                &[-1.0, 0.0, 0.0, 0.0, f32::from_bits(0x3f7f_fffe)],
+                f32::from_bits(0xa880_0000),
+            ),
+        ];
+        for &(left, right, expected) in rows {
+            let actual = dispatch!(level, simd => f32_dot_simd(simd, left, right));
+            assert_eq!(actual.to_bits(), expected.to_bits());
+        }
+    }
+
+    #[test]
+    fn shared_axpy_preserves_fused_rounding_in_vector_lanes_and_scalar_tail() {
+        let level = Level::new();
+        let scale = f32::from_bits(0x3f80_0001);
+        let input = [f32::from_bits(0x3f7f_fffe); 5];
+        let mut output = [-1.0; 5];
+        dispatch!(level, simd => axpy_simd(simd, scale, &input, &mut output));
+        assert_eq!(output.map(f32::to_bits), [0xa880_0000; 5]);
+    }
+}
