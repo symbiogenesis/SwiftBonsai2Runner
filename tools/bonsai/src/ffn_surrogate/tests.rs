@@ -10,21 +10,21 @@ fn vector(first: f32, second: f32) -> Vec<f32> {
 }
 
 fn fixture() -> Value {
-    json!({"schemaVersion":1,
-        "source":{"modelSha256":"a".repeat(64),"runtimeSha256":"b".repeat(64),
-            "runtimeSourceCommit":"c".repeat(40),"adapterSha256":null,
-            "adapterScaleBits":"00000000","weightRepresentation":"PQ2_0",
-            "executionProfile":PROFILE,"graphIdentity":"synthetic-unit-fixture"},
-        "site":{"layer":15,"inputBasis":"original-ffn-normalized-input",
-            "targetBasis":"complete-ffn-branch-delta","inputWidth":WIDTH,"outputWidth":WIDTH},
-        "controls":{"rank":2,"ridge":0.000_001,"timeBudgetMilliseconds":5000},
-        "rows":[
-            {"sampleId":"fit-a","groupId":"fit-a-group","tokenIndex":0,"split":"fit",
-                "input":vector(1.0,0.0),"target":vector(2.0,0.0)},
-            {"sampleId":"fit-b","groupId":"fit-b-group","tokenIndex":0,"split":"fit",
-                "input":vector(0.0,1.0),"target":vector(0.0,3.0)},
-            {"sampleId":"dev","groupId":"dev-group","tokenIndex":0,"split":"development",
-                "input":vector(1.0,1.0),"target":vector(2.0,3.0)}]})
+    let source = json!({"modelSha256":"a".repeat(64),"runtimeSha256":"b".repeat(64),
+        "runtimeSourceCommit":"c".repeat(40),"adapterSha256":null,
+        "adapterScaleBits":"00000000","weightRepresentation":"PQ2_0",
+        "executionProfile":PROFILE,"graphIdentity":"synthetic-unit-fixture"});
+    let site = json!({"layer":15,"inputBasis":"original-ffn-normalized-input",
+        "targetBasis":"complete-ffn-branch-delta","inputWidth":WIDTH,"outputWidth":WIDTH});
+    let controls = json!({"rank":2,"ridge":0.000_001,"timeBudgetMilliseconds":5000});
+    let rows = json!([
+        {"sampleId":"fit-a","groupId":"fit-a-group","tokenIndex":0,"split":"fit",
+            "input":vector(1.0,0.0),"target":vector(2.0,0.0)},
+        {"sampleId":"fit-b","groupId":"fit-b-group","tokenIndex":0,"split":"fit",
+            "input":vector(0.0,1.0),"target":vector(0.0,3.0)},
+        {"sampleId":"dev","groupId":"dev-group","tokenIndex":0,"split":"development",
+            "input":vector(1.0,1.0),"target":vector(2.0,3.0)}]);
+    json!({"schemaVersion":1,"source":source,"site":site,"controls":controls,"rows":rows})
 }
 
 #[test]
