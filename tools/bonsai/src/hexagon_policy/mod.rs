@@ -493,3 +493,7 @@ pub fn run(request: Value) -> Result<Value> {
         }
     }
 }
+
+pub(super) fn data_json(text: &str) -> Result<Value> {
+    json::parse_bounded(text, 1_048_576, 64)
+}

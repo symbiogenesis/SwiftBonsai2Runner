@@ -20,6 +20,7 @@ mod device;
 #[cfg(windows)]
 mod model_device;
 mod preflight;
+mod prepare_model;
 mod projection_build;
 
 const TARGET: &str = "aarch64-pc-windows-msvc";
@@ -32,6 +33,9 @@ const TARGET: &str = "aarch64-pc-windows-msvc";
     deny_unknown_fields
 )]
 enum Request {
+    PrepareModelControl {
+        request: prepare_model::Request,
+    },
     BuildDispatch {
         repository_directory: PathBuf,
         output_directory: PathBuf,
@@ -48,11 +52,17 @@ enum Request {
         output_directory: PathBuf,
     },
     #[cfg(windows)]
-    Device { request: device::Probe },
+    Device {
+        request: device::Probe,
+    },
     #[cfg(windows)]
-    DeviceWorker { request: device::Probe },
+    DeviceWorker {
+        request: device::Probe,
+    },
     #[cfg(windows)]
-    ModelDevice { request: model_device::Request },
+    ModelDevice {
+        request: model_device::Request,
+    },
     Preflight {
         #[serde(default)]
         package_path: Option<PathBuf>,
@@ -927,6 +937,7 @@ fn sdk_inventory(mut context: Context) -> Result<Value> {
 /// failed bounded children and incomplete source-bound build receipts.
 pub fn run(request: Value) -> Result<Value> {
     match serde_json::from_value(request).map_err(|error| error.to_string())? {
+        Request::PrepareModelControl { request } => prepare_model::run(&request),
         Request::BuildDispatch {
             repository_directory,
             output_directory,
