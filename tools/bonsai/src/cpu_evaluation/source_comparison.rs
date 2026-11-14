@@ -323,6 +323,55 @@ fn checks(build: &Build) -> Result<()> {
     Ok(())
 }
 
+fn build_identity(build: &Build) -> Result<()> {
+    require(
+        build.toolchain.starts_with("nightly-")
+            && build.toolchain.ends_with("-aarch64-pc-windows-msvc")
+            && build.toolchain.len() <= 128
+            && build
+                .toolchain
+                .bytes()
+                .all(|byte| byte.is_ascii_lowercase() || byte.is_ascii_digit() || byte == b'-'),
+        "Missing pinned native toolchain identity.",
+    )?;
+    digest(&build.rustc_sha256)?;
+    digest(&build.cargo_sha256)?;
+    require(
+        build
+            .helper_source_sha256
+            .keys()
+            .map(String::as_str)
+            .eq(["bonsai-native-hash", "bonsai-neon-dot"]),
+        "Missing exact helper source inventory.",
+    )?;
+    for hash in build.helper_source_sha256.values() {
+        digest(hash)?;
+    }
+    require(
+        crate::identity::is_lower_hex(&build.source_revision, 40)
+            && build.clean
+            && build.target == TARGET
+            && build.features.iter().map(String::as_str).eq(FEATURES)
+            && (1..=67_108_864).contains(&build.executable_bytes),
+        "Missing clean source/compiler/target/executable binding.",
+    )?;
+    digest(&build.executable_sha256)?;
+    require(
+        build
+            .inputs
+            .keys()
+            .map(String::as_str)
+            .collect::<BTreeSet<_>>()
+            == INPUTS.into_iter().collect(),
+        "Build input inventory differs.",
+    )?;
+    for hash in build.inputs.values() {
+        digest(hash)?;
+    }
+    checks(build)?;
+    Ok(())
+}
+
 fn preparation(packet: &Preparation) -> Result<()> {
     require(
         packet.schema_version == 1
@@ -372,51 +421,7 @@ fn preparation(packet: &Preparation) -> Result<()> {
         "Sources must differ and exact compiler identities must match.",
     )?;
     for build in packet.arms.values() {
-        require(
-            build.toolchain.starts_with("nightly-")
-                && build.toolchain.ends_with("-aarch64-pc-windows-msvc")
-                && build.toolchain.len() <= 128
-                && build
-                    .toolchain
-                    .bytes()
-                    .all(|byte| byte.is_ascii_lowercase() || byte.is_ascii_digit() || byte == b'-'),
-            "Missing pinned native toolchain identity.",
-        )?;
-        digest(&build.rustc_sha256)?;
-        digest(&build.cargo_sha256)?;
-        require(
-            build
-                .helper_source_sha256
-                .keys()
-                .map(String::as_str)
-                .eq(["bonsai-native-hash", "bonsai-neon-dot"]),
-            "Missing exact helper source inventory.",
-        )?;
-        for hash in build.helper_source_sha256.values() {
-            digest(hash)?;
-        }
-        require(
-            crate::identity::is_lower_hex(&build.source_revision, 40)
-                && build.clean
-                && build.target == TARGET
-                && build.features.iter().map(String::as_str).eq(FEATURES)
-                && (1..=67_108_864).contains(&build.executable_bytes),
-            "Missing clean source/compiler/target/executable binding.",
-        )?;
-        digest(&build.executable_sha256)?;
-        require(
-            build
-                .inputs
-                .keys()
-                .map(String::as_str)
-                .collect::<BTreeSet<_>>()
-                == INPUTS.into_iter().collect(),
-            "Build input inventory differs.",
-        )?;
-        for hash in build.inputs.values() {
-            digest(hash)?;
-        }
-        checks(build)?;
+        build_identity(build)?;
     }
     for name in INPUTS
         .into_iter()
@@ -542,7 +547,7 @@ fn arm_receipt(receipt: &Value, started: &Value, packet: &Preparation, arm: &Arm
     Ok(())
 }
 
-fn evaluate(packet: &Preparation, owner: &Owner, owner_root: &Path) -> Result<Value> {
+fn owner_identity(owner: &Owner) -> Result<(bool, bool)> {
     require(
         owner.schema_version == 1
             && owner.kind == "prism-cpu-source-comparison-owner"
@@ -571,6 +576,66 @@ fn evaluate(packet: &Preparation, owner: &Owner, owner_root: &Path) -> Result<Va
         power(&owner.power_after)? == expected_power,
         "Aggregate power changed.",
     )?;
+    Ok(expected_power)
+}
+
+fn supervision_conditions(
+    supervisor: &Value,
+    maximum_job_memory_bytes: u64,
+    expected_power: (bool, bool),
+    reference_conditions: &mut Option<Value>,
+) -> Result<()> {
+    require(
+        supervisor["Status"] == "completed"
+            && supervisor["ExitCode"] == 0
+            && supervisor["ModelProcessStarted"] == true
+            && supervisor
+                .get("CancellationFailure")
+                .is_none_or(Value::is_null),
+        "Native supervision failed or cancellation was incomplete.",
+    )?;
+    require(
+        supervisor["MinimumAvailablePhysicalBytes"]
+            .as_u64()
+            .is_some_and(|bytes| bytes >= 4_294_967_296)
+            && supervisor["PeakJobMemoryBytes"]
+                .as_u64()
+                .is_some_and(|bytes| (1..=maximum_job_memory_bytes).contains(&bytes)),
+        "Missing native physical reserve/Job accounting.",
+    )?;
+    for boundary in ["Before", "After"] {
+        let observation = &supervisor["CpuConditions"][boundary];
+        let baseline = reference_conditions.get_or_insert_with(|| observation.clone());
+        let comparison = super::conditions::compare(
+            json!({"operation":"compare-conditions", "before":baseline,"after":observation}),
+        )?;
+        require(
+            comparison["Comparable"] == true
+                && power(&observation["power_snapshot"])? == expected_power,
+            "Native host/topology/power conditions are unknown or changed.",
+        )?;
+        require(
+            observation["host_identity"]["processor_name"]
+                .as_str()
+                .is_some_and(|name| {
+                    bonsai_cpu_policy::hardware::SnapdragonFamily::from_processor_name(name)
+                        .is_some_and(|family| {
+                            matches!(
+                                family,
+                                bonsai_cpu_policy::hardware::SnapdragonFamily::X2Elite
+                                    | bonsai_cpu_policy::hardware::SnapdragonFamily::X2EliteExtreme
+                            )
+                        })
+                }),
+            "Current-source comparison requires observed X2 identity.",
+        )?;
+    }
+    Ok(())
+}
+
+fn evaluate(packet: &Preparation, owner: &Owner, owner_root: &Path) -> Result<Value> {
+    let expected_power = owner_identity(owner)?;
+    let frequency = u128::from(owner.clock_frequency);
     let mut previous = owner.started_tick;
     let mut seen = BTreeSet::new();
     let mut reference_conditions: Option<Value> = None;
@@ -618,37 +683,12 @@ fn evaluate(packet: &Preparation, owner: &Owner, owner_root: &Path) -> Result<Va
         let started = referenced(owner_root, &arm.started_receipt, &mut seen)?;
         let supervisor = referenced(owner_root, &arm.supervision, &mut seen)?;
         arm_receipt(&receipt, &started, packet, arm)?;
-        require(
-            supervisor["Status"] == "completed"
-                && supervisor["ExitCode"] == 0
-                && supervisor["ModelProcessStarted"] == true
-                && supervisor
-                    .get("CancellationFailure")
-                    .is_none_or(Value::is_null),
-            "Native supervision failed or cancellation was incomplete.",
+        supervision_conditions(
+            &supervisor,
+            arm.maximum_job_memory_bytes,
+            expected_power,
+            &mut reference_conditions,
         )?;
-        require(
-            supervisor["MinimumAvailablePhysicalBytes"]
-                .as_u64()
-                .is_some_and(|bytes| bytes >= 4_294_967_296)
-                && supervisor["PeakJobMemoryBytes"]
-                    .as_u64()
-                    .is_some_and(|bytes| (1..=arm.maximum_job_memory_bytes).contains(&bytes)),
-            "Missing native physical reserve/Job accounting.",
-        )?;
-        for boundary in ["Before", "After"] {
-            let observation = &supervisor["CpuConditions"][boundary];
-            let baseline = reference_conditions.get_or_insert_with(|| observation.clone());
-            let comparison = super::conditions::compare(
-                json!({"operation":"compare-conditions", "before":baseline,"after":observation}),
-            )?;
-            require(
-                comparison["Comparable"] == true
-                    && power(&observation["power_snapshot"])? == expected_power,
-                "Native host/topology/power conditions are unknown or changed.",
-            )?;
-            require(observation["host_identity"]["processor_name"].as_str().is_some_and(|name| bonsai_cpu_policy::hardware::SnapdragonFamily::from_processor_name(name).is_some_and(|family| matches!(family, bonsai_cpu_policy::hardware::SnapdragonFamily::X2Elite | bonsai_cpu_policy::hardware::SnapdragonFamily::X2EliteExtreme))), "Current-source comparison requires observed X2 identity.")?;
-        }
         let owned = milliseconds(
             arm.cleanup_completed_tick - arm.started_tick,
             owner.clock_frequency,
@@ -684,18 +724,30 @@ fn evaluate(packet: &Preparation, owner: &Owner, owner_root: &Path) -> Result<Va
                 + positive(&receipt["request_milliseconds"])?,
         );
     }
-    let process = ratios(&process_times);
-    let owned = ratios(&owned_times);
-    Ok(
-        json!({"schema_version":1,"kind":"prism-cpu-source-comparison","status":"admitted",
+    Ok(comparison_result(
+        &outputs,
+        &process_times,
+        &owned_times,
+        &request_times,
+    ))
+}
+
+fn comparison_result(
+    outputs: &[Value],
+    process_times: &[f64],
+    owned_times: &[f64],
+    request_times: &[f64],
+) -> Value {
+    let process = ratios(process_times);
+    let owned = ratios(owned_times);
+    json!({"schema_version":1,"kind":"prism-cpu-source-comparison","status":"admitted",
         "short_request_benefit_observed":process.iter().all(|ratio| *ratio <= 0.90) && owned.iter().all(|ratio| *ratio <= 1.10),
         "candidate_over_baseline_process_wall_ratios":process,"candidate_over_baseline_owned_arm_ratios":owned,
-        "candidate_over_baseline_request_ratios":ratios(&request_times),"pairs":2,
+        "candidate_over_baseline_request_ratios":ratios(request_times),"pairs":2,
         "complete_answer_observed":outputs.iter().all(|output| output[5] == "stop"),
         "continuous_power_stability_proven":false,"promotion_qualified":false,"benefit_gate_qualified":false,
         "default_may_change":false,"individual_optimization_verdicts":false,"long_prefill_qualified":false,
-        "scope":"Two reversed bounded short-request source pairs with identical cache/tile/scratch. Build producer authentication, complete state/logits/adapters, quality, sustained use and promotion remain independent gates."}),
-    )
+        "scope":"Two reversed bounded short-request source pairs with identical cache/tile/scratch. Build producer authentication, complete state/logits/adapters, quality, sustained use and promotion remain independent gates."})
 }
 
 fn milliseconds(ticks: u64, frequency: u64) -> Result<f64> {
