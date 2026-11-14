@@ -70,8 +70,9 @@ impl OwnerShutdown {
     }
 
     async fn requested(&self) -> io::Result<()> {
+        let request = self.directory.join(REQUEST);
         loop {
-            if empty_signal(&self.directory.join(REQUEST))? {
+            if empty_signal(&request)? {
                 return Ok(());
             }
             tokio::time::sleep(Duration::from_millis(50)).await;
