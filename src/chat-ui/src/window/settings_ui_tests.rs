@@ -214,7 +214,7 @@ fn thinking_popup_owns_new_chat_shortcut() {
         chat.run();
         assert_ne!(chat.state().app.active_conversation, original);
         assert_eq!(chat.state().app.conversations.len(), 2);
-        assert!(chat.state().app.input.is_empty());
+        assert_eq!(chat.state().app.input, "");
         chat.state_mut().app.switch_conversation(original);
         assert_eq!(chat.state().app.input, "Keep my next draft \u{1f331}");
         assert!(

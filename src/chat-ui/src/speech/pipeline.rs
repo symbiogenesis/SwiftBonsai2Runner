@@ -375,7 +375,7 @@ impl Default for SegmentFrames {
 }
 
 impl SegmentFrames {
-    fn with_frames(frames: Frames) -> Self {
+    const fn with_frames(frames: Frames) -> Self {
         Self {
             frames,
             tail: [0; MAX_EDGE_BYTES],
@@ -389,7 +389,7 @@ impl SegmentFrames {
         Self::with_frames(Frames::reusing_with_packet_bytes(recycled, packet_bytes))
     }
 
-    fn edge_bytes(&self) -> usize {
+    const fn edge_bytes(&self) -> usize {
         self.frames.packet_bytes / 20
     }
 

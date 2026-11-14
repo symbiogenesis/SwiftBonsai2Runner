@@ -98,9 +98,9 @@ mod tests {
             .err()
             .ok_or_else(|| io::Error::other("Invalid UTF-8 was accepted"))?;
         assert!(
-            invalid
-                .get_ref()
-                .is_some_and(|source| source.is::<std::string::FromUtf8Error>())
+            invalid.get_ref().is_some_and(
+                <dyn std::error::Error + Send + Sync>::is::<std::string::FromUtf8Error>
+            )
         );
         std::fs::remove_file(&path)?;
         let missing = text(&path, 5, exceeded)

@@ -114,7 +114,7 @@ impl Text {
     }
 }
 
-fn horizontal_whitespace(character: char) -> bool {
+const fn horizontal_whitespace(character: char) -> bool {
     character.is_whitespace() && !matches!(character, '\r' | '\n')
 }
 
