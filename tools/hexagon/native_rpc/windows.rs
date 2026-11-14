@@ -25,6 +25,20 @@ mod session_native;
     clippy::redundant_pub_crate,
     reason = "Only the safe crate root consumes the native driver"
 )]
+pub(super) fn reference_q8_projection(
+    driver: Driver,
+    package: &Path,
+    limits: crate::Q8Projection<'_>,
+    progress: impl FnMut(&crate::Q8ProjectionReport),
+    work: impl FnOnce(&mut dyn crate::Q8Submitter) -> Result<(), Error>,
+) -> Result<crate::Q8ProjectionReport, Error> {
+    compute_native::q8_projection(driver, package, limits, progress, work)
+}
+
+#[allow(
+    clippy::redundant_pub_crate,
+    reason = "Only the safe crate root consumes the native driver"
+)]
 pub(super) fn reference_q2_projection(
     driver: Driver,
     package: &Path,
@@ -181,7 +195,11 @@ fn service_binary() -> Result<String, Error> {
     let binary = unsafe { (*config).binary_path };
     let start = storage.as_ptr().addr();
     let end = start + storage.len() * size_of::<usize>();
-    if binary.is_null() || binary.addr() < start || binary.addr() >= end || !binary.addr().is_multiple_of(2) {
+    if binary.is_null()
+        || binary.addr() < start
+        || binary.addr() >= end
+        || !binary.addr().is_multiple_of(2)
+    {
         return Err(Error::InvalidDriverPath);
     }
     let count = (end - binary.addr()) / 2;

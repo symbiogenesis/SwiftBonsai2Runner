@@ -338,7 +338,7 @@
     "controls": "independent-literal-tile-positions-and-hand-calculated-scratch; mathematical-layout-checks-not-native-captures",
     "placement": "HybridPlan binds exact model/source/module/catalog/driver observations; no-mutation-or-fallback; complete-mutable-state-remains-CPU-owned",
     "nativeLifetimeConsumer": "guarded-Q2 submitter consumes single-flight SubmissionTracker; attempted-writes-bound-monotonic-sequences-and-exact-buffer-identity; uncertainty-poisons-without-retry",
-    "nativeQ8SubmissionImplemented": false,
+    "nativeQ8SubmissionImplemented": true,
     "signedPackageDeviceQualified": false,
     "ttsPrefillOrSharedKvQualified": false,
     "profileEligible": false
@@ -351,8 +351,26 @@
     "completion": "original-write-success-then-correlated-wire-sequence-and-exact-buffer-count-FD-extent-address-cache-flags; every-output-finite-and-independently-accepted-before-publication",
     "failure": "write-refusal-invalid-reply-oracle-refusal-unwind-cancellation-or-expiry-is-terminal; no-native-free-or-teardown-acknowledgment",
     "controls": "q8_dispatch_ simulated-transport-controls; no-driver-DSP-or-Q8-arithmetic-execution",
-    "nativeQ8SubmissionImplemented": false,
+    "nativeQ8SubmissionImplemented": true,
     "signedPackageDeviceQualified": false,
+    "profileEligible": false
+  },
+  "q8NativeProjection": {
+    "status": "explicit-experimental-native-bridge-no-serving-admission",
+    "api": "Driver::reference_q8_projection; Q8Projection; Q8Submitter; Q8ProjectionReport",
+    "transport": "signed-X2-v81-reference-initialization-and-seven-argument-start; one-FD2-map-one-queue; one-nonblocking-write-per-operation",
+    "selection": "one-immutable-HybridPlan-HTP0-tensor; exact-shape-solver-and-mapping; no-reset-retry-or-fallback",
+    "identity": "caller-must-independently-bind-guarded-model-source-module-catalog-driver-loadedDSP-and-observedVTCM; plan-records-authenticate-nothing",
+    "bounds": "preflight-before-native-module-admission; inherited-absolute-deadline-at-most120-seconds-including-setup-and-cleanup; three-second-cleanup-reserve; at-most24000-writes",
+    "completion": "Q8Dispatcher-before-every-write; original-write-success-and-exact-correlated-reply-descriptor-count-cache-fields-before-mapped-memory-borrow; independent-oracle-before-output-publication",
+    "failure": "invalid-input-native-refusal-stale-reply-oracle-refusal-unwind-cancellation-or-expiry-terminally-pins-uncertain-owners-through-supervised-exit",
+    "normalCleanup": "complete-caller-success-and-all-accepted-operations-before-stop-queueClose-unmap-moduleClose-free; driver-package-session-owners-stay-pinned-until-process-exit",
+    "report": "records-requested-identities-tensor-solver-operationLimit-actualWrites-acceptedCompletions-cancellation-expiry-and-separate-native-cleanup-results",
+    "controls": "q8_native_ actual-ABI-adapter-with-simulated-function-pointers; shared-native-cleanup-control; no-driver-DSP-or-model-execution",
+    "nativeQ8SubmissionImplemented": true,
+    "signedPackageDeviceQualified": false,
+    "containedExecutionQualified": false,
+    "ttsPrefillOrSharedKvQualified": false,
     "profileEligible": false
   },
   "windowsAbi": [

@@ -132,6 +132,37 @@ pub struct Q8Dispatcher<'a> {
 }
 
 impl<'a> Q8Dispatcher<'a> {
+    pub(super) fn validate_selection(
+        plan: &HybridPlan,
+        tensor: u16,
+        operations: u32,
+        deadline: Instant,
+        cancellation: &AtomicBool,
+    ) -> Result<Q8Matmul, Error> {
+        let remaining = deadline
+            .checked_duration_since(Instant::now())
+            .ok_or(Error::Contract)?;
+        if operations == 0
+            || operations > 24_000
+            || remaining <= Duration::from_secs(3)
+            || remaining > Duration::from_secs(120)
+            || cancellation.load(Ordering::Acquire)
+        {
+            return Err(Error::Contract);
+        }
+        plan.placements()
+            .iter()
+            .find_map(|placement| match *placement {
+                TensorPlacement::Htp0Q8 {
+                    tensor: selected,
+                    projection,
+                    ..
+                } if selected == tensor => Some(projection),
+                _ => None,
+            })
+            .ok_or(Error::Contract)
+    }
+
     /// Bind one selected HTP0 tensor to a fixed mapping and inherited deadline.
     ///
     /// Construct before native setup, using the original session's absolute
@@ -151,30 +182,8 @@ impl<'a> Q8Dispatcher<'a> {
         deadline: Instant,
         cancellation: Arc<AtomicBool>,
     ) -> Result<Self, Error> {
-        let now = Instant::now();
-        let remaining = deadline
-            .checked_duration_since(now)
-            .ok_or(Error::Contract)?;
-        if operations == 0
-            || operations > 24_000
-            || remaining <= Duration::from_secs(3)
-            || remaining > Duration::from_secs(120)
-            || cancellation.load(Ordering::Acquire)
-        {
-            return Err(Error::Contract);
-        }
-        let projection = plan
-            .placements()
-            .iter()
-            .find_map(|placement| match *placement {
-                TensorPlacement::Htp0Q8 {
-                    tensor: selected,
-                    projection,
-                    ..
-                } if selected == tensor => Some(projection),
-                _ => None,
-            })
-            .ok_or(Error::Contract)?;
+        let projection =
+            Self::validate_selection(plan, tensor, operations, deadline, &cancellation)?;
         if usize::try_from(mapping.bytes()).map_err(|_| Error::Contract)?
             != projection.allocation_bytes()
         {

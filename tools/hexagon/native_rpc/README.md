@@ -131,12 +131,41 @@ write refusal, stale or malformed replies, descriptor changes, late nonfinite
 output, independent-oracle refusal/unwind, cancellation and deadline expiry.
 They execute no driver or DSP and are not observations of Q8 arithmetic.
 
-The Q8 packet/solver controls are mathematical/layout checks, not native captures.
-The host transaction grants no native submission API, TTS integration or serving
-admission. Independent signed-package/device execution, exact loaded
-DSP identity, contained HTP0 supervision, Q8 activation quantization/arithmetic,
-correlated completions and teardown remain required. Q8 preparation does not
-qualify TTS prefill, shared KV, quality, listening or performance.
+`Driver::reference_q8_projection` now connects this dispatcher to the native
+nonblocking signed X2 queue. `Q8Projection` selects one immutable HTP0 tensor
+before native module admission and retains the original absolute deadline,
+operation bound and cancellation flag. The bridge uses one FD=2 allocation and
+queue with the existing independently checked seven-argument start and reference
+process initialization. The supervisor must independently bind model/source,
+package/catalog, driver and loaded DSP observations, the selected VTCM budget,
+guarded files and a contained child. A caller-supplied `HybridPlan` authenticates
+none of these observations and supplies no automatic serving admission.
+
+Every native submission calls `Q8Dispatcher`, records the one original write
+result and validates complete correlation/descriptor/cache fields before
+borrowing asynchronously used memory. Each operation requires a separately
+implemented numerical oracle from unchanged source inputs before output
+publication. A refused write is not retried or drained into success. Invalid
+input/output, stale replies, oracle refusal/unwind, cancellation or expiry
+permanently ends the owner. Normal stop/queue-close/unmap/module-close/free follows
+only successful complete caller work and all accepted operations; uncertainty
+retains every native owner through supervised exit. Even successful explicit
+cleanup keeps driver/package/session guards pinned until process exit.
+
+`Q8ProjectionReport` records the selected identity, tensor, solver and operation
+limit separately from actual write/completion counts, cancellation, expiry and
+native cleanup. Its Q8 receipt cannot inherit the fixed F32 or guarded-Q2 matrix
+oracle. The `q8_native_` controls exercise the actual native ABI adapter through
+simulated function pointers, including refusal, stale/malformed replies,
+nonfinite tails, oracle rejection/unwind, a caught progress unwind after write,
+cancellation and exhausted bounds.
+These tests open no driver/DSP/model and supply no Q8 numerical observation.
+
+The Q8 packet/solver controls remain mathematical/layout checks, not native
+captures. Signed-package/device execution, exact loaded DSP identity, contained
+HTP0 supervision, Q8 activation quantization/arithmetic, correlated completions
+and teardown still need qualification. TTS integration, complete speech state,
+prefill/shared KV, quality, listening and performance remain pending.
 
 ## Established-session mapping prerequisite
 

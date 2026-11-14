@@ -15,6 +15,18 @@ use std::time::{Duration, Instant};
 
 #[path = "projection_native.rs"]
 mod projection_native;
+#[path = "q8_native.rs"]
+mod q8_native;
+
+pub(super) fn q8_projection(
+    driver: Driver,
+    package: &Path,
+    limits: crate::Q8Projection<'_>,
+    progress: impl FnMut(&crate::Q8ProjectionReport),
+    work: impl FnOnce(&mut dyn crate::Q8Submitter) -> Result<(), Error>,
+) -> Result<crate::Q8ProjectionReport, Error> {
+    q8_native::run(driver, package, limits, progress, work)
+}
 
 pub(super) fn projection(
     driver: Driver,
@@ -165,7 +177,9 @@ fn calls(driver: &Driver, fixture: compute::ComputeFixture) -> Result<Calls, Err
     let qclose = symbol(driver, c"dspqueue_close")?;
     let queue_write = if matches!(
         fixture,
-        compute::ComputeFixture::F32NoBlock | compute::ComputeFixture::GuardedQ2NoBlock
+        compute::ComputeFixture::F32NoBlock
+            | compute::ComputeFixture::GuardedQ2NoBlock
+            | compute::ComputeFixture::Q8ProjectionNoBlock
     ) {
         let write = symbol(driver, c"dspqueue_write_noblock")?;
         // SAFETY: the pinned public header and independent C prototype mock
@@ -360,7 +374,14 @@ fn exercise(
         return report;
     };
     report.allocation_succeeded = true;
-    let image = compute::fixture_image_for(report.fixture, base, fd_u32);
+    let Some(image) = compute::fixture_image_for(report.fixture, base, fd_u32) else {
+        report.stage = "compute-fixed-fixture-required-pinned";
+        return report;
+    };
+    let Some(output_offset) = report.fixture.output_offset() else {
+        report.stage = "compute-fixed-fixture-required-pinned";
+        return report;
+    };
     // SAFETY: rpcmem returned an exclusive CPU-accessible extent of exactly the
     // requested length. No registration or device consumer exists yet.
     unsafe {
@@ -456,9 +477,7 @@ fn exercise(
     // during asynchronous device use. Only the fixed output subsection is read.
     let output = unsafe {
         std::slice::from_raw_parts(
-            memory
-                .cast::<u8>()
-                .wrapping_add(report.fixture.output_offset()),
+            memory.cast::<u8>().wrapping_add(output_offset),
             compute::OUTPUT_BYTES,
         )
     };

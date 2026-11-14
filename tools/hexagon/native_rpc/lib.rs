@@ -19,6 +19,7 @@ mod dispatch;
 mod projection;
 mod q8;
 mod q8_dispatch;
+mod q8_projection;
 mod session;
 mod session_mapping;
 pub use compute::{
@@ -32,6 +33,7 @@ pub use projection::{
 };
 pub use q8::{Q8_MAX_MAPPED_BYTES, Q8Matmul};
 pub use q8_dispatch::{Q8Buffer, Q8Completion, Q8Dispatcher, Q8Request};
+pub use q8_projection::{Q8Projection, Q8ProjectionReport, Q8Submitter};
 pub use session::{
     GET_EFFECTIVE_DOMAIN_ID, GET_URI, MAP_FD, MAP_FD_DELAYED, SessionPreparationReport,
 };
@@ -632,6 +634,46 @@ impl Driver {
             Err(Error::UnsupportedPlatform)
         }
     }
+    /// Execute one immutable Q8 tensor placement through the signed X2 queue.
+    ///
+    /// This explicit experimental bridge shares the pinned signed-package,
+    /// reference process initialization, FD=2 mapping and independent wire/ABI
+    /// prerequisites of [`Self::reference_q2_projection`]. The trusted supervisor
+    /// must bind the plan's model/source/module/catalog/driver observations to
+    /// guarded actual files and the loaded DSP identity, provide a contained child
+    /// and enforce the original absolute process deadline. A `HybridPlan` record
+    /// authenticates none of those observations. No serving profile is enabled.
+    ///
+    /// `work` supplies exact source tensors and a separately implemented oracle
+    /// for every operation. No output is published until the correlated reply,
+    /// complete descriptor/cache flags, finite output and oracle all pass. A
+    /// refused write is never retried, drained into success or followed by normal
+    /// free. Errors, cancellation, expiry and unwinding retain every uncertain
+    /// native owner through supervised exit. Successful explicit cleanup still
+    /// leaves driver/package/session owners pinned until process exit.
+    ///
+    /// # Errors
+    /// Rejects invalid/expired selection before native setup, unsupported targets
+    /// and missing exports or package/path prerequisites. Native refusals and
+    /// partial work remain separate report observations with no fallback.
+    pub fn reference_q8_projection(
+        self,
+        package_directory: &Path,
+        limits: Q8Projection<'_>,
+        progress: impl FnMut(&Q8ProjectionReport),
+        work: impl FnOnce(&mut dyn Q8Submitter) -> Result<(), Error>,
+    ) -> Result<Q8ProjectionReport, Error> {
+        #[cfg(all(windows, target_arch = "aarch64"))]
+        {
+            windows::reference_q8_projection(self.inner, package_directory, limits, progress, work)
+        }
+        #[cfg(not(all(windows, target_arch = "aarch64")))]
+        {
+            let _ = (self, package_directory, limits, progress, work);
+            Err(Error::UnsupportedPlatform)
+        }
+    }
+
     /// Consume this driver in one fixed 4KiB allocation/registration/unmap probe.
     ///
     /// The documented registration call may implicitly open a domain session;

@@ -16,13 +16,15 @@ pub(crate) enum ComputeFixture {
     F32NoBlock,
     GuardedQ2,
     GuardedQ2NoBlock,
+    Q8ProjectionNoBlock,
 }
 
 impl ComputeFixture {
-    pub(crate) const fn output_offset(self) -> usize {
+    pub(crate) const fn output_offset(self) -> Option<usize> {
         match self {
-            Self::F32 | Self::F32NoBlock => OUTPUT_OFFSET,
-            Self::GuardedQ2 | Self::GuardedQ2NoBlock => Q2_OUTPUT_OFFSET,
+            Self::F32 | Self::F32NoBlock => Some(OUTPUT_OFFSET),
+            Self::GuardedQ2 | Self::GuardedQ2NoBlock => Some(Q2_OUTPUT_OFFSET),
+            Self::Q8ProjectionNoBlock => None,
         }
     }
 }
@@ -169,8 +171,16 @@ impl QueueComputeReport {
     pub const fn is_nonblocking_write_control(self) -> bool {
         matches!(
             self.fixture,
-            ComputeFixture::F32NoBlock | ComputeFixture::GuardedQ2NoBlock
+            ComputeFixture::F32NoBlock
+                | ComputeFixture::GuardedQ2NoBlock
+                | ComputeFixture::Q8ProjectionNoBlock
         )
+    }
+
+    /// This receipt belongs to caller-prepared Q8 projections, not a fixed matrix.
+    #[must_use]
+    pub const fn is_q8_projection(self) -> bool {
+        matches!(self.fixture, ComputeFixture::Q8ProjectionNoBlock)
     }
 
     /// An exact matrix reply and all numeric outputs were independently checked.
@@ -476,15 +486,19 @@ pub(crate) fn fixture_image_for(
     fixture: ComputeFixture,
     base: u64,
     fd: u32,
-) -> [u8; COMPUTE_ALLOCATION_BYTES] {
+) -> Option<[u8; COMPUTE_ALLOCATION_BYTES]> {
     match fixture {
-        ComputeFixture::F32 | ComputeFixture::F32NoBlock => fixture_image(base, fd),
-        ComputeFixture::GuardedQ2 | ComputeFixture::GuardedQ2NoBlock => q2_fixture_image(base, fd),
+        ComputeFixture::F32 | ComputeFixture::F32NoBlock => Some(fixture_image(base, fd)),
+        ComputeFixture::GuardedQ2 | ComputeFixture::GuardedQ2NoBlock => {
+            Some(q2_fixture_image(base, fd))
+        }
+        ComputeFixture::Q8ProjectionNoBlock => None,
     }
 }
 
 pub(crate) fn output_valid_for(fixture: ComputeFixture, bytes: &[u8]) -> bool {
     match fixture {
+        ComputeFixture::Q8ProjectionNoBlock => false,
         ComputeFixture::F32 | ComputeFixture::F32NoBlock => output_valid(bytes),
         ComputeFixture::GuardedQ2 | ComputeFixture::GuardedQ2NoBlock => {
             bytes.len() == OUTPUT_BYTES
@@ -536,11 +550,15 @@ pub(crate) fn self_check() -> bool {
     for (offset, value) in [(24, 1), (28, 1), (32, 3), (36, 1)] {
         put_u32(&mut response, offset, value);
     }
-    let q2_image = fixture_image_for(ComputeFixture::GuardedQ2, 0x1234_5600, 19);
+    let Some(q2_image) = fixture_image_for(ComputeFixture::GuardedQ2, 0x1234_5600, 19) else {
+        return false;
+    };
     let q2_nonblocking_image = fixture_image_for(ComputeFixture::GuardedQ2NoBlock, 0x1234_5600, 19);
-    let q2_offset = ComputeFixture::GuardedQ2.output_offset();
-    image == nonblocking_image
-        && q2_image == q2_nonblocking_image
+    let Some(q2_offset) = ComputeFixture::GuardedQ2.output_offset() else {
+        return false;
+    };
+    Some(image) == nonblocking_image
+        && Some(q2_image) == q2_nonblocking_image
         && response_valid(&response)
         && !output_valid(&image[OUTPUT_OFFSET..OUTPUT_OFFSET + OUTPUT_BYTES])
         && !output_valid_for(
@@ -655,7 +673,7 @@ mod tests {
         assert_eq!(image[472..1024], [0; 552]);
         assert_eq!(
             fixture_image_for(ComputeFixture::F32NoBlock, 0x1234_5600, 19),
-            image
+            Some(image)
         );
         assert!(
             !QueueComputeReport::new(SessionPreparationReport::new(0x81))
@@ -710,7 +728,8 @@ mod tests {
     #[test]
     fn guarded_q2_image_matches_original_integer_math_and_host_tile_strides()
     -> Result<(), crate::Error> {
-        let image = fixture_image_for(ComputeFixture::GuardedQ2, 0x1234_5600, 19);
+        let image = fixture_image_for(ComputeFixture::GuardedQ2, 0x1234_5600, 19)
+            .ok_or(crate::Error::Contract)?;
         assert_eq!(get_u32(&image, 24 + 8), Some(2304));
         assert_eq!(get_u32(&image, 24 + 12), Some(3));
         assert_eq!(get_u32(&image, 24 + 16), Some(42));
