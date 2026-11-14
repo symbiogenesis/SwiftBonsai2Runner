@@ -47,22 +47,21 @@ static ADMISSION_CLOSED: AtomicBool = AtomicBool::new(false);
 static ACTIVE: AtomicBool = AtomicBool::new(false);
 static QUARANTINE: Mutex<Option<Quarantine>> = Mutex::new(None);
 
-struct ActiveImport;
+struct ActiveImport<'a>(&'a AtomicBool);
 
-impl ActiveImport {
-    fn acquire() -> Result<Self, &'static str> {
-        ACTIVE
-            .compare_exchange(false, true, Ordering::AcqRel, Ordering::Acquire)
-            .map(|_| Self)
+impl<'a> ActiveImport<'a> {
+    fn acquire(slot: &'a AtomicBool) -> Result<Self, &'static str> {
+        slot.compare_exchange(false, true, Ordering::AcqRel, Ordering::Acquire)
+            .map(|_| Self(slot))
             .map_err(
                 |_| "Another audio import is still active. Cancel it before selecting a new file.",
             )
     }
 }
 
-impl Drop for ActiveImport {
+impl Drop for ActiveImport<'_> {
     fn drop(&mut self) {
-        ACTIVE.store(false, Ordering::Release);
+        self.0.store(false, Ordering::Release);
     }
 }
 
@@ -239,7 +238,7 @@ pub(super) fn convert(
     sender: &SyncSender<ImportResult>,
     next: &Receiver<()>,
 ) -> Result<(), &'static str> {
-    let _active = ActiveImport::acquire()?;
+    let _active = ActiveImport::acquire(&ACTIVE)?;
     if ADMISSION_CLOSED.load(Ordering::Acquire) {
         return Err(CLEANUP_FAILURE);
     }
@@ -325,8 +324,8 @@ fn join_reader(reader: JoinHandle<()>) -> Result<(), &'static str> {
 }
 
 fn read_frames(
-    mut input: File,
-    mut output: File,
+    mut input: impl Write,
+    mut output: impl Read,
     frames: &SyncSender<Result<Chunk, &'static str>>,
     permits: &Receiver<()>,
 ) {
@@ -353,6 +352,9 @@ fn read_frames(
         }
     }
 }
+
+#[cfg(test)]
+mod protocol_tests;
 
 fn relay(
     advance: &SyncSender<()>,
