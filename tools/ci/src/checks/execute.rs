@@ -49,7 +49,7 @@ fn read_log_tail(path: &Path) -> std::io::Result<(bool, Vec<u8>)> {
     Ok((offset != 0, bytes))
 }
 
-fn write_failure_logs(output: &mut impl std::io::Write, spec: &ToolProcessSpec) {
+pub(super) fn write_failure_logs(output: &mut impl std::io::Write, spec: &ToolProcessSpec) {
     for (label, path) in [("stdout", &spec.stdout), ("stderr", &spec.stderr)] {
         let _ = writeln!(output, "{label}: {}", path.display());
         match read_log_tail(path) {
@@ -125,7 +125,7 @@ fn read_log(path: &Path) -> Result<Vec<u8>> {
     Ok(bytes)
 }
 
-fn command(
+pub(super) fn command(
     spec: &ToolProcessSpec,
     allowance: Option<Duration>,
     log: &Path,

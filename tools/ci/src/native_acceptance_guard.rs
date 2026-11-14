@@ -9,11 +9,12 @@ use crate::Result;
 
 const TOOLCHAIN: &str = "nightly-2026-11-12-aarch64-pc-windows-msvc";
 const PACKAGES: [&str; 3] = ["bonsai-broker", "bonsai-chat", "bonsai-tools"];
-const SOURCES: [&str; 6] = [
+const SOURCES: [&str; 7] = [
     ".github/actions/native-regressions/action.yml",
     ".github/workflows/native-runtime-acceptance.yml",
     "scripts/Start-Chat.ps1",
     "tools/ci/Cargo.toml",
+    "tools/ci/src/checks/regressions.rs",
     "tools/ci/src/command.rs",
     "tools/ci/src/native_acceptance_guard.rs",
 ];

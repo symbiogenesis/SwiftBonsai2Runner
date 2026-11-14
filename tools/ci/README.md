@@ -331,7 +331,7 @@ runs 23 receipt and 13 output fixtures without compiling or loading a model.
 The owning hosted workflow parses every actual PowerShell run block in the workflow
 and shared regression action, plus the launcher, with the native PowerShell parser,
 executes both exact Rust guard regressions, and retains a `workflow-contract.json`
-bound to the revision and six normalized LF source identities. `workflow-receipt` validates that proof
+bound to the revision and seven normalized LF source identities. `workflow-receipt` validates that proof
 before publishing or admitting an owner. These operations change no execution
 policy and do not execute the parsed launcher or owner workload.
 
@@ -350,17 +350,19 @@ evidence and admission receipts are never restored from this build cache. Every
 device selection still requires its own same-run source-bound package.
 
 The [shared native regression action](../../.github/actions/native-regressions/action.yml)
-runs explicit package/target selections and submits each actual exit code and libtest
-output to `native-acceptance-guard test-output`. Exact selections require one pass;
-grouped selections require the declared positive count or a nonempty result. Missing,
-failed, ignored, duplicate or malformed output cannot pass. All selections are
-validated before the first command. It never enables ignored model tests or infers
-qualification from a cache hit. Hosted preparation runs
-`pwsh -NoProfile -File tools/ci/test_native_regressions.ps1` on Windows
-ARM64 with PowerShell 7; these fixtures substitute inert Cargo/guard scripts and do
-not compile Rust or load models. Foundation also runs the focused
-`test_foundation_handoff.ps1` structural fixtures before its Rust routing/gate tests.
+forwards one bounded request to `bonsai-ci native-regressions --request -`.
+Rust admits the complete package, compiler, external target and typed selection
+inventory before the first Cargo invocation, contains each process tree and uses
+`native-acceptance-guard`'s output policy in-process. Exact selections require one
+pass; groups require their declared positive count or a nonempty result. Missing,
+failed, ignored, duplicate or malformed results stop the selection. Passing work
+retains no build chatter; actionable failures keep a selected diagnostic.
+`planOnly: true` returns admitted arguments without executing them.
 
+Hosted preparation runs `tools/ci/test_native_regressions.ps1`, a thin adapter for
+five named Rust fixtures with inert injected command outcomes. No model or remote
+service is used. Foundation retains the separate `test_foundation_handoff.ps1`
+pre-bootstrap structural controls. Hosted/device acceptance remains pending.
 [Source checks](../../.github/workflows/source-checks.yml) run separate portable,
 Markdown and dependency-audit jobs on hosted Linux ARM64. Pull requests to `main`
 select portable checks for changes outside documentation: workspace formatting,

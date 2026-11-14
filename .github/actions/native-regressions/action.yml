@@ -37,51 +37,13 @@ runs:
       run: |
         Set-StrictMode -Version Latest
         $ErrorActionPreference = 'Stop'
-        # Inspect both native exit codes with the typed guard, including failures.
-        $PSNativeCommandUseErrorActionPreference = $false
-        if (-not $IsWindows -or [Runtime.InteropServices.RuntimeInformation]::ProcessArchitecture -ne 'Arm64') { throw 'Native regression controls require Windows ARM64.' }
-        if ($env:REGRESSION_PACKAGE -cnotmatch '^bonsai-[a-z0-9-]+$' -or
-            $env:REGRESSION_TOOLCHAIN -cnotmatch '^nightly-[0-9]{4}-[0-9]{2}-[0-9]{2}-aarch64-pc-windows-msvc$') { throw 'An explicit package and native compiler are required.' }
-        if ($env:REGRESSION_TARGET_KIND -cnotin @('lib', 'bin', 'test') -or
-            ($env:REGRESSION_TARGET_KIND -ceq 'lib' -and $env:REGRESSION_TARGET_NAME) -or
-            ($env:REGRESSION_TARGET_KIND -cne 'lib' -and $env:REGRESSION_TARGET_NAME -cnotmatch '^[a-z][a-z0-9_-]*$')) { throw 'Invalid Cargo target selection.' }
-        if (-not [IO.Path]::IsPathFullyQualified($env:REGRESSION_TARGET_DIRECTORY) -or
-            $env:REGRESSION_TARGET_DIRECTORY -match '%[^%]+%' -or
-            -not [IO.Path]::IsPathFullyQualified($env:BONSAI_CI_PATH) -or
-            -not [IO.File]::Exists($env:BONSAI_CI_PATH)) { throw 'External build paths and a prepared CI guard are required.' }
-        $target = [IO.Path]::GetFullPath($env:REGRESSION_TARGET_DIRECTORY).TrimEnd('\', '/')
-        $workspace = [IO.Path]::GetFullPath($env:GITHUB_WORKSPACE).TrimEnd('\', '/')
-        if ($target.Equals($workspace, [StringComparison]::OrdinalIgnoreCase) -or
-            $target.StartsWith($workspace + '\', [StringComparison]::OrdinalIgnoreCase) -or
-            $workspace.StartsWith($target + '\', [StringComparison]::OrdinalIgnoreCase)) { throw 'Regression build outputs must not overlap source.' }
-        $selections = ConvertFrom-Json -InputObject $env:REGRESSION_SELECTIONS -AsHashtable -NoEnumerate
-        if ($selections -isnot [array] -or $selections.Count -lt 1 -or $selections.Count -gt 128) { throw 'Select one to 128 explicit controls.' }
-        $seen = [Collections.Generic.HashSet[string]]::new([StringComparer]::Ordinal)
-        # Validate the complete selection before the first Cargo invocation.
-        foreach ($selection in $selections) {
-          if ($selection -isnot [Collections.IDictionary] -or
-              (($selection.Keys | Sort-Object) -join ',') -cne 'exact,expected-passed,name' -or
-              $selection.name -isnot [string] -or $selection.name -cnotmatch '^[A-Za-z_][A-Za-z0-9_:]*$' -or
-              $selection.exact -isnot [bool] -or -not $seen.Add($selection.name)) { throw 'Malformed or duplicate regression selection.' }
-          $expected = $selection['expected-passed']
-          if (($null -ne $expected -and (($expected -isnot [int] -and $expected -isnot [long]) -or $expected -lt 1)) -or
-              ($selection.exact -and $expected -ne 1)) { throw 'Exact controls require one pass; grouped controls require a positive count or null.' }
-        }
-        $env:CARGO_TARGET_DIR = $target
-        $cargo = (Get-Command cargo -CommandType Application -ErrorAction Stop | Select-Object -First 1).Source
-        foreach ($selection in $selections) {
-          $compilerArgument = '+' + $env:REGRESSION_TOOLCHAIN
-          $targetArgument = '--' + $env:REGRESSION_TARGET_KIND
-          $cargoArguments = @($compilerArgument, 'test', '--locked', '--release', '--manifest-path',
-            (Join-Path $env:GITHUB_WORKSPACE 'Cargo.toml'), '--package', $env:REGRESSION_PACKAGE, $targetArgument)
-          if ($env:REGRESSION_TARGET_KIND -cne 'lib') { $cargoArguments += $env:REGRESSION_TARGET_NAME }
-          $cargoArguments += $selection.name
-          if ($selection.exact) { $cargoArguments += @('--', '--exact') }
-          $output = @(& $cargo @cargoArguments)
-          $code = $LASTEXITCODE
-          $output | Write-Output
-          & $env:BONSAI_CI_PATH native-acceptance-guard --json (@{
-            operation='test-output'; output=$output; exitCode=$code; expectedPassed=$selection['expected-passed']
-          } | ConvertTo-Json -Depth 4 -Compress)
-          if ($LASTEXITCODE -ne 0) { throw 'A selected regression failed, was missing, or produced invalid test output.' }
-        }
+        $PSNativeCommandUseErrorActionPreference = $true
+        @{
+          root = $env:GITHUB_WORKSPACE
+          targetDirectory = $env:REGRESSION_TARGET_DIRECTORY
+          package = $env:REGRESSION_PACKAGE
+          toolchain = $env:REGRESSION_TOOLCHAIN
+          targetKind = $env:REGRESSION_TARGET_KIND
+          targetName = $env:REGRESSION_TARGET_NAME
+          selections = ConvertFrom-Json -InputObject $env:REGRESSION_SELECTIONS -NoEnumerate
+        } | ConvertTo-Json -Depth 8 -Compress | & $env:BONSAI_CI_PATH native-regressions --request -

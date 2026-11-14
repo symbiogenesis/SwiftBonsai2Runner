@@ -11,8 +11,13 @@ use crate::Result;
 
 #[cfg(windows)]
 mod execute;
+mod regressions;
 #[cfg(test)]
 mod tests;
+
+pub(super) fn regressions(arguments: &[OsString]) -> Result<String> {
+    regressions::run(arguments)
+}
 
 const USAGE: &str = "bonsai-ci rust-select [--root PATH]\n       bonsai-ci rust-plan|rust-check [--root PATH] [--package NAME] [--packages-json JSON] [--group All|Broker] [--profile Foundation|Compatibility|Native] [--phase fmt|clippy|doc|test|build] [--toolchain NAME] [--offline] [--full-tests] [--build] [--test-case NAME --test-kind lib|bin|test --test-target NAME] [--target PATH --evidence PATH --timeout-seconds N] [--github-release]";
 const PHASES: &[&str] = &["fmt", "clippy", "doc", "test", "build"];
