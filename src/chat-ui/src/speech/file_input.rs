@@ -306,4 +306,82 @@ mod tests {
         ));
         Ok(())
     }
+
+    #[test]
+    fn audio_file_stream_recognition_and_memory_failures_discard_queued_lookahead() -> io::Result<()>
+    {
+        for recognition_fails in [true, false] {
+            let (mut import, decoded) = Session::fixture_observed(vec![
+                Ok(Some(chunk(0, false))),
+                Ok(Some(chunk(1, false))),
+                Ok(Some(chunk(2, false))),
+                Ok(Some(chunk(3, true))),
+            ])?;
+            let first = first_chunk(&mut import)?;
+            decoded
+                .recv_timeout(Duration::from_secs(2))
+                .map_err(io::Error::other)?;
+            let current = AtomicU64::new(7);
+            let (events, incoming) = mpsc::channel();
+            let texts = ["Completed text", "Unretained text"];
+            let error = canary::Failure::Message(if recognition_fails {
+                "Recognition failed."
+            } else {
+                "Not enough memory for more transcript."
+            });
+            let mut seen = Vec::new();
+            let mut admitted = Vec::new();
+            let result = run(
+                7,
+                first,
+                &mut import,
+                &current,
+                &events,
+                &mut |wav| {
+                    seen.push(wav[0]);
+                    // Both failing paths run with the next decoded segment
+                    // queued, while its worker awaits another decode permit.
+                    decoded.recv_timeout(Duration::from_secs(2)).map_err(|_| {
+                        canary::Failure::Message("Failure fixture did not prefetch a segment.")
+                    })?;
+                    if recognition_fails && wav[0] == 1 {
+                        Err(error)
+                    } else {
+                        Ok(texts[usize::from(wav[0])].to_owned())
+                    }
+                },
+                &mut |length| {
+                    admitted.push(length);
+                    if admitted.len() == 2 {
+                        Err(error)
+                    } else {
+                        Ok(())
+                    }
+                },
+            );
+            // Joined cleanup must discard the queued segment without polling
+            // it or granting a permit for the remaining tail.
+            drop(import);
+            assert_eq!(result, Err(error));
+            assert_eq!(seen, [0, 1]);
+            let first_length = texts[0].len() + 1;
+            let expected = if recognition_fails {
+                vec![first_length]
+            } else {
+                vec![first_length, first_length + texts[1].len() + 1]
+            };
+            assert_eq!(admitted, expected);
+            assert_eq!(decoded.try_recv(), Err(mpsc::TryRecvError::Disconnected));
+            let mut parts = Vec::new();
+            for event in incoming.try_iter() {
+                match event {
+                    Event::FilePart { generation, text } => parts.push((generation, text)),
+                    Event::FileProgress { .. } => {}
+                    _ => return Err(io::Error::other("Failure published an unexpected event")),
+                }
+            }
+            assert_eq!(parts, [(7, texts[0].to_owned())]);
+        }
+        Ok(())
+    }
 }
