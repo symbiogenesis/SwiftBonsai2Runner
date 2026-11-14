@@ -4,6 +4,8 @@
     reason = "Startup and update modules share an explicit crate-local transport API."
 )]
 
+mod read_poll;
+
 use std::{
     cell::RefCell,
     collections::BTreeMap,
@@ -22,7 +24,7 @@ use ureq::{
     http::{self, Uri},
     unversioned::{
         resolver::DefaultResolver,
-        transport::{ConnectionDetails, Connector, DefaultConnector},
+        transport::{ConnectProxyConnector, ConnectionDetails, Connector, TcpConnector},
     },
 };
 
@@ -75,6 +77,16 @@ impl Connector for CredentialFree {
         details: &ConnectionDetails<'_>,
         chained: Option<()>,
     ) -> Result<Option<()>, ureq::Error> {
+        if details.config.proxy().is_some_and(|proxy| {
+            !matches!(
+                proxy.protocol(),
+                ureq::ProxyProtocol::Http | ureq::ProxyProtocol::Https
+            )
+        }) {
+            return Err(ureq::Error::BadUri(
+                "Native HTTPS supports HTTP and HTTPS CONNECT proxies only.".into(),
+            ));
+        }
         // CONNECT recursively invokes the chain for the explicitly configured
         // proxy. Its credentials/scheme belong to proxy policy, not artifact URLs.
         if !(self.proxy.as_ref() == Some(details.uri) && details.config.proxy().is_none()) {
@@ -108,11 +120,17 @@ fn new_agent(loopback: bool) -> Agent {
         proxy: config.proxy().map(|p| p.uri().clone()),
         loopback,
     };
-    Agent::with_parts(
-        config,
-        guard.chain(DefaultConnector::default()),
-        DefaultResolver::default(),
-    )
+    // Poll raw reads below TLS: Schannel must never see the short internal
+    // timeouts, and CONNECT's recursive chain must retain the same protection.
+    let connector = guard
+        .chain(ConnectProxyConnector::default())
+        .chain(TcpConnector::default())
+        .chain(read_poll::ReadPollConnector);
+    #[cfg(windows)]
+    let connector = connector.chain(ureq::unversioned::transport::NativeTlsConnector::default());
+    #[cfg(not(windows))]
+    let connector = connector.chain(ureq::unversioned::transport::RustlsConnector::default());
+    Agent::with_parts(config, connector, DefaultResolver::default())
 }
 
 struct RequestGuard {
@@ -860,15 +878,17 @@ mod tests {
                     _ => Err("Cancelled native HTTPS worker did not release its socket.".into()),
                 }
             });
+            let started = Instant::now();
+            let until = started
+                + if matches!(stop, Stop::Deadline) {
+                    Duration::from_secs(1)
+                } else {
+                    Duration::from_secs(5)
+                };
             let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
                 owned(
                     new_agent(true),
-                    Instant::now()
-                        + if matches!(stop, Stop::Deadline) {
-                            Duration::from_secs(1)
-                        } else {
-                            Duration::from_secs(5)
-                        },
+                    until,
                     &mut || {
                         if headers_sent.load(Ordering::Acquire) && !matches!(stop, Stop::Deadline) {
                             if matches!(stop, Stop::Panic) {
@@ -879,18 +899,13 @@ mod tests {
                             Ok(())
                         }
                     },
-                    |agent, cancelled| {
-                        metadata_with(
-                            agent,
-                            &uri,
-                            &[],
-                            Instant::now() + Duration::from_secs(5),
-                            5,
-                            cancelled,
-                        )
-                    },
+                    |agent, cancelled| metadata_with(agent, &uri, &[], until, 5, cancelled),
                 )
             }));
+            // Joining at the request deadline used to satisfy the socket/exit
+            // checks despite cancellation doing no useful work. Require the
+            // cancelled and unwinding owners to finish before that deadline.
+            assert!(started.elapsed() < Duration::from_secs(2));
             let released = server
                 .join()
                 .map_err(|_| "Stalled HTTPS fixture panicked.")?;
