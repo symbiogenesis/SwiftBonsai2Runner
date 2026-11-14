@@ -212,9 +212,10 @@ impl Tokenizer {
             if let Some(id) = self.find(&encoded(&word[symbol.start..symbol.end])) {
                 push_id(output, id)?;
             } else {
+                let mut glyph = [0; 4];
                 for byte in &word[symbol.start..symbol.end] {
                     let id = self
-                        .find(&byte_glyph(*byte).to_string())
+                        .find(byte_glyph(*byte).encode_utf8(&mut glyph))
                         .ok_or_else(invalid)?;
                     push_id(output, id)?;
                 }
