@@ -38,10 +38,11 @@ pub(super) fn utf8_media_type(value: &[u8], expected: &str) -> bool {
         return false;
     };
     let mut parts = value.split(';');
-    if !parts
-        .next()
-        .is_some_and(|media| media.trim().eq_ignore_ascii_case(expected))
-    {
+    if !parts.next().is_some_and(|media| {
+        media
+            .trim_matches([' ', '\t'])
+            .eq_ignore_ascii_case(expected)
+    }) {
         return false;
     }
     let Some(parameter) = parts.next() else {
@@ -50,9 +51,11 @@ pub(super) fn utf8_media_type(value: &[u8], expected: &str) -> bool {
     let Some((name, charset)) = parameter.split_once('=') else {
         return false;
     };
-    name.trim().eq_ignore_ascii_case("charset")
-        && (charset.trim().eq_ignore_ascii_case("utf-8")
-            || charset.trim().eq_ignore_ascii_case("\"utf-8\""))
+    // HTTP optional whitespace is SP / HTAB, not Unicode White_Space.
+    let charset = charset.trim_matches([' ', '\t']);
+    name.trim_matches([' ', '\t'])
+        .eq_ignore_ascii_case("charset")
+        && (charset.eq_ignore_ascii_case("utf-8") || charset.eq_ignore_ascii_case("\"utf-8\""))
         && parts.next().is_none()
 }
 
@@ -88,7 +91,12 @@ mod tests {
     #[test]
     fn local_media_types_share_the_same_utf8_parameter_subset() {
         for media in ["application/json", "text/event-stream"] {
-            for suffix in ["", "; CHARSET=UTF-8", " ; charset = \"utf-8\""] {
+            for suffix in [
+                "",
+                "; CHARSET=UTF-8",
+                " ; charset = \"utf-8\"",
+                "\t;\tcharset\t=\tutf-8\t",
+            ] {
                 assert!(utf8_media_type(
                     format!("{media}{suffix}").as_bytes(),
                     media
@@ -108,6 +116,20 @@ mod tests {
                 ));
             }
             assert!(!utf8_media_type(&[0xff], media));
+            for whitespace in [
+                '\u{00a0}', '\u{2003}', '\u{0085}', '\u{000b}', '\u{000c}', '\r', '\n',
+            ] {
+                for value in [
+                    format!("{whitespace}{media}"),
+                    format!("{media}{whitespace}"),
+                    format!("{media};{whitespace}charset=utf-8"),
+                    format!("{media};charset{whitespace}=utf-8"),
+                    format!("{media};charset={whitespace}utf-8"),
+                    format!("{media};charset=utf-8{whitespace}"),
+                ] {
+                    assert!(!utf8_media_type(value.as_bytes(), media), "{value:?}");
+                }
+            }
         }
         assert!(!utf8_media_type(b"application/json", "text/event-stream"));
         assert!(!utf8_media_type(b"text/event-stream", "application/json"));

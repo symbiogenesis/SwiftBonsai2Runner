@@ -110,11 +110,14 @@ fn boundary(media: &str) -> Result<&str, Error> {
     let (name, parameter) = media
         .split_once(';')
         .ok_or(Error::new(415, "unsupported_media_type"))?;
-    if !name.trim_end().eq_ignore_ascii_case("multipart/form-data") {
+    if !name
+        .trim_end_matches([' ', '\t'])
+        .eq_ignore_ascii_case("multipart/form-data")
+    {
         return Err(Error::new(415, "unsupported_media_type"));
     }
     let (name, value) = parameter
-        .trim()
+        .trim_matches([' ', '\t'])
         .split_once('=')
         .ok_or(Error::new(415, "unsupported_media_type"))?;
     if !name.eq_ignore_ascii_case("boundary") {
@@ -151,6 +154,16 @@ fn split_bytes<'a, 'd>(
             &bytes[..index]
         }))
     })
+}
+
+fn trim_http_whitespace(mut bytes: &[u8]) -> &[u8] {
+    while let [b' ' | b'\t', rest @ ..] = bytes {
+        bytes = rest;
+    }
+    while let [rest @ .., b' ' | b'\t'] = bytes {
+        bytes = rest;
+    }
+    bytes
 }
 
 fn multipart_parts<'a>(bytes: &'a [u8], separator: &[u8]) -> Result<[Option<&'a [u8]>; 3], Error> {
@@ -204,7 +217,7 @@ fn multipart<'a>(media: &str, body: &'a [u8]) -> Result<&'a [u8], Error> {
         for line in split_bytes(&part[..at], b"\r\n") {
             let colon = memchr::memchr(b':', line).ok_or(Error::bad("invalid_multipart"))?;
             let header_name = &line[..colon];
-            let header_value = line[colon + 1..].trim_ascii();
+            let header_value = trim_http_whitespace(&line[colon + 1..]);
             let slot = if header_name.eq_ignore_ascii_case(b"content-disposition") {
                 &mut disposition
             } else if header_name.eq_ignore_ascii_case(b"content-type") {
@@ -258,7 +271,7 @@ fn disposition_field(bytes: &[u8]) -> Result<(&str, bool), Error> {
     let value = text
         .strip_prefix("form-data;")
         .ok_or(Error::bad("invalid_multipart"))?
-        .trim_start();
+        .trim_start_matches([' ', '\t']);
     let value = value
         .strip_prefix("name=\"")
         .ok_or(Error::bad("invalid_multipart"))?;
@@ -274,7 +287,7 @@ fn disposition_field(bytes: &[u8]) -> Result<(&str, bool), Error> {
     let value = rest
         .strip_prefix(';')
         .ok_or(Error::bad("invalid_multipart"))?
-        .trim_start();
+        .trim_start_matches([' ', '\t']);
     let filename = value
         .strip_prefix("filename=\"")
         .and_then(|value| value.strip_suffix('"'))
@@ -290,6 +303,85 @@ mod tests {
     use super::{
         Cow, Error, TTS_MODEL, multipart, multipart_parts, split_bytes, synthesize, transcribe,
     };
+
+    #[test]
+    fn multipart_syntax_accepts_only_http_whitespace_and_preserves_unicode_filenames() {
+        assert_eq!(
+            super::boundary("multipart/form-data\t; \tboundary=a\t"),
+            Ok("a")
+        );
+        assert_eq!(
+            super::disposition_field(
+                "form-data;\tname=\"file\"; \tfilename=\"雨🌱.wav\"".as_bytes()
+            ),
+            Ok(("file", true))
+        );
+        for whitespace in [
+            '\u{00a0}', '\u{2003}', '\u{0085}', '\u{000b}', '\u{000c}', '\r', '\n',
+        ] {
+            for value in [
+                format!("multipart/form-data{whitespace}; boundary=a"),
+                format!("multipart/form-data;{whitespace}boundary=a"),
+                format!("multipart/form-data; boundary=a{whitespace}"),
+            ] {
+                assert_eq!(
+                    super::boundary(&value),
+                    Err(Error::new(415, "unsupported_media_type"))
+                );
+            }
+            for value in [
+                format!("form-data;{whitespace}name=\"file\"; filename=\"clip.wav\""),
+                format!("form-data; name=\"file\";{whitespace}filename=\"clip.wav\""),
+            ] {
+                assert_eq!(
+                    super::disposition_field(value.as_bytes()),
+                    Err(Error::bad("invalid_multipart"))
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn multipart_header_values_do_not_discard_control_whitespace() -> Result<(), Error> {
+        let media = "multipart/form-data; boundary=a";
+        let body = format!(
+            "--a\r\nContent-Disposition: form-data; name=\"model\"\r\n\r\n{}\r\n--a\r\nContent-Disposition: form-data; name=\"file\"; filename=\"雨🌱.wav\"\r\nContent-Type: audio/wav\r\n\r\naudio\r\n--a--\r\n",
+            crate::ASR_MODEL
+        );
+        assert_eq!(multipart(media, body.as_bytes())?, b"audio");
+        for (name, value) in [
+            ("Content-Disposition", "form-data; name=\"model\""),
+            (
+                "Content-Disposition",
+                "form-data; name=\"file\"; filename=\"雨🌱.wav\"",
+            ),
+            ("Content-Type", "audio/wav"),
+        ] {
+            let line = format!("{name}: {value}\r\n");
+            let expected_error = if name == "Content-Type" {
+                "invalid_audio"
+            } else {
+                "invalid_multipart"
+            };
+            let valid = body.replacen(&line, &format!("{name}:\t {value} \t\r\n"), 1);
+            assert_eq!(multipart(media, valid.as_bytes())?, b"audio");
+            for whitespace in [
+                '\u{00a0}', '\u{2003}', '\u{0085}', '\u{000b}', '\u{000c}', '\r', '\n',
+            ] {
+                for invalid_line in [
+                    format!("{name}: {whitespace}{value}\r\n"),
+                    format!("{name}: {value}{whitespace}\r\n"),
+                ] {
+                    let invalid = body.replacen(&line, &invalid_line, 1);
+                    assert_eq!(
+                        multipart(media, invalid.as_bytes()).err(),
+                        Some(Error::bad(expected_error))
+                    );
+                }
+            }
+        }
+        Ok(())
+    }
 
     #[test]
     fn failed_multipart_clears_previous_recognition_samples() {
