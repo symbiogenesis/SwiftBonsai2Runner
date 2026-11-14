@@ -8,7 +8,7 @@
 use std::ffi::OsString;
 use std::fmt::Write as _;
 use std::fs;
-use std::io;
+use std::io::{self, Read as _, Write as _};
 use std::net::{SocketAddr, TcpListener, TcpStream};
 use std::os::windows::ffi::OsStrExt as _;
 use std::os::windows::process::CommandExt as _;
@@ -56,6 +56,7 @@ fn main() -> io::Result<()> {
         "--version" | "--help" => report_inspection_mitigations()?,
         "nested-mitigations" => nested_mitigations()?,
         "sandbox-files" => sandbox_files(&args)?,
+        "sandbox-offline-pipes" => offline_probe(&args)?,
         "sandbox-connect-allowed" => sandbox_connect(&args, true)?,
         "sandbox-connect-denied" => sandbox_connect(&args, false)?,
         "sandbox-temp-denied" => sandbox_temp_denied(&args)?,
@@ -262,6 +263,108 @@ fn sandbox_files(args: &[OsString]) -> io::Result<()> {
         .map_err(|error| sandbox_error("loopback listener bind", &error))?;
     fs::write("sandbox-ready.txt", std::process::id().to_string())?;
     wait_forever();
+    Ok(())
+}
+
+fn offline_probe(args: &[OsString]) -> io::Result<()> {
+    if let Err(error) = offline_authority(args) {
+        fs::write("offline-error.txt", error.to_string())?;
+        return Err(error);
+    }
+    let mut payload = Vec::new();
+    io::stdin().lock().take(131_080).read_to_end(&mut payload)?;
+    if payload.len() != 131_079 {
+        return Err(io::Error::other("offline pipe input length or EOF changed"));
+    }
+    let mut sink = io::stderr().lock();
+    for _ in 0..40 {
+        sink.write_all(&[b'!'; 4_096])?;
+    }
+    let mut output = io::stdout().lock();
+    output.write_all(&payload)?;
+    output.flush()
+}
+
+fn offline_authority(args: &[OsString]) -> io::Result<()> {
+    let approved = argument(args, 1)?;
+    if fs::read_to_string(approved)? != "approved audio input" {
+        return Err(io::Error::other("offline approved input changed"));
+    }
+    for attempt in [
+        fs::File::open(argument(args, 2)?).map(drop),
+        fs::OpenOptions::new().write(true).open(approved).map(drop),
+    ] {
+        if !attempt.is_err_and(|error| error.kind() == io::ErrorKind::PermissionDenied) {
+            return Err(io::Error::other(
+                "offline file authority was not denied by policy",
+            ));
+        }
+    }
+    reject_inherited_file(argument(args, 4)?)?;
+    let address: SocketAddr = (
+        std::net::Ipv4Addr::LOCALHOST,
+        argument(args, 3)?
+            .parse::<u16>()
+            .map_err(io::Error::other)?,
+    )
+        .into();
+    let denied = TcpStream::connect_timeout(&address, Duration::from_secs(1));
+    if !denied.is_err_and(|error| error.raw_os_error() == Some(WSAEACCES)) {
+        return Err(io::Error::other(
+            "offline live-loopback connection was not denied by policy",
+        ));
+    }
+    let mut child = Command::new(std::env::current_exe()?)
+        .arg("sleep")
+        .current_dir(std::env::current_dir()?)
+        .creation_flags(0x0800_0000)
+        .stdin(Stdio::null())
+        .stdout(Stdio::null())
+        .stderr(Stdio::null())
+        .spawn();
+    if let Ok(child) = &mut child {
+        child.kill()?;
+        let _ = child.wait()?;
+        return Err(io::Error::other(
+            "offline worker escaped its one-process Job",
+        ));
+    }
+    Ok(())
+}
+
+#[allow(
+    unsafe_code,
+    reason = "Query only the borrowed sentinel handle value to detect HANDLE_LIST leaks."
+)]
+fn reject_inherited_file(description: &str) -> io::Result<()> {
+    use windows_sys::Win32::Storage::FileSystem::{
+        BY_HANDLE_FILE_INFORMATION, GetFileInformationByHandle,
+    };
+    let parts = description
+        .split(':')
+        .map(str::parse::<u64>)
+        .collect::<Result<Vec<_>, _>>()
+        .map_err(io::Error::other)?;
+    let [address, volume, high, low] = parts.as_slice() else {
+        return Err(io::Error::other("invalid sentinel identity"));
+    };
+    let handle =
+        std::ptr::with_exposed_provenance_mut(usize::try_from(*address).map_err(io::Error::other)?);
+    let mut information = BY_HANDLE_FILE_INFORMATION::default();
+    // SAFETY: Windows validates the opaque handle value. This query neither
+    // dereferences it as memory nor closes it, and the output has the native ABI.
+    let queried = unsafe { GetFileInformationByHandle(handle, &raw mut information) };
+    if queried != 0
+        && (
+            u64::from(information.dwVolumeSerialNumber),
+            u64::from(information.nFileIndexHigh),
+            u64::from(information.nFileIndexLow),
+        ) == (*volume, *high, *low)
+    {
+        return Err(io::Error::other(
+            "offline worker inherited an unrelated file handle",
+        ));
+    }
     Ok(())
 }
 

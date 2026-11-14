@@ -3,7 +3,7 @@
 
 use std::ffi::OsString;
 use std::fs;
-use std::io;
+use std::io::{self, Read as _, Write as _};
 use std::net::{Ipv4Addr, TcpListener, TcpStream, UdpSocket};
 use std::os::windows::ffi::{OsStrExt as _, OsStringExt as _};
 use std::os::windows::fs::OpenOptionsExt as _;
@@ -14,7 +14,7 @@ use std::sync::atomic::{AtomicU64, Ordering};
 use std::time::{Duration, Instant};
 
 use bonsai_windows_process::{
-    OwnedProcess, ParentProcess, ProcessSpec, SandboxPolicy, ToolProcessSpec,
+    OwnedProcess, ParentProcess, ProcessSpec, SandboxNetwork, SandboxPolicy, ToolProcessSpec,
     available_memory_bytes, listener_process_id, native_sandbox_available,
 };
 
@@ -76,7 +76,8 @@ fn sandbox_rejects_invalid_grants_before_creating_evidence() -> io::Result<()> {
     fs::create_dir(&scratch)?;
     let mut spec = lane.spec(vec![OsString::from("sleep")]);
     spec.working_directory.clone_from(&scratch);
-    for policy in [
+    spec.active_process_limit = 1;
+    for (policy, reason) in [
         SandboxPolicy {
             readonly_paths: vec![spec.executable.clone(), PathBuf::from("relative-model")],
             writable_directory: scratch.clone(),
@@ -93,14 +94,165 @@ fn sandbox_rejects_invalid_grants_before_creating_evidence() -> io::Result<()> {
             readonly_paths: vec![spec.executable.clone(), scratch.clone()],
             writable_directory: scratch,
         },
-    ] {
-        let error = OwnedProcess::start_sandboxed(&spec, &policy)
-            .err()
+    ]
+    .into_iter()
+    .zip([
+        "expanded absolute paths",
+        "expanded absolute paths",
+        "1..128 explicit read-only grants",
+        "exact existing files",
+    ]) {
+        for piped in [
+            None,
+            Some(SandboxNetwork::Offline),
+            Some(SandboxNetwork::HostLoopback),
+        ] {
+            let error = match piped {
+                None => OwnedProcess::start_sandboxed(&spec, &policy).err(),
+                Some(network) => OwnedProcess::start_sandboxed_piped(&spec, &policy, network).err(),
+            }
             .ok_or_else(|| io::Error::other("invalid sandbox policy launched a worker"))?;
+            assert_eq!(error.kind(), io::ErrorKind::InvalidInput);
+            assert!(error.to_string().contains(reason), "{error}");
+            assert!(!spec.stdout.exists());
+            assert!(!spec.stderr.exists());
+        }
+    }
+    Ok(())
+}
+
+#[test]
+fn piped_sandbox_rejects_process_count_before_creating_streams() -> io::Result<()> {
+    let lane = Lane::new("invalid-piped-count")?;
+    let scratch = lane.path.join("scratch");
+    fs::create_dir(&scratch)?;
+    let mut spec = lane.spec(vec![OsString::from("sleep")]);
+    spec.working_directory.clone_from(&scratch);
+    let policy = SandboxPolicy {
+        readonly_paths: vec![spec.executable.clone()],
+        writable_directory: scratch,
+    };
+    for network in [SandboxNetwork::Offline, SandboxNetwork::HostLoopback] {
+        let error = OwnedProcess::start_sandboxed_piped(&spec, &policy, network)
+            .err()
+            .ok_or_else(|| io::Error::other("multi-process sandbox policy was accepted"))?;
         assert_eq!(error.kind(), io::ErrorKind::InvalidInput);
+        assert!(error.to_string().contains("single-process"));
         assert!(!spec.stdout.exists());
         assert!(!spec.stderr.exists());
     }
+    Ok(())
+}
+
+#[allow(
+    unsafe_code,
+    reason = "A disposable inherited-handle sentinel checks the actual launch handle list."
+)]
+fn inheritable_file_identity(file: &fs::File) -> io::Result<String> {
+    use std::os::windows::io::AsRawHandle as _;
+    use windows_sys::Win32::Foundation::{HANDLE_FLAG_INHERIT, SetHandleInformation};
+    use windows_sys::Win32::Storage::FileSystem::{
+        BY_HANDLE_FILE_INFORMATION, GetFileInformationByHandle,
+    };
+
+    let handle = file.as_raw_handle();
+    let mut identity = BY_HANDLE_FILE_INFORMATION::default();
+    // SAFETY: The fixture retains the exact file throughout both synchronous
+    // calls. The writable identity storage has the native ABI layout.
+    let queried = unsafe { GetFileInformationByHandle(handle, &raw mut identity) };
+    if queried == 0 {
+        return Err(io::Error::last_os_error());
+    }
+    // SAFETY: This live fixture handle alone becomes inheritable; the production
+    // explicit handle list must still exclude it from the contained child.
+    if unsafe { SetHandleInformation(handle, HANDLE_FLAG_INHERIT, HANDLE_FLAG_INHERIT) } == 0 {
+        return Err(io::Error::last_os_error());
+    }
+    Ok(format!(
+        "{}:{}:{}:{}",
+        handle.addr(),
+        identity.dwVolumeSerialNumber,
+        identity.nFileIndexHigh,
+        identity.nFileIndexLow
+    ))
+}
+
+#[test]
+#[ignore = "Requires native Windows PSEC v1.1; exercises actual offline pipes and kernel authority."]
+fn native_sandbox_offline_pipes_enforce_authority_and_close_without_logs() -> io::Result<()> {
+    let lane = Lane::new("offline-pipes")?;
+    let scratch = lane.path.join("scratch");
+    fs::create_dir(&scratch)?;
+    let approved = lane.path.join("approved-input.wav");
+    let unrelated = lane.path.join("unrelated.key");
+    fs::write(&approved, "approved audio input")?;
+    fs::write(&unrelated, "unrelated credential")?;
+    // Trusted controls prove the same input is writable, the unrelated file is
+    // readable and the target listener accepts connections outside containment.
+    drop(fs::OpenOptions::new().write(true).open(&approved)?);
+    let sentinel = fs::File::open(&unrelated)?;
+    assert_eq!(fs::read_to_string(&unrelated)?, "unrelated credential");
+    let listener = TcpListener::bind((Ipv4Addr::LOCALHOST, 0))?;
+    let endpoint = listener.local_addr()?;
+    drop(TcpStream::connect_timeout(
+        &endpoint,
+        Duration::from_secs(1),
+    )?);
+    drop(listener.accept()?);
+    let mut spec = lane.spec(vec![
+        OsString::from("sandbox-offline-pipes"),
+        approved.clone().into_os_string(),
+        unrelated.clone().into_os_string(),
+        OsString::from(endpoint.port().to_string()),
+        OsString::from(inheritable_file_identity(&sentinel)?),
+    ]);
+    let control = Command::new(&spec.executable)
+        .arg("report")
+        .current_dir(&lane.path)
+        .creation_flags(0x0800_0000)
+        .stdin(Stdio::null())
+        .stdout(Stdio::null())
+        .stderr(Stdio::null())
+        .status()?;
+    assert!(control.success());
+    spec.working_directory.clone_from(&scratch);
+    spec.active_process_limit = 1;
+    let (process, mut input, output) = OwnedProcess::start_sandboxed_piped(
+        &spec,
+        &SandboxPolicy {
+            readonly_paths: vec![spec.executable.clone(), approved.clone()],
+            writable_directory: scratch.clone(),
+        },
+        SandboxNetwork::Offline,
+    )?;
+    assert_eq!(process.active_processes()?, 1);
+    let expected = (0..=255_u8).cycle().take(131_079).collect::<Vec<_>>();
+    let payload = expected.clone();
+    let exchange = std::thread::spawn(move || -> io::Result<Vec<u8>> {
+        input.write_all(&payload)?;
+        drop(input);
+        let mut response = Vec::new();
+        output.take(131_080).read_to_end(&mut response)?;
+        Ok(response)
+    });
+    let exit = process.wait_for_exit(TIMEOUT);
+    let stopped = process.stop(TIMEOUT);
+    stopped?;
+    let response = exchange
+        .join()
+        .map_err(|_| io::Error::other("offline pipe fixture panicked"))?;
+    assert_eq!(
+        exit?,
+        Some(0),
+        "{}",
+        fs::read_to_string(scratch.join("offline-error.txt")).unwrap_or_default()
+    );
+    assert_eq!(process.active_processes()?, 0);
+    assert_eq!(response?, expected);
+    assert_eq!(fs::read_to_string(approved)?, "approved audio input");
+    assert_eq!(fs::read_to_string(unrelated)?, "unrelated credential");
+    assert!(!spec.stdout.exists());
+    assert!(!spec.stderr.exists());
     Ok(())
 }
 
