@@ -1,8 +1,8 @@
-# Inference research and proof register
+# Application and inference research register
 
-This register holds reusable proof obligations and optional research sources for
-Swift Bonsai 2. Topic contracts define supported behavior; [PLAN.md](../PLAN.md)
-owns outstanding work. A paper, report or source example neither approves an
+This register holds reusable proof obligations and optional application,
+inference and validation sources for Swift Bonsai 2. Topic contracts define
+supported behavior; [PLAN.md](../PLAN.md) owns outstanding work. A paper, report or source example neither approves an
 implementation nor qualifies a device/default. Derivations below are reviewable
 arguments, not machine-checked proofs.
 
@@ -17,6 +17,13 @@ Evidence labels: **theorem** = published result under stated assumptions;
 **derivation** = local algebra/counting; **paper** = authors' algorithm/evaluation;
 **implementation** = inspectable source needing revision/license/conformance
 review; **report** = author/maintainer account. Trace discussion leads to originals.
+
+Repository links below identify review sources, not installed dependencies or
+approved imports. Before reuse, pin an immutable revision, verify the selected
+files' licenses/notices and review native Windows ARM64, numerical and ownership
+boundaries. License labels describe the surveyed declaration and need verification
+at adoption. Algorithm, product-design and regression references do not require
+adopting their runtime, frontend, build tools or complete architecture.
 
 ## Experiment scope and budgets
 
@@ -204,14 +211,18 @@ Reordered kernels/quantizers still need sampler and continuation checks.
 
 ## Research catalog
 
-Keep research scoped to a demonstrated bottleneck. These are references for
-selected design questions, not a proposed implementation backlog or a performance ranking.
+Keep research scoped to a selected usability need or demonstrated bottleneck.
+These are references for selected design questions, not a proposed implementation
+backlog or a performance ranking.
 
 ### Packed projections, CPU kernels and compression
 
 | Reference | Useful question and boundary |
 | --- | --- |
 | [BitNet](https://arxiv.org/abs/2502.11880), [T-MAC](https://arxiv.org/abs/2407.00088), [Vec-LUT](https://github.com/OpenBitSys/vlut.cpp) | Can packed table/layout reuse repay preparation and scratch? Preserve intermediate bounds, all generic PQ2 symbols, scale groups and floating order. Different activation/table quantizers are separate profiles. |
+| [ciot T2P](https://github.com/Cintu07/ciot) | Algorithm/layout reference for Bonsai 2 on Windows ARM64 Snapdragon X: repack four weight rows into a same-size 136-byte block for SDOT/SMMLA. Unlike the surveyed Prism activation packing, this changes weight layout; account for load-time work, temporary duplicate weights and verified cache storage. No root license was visible: code copying is not selected without license clarification. Preserve generic PQ2 `+2`, i8 `-128`, scale groups and floating order. |
+| [rten-gemm](https://github.com/robertknight/rten/tree/main/rten-gemm) | MIT/Apache-2.0 Rust implementation source for NEON/DOTPROD/I8MM dispatch, reusable packed operands and separate matrix/vector paths, including speech projections. Packing and dispatch already exist locally; retain the selected quantizers and reductions rather than substituting a generic GEMM contract. |
+| [Arm KleidiAI microkernels](https://github.com/ARM-software/kleidiai/tree/main/kai/ukernels/matmul) | Apache-2.0 C/assembly algorithm reference for stateless tiles, operand packing and caller-owned scheduling/storage. Port only useful DOTPROD/I8MM mechanisms into Rust; SVE/SME availability and upstream results do not establish Snapdragon compatibility or benefit. |
 | [BITCOS](https://arxiv.org/abs/2609.16338v1) | A sparse packing must beat PTQ1 after indexes/padding. Swift's census already rules out its proposed same-scale layout on serialized size; see [packing](swift-memory.md#packing-decision). |
 | [Signed floor division](https://www.benjoffe.com/fast-floordiv) | Consider only a measured signed constant-divisor hotspot with the existing floor-rounding contract; see [CPU constraints](cpu-kernels.md#signed-constant-floor-division). |
 
@@ -219,12 +230,21 @@ Full-precision entropy codecs do not establish savings on already packed ternary
 weights. Charge random access, indexes, reconstruction, per-token decoding and
 retained copies before selecting a new codec.
 
+ciot's affine correction hoisting is not a new Prism task: unsigned-code dots
+already subtract prepared activation sums. Its older runtime's repeated
+full-weight scans for remainder tokens also do not describe the surveyed Prism
+tail traversal inside each weight block. Padded tails remain a separate tactic
+to justify; upstream speed ratios against older publisher builds do not measure
+the current Rust runtime. BitNet, T-MAC and Vec-LUT remain existing research
+sources, not newly discovered missing consumers.
+
 ### Hybrid recurrence, prefix caching and speculative decoding
 
 | Reference | Useful question and boundary |
 | --- | --- |
 | [Gated Delta Networks](https://arxiv.org/abs/2412.06464v3) | Chunkwise algebra can parallelize prompt work, but reordered floats require complete logits/state and continuation acceptance. |
 | [Sparse Prefix Caching](https://arxiv.org/abs/2605.05219v1) | Sparse checkpoints trade retained state for exact suffix recomputation in edited/branching histories. Append-only chat can first use the existing [latest prefix](native-rust-engine.md#latest-prefix-reuse). |
+| [vLLM hybrid checkpoint planner/exporter](https://github.com/vllm-project/vllm/blob/main/vllm/model_executor/layers/mamba/checkpoint.py) | Apache-2.0 policy/regression reference: publish a usable checkpoint only after both recurrent state and the complete pre-convolution window are written at a valid boundary. Allocation alone is insufficient. Existing sparse-checkpoint work can borrow these invariants and shared-prefix/divergent-suffix cases into Rust; Python serving infrastructure is outside scope. |
 | [Exact speculative sampling](https://proceedings.mlr.press/v202/leviathan23a.html), [SuffixDecoding](https://arxiv.org/abs/2411.04975v3) | Proposals need conditional target verification and accepted-prefix KV/GDN/convolution recovery. Greedy agreement does not qualify the deployed sampler. |
 | [KVBuffer](https://arxiv.org/abs/2605.19049v2) | Deferred state writes must charge factor reads, conversion, flush/materialization and pending convolution history; batch gains do not establish Swift batch-one benefit. |
 | [Bonsai DFlash2 draft](https://huggingface.co/naklitechie/Qwen3.8-27B-DFlash2-ternary-bonsai2) | A compatible trained proposal needs exact target/adapter, tokenizer, feature and shared-head identities, native resource admission and full stochastic verification. Another Bonsai target does not establish Swift compatibility. |
@@ -303,16 +323,66 @@ exact-target generation, vectors/index and auxiliary weights all count toward
 native Windows ARM64 time and shared-memory budgets. GPU/batched results supply
 no Snapdragon benefit or generation/attention shortcut.
 
+### Native application and writing references
+
+These sources support the [native UI contract](ui-architecture.md) and
+[transcript/draft bounds](streaming-resources.md#native-chat-and-transcript).
+They describe candidate improvements, not available controls or accepted device
+behavior. Existing conversation branches, layout caches and IME handling remain
+the starting point.
+
+| Reference | Useful idea and adoption boundary |
+| --- | --- |
+| [hello_egui virtual list](https://github.com/lucasmerlin/hello_egui/tree/main/crates/egui_virtual_list) — MIT | Rust implementation reference for lazy variable-height measurements, bounded layout work per frame and preserving the first visible item/fraction after resize. Extend existing transcript caching/culling while retaining exact Find targets, selection, streaming and width/DPI/font invalidation; review egui-version compatibility before using the crate. |
+| [Ferrite undo history](https://github.com/OlaProeis/Ferrite/blob/master/src/editor/ferrite/history.rs) — MIT | Operation-based insert/delete history and atomic replacement groups could reduce duplicated draft snapshots and deepen undo. Borrow focused editor/IME regression cases; enforce a byte budget as well as a group count and preserve oversized-edit rejection, cursor/selection and atomic IME replacement. Whole-editor adoption is not selected. |
+| [similar](https://github.com/mitsuhiko/similar) — Apache-2.0 | Rust dependency candidate for word, character and grapheme diffs between regenerated replies or alternate drafts. Bound background comparison work and preserve exact original versions; visual differences are presentation, not automatic branch merging or proof of improved writing. |
+| [Spindle](https://github.com/VerifiedOrganic/spindle) — MIT | Product/data-model reference for scene packets containing characters, world rules, summaries and unresolved narrative promises, with proposed canon changes reviewed before acceptance. A small local native Rust feature can borrow this organization without its broad MCP tool surface or web console. Machine-derived facts need explicit user acceptance and branch/source provenance. |
+| [SillyTavern world info](https://github.com/SillyTavern/SillyTavern-Docs/blob/main/Usage/worldinfo.md) and [implementation](https://github.com/SillyTavern/SillyTavern/blob/release/public/scripts/world-info.js) — AGPL-3.0 implementation | Design reference for keyword activation, deterministic priority and bounded story-card selection. Explain included/excluded cards, allow explicit user control and keep canonical broker token counting authoritative. No AGPL code/dependency adoption or web UI is selected; a native Rust design needs its own license/provenance review and does not imply recursive/random activation. |
+| [uiautomation-rs](https://github.com/leexgone/uiautomation-rs) — Apache-2.0 | Rust acceptance-tool candidate for the actual Windows UI Automation tree: process-filtered controls, supported patterns, focus and property changes. Complement egui tests with installed-app checks; automated observations do not replace Narrator, human IME, high-contrast or scaling review. |
+| [cosmic-text](https://github.com/pop-os/cosmic-text) — MIT/Apache-2.0 | Native Rust test/design reference for multilingual editing, bidi selection and complex-script layout. Adapt representative insert/delete round trips while retaining byte/character/grapheme distinctions. Test ideas do not require replacing egui's text engine or establish its accessibility parity. |
+
+Story packets and context cards are a proposed feature, not implicit permission
+to extract canon, rewrite history, trim the draft or send new requests. They need
+bounded storage, explicit inclusion controls, exact prompt provenance and
+branch/edit invalidation under the existing conversation-saving preference.
+Larger context windows do not by themselves provide reliable story memory.
+
+### Speech and creative review references
+
+These sources support [speech measurement](performance-expectations.md#q4-speech-resource-comparison)
+and [sample/resource conservation](streaming-resources.md). They do not replace
+independent listening or complete-answer review.
+
+| Reference | Useful idea and adoption boundary |
+| --- | --- |
+| [ebur128](https://github.com/sdroege/ebur128) — MIT | Rust analysis candidate for integrated/short-term loudness, range and true peak in speech review packets. Loudness-matched listening copies can reduce level bias; retain original PCM and record presentation changes separately from numerical output. Loudness metrics establish neither intelligibility nor voice identity/quality. |
+| [Earshot](https://github.com/pykeio/earshot) — MIT/Apache-2.0 | Pure Rust voice-detection candidate consuming 256-sample frames at 16 kHz. Compare speech-aware cut ranking/hysteresis with the existing RMS chooser under the same recognizer limit, full PCM coverage, EOF/tail and cancellation rules. Do not import default silence trimming or assume better boundary-word accuracy without a declared comparison. |
+| [Longform Writing Bench](https://github.com/EQ-bench/longform-writing-bench) — README declares MIT | Rubric/test-design reference separating chapter prose from whole-story consistency, with positive and negative criteria. Adapt a small declared packet to independent human review and held-out tasks. Its Python harness, automatic judge and full eight-chapter workload are not adopted; a local adaptation is not leaderboard-equivalent. |
+
+### Reliability and distribution references
+
+These sources inform [validation](validation.md), [file publication](sandboxing.md#files-locks-and-publication)
+and [portable updates](releases.md#update-and-remove). Existing ownership,
+verified-artifact and recovery contracts remain authoritative.
+
+| Reference | Useful idea and adoption boundary |
+| --- | --- |
+| [tough](https://github.com/awslabs/tough) — MIT/Apache-2.0 | Rust TUF implementation/reference for signed, expiring update metadata and trusted-root rotation. Extending update authenticity beyond hashes needs a deliberate publisher/key lifecycle, offline/clock policy, rollback/freeze controls and recovery design; this source does not install a new update trust scheme. |
+| [Codex no-reparse directory handling](https://github.com/openai/codex/blob/main/codex-rs/windows-sandbox-rs/src/no_reparse_dir.rs) — Apache-2.0 | Independent Rust review/regression reference for `NtCreateFile`/`OBJ_DONT_REPARSE`, retained ancestor handles and guards against directory reparse conversion. Compare sharing/rename semantics with existing artifact/update protections. Its full sandbox/account/network architecture does not replace Runner's selected containment. |
+| [Shuttle](https://github.com/awslabs/shuttle) — Apache-2.0 | Rust test-tool candidate for controlled randomized thread schedules and deterministic failure replay in small cancellation, ownership and shutdown components. Complement existing scheduler simulations; wrappers must cover the operations under test, and a passing randomized run is not exhaustive correctness or real Windows process-lifetime acceptance. |
+
 ## Turning a lead into an experiment
 
-1. Identify the bottleneck and missing evidence; check existing Prism consumers
-   before selecting a mechanism.
+1. Identify the usability need or bottleneck and missing evidence; check existing
+   Runner/Prism consumers before selecting a mechanism.
 2. Declare numerical/state identity: exact bytes/integers, reordered floats with
    tolerances, distribution-preserving sampling or explicit approximation.
    Pin source/license, artifacts, adapter, checkpoint and complete resource costs.
-3. Implement kernels in Prism, preserving Runner's policy and native UI. Qualify
-   tails, generic PQ2 `+2`, i8 `-128`, continuation, edits, restore, cancellation
-   and failed commit using independent controls.
+3. Keep kernels in Prism and application/validation changes in their owning Rust
+   components, preserving Runner's policy and native UI. Qualify relevant tails,
+   generic PQ2 `+2`, i8 `-128`, continuation, edits, restore, cancellation and failed
+   commit using independent controls. Application changes retain accessibility,
+   bounded storage/work, exact user text and no automatic request replay.
 4. Apply [promotion criteria](validation.md#promotion-criteria),
    [measurement requirements](performance-expectations.md#measurement-and-comparison)
    and [evidence retention](validation.md#evidence-retention). Include application
