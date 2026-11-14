@@ -9,6 +9,8 @@
 
 use serde_json::{Value, json};
 
+mod hosted;
+
 #[cfg(windows)]
 mod windows;
 
@@ -224,6 +226,7 @@ fn carries_workload_verdict(profile: &str) -> bool {
 /// budgets, changed inventories, failed children and uncertain process-tree cleanup.
 pub fn run(request: &Value) -> crate::Result<Value> {
     match request["operation"].as_str() {
+        Some("hosted-artifact" | "hosted-inventory" | "hosted-package") => hosted::run(request),
         Some("profile") => Ok(
             json!({"case":profile(request["profile"].as_str().ok_or("Missing acceptance profile.")?,request["extended"].as_bool().ok_or("Missing extended flag.")?,request["stalled"].as_bool().ok_or("Missing stalled flag.")?)?}),
         ),

@@ -246,6 +246,10 @@ removal, complete Job ownership and fixed startup-marker scoring stay in Rust.
 The independent thirty-second postprocessing and ten-second cleanup reserves
 remain inside the original allowance. The acceptance package's five exact files
 and receipt are rechecked and held through the selected test and teardown.
+Hosted preparation uses `hosted-artifact`, `hosted-inventory` and
+`hosted-package` for the unique Cargo test artifact, complete 72-model-free and
+10-ignored case inventory, and exact five-file source/run receipt. The complete
+required inventory is admitted before the first selected fixture executes.
 
 Focused source-only controls are
 `cargo test --offline -p bonsai-tools --lib acceptance_driver::`. These include
