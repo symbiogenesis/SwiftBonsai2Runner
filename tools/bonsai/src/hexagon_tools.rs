@@ -781,19 +781,29 @@ fn sdk_inventory_report(
         4 * 1024 * 1024,
     )?;
     let functional = context.digest(
-        &context.repo.join("tools/hexagon/sdk_functional_review.ps1"),
+        &context
+            .repo
+            .join("tools/hexagon/sdk-reader/src/functional.rs"),
         4 * 1024 * 1024,
     )?;
     let archive_reader_sources = context.input_set(
         &context.repo.join("tools/hexagon/sdk-reader"),
-        &["Cargo.toml", "Cargo.lock", "src/main.rs"],
+        &[
+            "Cargo.toml",
+            "Cargo.lock",
+            "src/main.rs",
+            "src/inventory.rs",
+            "src/functional.rs",
+            "src/recipe.rs",
+            "src/strict_json.rs",
+        ],
     )?;
     let common_source = context.digest(
-        &context.repo.join("tools/hexagon/Hexagon.Common.ps1"),
+        &context.repo.join("tools/hexagon/sdk-reader/src/recipe.rs"),
         1024 * 1024,
     )?;
     Ok(
-        json!({"SchemaVersion":1,"Kind":"hexagon-hosted-sdk-inventory","RunnerRevision":context.revision,"RunId":context.run,"RunAttempt":context.attempt,"HostedOnly":true,"Outcome":"pending","Stage":"reviewed-source-inputs","ElapsedMilliseconds":0,"SourceSha256":source_digest,"SupervisorSha256":supervisor,"PinSha256":pin_digest,"FunctionalReviewSourceSha256":functional,"CommonSourceSha256":common_source,"ArchiveReaderSources":archive_reader_sources,"ReviewedInputs":[],"Archive":pin["asset"],"InventoryReceiptSha256":null,"PowerShellExecutableSha256":null,"SdkCodeExecuted":false,"GeneratorExecuted":false,"GeneratedSourceUploaded":false,"ModelLoaded":false,"DeviceCodeLoaded":false,"ProfileEligible":false,"LicenseReview":"pending","GeneratorInvocationReviewed":false}),
+        json!({"SchemaVersion":1,"Kind":"hexagon-hosted-sdk-inventory","RunnerRevision":context.revision,"RunId":context.run,"RunAttempt":context.attempt,"HostedOnly":true,"Outcome":"pending","Stage":"reviewed-source-inputs","ElapsedMilliseconds":0,"SourceSha256":source_digest,"SupervisorSha256":supervisor,"PinSha256":pin_digest,"FunctionalReviewSourceSha256":functional,"RecipeReviewSourceSha256":common_source,"ArchiveReaderSources":archive_reader_sources,"ReviewedInputs":[],"Archive":pin["asset"],"InventoryReceiptSha256":null,"ArchiveReaderExecutable":null,"SdkCodeExecuted":false,"GeneratorExecuted":false,"GeneratedSourceUploaded":false,"ModelLoaded":false,"DeviceCodeLoaded":false,"ProfileEligible":false,"LicenseReview":"pending","GeneratorInvocationReviewed":false}),
     )
 }
 
@@ -802,7 +812,9 @@ fn sdk_inventory(mut context: Context) -> Result<Value> {
     let review = context.output.join("review");
     fs::create_dir(&review).map_err(|error| error.to_string())?;
     let pin_path = context.repo.join("tools/hexagon/sdk-inventory.lock.json");
-    let source = context.repo.join("tools/hexagon/sdk_inventory.ps1");
+    let source = context
+        .repo
+        .join("tools/hexagon/sdk-reader/src/inventory.rs");
     let pin = context.json(&pin_path, 1024 * 1024)?;
     if pin["schemaVersion"] != 1
         || pin["generatorExecutionAllowed"] != false
@@ -852,25 +864,40 @@ fn sdk_inventory(mut context: Context) -> Result<Value> {
             .as_str()
             .ok_or("SDK archive name missing.")?;
         let archive = receive(&mut context, &pin["asset"], archive_name, 240)?;
-        let powershell = startup_process::resolve(OsStr::new("pwsh.exe"))?;
-        report["PowerShellExecutableSha256"] =
-            json!(context.digest(&powershell, 256 * 1024 * 1024)?);
+        let cargo = rustc
+            .parent()
+            .ok_or("Pinned compiler directory missing.")?
+            .join("cargo.exe");
+        context.digest(&cargo, 256 * 1024 * 1024)?;
+        let reader_target = context.output.join("sdk-reader-build");
+        context.run(
+            cargo.as_os_str(),
+            &[
+                "build".into(),
+                "--locked".into(),
+                "--release".into(),
+                "--manifest-path".into(),
+                context
+                    .repo
+                    .join("tools/hexagon/sdk-reader/Cargo.toml")
+                    .into_os_string(),
+                "--target-dir".into(),
+                reader_target.clone().into_os_string(),
+            ],
+            360,
+            &context.output.join("reader-build.txt"),
+        )?;
+        let reader = reader_target.join("release/bonsai-sdk-reader.exe");
+        report["ArchiveReaderExecutable"] = context.executable(&reader, "bonsai-sdk-reader.exe")?;
         report["Stage"] = json!("sdk-data-only-inventory");
         let inventory = review.join("sdk-inventory.json");
         let output = context.run(
-            powershell.as_os_str(),
+            reader.as_os_str(),
             &[
-                "-NoLogo".into(),
-                "-NoProfile".into(),
-                "-File".into(),
-                source.into_os_string(),
-                "-Archive".into(),
+                "inventory".into(),
                 archive.into_os_string(),
-                "-Pin".into(),
                 pin_path.into_os_string(),
-                "-Output".into(),
                 inventory.clone().into_os_string(),
-                "-PublicInputDirectory".into(),
                 context.output.clone().into_os_string(),
             ],
             360,

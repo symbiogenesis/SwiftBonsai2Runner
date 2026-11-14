@@ -11,6 +11,11 @@ use std::{
 };
 use unicode_casefold::UnicodeCaseFold as _;
 
+mod functional;
+mod inventory;
+mod recipe;
+mod strict_json;
+
 fn limit(pin: &Value, name: &str) -> Result<u64, Box<dyn std::error::Error>> {
     pin["limits"][name]
         .as_u64()
@@ -110,19 +115,33 @@ fn hex(bytes: &[u8]) -> String {
 }
 fn run() -> Result<(), Box<dyn std::error::Error>> {
     let mut args = std::env::args_os().skip(1);
-    let archive = args.next().ok_or("archive required")?;
+    let first = args.next().ok_or("archive or inventory command required")?;
+    let inventory_mode = first == "inventory";
+    let archive = if inventory_mode {
+        args.next().ok_or("archive required")?
+    } else {
+        first
+    };
     let pin_path = args.next().ok_or("pin required")?;
+    let destination = if inventory_mode {
+        Some((
+            args.next().ok_or("output required")?,
+            args.next().ok_or("public directory required")?,
+        ))
+    } else {
+        None
+    };
     if args.next().is_some() {
         return Err("unexpected argument".into());
     }
     let mut raw_pin = Vec::new();
-    File::open(pin_path)?
+    File::open(&pin_path)?
         .take(1024 * 1024 + 1)
         .read_to_end(&mut raw_pin)?;
     if raw_pin.len() > 1024 * 1024 {
         return Err("pin exceeds bound".into());
     }
-    let pin: Value = serde_json::from_slice(&raw_pin)?;
+    let pin = strict_json::parse(&raw_pin)?;
     let deadline = Instant::now() + Duration::from_secs(360);
     let mut source = File::open(archive)?;
     if source.metadata()?.len()
@@ -149,6 +168,28 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
     }
     source.seek(SeekFrom::Start(0))?;
     let decoded = lzma_rust2::XzReader::new_mem_limit(BufReader::new(source), true, 256 * 1024);
+    if let Some((output, public)) = destination {
+        let receipt = inventory::collect(decoded, &pin, std::path::Path::new(&public), deadline)?;
+        let count = receipt["selectedFiles"]
+            .as_array()
+            .ok_or("selected metadata absent")?
+            .len();
+        if Instant::now() >= deadline {
+            return Err("SDK inventory aggregate allowance expired".into());
+        }
+        inventory::write(
+            std::path::Path::new(&output),
+            receipt,
+            std::path::Path::new(&pin_path),
+            &pin,
+        )?;
+        writeln!(
+            io::stdout().lock(),
+            "{}",
+            json!({"inventoryWritten":true,"selectedFiles":count,"sdkCodeExecuted":false})
+        )?;
+        return Ok(());
+    }
     let stdout = io::stdout();
     let mut output = stdout.lock();
     scan_archive(decoded, &pin, &mut output, deadline)
@@ -159,6 +200,27 @@ fn scan_archive<R: Read, W: Write>(
     mut output: W,
     deadline: Instant,
 ) -> Result<(), Box<dyn std::error::Error>> {
+    let metrics = scan_entries(inner, pin, deadline, |mut entry, payload| {
+        entry["hex"] = json!(hex(&payload));
+        serde_json::to_writer(&mut output, &entry)?;
+        output.write_all(b"\n")?;
+        Ok(())
+    })?;
+    serde_json::to_writer(&mut output, &metrics)?;
+    output.write_all(b"\n")?;
+    output.flush()?;
+    Ok(())
+}
+
+fn scan_entries<R: Read, F>(
+    inner: R,
+    pin: &Value,
+    deadline: Instant,
+    mut selected_entry: F,
+) -> Result<Value, Box<dyn std::error::Error>>
+where
+    F: FnMut(Value, Vec<u8>) -> Result<(), Box<dyn std::error::Error>>,
+{
     let max_entries = limit(&pin, "archiveEntries")?;
     let declared_limit = limit(&pin, "declaredUncompressedBytes")?;
     // Header, GNU/PAX extension and padding overhead also has a fixed stream cap.
@@ -227,22 +289,17 @@ fn scan_archive<R: Read, W: Write>(
         if payload.len() != capacity {
             return Err("selected SDK payload extent changed".into());
         }
-        serde_json::to_writer(
-            &mut output,
-            &json!({"path":name,"category":category,"bytes":size,"sha256":hex(&Sha256::digest(&payload)),"hex":hex(&payload)}),
+        selected_entry(
+            json!({"path":name,"category":category,"bytes":size,"sha256":hex(&Sha256::digest(&payload))}),
+            payload,
         )?;
-        output.write_all(b"\n")?;
     }
     // Drain the stream to validate the final XZ checksum/footer and the total cap.
     let mut reader = contents.into_inner();
     io::copy(&mut reader, &mut io::sink())?;
-    serde_json::to_writer(
-        &mut output,
-        &json!({"archiveEntriesRead":entries,"declaredUncompressedBytes":declared,"linkEntriesNotExtracted":links,"selectedBytesRead":selected_bytes,"complete":true}),
-    )?;
-    output.write_all(b"\n")?;
-    output.flush()?;
-    Ok(())
+    Ok(
+        json!({"archiveEntriesRead":entries,"declaredUncompressedBytes":declared,"linkEntriesNotExtracted":links,"selectedBytesRead":selected_bytes,"complete":true}),
+    )
 }
 fn main() -> std::process::ExitCode {
     match run() {
@@ -273,6 +330,80 @@ mod tests {
             builder.append_data(&mut header, name, *payload)?;
         }
         Ok(builder.into_inner()?)
+    }
+    #[test]
+    fn sdk_inventory_native_receipt_binds_independent_public_inputs()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let root = std::env::temp_dir().join(format!(
+            "bonsai-sdk-metadata-{}-{}",
+            std::process::id(),
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)?
+                .as_nanos()
+        ));
+        std::fs::create_dir(&root)?;
+        let result = (|| {
+            let recipe =
+                b"function(build_idl project)\nadd_custom_command(COMMAND qaic)\nendfunction()\n";
+            let notice = b"Copyright fixture\nSPDX-License-Identifier: BSD-3-Clause\n";
+            let header = b"typedef int remote_handle;";
+            std::fs::write(root.join("public-remote.h"), header)?;
+            let mut pin = json!({"schemaVersion":1,"generatorExecutionAllowed":false,"deviceExecutionAllowed":false,"profileEligible":false,"asset":{},"intendedQaicPath":"sdk/qaic.exe","requiredRecipePath":"sdk/build/cmake/hexagon_fun.cmake","requiredRecipeBytes":recipe.len(),"requiredRecipeSha256":hex(&Sha256::digest(recipe)),"requiredNotice":{"path":"sdk/NOTICE.txt","bytes":notice.len(),"sha256":hex(&Sha256::digest(notice))},"functionalComparisons":[{"sdkPath":"sdk/remote.h","sdkBytes":header.len(),"sdkSha256":hex(&Sha256::digest(header)),"publicName":"public-remote.h","publicBytes":header.len(),"publicSha256":hex(&Sha256::digest(header))}],"limits":{"archiveEntries":16,"declaredUncompressedBytes":4096,"selectedFileBytes":1024,"selectedFiles":8,"selectedBytes":4096,"receiptBytes":65536,"reviewWordsPerFile":25,"recipeFunctions":16,"recipeStatements":256,"recipeStatementTokens":128,"recipeTokenCharacters":512,"functionalTokens":10000,"functionalDeclarations":64,"declarationTokens":256,"preprocessorDirectives":64}});
+            let raw = archive(&[
+                (
+                    "sdk/qaic.exe",
+                    tar::EntryType::Regular,
+                    b"data-only-generator",
+                ),
+                (
+                    "sdk/build/cmake/hexagon_fun.cmake",
+                    tar::EntryType::Regular,
+                    recipe,
+                ),
+                ("sdk/NOTICE.txt", tar::EntryType::Regular, notice),
+                ("sdk/remote.h", tar::EntryType::Regular, header),
+            ])?;
+            let receipt = inventory::collect(
+                raw.as_slice(),
+                &pin,
+                &root,
+                Instant::now() + Duration::from_secs(5),
+            )?;
+            assert_eq!(receipt["selectedFiles"].as_array().map(Vec::len), Some(4));
+            assert_eq!(
+                receipt["sdkPublicFunctionalComparisons"][0]["comparison"]["normalizedTokenStreamsEqual"],
+                true
+            );
+            assert_eq!(receipt["sdkCodeExecuted"], false);
+            assert_eq!(receipt["profileEligible"], false);
+            assert_eq!(
+                receipt["buildIdlRecipe"]["generatorCommandAuthorized"],
+                false
+            );
+            pin["functionalComparisons"][0]["publicSha256"] = json!("0".repeat(64));
+            assert!(
+                inventory::collect(
+                    raw.as_slice(),
+                    &pin,
+                    &root,
+                    Instant::now() + Duration::from_secs(5)
+                )
+                .is_err()
+            );
+            pin["functionalComparisons"][0]["publicName"] = json!("../public-remote.h");
+            assert!(
+                inventory::collect(
+                    raw.as_slice(),
+                    &pin,
+                    &root,
+                    Instant::now() + Duration::from_secs(5)
+                )
+                .is_err()
+            );
+            Ok(())
+        })();
+        std::fs::remove_dir_all(&root)?;
+        result
     }
     #[test]
     fn stream_rejects_duplicate_links_and_declared_budgets()

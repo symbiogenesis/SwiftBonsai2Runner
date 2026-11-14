@@ -43,15 +43,25 @@ not an entire model. JSON inventory inputs are individually capped at 1 MiB;
 all reads enforce the limit even if the file grows. The tool prints JSON to
 stdout and writes no converted weights.
 
-`sdk_inventory.ps1` uses the
-standalone Rust package in `sdk-reader/` to stream the pinned XZ/tar archive as
-data. Its separate exact dependency lock uses a pure Rust XZ decoder, with a
+`sdk_inventory.ps1` forwards to the standalone Rust package in `sdk-reader/`.
+Rust owns the pinned XZ/tar inventory, strict JSON and identity validation,
+C/IDL lexical and declaration analysis, CMake token review, legal text decoding,
+bounded excerpts and final receipt. Its separate exact dependency lock uses a pure Rust XZ decoder, with a
 256 MiB decoder-memory limit and fixed archive-entry, byte and selection bounds.
-The reader emits only selected file bytes over a pipe; it extracts no SDK paths
-and executes no SDK code. Hosted inventory builds it with `cargo build --locked`
+The native inventory consumes selected bytes directly; it extracts no SDK paths
+and executes no SDK code. The legacy two-argument reader still emits the bounded
+data stream. Hosted inventory builds it with `cargo build --locked`
 into external runner scratch. `-Reader` can select an already prepared executable;
 the receipt records that executable's bytes and digest. Source/compiler identity
-and hosted replay remain required for a new acceptance claim.
+and hosted replay remain required for a new acceptance claim. `bonsai-tools`
+invokes this native inventory directly under its process supervisor, without a
+PowerShell child. Native-source and executable digests identify migrated receipts;
+historical SDK receipts keep their original source identities.
+
+The SDK lexical fixtures live in `sdk-reader/src/functional.rs`; the historical
+`test_sdk_functional_review.ps1 -Test NAME` command selects the corresponding
+Rust test. SDK metadata still establishes no license grant, SDK/public ABI
+equivalence, Windows compatibility or device invocation authority.
 
 Inventory JSON has a 64-container nesting limit and rejects duplicate names and
 nonfinite JSON constants. Counts and derived storage extents must fit unsigned
