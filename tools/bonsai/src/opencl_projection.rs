@@ -341,7 +341,7 @@ mod windows {
             "gpu_power_after",
         ] {
             let power = &progress[key];
-            if !power.as_object().is_some_and(|object| object.len() == 3)
+            if power.as_object().is_none_or(|object| object.len() != 3)
                 || !["ac_online", "battery_saver"]
                     .into_iter()
                     .all(|name| power[name].is_boolean() || power[name].is_null())
