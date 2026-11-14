@@ -100,6 +100,32 @@ The changed NEON helper must be published before a dependent runtime release;
 application delivery needs a source-bound bundle and reviewed Runner repin.
 The published 0.1.27 runtime remains the rollback and current application pin.
 
+### Joined BF16 prompt tiles and fused packed-KV scans
+
+Further local Prism candidates extend the ordinary CPU and explicit tiled-prefill
+paths without changing precision or selecting a device profile:
+
+- Compatible BF16 prompt projections share the existing joined row-worker
+  submission and rounded activations. The recurrent beta/alpha pair already uses
+  that consumer. Existing exact 8/4/1-row kernels and bounded sibling partitioning
+  are reused; transform, targeted-adapter and external-executor guards keep
+  their existing paths. Failure joins all work and clears every grouped output.
+- Packed-KV encoding checks finite coordinates during its existing ordered
+  binary64 norm accumulation. Portable value accumulation checks each rounded
+  result during its existing separate binary32 multiply/add traversal. Record
+  bytes, public unchanged-output rejection and poisoned private scans retain
+  their contracts; no persistent storage or helper API is added.
+
+These omit repeated preparation/submissions or validation traversals. They do
+not establish lower machine cost: interleaved checks, register pressure and
+dispatch costs still require codegen and complete-request review. Native,
+portable and feature-disabled controls, complete-model state/logit/adapter/
+cancellation parity and matched CPU-only benefit remain separate gates under
+[cross-generation promotion](#cross-generation-cpu-promotion). X1 applicability
+does not supply an X1 timing result. The fixed X2 CPU-bundle comparison cannot
+qualify these newer sources; publication needs a genuine source-bound bundle,
+reviewed Runner locks and a newly declared matching-candidate workload.
+
 ### Provisional GDN and prepared current-token KV
 
 - Graph-owned eight-row GDN writes directly to an unpublished recurrent delta.

@@ -485,6 +485,11 @@ under [AGENTS.md](AGENTS.md).
   exhaustive-search record identity, rounded first-code ties, atomic rejection,
   native/portable and feature-disabled controls, complete-model state/adapters/
   cancellation and matched CPU-only complete-request benefit before repinning.
+- [ ] Publish and qualify [joined BF16 prompt tiles and fused packed-KV scans](docs/cpu-kernels.md#joined-bf16-prompt-tiles-and-fused-packed-kv-scans):
+  final-source native/portable and feature-disabled arithmetic, adapter, failure
+  and recovery controls, strict Release analysis/linking, codegen/resources and
+  complete-model parity. Use a matching-candidate complete-request packet for
+  X1 benefit; the frozen X2 bundle lane and source work counts supply no verdict.
 - [ ] Publish and qualify [head-scoped GDN decode and packed value result checks](docs/cpu-kernels.md#head-scoped-gdn-decode-and-packed-value-result-checks):
   compiled native/portable arithmetic and failure controls, feature-disabled
   fallback, strict ARM64/x64 Release analysis/linking, codegen/resources,
