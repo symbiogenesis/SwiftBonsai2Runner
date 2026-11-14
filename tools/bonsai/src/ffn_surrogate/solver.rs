@@ -8,6 +8,11 @@ use std::time::Instant;
 
 use super::{Row, Split};
 
+pub(super) struct FitRow<'a> {
+    pub(super) input: &'a [f32],
+    pub(super) target: Vec<f64>,
+}
+
 pub(super) const MAX_WORK: u64 = 300_000_000;
 
 pub(super) fn charge(work: &mut u64, cells: usize, deadline: Instant) -> crate::Result<()> {
@@ -28,16 +33,13 @@ fn dot(left: &[f64], right: &[f64]) -> f64 {
 }
 
 fn basis(
-    rows: &[&Row],
+    rows: &[FitRow<'_>],
     rank: usize,
     deadline: Instant,
     work: &mut u64,
 ) -> crate::Result<Vec<Vec<f64>>> {
     charge(work, rows.len() * rows[0].target.len() * 2, deadline)?;
-    let mut residuals: Vec<Vec<_>> = rows
-        .iter()
-        .map(|row| row.target.iter().copied().map(f64::from).collect())
-        .collect();
+    let mut residuals: Vec<Vec<_>> = rows.iter().map(|row| row.target.clone()).collect();
     let largest_energy = residuals
         .iter()
         .map(|row| dot(row, row))
@@ -172,8 +174,26 @@ pub(super) fn fit(
     deadline: Instant,
 ) -> crate::Result<Solution> {
     let mut work = 0;
-    charge(&mut work, 0, deadline)?;
-    let output_basis = basis(rows, rank, deadline, &mut work)?;
+    charge(&mut work, rows.len() * rows[0].target.len(), deadline)?;
+    let rows: Vec<_> = rows
+        .iter()
+        .map(|row| FitRow {
+            input: &row.input,
+            target: row.target.iter().copied().map(f64::from).collect(),
+        })
+        .collect();
+    fit_data(&rows, rank, ridge, deadline, &mut work)
+}
+
+pub(super) fn fit_data(
+    rows: &[FitRow<'_>],
+    rank: usize,
+    ridge: f64,
+    deadline: Instant,
+    work: &mut u64,
+) -> crate::Result<Solution> {
+    charge(work, 0, deadline)?;
+    let output_basis = basis(rows, rank, deadline, work)?;
     let mut gram = vec![vec![0.0; rows.len()]; rows.len()];
     let mut row = 0;
     while row < rows.len() {
@@ -182,19 +202,19 @@ pub(super) fn fit(
             let value = rows[row]
                 .input
                 .iter()
-                .zip(&rows[column].input)
+                .zip(rows[column].input)
                 .map(|(&left, &right)| f64::from(left) * f64::from(right))
                 .sum::<f64>();
             gram[row][column] = value;
             gram[column][row] = value;
-            charge(&mut work, rows[row].input.len(), deadline)?;
+            charge(work, rows[row].input.len(), deadline)?;
             column += 1;
         }
         gram[row][row] += ridge;
-        charge(&mut work, 1, deadline)?;
+        charge(work, 1, deadline)?;
         row += 1;
     }
-    cholesky(&mut gram, deadline, &mut work)?;
+    cholesky(&mut gram, deadline, work)?;
     let mut a = Vec::with_capacity(output_basis.len());
     let mut b = Vec::with_capacity(output_basis.len());
     for direction in output_basis {
@@ -204,28 +224,46 @@ pub(super) fn fit(
                 row.target
                     .iter()
                     .zip(&direction)
-                    .map(|(&value, &basis)| f64::from(value) * basis)
+                    .map(|(&value, &basis)| value * basis)
                     .sum(),
             );
-            charge(&mut work, direction.len(), deadline)?;
+            charge(work, direction.len(), deadline)?;
         }
-        solve(&gram, &mut coefficients, deadline, &mut work)?;
+        solve(&gram, &mut coefficients, deadline, work)?;
         let mut input_factor = vec![0.0; rows[0].input.len()];
         for (row, &coefficient) in rows.iter().zip(&coefficients) {
-            for (value, &input) in input_factor.iter_mut().zip(&row.input) {
+            for (value, &input) in input_factor.iter_mut().zip(row.input) {
                 *value += coefficient * f64::from(input);
             }
-            charge(&mut work, input_factor.len(), deadline)?;
+            charge(work, input_factor.len(), deadline)?;
         }
-        charge(
-            &mut work,
-            (input_factor.len() + direction.len()) * 2,
-            deadline,
-        )?;
+        charge(work, (input_factor.len() + direction.len()) * 2, deadline)?;
         a.push(narrow(input_factor)?);
         b.push(narrow(direction)?);
     }
-    Ok(Solution { a, b, work })
+    Ok(Solution { a, b, work: *work })
+}
+
+pub(super) fn prediction(
+    input: &[f32],
+    a: &[Vec<f32>],
+    b: &[Vec<f32>],
+    deadline: Instant,
+    work: &mut u64,
+) -> crate::Result<Vec<f64>> {
+    let mut prediction = vec![0.0; b[0].len()];
+    for (input_factor, output_factor) in a.iter().zip(b) {
+        let scalar = input_factor
+            .iter()
+            .zip(input)
+            .map(|(&factor, &input)| f64::from(factor) * f64::from(input))
+            .sum::<f64>();
+        for (value, &factor) in prediction.iter_mut().zip(output_factor) {
+            *value += scalar * f64::from(factor);
+        }
+        charge(work, input.len() + prediction.len(), deadline)?;
+    }
+    Ok(prediction)
 }
 
 pub(super) fn diagnostics(
@@ -237,18 +275,7 @@ pub(super) fn diagnostics(
 ) -> crate::Result<serde_json::Value> {
     let mut totals = [(0_u32, 0.0, 0.0), (0_u32, 0.0, 0.0)];
     for row in rows {
-        let mut prediction = vec![0.0; row.target.len()];
-        for (input_factor, output_factor) in a.iter().zip(b) {
-            let scalar = input_factor
-                .iter()
-                .zip(&row.input)
-                .map(|(&factor, &input)| f64::from(factor) * f64::from(input))
-                .sum::<f64>();
-            for (value, &factor) in prediction.iter_mut().zip(output_factor) {
-                *value += scalar * f64::from(factor);
-            }
-            charge(work, row.input.len() + row.target.len(), deadline)?;
-        }
+        let prediction = prediction(&row.input, a, b, deadline, work)?;
         let squared_error = prediction
             .iter()
             .zip(&row.target)

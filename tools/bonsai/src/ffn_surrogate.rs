@@ -3,6 +3,7 @@
 //! Capture identities are declarations, not authentication of supplied vectors.
 
 mod solver;
+mod structured;
 #[cfg(test)]
 mod tests;
 
@@ -219,6 +220,9 @@ fn factor_hash(values: &[Vec<f32>]) -> crate::Result<String> {
 /// intake, publication, output and cleanup; this function cannot preempt file I/O.
 pub fn run(request: Value) -> crate::Result<Value> {
     let started = Instant::now();
+    if request["schemaVersion"].as_u64() == Some(2) {
+        return structured::run(request, started);
+    }
     let request: Request = serde_json::from_value(request).map_err(|error| error.to_string())?;
     request.validate()?;
     let deadline = started
