@@ -7,6 +7,7 @@ use std::{ops::Range, sync::Arc};
 mod cache_tests;
 mod formatting;
 mod iteration;
+mod layout;
 mod message_controls;
 mod search;
 
@@ -96,6 +97,8 @@ pub(super) struct Message {
     show_reasoning: bool,
     #[serde(skip)]
     cache: Option<LayoutCache>,
+    #[serde(skip)]
+    measured_height: Option<f32>,
     #[cfg(test)]
     #[serde(skip)]
     body_layouts: usize,
@@ -134,6 +137,8 @@ pub(super) struct Transcript {
     history_revision: u64,
     #[serde(skip)]
     search: search::Search,
+    #[serde(skip)]
+    viewport: layout::Viewport,
     #[cfg(test)]
     #[serde(skip)]
     trim_message_visits: usize,
@@ -189,6 +194,7 @@ impl Transcript {
         self.messages.clear();
         self.text_bytes = 0;
         self.search = search::Search::default();
+        self.viewport = layout::Viewport::default();
     }
 
     pub(super) fn remove_empty_response(&mut self) {
@@ -222,6 +228,7 @@ impl Transcript {
             pending: role == Role::Assistant,
             show_reasoning: false,
             cache: None,
+            measured_height: None,
             #[cfg(test)]
             body_layouts: 0,
             #[cfg(test)]
@@ -245,6 +252,7 @@ impl Transcript {
             self.push(Role::Assistant, String::new());
         }
         if let Some(message) = self.messages.last_mut() {
+            message.measured_height = Some(message.height());
             self.history_revision = self.history_revision.wrapping_add(1);
             self.search.replaced(message.id);
             self.text_bytes = self.text_bytes.saturating_sub(message.text_bytes());
@@ -453,48 +461,19 @@ impl Transcript {
         let mut action = None;
         self.search.refresh(&self.messages);
         let width = width.max(120.0);
-        let mut remaining = self.search.matches.as_slice();
-        for message in &mut self.messages {
-            let count = remaining.partition_point(|found| found.message == message.id);
-            let ranges = &remaining[..count];
-            remaining = &remaining[count..];
-            let selected = self
-                .search
-                .matches
-                .get(self.search.active)
-                .filter(|found| found.message == message.id)
-                .map(|found| &found.range);
-            let highlights = HighlightKey {
-                query_revision: if ranges.is_empty() {
-                    0
-                } else {
-                    self.search.query_revision
-                },
-                count,
-            };
-            message.layout(
-                ui,
-                2.0_f32.mul_add(-MESSAGE_INSET.x, width),
-                ranges,
-                highlights,
-                selected,
-            );
-            let height = message.height()
-                + if controls
-                    .as_ref()
-                    .is_some_and(|controls| message.retry_prefix(controls.history).is_some())
-                {
-                    MESSAGE_CONTENT_GAP + MESSAGE_ACTION_SIZE
-                } else {
-                    0.0
-                };
-            let (rect, _) = ui.allocate_exact_size(Vec2::new(width, height), egui::Sense::hover());
+        let rows = self.prepare_layout(ui, width, controls.as_ref());
+        for (message, row) in self.messages.iter_mut().zip(rows.messages) {
+            let (rect, _) =
+                ui.allocate_exact_size(Vec2::new(width, row.height), egui::Sense::hover());
+            // Compensate painting and hit testing in this pass too; the scroll
+            // adjustment below makes the same correction persistent next frame.
+            let rect = rect.translate(egui::vec2(0.0, -rows.correction));
             let target = self
                 .search
                 .target
                 .as_ref()
                 .filter(|found| found.message == message.id);
-            if ui.is_rect_visible(rect) || target.is_some() {
+            if row.ready && (ui.is_rect_visible(rect) || target.is_some()) {
                 let (found_rect, message_action) = message.show(
                     ui,
                     rect,
@@ -512,6 +491,12 @@ impl Transcript {
                 }
             }
             ui.add_space((MESSAGE_GAP - ui.spacing().item_spacing.y).max(0.0));
+        }
+        if rows.correction != 0.0 {
+            ui.scroll_with_delta_animation(
+                egui::vec2(0.0, -rows.correction),
+                egui::style::ScrollAnimation::none(),
+            );
         }
         if self.search.latest {
             ui.scroll_to_cursor(Some(egui::Align::Max));
@@ -718,6 +703,34 @@ impl Message {
         })
     }
 
+    fn layout_current(
+        &self,
+        ui: &egui::Ui,
+        width: f32,
+        highlights: HighlightKey,
+        selected: Option<&Range<usize>>,
+    ) -> bool {
+        let visible_reasoning = self.show_reasoning && !self.reasoning.is_empty();
+        self.cache.as_ref().is_some_and(|cache| {
+            cache.width.to_bits() == width.to_bits()
+                && cache.pixels_per_point.to_bits() == ui.ctx().pixels_per_point().to_bits()
+                && cache.text_size.to_bits() == super::appearance::text_size(ui.ctx()).to_bits()
+                && cache.body_revision == self.body_revision
+                && cache.color == ui.visuals().text_color()
+                && cache.code_background
+                    == (self.role == Role::Assistant).then_some(ui.visuals().code_bg_color)
+                && cache.highlights == highlights
+                && (highlights.count == 0
+                    || (cache.highlight_fill == ui.visuals().selection.bg_fill
+                        && cache.highlight_color == ui.visuals().selection.stroke.color))
+                && cache.selected.as_ref() == selected
+                && cache.reasoning.is_some() == visible_reasoning
+                && (!visible_reasoning
+                    || (cache.reasoning_bytes == self.reasoning.len()
+                        && cache.reasoning_color == ui.visuals().weak_text_color()))
+        })
+    }
+
     fn layout_body(
         &self,
         ui: &egui::Ui,
@@ -740,7 +753,7 @@ impl Message {
     }
     fn height(&self) -> f32 {
         let Some(cache) = &self.cache else {
-            return 100.0;
+            return self.measured_height.unwrap_or(100.0);
         };
         // One shared header holds identity and actions for either role. Speech
         // never reserves a separate row, including while it is unavailable.
