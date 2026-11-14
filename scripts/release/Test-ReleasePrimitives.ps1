@@ -18,6 +18,7 @@ foreach ($source in $sources) {
     [void][Management.Automation.Language.Parser]::ParseFile($source, [ref]$tokens, [ref]$parseErrors)
     if ($parseErrors.Count -ne 0) { throw "Release PowerShell source does not parse: $source`n$parseErrors" }
 }
+& (Join-Path $PSScriptRoot 'Test-ReleaseAdapter.ps1')
 & (Join-Path $PSScriptRoot 'Test-ReleaseNotices.ps1')
 & (Join-Path $PSScriptRoot 'Test-ReleasePolicy.ps1')
 & (Join-Path $PSScriptRoot 'Test-PortableReleaseAssets.ps1')

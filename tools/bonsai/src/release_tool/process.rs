@@ -107,8 +107,24 @@ fn excerpt(text: &str) -> String {
     format!("{start}\n[... output truncated ...]\n{end}")
 }
 
+fn executable_name(name: &str) -> OsString {
+    let path = Path::new(name);
+    let mut executable = OsString::from(name);
+    if cfg!(windows)
+        && !name.contains(['/', '\\'])
+        && path.components().count() == 1
+        && path.file_name().is_some()
+        && path.extension().is_none()
+    {
+        // The native resolver searches exact PATH entries without shell/PATHEXT
+        // expansion. Release adapters use bare cargo, gh and git names.
+        executable.push(".exe");
+    }
+    executable
+}
+
 pub(super) fn invoke(value: &Value) -> Result<Value> {
-    let executable = OsString::from(text(value, "filePath")?);
+    let executable = executable_name(text(value, "filePath")?);
     let args = value["arguments"]
         .as_array()
         .ok_or("Release arguments must be an array.")?
@@ -198,6 +214,47 @@ fn allowance(value: &Value, field: &str, default: u64) -> Result<u64> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn release_command_executable_names_normalize_only_bare_windows_tools() {
+        for name in ["cargo", "gh", "git"] {
+            let expected = if cfg!(windows) {
+                format!("{name}.exe")
+            } else {
+                name.into()
+            };
+            assert_eq!(executable_name(name), OsString::from(expected));
+        }
+        for name in [
+            "git.exe",
+            "cargo.EXE",
+            "helper.cmd",
+            "tools/cargo",
+            "cargo/",
+            "./cargo",
+            "/usr/bin/cargo",
+            "",
+            ".",
+            "..",
+        ] {
+            assert_eq!(executable_name(name), OsString::from(name));
+        }
+    }
+
+    #[cfg(windows)]
+    #[test]
+    fn release_command_executable_names_preserve_windows_paths() {
+        for name in [
+            r"C:\tools\cargo",
+            r"\\server\share\cargo",
+            r"tools\cargo",
+            "cargo\\",
+            r".\cargo",
+            r"C:git",
+        ] {
+            assert_eq!(executable_name(name), OsString::from(name));
+        }
+    }
+
     #[test]
     fn release_command_diagnostics_preserve_unicode_head_tail_and_empty_output() {
         assert_eq!(excerpt(" \n"), "<empty>");
