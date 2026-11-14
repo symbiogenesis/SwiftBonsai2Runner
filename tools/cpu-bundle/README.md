@@ -12,6 +12,13 @@ speech and the application's K4/V4 default are outside scope. Two reversed short
 pairs do not qualify individual optimizations, uncertainty, sustained behavior,
 state/quality, promotion or a runtime pin.
 
+Prism's separate `cpu_candidate_check` collector can describe newer source
+profiles with FP16/K4/V4 and explicit ordinary/8/16/32-token ingestion. Its distinct
+schema-2 candidate receipts are **not admitted by this frozen lane**. A checked
+current-source preparation and comparison lane remains outstanding in
+[PLAN.md](../../PLAN.md#cpu-kernels); source collection alone supplies no X1
+performance or promotion result.
+
 ## Hosted preparation and offline replay
 
 [`cpu_bundle.ps1`](cpu_bundle.ps1) verifies registry archives, locked dependency

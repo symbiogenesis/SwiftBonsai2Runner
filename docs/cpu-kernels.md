@@ -363,6 +363,49 @@ Publish a genuine runtime bundle and review Runner's locks only after the
 applicable gates pass. The fixed 0.1.23/0.1.25 comparison cannot qualify these
 candidates; the active 0.1.27 runtime remains the application pin and rollback.
 
+### Compact KV rotations and joined Q8 decode siblings
+
+The next Prism source changes extend the shared CPU pathway:
+
+- Packed-cache rotation signs use 768 bytes of boolean masks instead of 3,072
+  bytes of binary32 multipliers per quantizer. The native helper stages one row
+  for all three rotation or inverse passes, selecting NEON once and retaining
+  finite-result checks after every pass. Scalar multiplication and Hadamard
+  remain independent controls. Seed order, binary32 rounding, signed zero,
+  subnormals, packed record bytes and unchanged-output rejection are preserved.
+  This applies to packed query and K/V preparation, including ordinary K4/V4.
+- Same-format PTQ1 and odd-group PQ2 decode siblings reuse one prepared Q8_0
+  activation and row-worker submission through their existing exact row kernels.
+  Format, quantizer, transformed basis, adapter and external-executor guards stay
+  separate. Failure joins work and clears all sibling outputs. Ordinary Swift's
+  even-width original-PQ2 projections retain their existing Q8_K consumer; this
+  extension supplies no benefit claim for that path.
+- Integrated exact temporal GDN controls use an independent scalar recurrence
+  at 128/256-channel heads and 8/16/32-token tiles, including unsupported-width
+  fallback, signed zero/subnormals, final-token/final-row failure, immutable source
+  and dirty-delta recovery. These controls change no recurrent runtime arithmetic.
+
+Prism's separate `cpu_candidate_check` collector now describes explicit current
+source FP16/K4/V4 and ordinary/exact-tiled profiles. Schema-2 candidate receipts
+bind context, tile and full caller-provided scratch reserve and use distinct
+filenames. The shared collection core retains the frozen collector's seven
+arguments, schema 1 and exact seven-control inventory. Its legacy wrapper uses
+only the baseline's existing API. The new collector covers at most 128 rendered
+prompt tokens and 32 output tokens; long prefill remains outside this capture.
+It does not produce an admitted build/comparison packet: the fixed registry
+evaluator must reject candidate receipts. See Prism's
+[collector contract](https://github.com/symbiogenesis/prism-inference/blob/main/docs/cpu-bundle-comparison.md#current-source-cpu-profiles).
+
+These changes have source review and pinned formatting only. The predeclared
+local source diagnostic stopped at native supervisor process creation before
+Cargo or any test started; it was not retried. Native/x64 strict Release analysis,
+helper tests, feature-disabled controls, collector linking, ARM64 codegen/stack,
+complete-model state/logit/adapter/cancellation and matched complete-request
+benefit remain pending. Publish the changed helper before its runtime, then
+verify a genuine source-bound bundle and review Runner's locks. No runtime pin,
+precision default, X1 timing or accelerator profile changes follow from source
+work counts or synthetic controls.
+
 ## Execution and dispatch
 
 The default `experimental-neon` feature uses [`fearless_simd` 1.1.0][fearless]'s safe core API under
