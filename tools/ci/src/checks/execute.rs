@@ -113,7 +113,7 @@ fn digest(path: &Path) -> Result<String> {
         .map_err(|error| error.to_string())
 }
 
-fn read_log(path: &Path) -> Result<Vec<u8>> {
+pub(super) fn read_log(path: &Path) -> Result<Vec<u8>> {
     let file = File::open(path).map_err(|error| error.to_string())?;
     let mut bytes = Vec::new();
     file.take(MAX_LOG_BYTES + 1)

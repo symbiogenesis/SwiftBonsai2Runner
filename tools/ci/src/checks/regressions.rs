@@ -240,13 +240,14 @@ fn execute(request: &Request, controls: &[Control]) -> Result<String> {
             ]),
         };
         let result = super::execute::command(&spec, allowance, &log)?;
+        let result = (result.0, raw_stdout(&stdout)?);
         let lines = result.1.lines().map(str::to_owned).collect::<Vec<_>>();
         let disposition = super::super::native_acceptance_guard::test_output(
             &lines,
             i32::try_from(result.0).map_err(|_| "Invalid regression exit code.")?,
             control.expected_passed,
         );
-        if disposition.is_err() {
+        if disposition.is_err() && result.0 == 0 {
             super::execute::write_failure_logs(&mut std::io::stderr().lock(), &spec);
         }
         // One combined diagnostic is sufficient after a completed failure;
@@ -274,6 +275,11 @@ fn execute(request: &Request, controls: &[Control]) -> Result<String> {
         fs::remove_dir(&scratch).map_err(|e| e.to_string())?;
     }
     result
+}
+
+#[cfg(windows)]
+fn raw_stdout(path: &Path) -> Result<String> {
+    String::from_utf8(super::execute::read_log(path)?).map_err(|error| error.to_string())
 }
 
 pub(super) fn run(arguments: &[OsString]) -> Result<String> {
@@ -314,6 +320,35 @@ pub(super) fn run(arguments: &[OsString]) -> Result<String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[cfg(windows)]
+    #[test]
+    fn captured_stdout_preserves_whitespace_before_result_admission() -> Result<()> {
+        use std::{
+            fs,
+            io::Write as _,
+            time::{SystemTime, UNIX_EPOCH},
+        };
+        let serial = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .map_err(|e| e.to_string())?
+            .as_nanos();
+        let path = std::env::temp_dir().join(format!(
+            "bonsai-regression-output-{}-{serial}",
+            std::process::id()
+        ));
+        let raw = "  test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s\n";
+        fs::OpenOptions::new()
+            .write(true)
+            .create_new(true)
+            .open(&path)
+            .and_then(|mut file| file.write_all(raw.as_bytes()))
+            .map_err(|e| e.to_string())?;
+        let output = raw_stdout(&path)?;
+        fs::remove_file(path).map_err(|e| e.to_string())?;
+        assert_eq!(output, raw);
+        assert!(selected(&plan(&fixture())?, |_| Ok((0, output.clone()))).is_err());
+        Ok(())
+    }
     fn fixture() -> Request {
         Request {
             root: std::env::temp_dir().join("source"),

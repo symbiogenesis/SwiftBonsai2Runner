@@ -360,7 +360,7 @@ retains no build chatter; actionable failures keep a selected diagnostic.
 `planOnly: true` returns admitted arguments without executing them.
 
 Hosted preparation runs `tools/ci/test_native_regressions.ps1`, a thin adapter for
-five named Rust fixtures with inert injected command outcomes. No model or remote
+six named Rust fixtures with inert injected command outcomes. No model or remote
 service is used. Foundation retains the separate `test_foundation_handoff.ps1`
 pre-bootstrap structural controls. Hosted/device acceptance remains pending.
 [Source checks](../../.github/workflows/source-checks.yml) run separate portable,
