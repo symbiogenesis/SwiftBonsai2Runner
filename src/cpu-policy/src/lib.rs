@@ -425,25 +425,25 @@ fn validate_source(lock: &Value, profile: Profile) -> Result<(), String> {
 
 #[derive(Deserialize)]
 #[serde(rename_all = "PascalCase", deny_unknown_fields)]
-struct Derived {
+struct Derived<'a> {
     schema_version: u8,
-    codec_commit: String,
+    codec_commit: &'a str,
     source_bytes: u64,
     output_bytes: u64,
-    output_sha256: String,
+    output_sha256: &'a str,
     converted_tensor_count: u32,
     converted_blocks: u64,
     exact_pq2_reconstruction_verified: bool,
     non_pq2_tensor_bytes_copied_verbatim: bool,
-    metadata_changes: String,
+    metadata_changes: &'a str,
     working_buffer_bytes: u64,
-    qualification: String,
-    source_sha256: String,
-    source_revision: String,
-    tokenizer_metadata_sha256: String,
-    output_filename: String,
-    source_filename: String,
-    source_repository: String,
+    qualification: &'a str,
+    source_sha256: &'a str,
+    source_revision: &'a str,
+    tokenizer_metadata_sha256: &'a str,
+    output_filename: &'a str,
+    source_filename: &'a str,
+    source_repository: &'a str,
     saving_bytes: u64,
     model_process_started: bool,
 }
@@ -475,19 +475,19 @@ pub fn select_artifact(
     let evidence = derived
         .filter(|value| value.is_object())
         .ok_or("Derived PTQ1 evidence is required.")?;
-    let evidence: Derived = serde_json::from_value(evidence.clone())
-        .map_err(|_| "Invalid derived PTQ1 evidence shape.")?;
+    let evidence =
+        Derived::deserialize(evidence).map_err(|_| "Invalid derived PTQ1 evidence shape.")?;
     require(
         evidence.schema_version == 1
-            && Some(evidence.source_revision.as_str()) == lock["model"]["revision"].as_str()
-            && Some(evidence.source_sha256.as_str()) == lock["model"]["sha256"].as_str()
+            && Some(evidence.source_revision) == lock["model"]["revision"].as_str()
+            && Some(evidence.source_sha256) == lock["model"]["sha256"].as_str()
             && Some(evidence.source_bytes) == lock["model"]["bytes"].as_u64()
-            && Some(evidence.codec_commit.as_str()) == lock["runtime"]["commit"].as_str()
-            && Some(evidence.source_filename.as_str()) == lock["model"]["filename"].as_str()
-            && Some(evidence.source_repository.as_str()) == lock["model"]["repository"].as_str()
+            && Some(evidence.codec_commit) == lock["runtime"]["commit"].as_str()
+            && Some(evidence.source_filename) == lock["model"]["filename"].as_str()
+            && Some(evidence.source_repository) == lock["model"]["repository"].as_str()
             && evidence.output_filename == PTQ1_FILENAME
-            && hex(&evidence.output_sha256, 64)
-            && hex(&evidence.tokenizer_metadata_sha256, 64)
+            && hex(evidence.output_sha256, 64)
+            && hex(evidence.tokenizer_metadata_sha256, 64)
             && evidence.exact_pq2_reconstruction_verified
             && evidence.non_pq2_tensor_bytes_copied_verbatim
             && evidence.converted_tensor_count == 402
