@@ -2,6 +2,13 @@
 
 Use [PLAN.md](PLAN.md) as the source of truth for all outstanding project work.
 
+# Target hardware
+
+Target native Windows ARM64 on Snapdragon X Elite and Snapdragon X2 Elite Extreme.
+In project plans and contracts, X1 and X2 refer to these two families respectively.
+Keep implementation, optimization and qualification work within this scope;
+other hardware may supply prior art for a general principle, not another target.
+
 # Owner-device execution budgets
 
 Diagnostics, model qualification trials and benchmarks on the owner's laptop

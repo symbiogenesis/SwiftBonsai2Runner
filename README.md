@@ -1,8 +1,8 @@
 # Swift Bonsai 2 Runner
 
 A local creative-writing and brainstorming app for Windows ARM64 laptops with
-Snapdragon X and X2 processors. It uses a native Rust UI and
-[Prism Inference](https://github.com/symbiogenesis/prism-inference) on CPU, with
+Snapdragon X Elite or Snapdragon X2 Elite Extreme processors. It uses a native
+Rust UI and [Prism Inference](https://github.com/symbiogenesis/prism-inference) on CPU, with
 experimental Hexagon acceleration on supported X2 installations.
 
 [Swift Bonsai 2](https://ukisai.com/swift-bonsai-2) is UkisAI's model based on

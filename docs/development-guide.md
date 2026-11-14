@@ -12,9 +12,9 @@ PowerShell 7.6+. Follow [validation](validation.md) for standards and focused ch
 
 The app defaults to native Rust [Prism Inference](https://github.com/symbiogenesis/prism-inference)
 0.1.27, original Swift PQ2, four CPU row workers and the pinned pretrained adapter
-at scale 1.3. On supported Snapdragon X2 installations, the runtime also enables
-the experimental resident Hexagon `native-q2` path, with CPU fallback when the
-signed runtime package or CDSP driver is absent. See [Hexagon policy](hexagon.md)
+at scale 1.3. On supported Snapdragon X2 Elite Extreme installations, the runtime
+also enables the experimental resident Hexagon `native-q2` path, with CPU fallback
+when the signed runtime package or CDSP driver is absent. See [Hexagon policy](hexagon.md)
 for placement, resource charges and qualification limits.
 Publisher C++ rollback, Qwen `reference-cpu` and current-weight PTQ1
 use explicit immutable selections. No training is required. [Runtime selection](#runtime-selection)

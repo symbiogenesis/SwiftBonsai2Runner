@@ -9,6 +9,14 @@ The optional model-free probe verifies the runtime against the immutable
 The [selection contract](#automatic-profile-selection) defines eligibility;
 [PLAN.md](../PLAN.md#hardware-selection) owns outstanding work.
 
+## Target scope
+
+Profiles target **Snapdragon X Elite** and **Snapdragon X2 Elite Extreme** on
+native Windows ARM64. X1 and X2 below refer to these families respectively.
+CPU, Adreno and Hexagon work must apply to one of these targets; other processor
+families are outside the profile catalog. Inventory may report unsupported
+hardware without admitting an execution or qualification profile.
+
 ## Host inventory
 
 `bonsai-tools doctor --json '{}'` returns a v2 native report containing
@@ -201,9 +209,9 @@ family names alone establish no kernel or backend readiness.
 
 | Target | Candidates | Required independent evidence |
 | --- | --- | --- |
-| X1: initially X1E-78-100 / Adreno X1-85 / Hexagon v73 | Packed scalar/NEON CPU, Vulkan, viable packed Hexagon regions | Windows ISA/driver, signed NPU access, mapping costs, exact Swift graph/state and device results |
-| X2: initially Elite Extreme / Adreno X2-90 / Hexagon v81 | Packed CPU/Vulkan, batched HMX prefill, packed HVX decode | Actual SKU/capabilities, signed package, extended DMA and separate phase/sustained results |
-| Unknown SKU or invalidated/unavailable accelerator | Reviewed compatible CPU fallback | Native ARM64, baseline ISA, verified artifacts and ordinary memory/context admission; otherwise refuse execution |
+| X1: Snapdragon X Elite, initially X1E-78-100 / Adreno X1-85 / Hexagon v73 | Packed scalar/NEON CPU, Vulkan, viable packed Hexagon regions | Windows ISA/driver, signed NPU access, mapping costs, exact Swift graph/state and device results |
+| X2: Snapdragon X2 Elite Extreme / Adreno X2-90 / Hexagon v81 | Packed CPU/Vulkan, batched HMX prefill, packed HVX decode | Actual SKU/capabilities, signed package, extended DMA and separate phase/sustained results |
+| Target family with unknown exact SKU or invalidated/unavailable accelerator | Reviewed compatible CPU fallback | Native ARM64, baseline ISA, verified artifacts and ordinary memory/context admission; otherwise refuse execution |
 
 Family rules cover only independently qualified SKU/capability/driver classes. The
 [X2E-94-100/X2E-96-100 product brief][x2-specs] advertises up to 228 GB/s system bandwidth and 80
