@@ -25,7 +25,7 @@ use windows_sys::Win32::Globalization::{CSTR_EQUAL, CompareStringOrdinal};
 use windows_sys::Win32::Storage::FileSystem::FILE_ATTRIBUTE_REPARSE_POINT;
 use windows_sys::Win32::System::SystemInformation::GetWindowsDirectoryW;
 
-use crate::{ProcessSpec, SandboxPolicy, invalid, validate_path};
+use crate::{ProcessSpec, SandboxNetwork, SandboxPolicy, invalid, validate_path};
 
 // PROCESS_SECURITY_ENVIRONMENT_FLAG_TERMINATE_ON_CLOSE from processmodel.h.
 // Keep native enforcement owned even when brokered creation bypasses Job
@@ -59,10 +59,18 @@ impl Environment {
         self.0.raw().0
     }
 
-    pub(super) fn create(spec: &ProcessSpec, policy: &SandboxPolicy) -> io::Result<Self> {
+    pub(super) fn create(
+        spec: &ProcessSpec,
+        policy: &SandboxPolicy,
+        network: SandboxNetwork,
+    ) -> io::Result<Self> {
         let readonly = validate_policy(spec, policy)?;
-        let api = available_api()?;
-        let bytes = policy_bytes(readonly, Some(path_text(&policy.writable_directory)?));
+        let api = available_api(network)?;
+        let bytes = policy_bytes(
+            readonly,
+            Some(path_text(&policy.writable_directory)?),
+            network,
+        );
         api.create(&bytes, TERMINATE_ON_CLOSE)
             .map(Self)
             .map_err(native_error)
@@ -70,21 +78,30 @@ impl Environment {
 }
 
 pub(super) fn available() -> io::Result<()> {
-    let api = available_api()?;
+    let api = available_api(SandboxNetwork::HostLoopback)?;
     // API exports alone do not prove an enabled, usable native implementation.
     // Creating the same network/UI posture exercises actual PSEC policy admission
     // without a child, credentials, filesystem grants or host ACL changes.
     let environment = api
-        .create(&policy_bytes(Vec::new(), None), TERMINATE_ON_CLOSE)
+        .create(
+            &policy_bytes(Vec::new(), None, SandboxNetwork::HostLoopback),
+            TERMINATE_ON_CLOSE,
+        )
         .map_err(native_error)?;
     drop(environment);
     Ok(())
 }
 
-fn available_api() -> io::Result<ProcessSecurityEnvironmentApi> {
+fn available_api(network: SandboxNetwork) -> io::Result<ProcessSecurityEnvironmentApi> {
     let api = ProcessSecurityEnvironmentApi::load().map_err(native_error)?;
-    if !api.supports_version(1, 1).map_err(native_error)?
-        || !BaseContainerRunner::supports_ingress_host_loopback_allow()
+    if !api.supports_version(1, 1).map_err(native_error)? {
+        return Err(io::Error::new(
+            io::ErrorKind::Unsupported,
+            "native sandbox requires PSEC 1.1 support",
+        ));
+    }
+    if network == SandboxNetwork::HostLoopback
+        && !BaseContainerRunner::supports_ingress_host_loopback_allow()
     {
         return Err(io::Error::new(
             io::ErrorKind::Unsupported,
@@ -255,12 +272,19 @@ fn runtime_paths() -> io::Result<Vec<String>> {
     Ok(paths)
 }
 
-fn policy_bytes(readonly: Vec<String>, scratch: Option<String>) -> Vec<u8> {
+fn policy_bytes(
+    readonly: Vec<String>,
+    scratch: Option<String>,
+    authority: SandboxNetwork,
+) -> Vec<u8> {
     let mut egress = EndpointPolicyT::default();
     egress.default_action = FilterAction::deny;
     let mut ingress = IngressPolicyT::default();
     ingress.default_action = FilterAction::deny;
-    ingress.host_loopback = FilterAction::allow;
+    ingress.host_loopback = match authority {
+        SandboxNetwork::HostLoopback => FilterAction::allow,
+        SandboxNetwork::Offline => FilterAction::deny,
+    };
     let mut network = NetworkPolicyT::default();
     network.egress = Some(Box::new(egress));
     network.ingress = Some(Box::new(ingress));
@@ -268,10 +292,14 @@ fn policy_bytes(readonly: Vec<String>, scratch: Option<String>) -> Vec<u8> {
     // service addresses. Native tests show that neither removing the capability/
     // peer nor explicit all-address egress deny rules narrow that local scope.
     // No internet/private-network capability or external allow rule is granted.
-    network.allowed_appcontainer_peer = Some("MXC-Loopback".to_owned());
+    if authority == SandboxNetwork::HostLoopback {
+        network.allowed_appcontainer_peer = Some("MXC-Loopback".to_owned());
+    }
     let mut spec = ProcessSecurityEnvironmentT::default();
     spec.version = SchemaVersionT { major: 1, minor: 1 };
-    spec.capabilities = Some("networkLoopback".to_owned());
+    if authority == SandboxNetwork::HostLoopback {
+        spec.capabilities = Some("networkLoopback".to_owned());
+    }
     spec.disallow_win32k_system_calls = true;
     // PSEC enforces these desktop restrictions without nesting a Job UI limit.
     spec.ui_restrictions = 0x03ff;
@@ -289,6 +317,60 @@ mod tests {
     use std::{fs, time::SystemTime};
 
     use super::*;
+
+    #[test]
+    fn offline_policy_omits_network_authority_and_preserves_headless_restrictions() -> io::Result<()>
+    {
+        use mxc_sdk::process_security_environment_spec::process_security_environment_layout::root_as_process_security_environment;
+
+        for authority in [SandboxNetwork::Offline, SandboxNetwork::HostLoopback] {
+            let bytes = policy_bytes(
+                vec!["C:\\approved\\worker.exe".to_owned()],
+                Some("C:\\private\\scratch".to_owned()),
+                authority,
+            );
+            let policy = root_as_process_security_environment(&bytes)
+                .map_err(io::Error::other)?
+                .unpack();
+            assert!(policy.disallow_win32k_system_calls);
+            assert_eq!(policy.ui_restrictions, 0x03ff);
+            assert_eq!(
+                policy.fs_read_only,
+                Some(vec!["C:\\approved\\worker.exe".to_owned()])
+            );
+            assert_eq!(
+                policy.fs_read_write,
+                Some(vec!["C:\\private\\scratch".to_owned()])
+            );
+            let network = policy
+                .network_policy
+                .ok_or_else(|| invalid("missing network policy"))?;
+            let ingress = network
+                .ingress
+                .ok_or_else(|| invalid("missing ingress policy"))?;
+            let egress = network
+                .egress
+                .ok_or_else(|| invalid("missing egress policy"))?;
+            assert_eq!(egress.default_action, FilterAction::deny);
+            assert_eq!(ingress.default_action, FilterAction::deny);
+            match authority {
+                SandboxNetwork::Offline => {
+                    assert_eq!(ingress.host_loopback, FilterAction::deny);
+                    assert!(network.allowed_appcontainer_peer.is_none());
+                    assert!(policy.capabilities.is_none());
+                }
+                SandboxNetwork::HostLoopback => {
+                    assert_eq!(ingress.host_loopback, FilterAction::allow);
+                    assert_eq!(
+                        network.allowed_appcontainer_peer.as_deref(),
+                        Some("MXC-Loopback")
+                    );
+                    assert_eq!(policy.capabilities.as_deref(), Some("networkLoopback"));
+                }
+            }
+        }
+        Ok(())
+    }
 
     #[test]
     fn verified_runtime_grant_budget_admits_swift_bundle_and_rejects_overflow() -> io::Result<()> {

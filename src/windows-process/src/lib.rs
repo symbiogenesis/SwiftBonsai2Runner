@@ -702,6 +702,16 @@ pub struct SandboxPolicy {
     pub writable_directory: PathBuf,
 }
 
+/// Immutable network authority selected before a contained worker starts.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum SandboxNetwork {
+    /// Existing authenticated HTTP workers may communicate with host services.
+    /// This grant is broader than broker-only access.
+    HostLoopback,
+    /// No network capability, host peer or loopback exception is granted.
+    Offline,
+}
+
 /// Requires native PSEC 1.1, host-loopback ingress and security-environment creation.
 ///
 /// This never changes host ACLs, firewall settings or installed Windows features.
@@ -794,15 +804,48 @@ impl OwnedProcess {
     /// Returns invalid launch/grant paths, reparse paths, overlapping read/write
     /// grants, unavailable native PSEC support or failed native creation.
     pub fn start_sandboxed(spec: &ProcessSpec, policy: &SandboxPolicy) -> io::Result<Self> {
+        Self::validate_sandboxed(spec)?;
+        let command = command_line(&spec.executable, &spec.arguments)?;
+        native::NativeProcess::start_sandboxed(spec, command, policy).map(Self)
+    }
+
+    /// Starts a contained worker with bounded anonymous-pipe standard streams.
+    ///
+    /// Returns the owner, parent stdin writer and parent stdout reader. Only the
+    /// worker endpoints and its newly created `stderr` file enter the inherited
+    /// handle list. `spec.stdout` remains a validated reserved name and no file
+    /// is created there. Each pipe requests a 64 KiB kernel buffer; the protocol
+    /// must independently bound messages and apply backpressure.
+    ///
+    /// The caller must supervise blocking pipe operations off its UI thread and
+    /// stop the worker before joining a stalled reader. Dropping the parent
+    /// writer signals input EOF; dropping or stopping the owner kills the worker
+    /// and releases its output endpoint. Offline launch does not require the
+    /// host-loopback feature. No policy or resource-limit fallback is attempted.
+    ///
+    /// # Errors
+    /// Returns the same admission errors as [`Self::start_sandboxed`], plus failed
+    /// pipe creation or handle-inheritance configuration.
+    pub fn start_sandboxed_piped(
+        spec: &ProcessSpec,
+        policy: &SandboxPolicy,
+        network: SandboxNetwork,
+    ) -> io::Result<(Self, std::fs::File, std::fs::File)> {
+        Self::validate_sandboxed(spec)?;
+        let command = command_line(&spec.executable, &spec.arguments)?;
+        let (process, input, output) =
+            native::NativeProcess::start_sandboxed_piped(spec, command, policy, network)?;
+        Ok((Self(process), input, output))
+    }
+
+    fn validate_sandboxed(spec: &ProcessSpec) -> io::Result<()> {
         validate_process(spec)?;
         if spec.active_process_limit != 1 {
             return Err(invalid(
                 "native sandbox requires a single-process worker policy",
             ));
         }
-        validate_sandbox_environment()?;
-        let command = command_line(&spec.executable, &spec.arguments)?;
-        native::NativeProcess::start_sandboxed(spec, command, policy).map(Self)
+        validate_sandbox_environment()
     }
 
     /// Atomically owns a startup compiler/tool tree and then resumes its root.
@@ -1117,7 +1160,16 @@ fn forbidden_environment_name(name: &OsStr) -> bool {
         || ["HF_TOKEN", "HF_ENDPOINT", "MODEL_ENDPOINT"].contains(&name.as_str())
 }
 
-fn validate_sandbox_environment() -> io::Result<()> {
+/// Checks ambient credential variable names without creating a native environment.
+///
+/// This cheap preflight never changes the caller's environment and is not proof
+/// of PSEC availability or enforcement. Every sandboxed launch repeats this
+/// check and admits its complete native policy before creating its worker.
+/// Unknown inherited variable names can still contain secrets.
+///
+/// # Errors
+/// Returns `InvalidInput` when a recognized credential-shaped name is present.
+pub fn validate_sandbox_environment() -> io::Result<()> {
     if std::env::vars_os().any(|(name, _)| credential_environment_name(&name)) {
         return Err(invalid(
             "sandbox launch rejects inherited credential environment variables",

@@ -16,7 +16,8 @@ use std::time::{Duration, Instant};
 
 use windows_sys::Win32::Foundation::{
     ERROR_INSUFFICIENT_BUFFER, ERROR_INVALID_PARAMETER, ERROR_MORE_DATA, FILETIME, HANDLE,
-    INVALID_HANDLE_VALUE, WAIT_FAILED, WAIT_OBJECT_0, WAIT_TIMEOUT,
+    HANDLE_FLAG_INHERIT, INVALID_HANDLE_VALUE, SetHandleInformation, WAIT_FAILED, WAIT_OBJECT_0,
+    WAIT_TIMEOUT,
 };
 use windows_sys::Win32::NetworkManagement::IpHelper::{
     GetExtendedTcpTable, MIB_TCPROW_OWNER_PID, TCP_TABLE_OWNER_PID_LISTENER,
@@ -40,6 +41,7 @@ use windows_sys::Win32::System::JobObjects::{
     JobObjectExtendedLimitInformation, QueryInformationJobObject, SetInformationJobObject,
     TerminateJobObject,
 };
+use windows_sys::Win32::System::Pipes::CreatePipe;
 use windows_sys::Win32::System::ProcessStatus::{
     K32GetProcessMemoryInfo, PROCESS_MEMORY_COUNTERS_EX,
 };
@@ -57,7 +59,7 @@ use windows_sys::Win32::System::Threading::{
     WaitForSingleObject,
 };
 
-use crate::{ProcessMemory, ProcessSpec, SandboxPolicy, ToolProcessSpec, invalid};
+use crate::{ProcessMemory, ProcessSpec, SandboxNetwork, SandboxPolicy, ToolProcessSpec, invalid};
 
 pub(super) mod caller;
 mod containment;
@@ -312,6 +314,7 @@ impl NativeProcess {
             command,
             None,
             None,
+            None,
         )
     }
 
@@ -329,6 +332,7 @@ impl NativeProcess {
             command,
             None,
             None,
+            None,
         )
     }
 
@@ -337,7 +341,8 @@ impl NativeProcess {
         command: Vec<u16>,
         policy: &SandboxPolicy,
     ) -> io::Result<Self> {
-        let containment = containment::Environment::create(spec, policy)?;
+        let containment =
+            containment::Environment::create(spec, policy, SandboxNetwork::HostLoopback)?;
         let environment = containment::child_environment(policy)?;
         Self::launch(
             &LaunchSpec {
@@ -352,7 +357,36 @@ impl NativeProcess {
             command,
             Some(&environment),
             Some(containment),
+            None,
         )
+    }
+
+    pub(super) fn start_sandboxed_piped(
+        spec: &ProcessSpec,
+        command: Vec<u16>,
+        policy: &SandboxPolicy,
+        network: SandboxNetwork,
+    ) -> io::Result<(Self, std::fs::File, std::fs::File)> {
+        let containment = containment::Environment::create(spec, policy, network)?;
+        let environment = containment::child_environment(policy)?;
+        let (child_input, parent_input) = anonymous_pipe(true)?;
+        let (parent_output, child_output) = anonymous_pipe(false)?;
+        let process = Self::launch(
+            &LaunchSpec {
+                executable: &spec.executable,
+                working_directory: &spec.working_directory,
+                stdout: &spec.stdout,
+                stderr: &spec.stderr,
+                limits: Some((spec.memory_limit_bytes, spec.active_process_limit)),
+                priority_class: None,
+                mitigation_profile: MitigationProfile::Headless,
+            },
+            command,
+            Some(&environment),
+            Some(containment),
+            Some((child_input, child_output)),
+        )?;
+        Ok((process, parent_input.into(), parent_output.into()))
     }
 
     pub(super) fn start_tool(
@@ -377,6 +411,7 @@ impl NativeProcess {
             command,
             environment,
             None,
+            None,
         )
     }
 
@@ -385,6 +420,7 @@ impl NativeProcess {
         mut command: Vec<u16>,
         environment: Option<&[u16]>,
         containment: Option<containment::Environment>,
+        pipes: Option<(OwnedHandle, OwnedHandle)>,
     ) -> io::Result<Self> {
         let executable = wide(spec.executable.as_os_str());
         let directory = wide(spec.working_directory.as_os_str());
@@ -419,18 +455,24 @@ impl NativeProcess {
                 win_size::<JOBOBJECT_EXTENDED_LIMIT_INFORMATION>(),
             )
         })?;
-        let input = standard_file(
-            OsStr::new("NUL"),
-            0x8000_0000,
-            FILE_SHARE_READ | FILE_SHARE_WRITE,
-            OPEN_EXISTING,
-        )?;
-        let output = standard_file(
-            spec.stdout.as_os_str(),
-            0x4000_0000,
-            FILE_SHARE_READ,
-            CREATE_NEW,
-        )?;
+        let (input, output) = if let Some(pipes) = pipes {
+            pipes
+        } else {
+            (
+                standard_file(
+                    OsStr::new("NUL"),
+                    0x8000_0000,
+                    FILE_SHARE_READ | FILE_SHARE_WRITE,
+                    OPEN_EXISTING,
+                )?,
+                standard_file(
+                    spec.stdout.as_os_str(),
+                    0x4000_0000,
+                    FILE_SHARE_READ,
+                    CREATE_NEW,
+                )?,
+            )
+        };
         let error = standard_file(
             spec.stderr.as_os_str(),
             0x4000_0000,
@@ -1074,6 +1116,76 @@ fn table_error(code: u32) -> io::Error {
         |_| io::Error::other("invalid TCP query status"),
         io::Error::from_raw_os_error,
     )
+}
+
+/// Returns (reader, writer), with only the selected child endpoint inheritable.
+fn anonymous_pipe(child_reads: bool) -> io::Result<(OwnedHandle, OwnedHandle)> {
+    let security = SECURITY_ATTRIBUTES {
+        nLength: win_size::<SECURITY_ATTRIBUTES>(),
+        lpSecurityDescriptor: null_mut(),
+        bInheritHandle: 1,
+    };
+    let mut reader = null_mut();
+    let mut writer = null_mut();
+    // SAFETY: Both writable HANDLE slots and the readable security attributes
+    // live through the call. Success creates exactly two distinct owned handles.
+    // The finite buffer supplies backpressure; message bounds remain caller policy.
+    check(unsafe {
+        CreatePipe(
+            &raw mut reader,
+            &raw mut writer,
+            &raw const security,
+            65_536,
+        )
+    })?;
+    let reader = owned(reader)?;
+    let writer = owned(writer)?;
+    let parent = if child_reads { &writer } else { &reader };
+    // SAFETY: The parent endpoint remains owned/live. Clearing inheritance before
+    // launch keeps it outside both ordinary inheritance and the explicit list.
+    check(unsafe { SetHandleInformation(parent.as_raw_handle(), HANDLE_FLAG_INHERIT, 0) })?;
+    Ok((reader, writer))
+}
+
+#[cfg(test)]
+mod pipe_tests {
+    use std::io::{Read as _, Write as _};
+
+    use windows_sys::Win32::Foundation::GetHandleInformation;
+
+    use super::*;
+
+    #[test]
+    fn anonymous_pipe_preserves_bytes_eof_and_only_child_inheritance() -> io::Result<()> {
+        for child_reads in [true, false] {
+            let (reader, writer) = anonymous_pipe(child_reads)?;
+            for (handle, inherited) in [(&reader, child_reads), (&writer, !child_reads)] {
+                let mut flags = 0;
+                // SAFETY: The borrowed endpoint is live and the writable flag
+                // slot remains valid throughout the synchronous native query.
+                check(unsafe { GetHandleInformation(handle.as_raw_handle(), &raw mut flags) })?;
+                assert_eq!(flags & HANDLE_FLAG_INHERIT != 0, inherited);
+            }
+            let mut writer = std::fs::File::from(writer);
+            let send = std::thread::spawn(move || -> io::Result<()> {
+                // Exceed the requested pipe buffer without relying on its exact
+                // native allocation size or on write/read call boundaries.
+                for byte in 0..8_u8 {
+                    writer.write_all(&[byte; 16_384])?;
+                }
+                Ok(())
+            });
+            let mut bytes = Vec::new();
+            std::fs::File::from(reader).read_to_end(&mut bytes)?;
+            send.join()
+                .map_err(|_| io::Error::other("pipe sender failed"))??;
+            assert_eq!(bytes.len(), 8 * 16_384);
+            for (byte, chunk) in (0..8_u8).zip(bytes.chunks_exact(16_384)) {
+                assert!(chunk.iter().all(|value| *value == byte));
+            }
+        }
+        Ok(())
+    }
 }
 
 fn standard_file(
