@@ -283,6 +283,43 @@ mod tests {
     };
 
     #[test]
+    fn packed_half_precision_preserves_f32_operands_and_accumulation() -> io::Result<()> {
+        // Literal answers distinguish F32 activations/accumulators from F16
+        // narrowing. Five rows exercise the four-row path and its scalar tail;
+        // the last case also catches an accumulator narrowed between columns.
+        let cases = [
+            (vec![65_536.0_f32], 65_536.0_f32),
+            (vec![1.000_488_3], 1.000_488_3),
+            (
+                vec![f32::from_bits(0x3300_0000)],
+                f32::from_bits(0x3300_0000),
+            ),
+            (vec![8.0; 8193], 65_544.0),
+            (vec![16_777_216.0, 1.0, -16_777_216.0, 1.0], 1.0),
+        ];
+        for (input, expected) in cases {
+            let projection = LinearProjection::new(
+                "packed-half-precision",
+                input.len(),
+                5,
+                WeightQuantization::Packed {
+                    ggml_type: 1,
+                    bytes: [0x00, 0x3c].repeat(input.len() * 5),
+                },
+                None,
+            )?;
+            for workers in [1, 2] {
+                let actual = projection.forward_vec_parallel(&input, None, workers)?;
+                assert_eq!(actual.len(), 5);
+                for value in actual {
+                    assert_eq!(value.to_bits(), expected.to_bits());
+                }
+            }
+        }
+        Ok(())
+    }
+
+    #[test]
     fn packed_float_row_tiles_preserve_independent_sequential_rounding() -> io::Result<()> {
         let half_rows = [
             [0x3c00_u16, 0x3c00, 0x3c00, 0x3c00, 1, 0x3555, 0xb955],
