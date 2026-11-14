@@ -282,7 +282,7 @@ under [AGENTS.md](AGENTS.md).
   short-frame convolution channel tiling, 400 ms playback pre-roll and queued-PCM
   underrun recovery. Measure cold load, first audible output and sustained
   readout/listening with matched power, including slow supply and chat overlap.
-- [ ] Connect the [Q8 host dispatcher](tools/hexagon/native_rpc/README.md#q8-host-dispatch-transactions)
+- [ ] Connect the [Q8 host dispatcher](tools/hexagon/native_rpc/README.md#q8-matrix-preparation-and-immutable-placement)
   to signed native submission and contained HTP0 execution; qualify its pending
   compiled controls. Bind Q8 tensor/solver mapping and exact package/catalog/
   driver/loaded-DSP admission; qualify correlated completions, buffers,
