@@ -92,7 +92,7 @@ fn image() -> Vec<u8> {
     bytes
 }
 
-fn fixture(scratch: &Scratch) -> std::result::Result<Manifest, Box<dyn std::error::Error>> {
+fn fixture(scratch: &Scratch) -> std::result::Result<Capture, Box<dyn std::error::Error>> {
     let object = scratch.file("source.obj", b"literal original object bytes")?;
     let linker = scratch.file("lld-link.exe", b"literal original linker bytes")?;
     let library = scratch.file("system.lib", b"literal original import-library bytes")?;
@@ -120,7 +120,7 @@ fn fixture(scratch: &Scratch) -> std::result::Result<Manifest, Box<dyn std::erro
     fs::create_dir(scratch.0.join("package"))?;
     let output = scratch.file("linked.exe", &image())?;
     let packaged = scratch.file("package/service.exe", &image())?;
-    Ok(Manifest {
+    Ok(Capture {
         schema_version: 1,
         kind: "selected-lld-arm64-link-package".into(),
         source_manifest: source,

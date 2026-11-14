@@ -70,7 +70,7 @@ struct PackageFile {
 
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
-struct Manifest {
+struct Capture {
     schema_version: u32,
     kind: String,
     source_manifest: Identity,
@@ -134,7 +134,7 @@ impl Intake {
 
 // This binds a separately reviewed source-verifier result. It deliberately does
 // not reinterpret that receipt as a fresh source verification in this command.
-fn source_objects(manifest: &Manifest, intake: &mut Intake) -> Result<BTreeMap<String, Identity>> {
+fn source_objects(manifest: &Capture, intake: &mut Intake) -> Result<BTreeMap<String, Identity>> {
     let source: Value =
         serde_json::from_slice(&intake.read(&manifest.source_manifest, DOCUMENT_LIMIT)?)
             .map_err(|error| error.to_string())?;
@@ -206,13 +206,23 @@ fn safe_name(name: &str) -> bool {
         })
 }
 
+fn extension(name: &str, expected: &str) -> bool {
+    Path::new(name)
+        .extension()
+        .is_some_and(|value| value.eq_ignore_ascii_case(expected))
+}
+
+fn image_name(name: &str) -> bool {
+    extension(name, "dll") || extension(name, "exe")
+}
+
 fn module_set(names: &[String]) -> Result<BTreeSet<String>> {
     if names.len() > 4096 {
         return Err("Native link import inventory exceeds its bound.".into());
     }
     let mut set = BTreeSet::new();
     for name in names {
-        if !safe_name(name) || !name.ends_with(".dll") || !set.insert(name.clone()) {
+        if !safe_name(name) || !extension(name, "dll") || !set.insert(name.clone()) {
             return Err(
                 "Native link import names must be distinct lowercase DLL basenames.".into(),
             );
@@ -280,7 +290,7 @@ fn verify_arguments(link: &Link, linker: &Identity) -> Result<BTreeSet<String>> 
             .is_some_and(|output| Path::new(output) == link.output.path)
             || option
                 .strip_prefix("/delayload:")
-                .is_some_and(|name| safe_name(name) && name.ends_with(".dll"));
+                .is_some_and(|name| safe_name(name) && extension(name, "dll"));
         // Multiple distinct /delayload options are meaningful; every other
         // action/output option occurs at most once.
         let unique = if key == "/delayload" { &option } else { key };
@@ -299,7 +309,7 @@ fn verify_arguments(link: &Link, linker: &Identity) -> Result<BTreeSet<String>> 
     Ok(inputs)
 }
 
-fn package(manifest: &Manifest, intake: &mut Intake) -> Result<BTreeMap<String, Identity>> {
+fn package(manifest: &Capture, intake: &mut Intake) -> Result<BTreeMap<String, Identity>> {
     path_key(&manifest.package_directory)?;
     if !manifest.package_directory.is_dir() || !(1..=4096).contains(&manifest.package_files.len()) {
         return Err("Native link requires a bounded flat package directory.".into());
@@ -343,7 +353,63 @@ fn package(manifest: &Manifest, intake: &mut Intake) -> Result<BTreeMap<String, 
     Ok(files)
 }
 
-fn verify(manifest: &Manifest, intake: &mut Intake) -> Result<Value> {
+fn verify_inputs(
+    link: &Link,
+    intake: &mut Intake,
+    objects: &BTreeMap<String, Identity>,
+    linker: &Identity,
+    outputs: &BTreeSet<String>,
+    covered: &mut BTreeSet<String>,
+) -> Result<()> {
+    let arguments = verify_arguments(link, linker)?;
+    let linker = path_key(&linker.path)?;
+    let mut inputs = BTreeSet::new();
+    if !(1..=4096).contains(&link.inputs.len()) {
+        return Err("Native link input count exceeds its bound.".into());
+    }
+    for input in &link.inputs {
+        let key = intake.verify(&input.identity, FILE_LIMIT)?;
+        if outputs.contains(&key) || key == linker || !inputs.insert(key.clone()) {
+            return Err("Native link repeats or aliases an input/output.".into());
+        }
+        let extension = input
+            .identity
+            .path
+            .extension()
+            .and_then(|value| value.to_str())
+            .unwrap_or_default();
+        if !match input.kind {
+            InputKind::CompiledObject | InputKind::ToolchainObject => {
+                extension.eq_ignore_ascii_case("obj")
+            }
+            InputKind::Library => {
+                extension.eq_ignore_ascii_case("lib") || extension.eq_ignore_ascii_case("a")
+            }
+        } {
+            return Err("Native link input kind differs from its object/library extension.".into());
+        }
+        match input.kind {
+            InputKind::CompiledObject => {
+                if objects.get(&key) != Some(&input.identity) {
+                    return Err(
+                        "Native link compiled object differs from the source selection.".into(),
+                    );
+                }
+                covered.insert(key);
+            }
+            InputKind::Library | InputKind::ToolchainObject if objects.contains_key(&key) => {
+                return Err("Native link cannot relabel a selected compiled object.".into());
+            }
+            InputKind::Library | InputKind::ToolchainObject => {}
+        }
+    }
+    if inputs != arguments {
+        return Err("Native link inputs differ from its explicit invocation.".into());
+    }
+    Ok(())
+}
+
+fn verify(manifest: &Capture, intake: &mut Intake) -> Result<Value> {
     if manifest.schema_version != 1
         || manifest.kind != "selected-lld-arm64-link-package"
         || !(1..=128).contains(&manifest.links.len())
@@ -370,58 +436,20 @@ fn verify(manifest: &Manifest, intake: &mut Intake) -> Result<Value> {
     let mut packaged_images = BTreeSet::new();
     let mut imported_systems = BTreeSet::new();
     for link in &manifest.links {
-        let arguments = verify_arguments(link, &manifest.linker)?;
-        let mut inputs = BTreeSet::new();
-        if !(1..=4096).contains(&link.inputs.len()) {
-            return Err("Native link input count exceeds its bound.".into());
-        }
-        for input in &link.inputs {
-            let key = intake.verify(&input.identity, FILE_LIMIT)?;
-            if outputs.contains(&key) || key == linker || !inputs.insert(key.clone()) {
-                return Err("Native link repeats or aliases an input/output.".into());
-            }
-            let extension = input
-                .identity
-                .path
-                .extension()
-                .and_then(|value| value.to_str())
-                .unwrap_or_default();
-            if !match input.kind {
-                InputKind::CompiledObject | InputKind::ToolchainObject => {
-                    extension.eq_ignore_ascii_case("obj")
-                }
-                InputKind::Library => {
-                    extension.eq_ignore_ascii_case("lib") || extension.eq_ignore_ascii_case("a")
-                }
-            } {
-                return Err(
-                    "Native link input kind differs from its object/library extension.".into(),
-                );
-            }
-            match input.kind {
-                InputKind::CompiledObject => {
-                    if objects.get(&key) != Some(&input.identity) {
-                        return Err(
-                            "Native link compiled object differs from the source selection.".into(),
-                        );
-                    }
-                    covered.insert(key);
-                }
-                InputKind::Library | InputKind::ToolchainObject if objects.contains_key(&key) => {
-                    return Err("Native link cannot relabel a selected compiled object.".into());
-                }
-                InputKind::Library | InputKind::ToolchainObject => {}
-            }
-        }
-        if inputs != arguments {
-            return Err("Native link inputs differ from its explicit invocation.".into());
-        }
+        verify_inputs(
+            link,
+            intake,
+            &objects,
+            &manifest.linker,
+            &outputs,
+            &mut covered,
+        )?;
         let file = package
             .get(&link.package_name)
             .ok_or("Native link output is absent from its package.")?;
         if file.bytes != link.output.bytes
             || file.sha256 != link.output.sha256
-            || !(link.package_name.ends_with(".dll") || link.package_name.ends_with(".exe"))
+            || !image_name(&link.package_name)
             || !packaged_images.insert(link.package_name.clone())
         {
             return Err("Native link output differs from or repeats its packaged image.".into());
@@ -446,7 +474,7 @@ fn verify(manifest: &Manifest, intake: &mut Intake) -> Result<Value> {
     }
     let expected_images: BTreeSet<_> = package
         .keys()
-        .filter(|name| name.ends_with(".exe") || name.ends_with(".dll"))
+        .filter(|name| image_name(name))
         .cloned()
         .collect();
     if covered != objects.keys().cloned().collect()
@@ -485,7 +513,7 @@ fn verify(manifest: &Manifest, intake: &mut Intake) -> Result<Value> {
 pub fn run(request: Value) -> Result<Value> {
     let request: Request = serde_json::from_value(request).map_err(|error| error.to_string())?;
     let mut intake = Intake::default();
-    let manifest: Manifest =
+    let manifest: Capture =
         serde_json::from_slice(&intake.read(&request.manifest, DOCUMENT_LIMIT)?)
             .map_err(|error| error.to_string())?;
     let mut receipt = verify(&manifest, &mut intake)?;
