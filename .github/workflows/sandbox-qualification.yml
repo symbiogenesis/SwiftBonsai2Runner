@@ -61,6 +61,7 @@ jobs:
           $manifest = Join-Path $env:GITHUB_WORKSPACE 'Cargo.toml'
           $tests = @(
             @{ Package='bonsai-windows-process'; Target='ownership'; Name='native_sandbox_limits_files_and_preserves_loopback_process_identity' },
+            @{ Package='bonsai-windows-process'; Target='ownership'; Name='native_sandbox_offline_pipes_enforce_authority_and_close_without_logs' },
             @{ Package='bonsai-windows-process'; Target='ownership'; Name='native_sandbox_denies_external_tcp_connect_by_policy' },
             @{ Package='bonsai-windows-process'; Target='ownership'; Name='native_sandbox_host_loopback_capability_includes_host_interface_services' },
             @{ Package='bonsai-windows-process'; Target='ownership'; Name='native_sandbox_abrupt_owner_death_ends_worker_and_listener' },

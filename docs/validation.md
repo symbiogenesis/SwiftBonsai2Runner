@@ -518,6 +518,14 @@ target/working
 directories. `--full-tests` is reserved for main-branch GitHub Actions; benchmarks
 are always CI-only.
 
+For native deadline and process-tree ownership, `bonsai-ci rust-check` accepts
+one explicit package and up to sixteen exact `--test-case NAME` selections. Use
+`--test-kind bin --test-target bonsai-chat` for UI tests, `--test-kind test
+--test-target ownership` for process integration tests, or the default `lib`
+target. Each selected invocation must report exactly one passing and no ignored
+tests; a misspelled name or zero matches fails. These selectors authorize neither
+complete suites nor ignored native qualification fixtures.
+
 `window::interaction_tests::` drives egui input/accessibility with inert channels:
 Enter/Shift+Enter, streaming selection and startup drafting, with no GPU/model/audio
 required. Set external absolute `BONSAI_UI_CAPTURE_DIRECTORY` and select
@@ -539,7 +547,8 @@ to run a complete module or reconstruct a suite locally.
 
 | Area / source | Regression coverage |
 | --- | --- |
-| Input capability [`isolated`](../src/chat-ui/src/audio_import/isolated.rs) and process [`containment`](../src/windows-process/src/native/containment.rs) | Bounded binary frame lengths, canonical PCM/sample identity, timestamps, truncation and buffered-frame flushing; selected-file/ancestor sharing; offline policy without loopback authority and unchanged headless restrictions. Pipe tests cover byte/EOF identity and noninheritable parent endpoints; the typed failed-start marker distinguishes unknown cleanup. These controls do not qualify native Media Foundation initialization or measured overhead. |
+| Input capability [`protocol controls`](../src/chat-ui/src/audio_import/isolated/protocol_tests.rs) and process [`containment`](../src/windows-process/src/native/containment.rs) | Independent wire/PCM fixtures, fragmented/interrupted reads, exact sample limits, malformed headers/errors, truncation and buffered-frame flushing; cancellation/deadlines/disconnect, one-permit backpressure, unread flooded tails, terminal surplus, direct-worker refusal and exclusive admission. Selected-file guards cover ancestor replacement and sibling writes. Offline policy, pipe byte/EOF and inheritance controls preserve headless restrictions; the typed failed-start marker distinguishes unknown cleanup. The separate ignored ownership fixture proves real offline file/network/child/handle denial, NUL stderr and Job cleanup in owner-run sandbox CI. Source tests do not qualify Media Foundation initialization or measured overhead. |
+| Microphone [`consent and resources`](../src/chat-ui/src/window/microphone.rs), ASR [`multipart scanning`](../src/chat-ui/src/canary.rs) | All Windows consent states and unknown values fail closed unless allowed; repeated cleanup closes each resource once and excludes stale capture generations. A scalar byte oracle checks the optimized multipart scanner at short/block/slice boundaries with malformed/truncated markers and bounded cancellation polls. These controls activate no microphone and supply no latency verdict. |
 | Broker [`request_buffer`](../src/broker/src/request_buffer.rs), [`backend` storage/payload tests](../src/broker/src/backend/) and [`response` memory tests](../src/broker/src/response/memory_tests.rs) | Final-destination/spare-tail reads, bounded growth, fragments/coalesced prefixes/chunk tails, empty reads, sticky truncation/I/O failure, exact-cap overflow probes, framing, deadlines and cancellation. Eligible payloads bypass 8 KiB staging. |
 | UI [`model_lifecycle`](../src/chat-ui/src/window/model_lifecycle.rs) and [`window` lifecycle regressions](../src/chat-ui/src/window/tests.rs) | Explicit model states; late readiness, completion and teardown notices cannot reopen Send in the wrong phase. Retry waits for teardown and explicit action; terminal failure stays unavailable. Stop preserves completed history, retained effort drafts and newer composer text. Recoverable rejections preserve newer drafts. These model-free checks do not qualify actual-model lifecycle behavior. |
 | UI [`bounded_json`](../src/chat-ui/src/bounded_json.rs), [`client` memory tests](../src/chat-ui/src/client/memory_tests.rs), [`recovery`](../src/chat-ui/src/recovery.rs) and [`persistence`](../src/chat-ui/src/window/persistence.rs) | Escaped-byte limits before full encoding; immutable body sharing with independent turn vectors; request bytes retained through partial write/flush and released before response reads/on failure; snapshot reservation through encryption/save; busy saves skip encoding. Exact restore counts reject extra objects before fields and preserve the live workspace. |
