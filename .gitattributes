@@ -1,4 +1,7 @@
 # Preserve the retained Hexagon control records and request template.
+# Keep factual smoke receipts identical to the native collector's hashed bytes.
+docs/evidence/weight-patch-sanity/*.json -text -whitespace
+
 docs/evidence/hexagon-advance-controls.json text eol=lf
 docs/evidence/hexagon-x2-session-metadata.json text eol=lf
 docs/evidence/hexagon-adapter-session-20261103/** -text -whitespace
