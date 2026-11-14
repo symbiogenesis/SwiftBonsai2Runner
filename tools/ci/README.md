@@ -62,6 +62,11 @@ The routing, baseline, output and gate regressions are Rust tests. Use named
 focused selections locally with external targets/working directories; complete
 suites remain CI-only under [the validation policy](../../docs/validation.md).
 
+Native Cargo test logs report each test's execution time using the pinned nightly's
+libtest `--report-time` flag. Use these durations to locate slow tests separately
+from compilation and setup in the command receipt. Timing reports do not impose
+per-test limits or change test selection and concurrency.
+
 Repository tooling and CI need Rust and PowerShell 7.6 or newer. They do not
 install or invoke a Python runtime. Standalone PowerShell startup/index/cache
 guards run before any Rust bootstrap, using .NET APIs without downloaded modules.

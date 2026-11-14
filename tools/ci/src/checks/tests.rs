@@ -173,7 +173,15 @@ fn production_batches_preserve_explicit_package_coverage_and_release_policy() ->
                     assert!(!check.arguments.contains(&"--output-format".into()));
                 }
                 if check.phase == "test" {
-                    assert!(check.arguments.contains(&"--no-fail-fast".into()));
+                    assert!(check.arguments.ends_with(&[
+                        "--no-fail-fast".into(),
+                        "--".into(),
+                        "-Z".into(),
+                        "unstable-options".into(),
+                        "--report-time".into(),
+                    ]));
+                } else {
+                    assert!(!check.arguments.contains(&"--report-time".into()));
                 }
             }
         }

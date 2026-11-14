@@ -312,7 +312,13 @@ fn arguments(
             "--output-format",
             "json",
         ],
-        "test" => &["--no-fail-fast"],
+        "test" => &[
+            "--no-fail-fast",
+            "--",
+            "-Z",
+            "unstable-options",
+            "--report-time",
+        ],
         _ => &[],
     };
     arguments.extend(suffix.iter().map(|value| (*value).into()));
