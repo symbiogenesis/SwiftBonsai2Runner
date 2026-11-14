@@ -684,10 +684,8 @@ fn forward(
         *value = cache_value(*value, c.cache_precision)?;
     }
     let attention = attend(&query, &keys, &values, state, c, position, cancel)?;
-    let mut output = block.attention_out.multiply(&attention, cancel)?;
-    for (value, input) in output.iter_mut().zip(input) {
-        *value = *input + *value;
-    }
+    let projected = block.attention_out.multiply(&attention, cancel)?;
+    let mut output: Vec<_> = input.iter().zip(&projected).map(|(a, b)| *a + *b).collect();
     finite(&output)?;
     let norm = rms(&output, &block.ffn_norm, c.epsilon)?;
     let mut activated = block.gate.multiply(&norm, cancel)?;
