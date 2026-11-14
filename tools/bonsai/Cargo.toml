@@ -41,6 +41,13 @@ required-features = ["test-probe"]
 test = false
 doc = false
 
+[[bin]]
+name = "bonsai-release-test-probe"
+path = "tests/support/release_probe.rs"
+required-features = ["test-probe"]
+test = false
+doc = false
+
 [dependencies]
 bonsai-artifacts.workspace = true
 bonsai-audio.workspace = true

@@ -935,3 +935,21 @@ closed paths; unsupported geometry fails visibly. Rust owns four-times
 supersampling, PNG compression/checksums and all seven ICO frames (16, 24, 32,
 48, 64, 128 and 256 pixels). Regeneration is explicit; normal builds embed the
 reviewed committed assets without rewriting them.
+
+`bonsai-tools release-tool --request -` owns contributor release assets, locked
+notice-source selection and immutable GitHub fallback checks, resumable
+publication and command/cleanup policy. The release PowerShell files forward
+requests or compose Cargo metadata/notice rendering. Release command children use
+the native kill-on-close Job owner, with bounded UTF-8 output and separate error
+streams. Local commands retain their declared allowance; exact hosted release
+builds retain GitHub's execution cap. Cleanup admits one exact private directory,
+rejects redirected entries and retries only Windows sharing/lock failures within
+its original allowance. Failed/ambiguous remote mutations are read back once,
+never repeated automatically; completed publications only verify exact metadata,
+assets and source tags. No release command runs merely by importing an adapter.
+
+`BONSAI_TOOLS_PATH` selects a checked prebuilt tool for release adapters. A
+contributor invocation without it bootstraps the pinned workspace command through
+Cargo. This fallback belongs to source tooling; device qualification launchers
+continue to require prebuilt source-bound helpers. The release identity check in
+`Release-Policy.ps1` remains a pre-Rust fan-out guard.

@@ -1,70 +1,23 @@
-#Requires -Version 7.6
+﻿#Requires -Version 7.6
 [CmdletBinding()]
-param(
-    [Parameter(Mandatory)][string]$RepositoryRoot,
-    [Parameter(Mandatory)][string]$OutputPath
-)
+param([Parameter(Mandatory)][string]$RepositoryRoot,[Parameter(Mandatory)][string]$OutputPath)
 Set-StrictMode -Version Latest
-$ErrorActionPreference = 'Stop'
-$PSNativeCommandUseErrorActionPreference = $true
+$ErrorActionPreference='Stop'
+$PSNativeCommandUseErrorActionPreference=$true
 . (Join-Path $PSScriptRoot '../../scripts/release/Release-Common.ps1')
 . (Join-Path $PSScriptRoot 'Notice-Common.ps1')
-$script:upstreamNoticeCache = @{}
-$RepositoryRoot = Resolve-ReleasePath $RepositoryRoot
-$OutputPath = Resolve-ReleasePath $OutputPath -Kind File -AllowMissing
-
-# Read exact resolved package sources, including build dependencies. Retaining
-# extra source notices is intentional; an SPDX name alone is not a license text.
-$metadata = Invoke-ReleaseCommand 'cargo' @('+nightly-2026-11-12-aarch64-pc-windows-msvc', 'metadata', '--locked', '--format-version', '1',
-    '--filter-platform', 'aarch64-pc-windows-msvc', '--manifest-path', (Join-Path $RepositoryRoot 'Cargo.toml')) -BuildCommand | ConvertFrom-Json
-$resolved = [Collections.Generic.HashSet[string]]::new([StringComparer]::Ordinal)
-foreach ($node in $metadata.resolve.nodes) { [void]$resolved.Add($node.id) }
-$text = [Text.StringBuilder]::new()
+$RepositoryRoot=Resolve-ReleasePath $RepositoryRoot
+$OutputPath=Resolve-ReleasePath $OutputPath -Kind File -AllowMissing
+$metadata=Invoke-ReleaseCommand 'cargo' @('+nightly-2026-11-12-aarch64-pc-windows-msvc','metadata','--locked','--format-version','1','--filter-platform','aarch64-pc-windows-msvc','--manifest-path',(Join-Path $RepositoryRoot 'Cargo.toml')) -BuildCommand | ConvertFrom-Json
+$sections=Invoke-NativeReleasePolicy @{operation='notice-sources';metadata=$metadata;repositoryRoot=$RepositoryRoot}
+$text=[Text.StringBuilder]::new()
 [void]$text.AppendLine('Swift Bonsai 2 Runner - third-party copyright and license material')
 [void]$text.AppendLine('Generated from the locked Windows ARM64 dependency sources. Includes build/development dependencies conservatively; inclusion does not imply runtime use.')
 [void]$text.AppendLine('Ubuntu Light font: Copyright 2011 Canonical Ltd.')
-
-function Add-SourceNotices([string]$Label, [string]$Directory, [bool]$Required, [string]$LicenseFile = '', [string]$Repository = '', [string]$PackageName = '', [string]$PackageVersion = '') {
-    if (-not (Test-Path -LiteralPath $Directory -PathType Container)) { throw "Missing notice source: $Label" }
-    $files = @(Get-ChildItem -LiteralPath $Directory -Recurse -File | Where-Object {
-        $_.Name -match '^(LICENSE|LICENCE|COPYING|COPYRIGHT|NOTICE|AUTHORS)([._-].*)?$' -or
-        $_.Name -in @('Hack-Regular.txt', 'UFL.txt', 'OFL.txt', 'emoji-icon-font-mit-license.txt', 'egui-icons.txt')
-    })
-    if ($LicenseFile) {
-        $declared = if ([IO.Path]::IsPathFullyQualified($LicenseFile)) { $LicenseFile } else { Join-Path $Directory $LicenseFile }
-        if (-not (Test-Path -LiteralPath $declared -PathType Leaf)) { throw "Missing declared license file for $Label" }
-        $files += Get-Item -LiteralPath $declared
-    }
-    $files = @($files | Sort-Object FullName -Unique)
-    [void]$text.AppendLine("`n===== $Label =====")
-    if ($Required -and $files.Count -eq 0) {
-        [void]$text.AppendLine((Get-UpstreamNoticeText -Directory $Directory -Repository $Repository -PackageName $PackageName -PackageVersion $PackageVersion))
-    }
-    foreach ($file in $files) {
-        if ($file.Length -gt 4MB) { throw "Unexpectedly large license file: $($file.FullName)" }
-        $relative = [IO.Path]::GetRelativePath($Directory, $file.FullName)
-        [void]$text.AppendLine("`n--- $relative ---")
-        [void]$text.AppendLine([IO.File]::ReadAllText($file.FullName))
-    }
+foreach ($section in $sections) {
+    [void]$text.AppendLine("`n===== $($section.label) =====")
+    if ($section.upstreamRequired) {
+        [void]$text.AppendLine((Get-UpstreamNoticeText -Directory $section.directory -Repository $section.repository -PackageName $section.packageName -PackageVersion $section.packageVersion))
+    } else { [void]$text.AppendLine($section.text) }
 }
-
-foreach ($package in @($metadata.packages | Sort-Object name, version)) {
-    if ($null -eq $package.source -or -not $resolved.Contains($package.id)) { continue }
-    if (-not $package.license -and -not $package.license_file) { throw "Missing license declaration: $($package.id)" }
-    Add-SourceNotices "$($package.name) $($package.version) [$($package.license)] source=$($package.source)" (Split-Path -Parent $package.manifest_path) $true $package.license_file $package.repository $package.name $package.version
-}
-
-$fonts = @($metadata.packages | Where-Object { $_.name -ceq 'epaint_default_fonts' })
-if ($fonts.Count -ne 1) { throw 'Expected exactly one locked epaint_default_fonts package.' }
-$fontRoot = Join-Path (Split-Path -Parent $fonts[0].manifest_path) 'fonts'
-foreach ($name in @('Hack-Regular.txt', 'UFL.txt', 'emoji-icon-font-mit-license.txt', 'egui-icons.txt')) {
-    if (-not (Test-Path -LiteralPath (Join-Path $fontRoot $name) -PathType Leaf)) { throw "Missing embedded font notice: $name" }
-}
-# The Rust TTS port retains upstream copyright/license attribution as data.
-# Notice collection must never download or stage a native inference source tree.
-foreach ($name in @('LICENSE.qwen-core', 'LICENSE.ggml')) {
-    $notice = Resolve-ReleasePath (Join-Path $RepositoryRoot "src/speech-tts/$name") -Kind File
-    [void]$text.AppendLine("`n===== Rust speech port provenance: $name =====")
-    [void]$text.AppendLine([IO.File]::ReadAllText($notice))
-}
-[IO.File]::WriteAllText($OutputPath, $text.ToString(), [Text.UTF8Encoding]::new($false))
+[IO.File]::WriteAllText($OutputPath,$text.ToString(),[Text.UTF8Encoding]::new($false))
