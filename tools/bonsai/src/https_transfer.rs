@@ -636,85 +636,191 @@ mod tests {
     }
 
     #[test]
-    fn native_https_cancellation_shuts_down_stalled_body_and_joins_worker() -> crate::Result<()> {
-        for panic_owner in [false, true] {
-            let listener = TcpListener::bind("127.0.0.1:0").map_err(|e| e.to_string())?;
-            let uri = format!(
-                "http://{}/artifact",
-                listener.local_addr().map_err(|e| e.to_string())?
+    fn native_https_rejects_duplicate_integrity_headers_before_restarting_partial()
+    -> crate::Result<()> {
+        for header in [
+            "Content-Range: bytes 5-9/10",
+            "Content-Encoding: identity",
+            "ETag: \"version\"",
+            "Last-Modified: Sat, 14 Nov 2026 00:00:00 GMT",
+        ] {
+            // Identical repetitions are still ambiguous. A 200 response would
+            // otherwise discard the existing prefix before downloading afresh.
+            let response = format!(
+                "HTTP/1.1 200 OK\r\nContent-Length: 10\r\n{header}\r\n{header}\r\nConnection: close\r\n\r\n0123456789"
             );
-            listener.set_nonblocking(true).map_err(|e| e.to_string())?;
-            let headers_sent = Arc::new(AtomicBool::new(false));
-            thread::scope(|scope| {
-                let started = Arc::clone(&headers_sent);
-                let server = scope.spawn(move || {
-                    let until = Instant::now() + Duration::from_secs(5);
-                    let mut stream = loop {
-                        match listener.accept() {
-                            Ok((stream, _)) => break stream,
-                            Err(e) if e.kind() == std::io::ErrorKind::WouldBlock => {
-                                remaining(until)?;
-                                thread::sleep(Duration::from_millis(5));
-                            }
-                            Err(e) => return Err(e.to_string()),
-                        }
-                    };
-                    request(&mut stream)?;
-                    stream
-                        .write_all(b"HTTP/1.1 200 OK\r\nContent-Length: 5\r\n\r\n")
-                        .map_err(|e| e.to_string())?;
-                    started.store(true, Ordering::Release);
-                    let mut byte = [0];
-                    match stream.read(&mut byte) {
-                        Ok(0) => Ok(()),
-                        Err(e) if e.kind() == std::io::ErrorKind::ConnectionReset => Ok(()),
-                        _ => {
-                            Err("Cancelled native HTTPS worker did not release its socket.".into())
-                        }
-                    }
-                });
-                let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
-                    owned(
-                        new_agent(true),
-                        Instant::now() + Duration::from_secs(5),
-                        &mut || {
-                            if headers_sent.load(Ordering::Acquire) {
-                                if panic_owner {
-                                    std::panic::resume_unwind(Box::new("Synthetic caller panic."));
-                                }
-                                Err("Synthetic caller cancellation.".into())
-                            } else {
-                                Ok(())
-                            }
-                        },
-                        |agent, cancelled| {
-                            metadata_with(
-                                agent,
-                                &uri,
-                                &[],
-                                Instant::now() + Duration::from_secs(5),
-                                5,
-                                cancelled,
-                            )
-                        },
-                    )
-                }));
-                let released = server
-                    .join()
-                    .map_err(|_| "Stalled HTTPS fixture panicked.")?;
-                if panic_owner {
-                    assert!(result.is_err());
-                } else {
-                    assert!(
-                        result
-                            .map_err(|_| "Unexpected owner panic.")?
-                            .err()
-                            .is_some_and(|e| e == "Synthetic caller cancellation.")
-                    );
-                }
-                released
+            let mut partial = Partial::new(b"hello")?;
+            let (result, _) = fixture(response.as_bytes(), |agent, uri| {
+                Ok(download_with(
+                    &agent,
+                    uri,
+                    &mut partial.file,
+                    5,
+                    10,
+                    Instant::now() + Duration::from_secs(5),
+                    &AtomicBool::new(false),
+                ))
             })?;
+            assert_eq!(result, Err("Duplicate HTTP response header.".into()));
+            assert_eq!(partial.bytes()?, b"hello");
         }
         Ok(())
+    }
+
+    #[test]
+    fn native_https_metadata_checks_declared_length_before_reading_body() -> crate::Result<()> {
+        let (result, _) = fixture(
+            b"HTTP/1.1 200 OK\r\nContent-Length: 5\r\nConnection: close\r\n\r\n",
+            |agent, uri| {
+                Ok(metadata_with(
+                    &agent,
+                    uri,
+                    &[],
+                    Instant::now() + Duration::from_secs(5),
+                    4,
+                    &AtomicBool::new(false),
+                ))
+            },
+        )?;
+        // The response deliberately contains no body: an attempted body read
+        // would produce truncation instead of the declared-length rejection.
+        assert!(matches!(result, Err(error) if error == "Update metadata exceeds its byte limit."));
+        let (response, _) = fixture(
+            b"HTTP/1.1 200 OK\r\nContent-Length: 4\r\nConnection: close\r\n\r\nokay",
+            |agent, uri| {
+                metadata_with(
+                    &agent,
+                    uri,
+                    &[],
+                    Instant::now() + Duration::from_secs(5),
+                    4,
+                    &AtomicBool::new(false),
+                )
+            },
+        )?;
+        assert_eq!(response.body, b"okay");
+        Ok(())
+    }
+
+    #[test]
+    fn native_https_expired_allowance_never_starts_worker() {
+        let started = AtomicBool::new(false);
+        let result = owned(new_agent(true), Instant::now(), &mut || Ok(()), |_, _| {
+            started.store(true, Ordering::Release);
+            Ok(())
+        });
+        assert_eq!(
+            result,
+            Err("Native HTTPS operation exceeded its aggregate allowance.".into())
+        );
+        assert!(!started.load(Ordering::Acquire));
+    }
+
+    #[derive(Clone, Copy)]
+    enum Stop {
+        Cancel,
+        Panic,
+        Deadline,
+    }
+
+    #[test]
+    fn native_https_cancellation_shuts_down_stalled_body_and_joins_worker() -> crate::Result<()> {
+        for stop in [Stop::Cancel, Stop::Panic] {
+            stalled_body(stop)?;
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn native_https_deadline_shuts_down_stalled_body_and_joins_worker() -> crate::Result<()> {
+        stalled_body(Stop::Deadline)
+    }
+
+    fn stalled_body(stop: Stop) -> crate::Result<()> {
+        let listener = TcpListener::bind("127.0.0.1:0").map_err(|e| e.to_string())?;
+        let uri = format!(
+            "http://{}/artifact",
+            listener.local_addr().map_err(|e| e.to_string())?
+        );
+        listener.set_nonblocking(true).map_err(|e| e.to_string())?;
+        let headers_sent = Arc::new(AtomicBool::new(false));
+        thread::scope(|scope| {
+            let started = Arc::clone(&headers_sent);
+            let server = scope.spawn(move || {
+                let until = Instant::now() + Duration::from_secs(5);
+                let mut stream = loop {
+                    match listener.accept() {
+                        Ok((stream, _)) => break stream,
+                        Err(e) if e.kind() == std::io::ErrorKind::WouldBlock => {
+                            remaining(until)?;
+                            thread::sleep(Duration::from_millis(5));
+                        }
+                        Err(e) => return Err(e.to_string()),
+                    }
+                };
+                request(&mut stream)?;
+                stream
+                    .write_all(b"HTTP/1.1 200 OK\r\nContent-Length: 5\r\n\r\n")
+                    .map_err(|e| e.to_string())?;
+                started.store(true, Ordering::Release);
+                let mut byte = [0];
+                match stream.read(&mut byte) {
+                    Ok(0) => Ok(()),
+                    Err(e) if e.kind() == std::io::ErrorKind::ConnectionReset => Ok(()),
+                    _ => Err("Cancelled native HTTPS worker did not release its socket.".into()),
+                }
+            });
+            let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+                owned(
+                    new_agent(true),
+                    Instant::now()
+                        + if matches!(stop, Stop::Deadline) {
+                            Duration::from_secs(1)
+                        } else {
+                            Duration::from_secs(5)
+                        },
+                    &mut || {
+                        if headers_sent.load(Ordering::Acquire) && !matches!(stop, Stop::Deadline) {
+                            if matches!(stop, Stop::Panic) {
+                                std::panic::resume_unwind(Box::new("Synthetic caller panic."));
+                            }
+                            Err("Synthetic caller cancellation.".into())
+                        } else {
+                            Ok(())
+                        }
+                    },
+                    |agent, cancelled| {
+                        metadata_with(
+                            agent,
+                            &uri,
+                            &[],
+                            Instant::now() + Duration::from_secs(5),
+                            5,
+                            cancelled,
+                        )
+                    },
+                )
+            }));
+            let released = server
+                .join()
+                .map_err(|_| "Stalled HTTPS fixture panicked.")?;
+            assert!(headers_sent.load(Ordering::Acquire));
+            if matches!(stop, Stop::Panic) {
+                assert!(result.is_err());
+            } else {
+                let expected = if matches!(stop, Stop::Deadline) {
+                    "Native HTTPS operation exceeded its aggregate allowance."
+                } else {
+                    "Synthetic caller cancellation."
+                };
+                assert!(
+                    result
+                        .map_err(|_| "Unexpected owner panic.")?
+                        .err()
+                        .is_some_and(|e| e == expected)
+                );
+            }
+            released
+        })
     }
 }
