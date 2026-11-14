@@ -445,6 +445,9 @@ pub(super) fn top_p_mask(logits: &mut [f32], top_p: f32) {
 /// 4. [`top_k_mask`] when `0 < top_k < V`.
 /// 5. [`top_p_mask`] when `0.0 < top_p < 1.0`.
 /// 6. Sequential `expf` softmax and Philox4x32-10 uniform multinomial draw.
+///
+/// Empty vocabularies and invalid stochastic distributions return `None` rather
+/// than publishing a token outside the vocabulary or from a masked distribution.
 #[expect(
     clippy::redundant_pub_crate,
     reason = "Sampler policy is private to the speech crate and captured-observation replay."
@@ -456,14 +459,17 @@ pub(super) fn sample_top_k_p(
     seen: &mut [u8],
     dump_u_out: Option<&mut f32>,
 ) -> Option<usize> {
+    if logits.is_empty() {
+        return None;
+    }
     if params.temperature <= 0.0 {
         if let Some(dump) = dump_u_out {
             *dump = -1.0;
         }
         return Some(greedy_argmax(logits));
     }
-    if logits.is_empty() {
-        return Some(0);
+    if !params.temperature.is_finite() {
+        return None;
     }
     if !repetition_penalty(logits, history, params.repetition_penalty, seen) {
         return None;
@@ -481,10 +487,16 @@ pub(super) fn sample_top_k_p(
             max_val = logit;
         }
     }
+    if !max_val.is_finite() {
+        return None;
+    }
     let mut sum = 0.0_f32;
     for logit in logits.iter_mut() {
         *logit = (*logit - max_val).exp();
         sum += *logit;
+    }
+    if !sum.is_finite() || sum <= 0.0 {
+        return None;
     }
     let u = super::philox::uniform(params.seed, params.philox_subseq, 0);
     if let Some(dump) = dump_u_out {
@@ -664,6 +676,59 @@ mod tests {
         msvc_sort(&mut many, |a, b| a.prob > b.prob);
         assert!(many[..32].iter().all(|item| item.prob == 0.5));
         assert!(many[32..].iter().all(|item| item.prob == 0.25));
+    }
+
+    #[test]
+    fn stochastic_sampler_rejects_invalid_distributions_without_publishing_draw() {
+        for (mut logits, temperature) in [
+            (vec![f32::NEG_INFINITY; 4], 0.85),
+            (vec![f32::NAN; 4], 0.85),
+            (vec![1.0, f32::NAN], 0.85),
+            (vec![1.0, f32::INFINITY], 0.85),
+            (vec![0.0, f32::MAX], f32::MIN_POSITIVE),
+            (vec![1.0, 2.0], f32::NAN),
+            (vec![1.0, 2.0], f32::INFINITY),
+        ] {
+            let mut dump = 42.0_f32;
+            assert_eq!(
+                sample_top_k_p(
+                    &mut logits,
+                    SampleTopKPParams {
+                        temperature,
+                        top_k: 0,
+                        top_p: 1.0,
+                        repetition_penalty: 1.0,
+                        seed: 7,
+                        philox_subseq: 0,
+                    },
+                    &[],
+                    &mut [],
+                    Some(&mut dump),
+                ),
+                None
+            );
+            assert_eq!(dump.to_bits(), 42.0_f32.to_bits());
+        }
+
+        // A partially masked distribution still selects its sole valid token.
+        let mut logits = [f32::NEG_INFINITY, 3.0, f32::NEG_INFINITY];
+        assert_eq!(
+            sample_top_k_p(
+                &mut logits,
+                SampleTopKPParams {
+                    temperature: 0.85,
+                    top_k: 0,
+                    top_p: 1.0,
+                    repetition_penalty: 1.0,
+                    seed: 7,
+                    philox_subseq: 0,
+                },
+                &[],
+                &mut [],
+                None,
+            ),
+            Some(1)
+        );
     }
 
     #[test]

@@ -232,25 +232,27 @@ fn rust_greedy_argmax_matches_captured_arm64_bits() -> Result<(), Box<dyn Error>
     assert_eq!(remaining, [0_u8; 0]);
     // Empty storage is the explicit Rust boundary, omitted by the native capture.
     assert_eq!(greedy_argmax(&[]), 0);
-    let mut empty_dump = 99.0_f32;
-    assert_eq!(
-        sample_top_k_p(
-            &mut [],
-            SampleTopKPParams {
-                temperature: 0.0,
-                top_k: 0,
-                top_p: 1.0,
-                repetition_penalty: 1.0,
-                seed: 0,
-                philox_subseq: 0,
-            },
-            &[],
-            &mut [],
-            Some(&mut empty_dump),
-        ),
-        Some(0)
-    );
-    assert_eq!(empty_dump.to_bits(), (-1.0_f32).to_bits());
+    for temperature in [0.0, 0.85] {
+        let mut empty_dump = 99.0_f32;
+        assert_eq!(
+            sample_top_k_p(
+                &mut [],
+                SampleTopKPParams {
+                    temperature,
+                    top_k: 0,
+                    top_p: 1.0,
+                    repetition_penalty: 1.0,
+                    seed: 0,
+                    philox_subseq: 0,
+                },
+                &[],
+                &mut [],
+                Some(&mut empty_dump),
+            ),
+            None
+        );
+        assert_eq!(empty_dump.to_bits(), 99.0_f32.to_bits());
+    }
     Ok(())
 }
 
