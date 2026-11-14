@@ -115,16 +115,7 @@ impl Context<'_> {
         self.remaining()?;
         let native = crate::host_cpu::run(&json!({}))?;
         self.receipt["HostIdentity"] = native.clone();
-        if native["status"] != "observed"
-            || native["architecture"] != "aarch64"
-            || !native["host_identity"]["processor_name"]
-                .as_str()
-                .is_some_and(|name| name.starts_with("Snapdragon") && name.contains(" X2"))
-        {
-            return Err(
-                "Candidate startup requires observed native Snapdragon X2 identity.".into(),
-            );
-        }
+        target_host(&native)?;
         let mut probes = cases();
         let mut cpu = Value::Null;
         if self.request.model_smoke {

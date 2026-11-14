@@ -1,6 +1,35 @@
 use super::*;
 
 #[test]
+fn publisher_startup_requires_native_x2_elite_extreme() -> crate::Result<()> {
+    let native = json!({"status":"observed","architecture":"aarch64",
+        "host_identity":{"processor_name":"Qualcomm Snapdragon(R) X2 Elite Extreme - X2E-96-100"}});
+    assert!(target_host(&native).is_ok());
+    for (pointer, value) in [
+        ("/status", json!("unknown")),
+        ("/architecture", json!("x86_64")),
+        ("/host_identity/processor_name", Value::Null),
+        (
+            "/host_identity/processor_name",
+            json!("Snapdragon X2 Elite - X2E-88-100"),
+        ),
+        (
+            "/host_identity/processor_name",
+            json!("Snapdragon X Elite - X1E-78-100"),
+        ),
+        (
+            "/host_identity/processor_name",
+            json!("Snapdragon unsupported X2 identity"),
+        ),
+    ] {
+        let mut invalid = native.clone();
+        *invalid.pointer_mut(pointer).ok_or("Missing fixture field.")? = value;
+        assert!(target_host(&invalid).is_err(), "{pointer}");
+    }
+    Ok(())
+}
+
+#[test]
 fn fixed_arguments_match_independent_archived_probes() -> crate::Result<()> {
     let evidence = pinned()?;
     let probes = cases();

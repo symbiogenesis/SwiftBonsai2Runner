@@ -21,6 +21,23 @@ fn external(path: &Path) -> crate::Result<()> {
     bonsai_artifacts::validate_external_path(path).map_err(|error| error.to_string())
 }
 
+fn target_host(native: &Value) -> crate::Result<()> {
+    use bonsai_cpu_policy::hardware::SnapdragonFamily;
+
+    if native["status"] != "observed"
+        || native["architecture"] != "aarch64"
+        || native["host_identity"]["processor_name"]
+            .as_str()
+            .and_then(SnapdragonFamily::from_processor_name)
+            != Some(SnapdragonFamily::X2EliteExtreme)
+    {
+        return Err(
+            "Candidate startup requires observed native Snapdragon X2 Elite Extreme identity.".into(),
+        );
+    }
+    Ok(())
+}
+
 fn pinned() -> crate::Result<Value> {
     let pin: Value = serde_json::from_str(PIN).map_err(|error| error.to_string())?;
     if pin["schemaVersion"] != 1
