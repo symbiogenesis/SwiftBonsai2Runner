@@ -1,5 +1,6 @@
 //! Paired structured-FFN compensation; supplied capture claims remain unauthenticated.
 
+mod application;
 #[cfg(test)]
 mod tests;
 
@@ -17,6 +18,7 @@ const TRANSFORM: &str = "independent-contiguous-1024-signed-hadamard-v1";
 const ADAPTER_POLICY: &str = "zero-omitted-original-hidden-before-standard-adapter";
 const GROUP_WIDTH: usize = 1_024;
 const HIDDEN_WIDTH: usize = 17_408;
+const APPLICATION_ARITHMETIC: &str = "rank-major-source-order-f32-dot-add-v1";
 
 #[derive(Deserialize, Serialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
@@ -302,6 +304,11 @@ fn diagnostics(
         }
         solver::charge(work, WIDTH * 6, deadline)?;
     }
+    let result = summarize(&totals)?;
+    Ok((totals, result))
+}
+
+fn summarize(totals: &[Totals; 2]) -> crate::Result<Value> {
     let mut result = serde_json::Map::new();
     for (name, total) in ["fit", "development"].into_iter().zip(totals) {
         if [
@@ -328,7 +335,7 @@ fn diagnostics(
             "teacherPrefixDriftRelativeSquaredError":ratio(total.prefix_drift,total.original_teacher_energy),
             "correctedBranchVersusOriginalPrefixRelativeSquaredError":ratio(total.original_prefix_error,total.original_teacher_energy)}));
     }
-    Ok((totals, result.into()))
+    Ok(result.into())
 }
 
 fn screen(totals: &[Totals; 2]) -> Value {
@@ -426,7 +433,11 @@ pub(super) fn run(value: Value, started: Instant) -> crate::Result<Value> {
         &mut work,
     )?;
     let (totals, diagnostics) = diagnostics(&request, &solution, deadline, &mut work)?;
-    let screening = screen(&totals);
+    let reconstruction_screen = screen(&totals);
+    let (application_totals, application_diagnostics) =
+        application::diagnostics(&request, &solution, deadline, &mut work)?;
+    let application_screen = screen(&application_totals);
+    let screening = application::combined_screen(&reconstruction_screen, &application_screen)?;
     let passed = screening["passed"] == true;
     let rank = solution.a.len();
     let request_bytes = serde_json::to_vec(&request).map_err(|error| error.to_string())?;
@@ -445,11 +456,14 @@ pub(super) fn run(value: Value, started: Instant) -> crate::Result<Value> {
             "composition":"retained-ffn-branch-plus-normalized-input-low-rank-compensation",
             "teacherAndRetainedTargetsIncludeStandardAdapter":true,"applyStandardAdapterAgain":false,
             "formula":"retained_branch + sum_k b[k] * dot(a[k], normalized_original_basis_student_input)",
+            "factorApplicationArithmetic":APPLICATION_ARITHMETIC,
             "fitTargetArithmetic":"F64(teacherTarget F32) - F64(retainedBranch F32)",
             "fitInputSha256":fit_input_sha256,"controls":request.controls,"rank":rank,
             "factors":{"layout":"rank-major-f32-le","a":solution.a,"b":solution.b,
                 "aSha256":super::factor_hash(&solution.a)?,"bSha256":super::factor_hash(&solution.b)?},
-            "developmentScreen":screening,"sourceAuthenticated":false,
+            "developmentScreen":screening,
+            "exportedFactorF64DevelopmentScreen":reconstruction_screen,
+            "sourceOrderF32DevelopmentScreen":application_screen,"sourceAuthenticated":false,
             "changedPrefixDriftRecoveryQualified":false,"runtimeImplemented":false,"behaviorQualified":false});
         let bytes = serde_json::to_vec_pretty(&artifact).map_err(|error| error.to_string())?;
         artifact_sha256 = Some(hash(&bytes)?);
@@ -465,6 +479,10 @@ pub(super) fn run(value: Value, started: Instant) -> crate::Result<Value> {
         json!({"schemaVersion":2,"status":if passed {"development-screen-passed-unqualified"} else {"development-rejected"},
         "artifact":artifact,"artifactSha256":artifact_sha256,"outputPath":if passed {request.output_path.as_ref()} else {None},
         "fitInputSha256":fit_input_sha256,"diagnostics":diagnostics,"developmentScreen":screening,
+        "factorApplicationArithmetic":APPLICATION_ARITHMETIC,
+        "sourceOrderF32Diagnostics":application_diagnostics,
+        "exportedFactorF64DevelopmentScreen":reconstruction_screen,
+        "sourceOrderF32DevelopmentScreen":application_screen,
         "diagnosticArithmetic":"F64 reductions of exported F32 factors; not a native runtime parity oracle",
         "driftScope":"Local teacher reconstruction on changed-prefix inputs does not recover original-prefix state or qualify end-to-end answer quality",
         "requestedRank":request.controls.rank,"effectiveRank":rank,"resourceEstimates":resource_estimates,

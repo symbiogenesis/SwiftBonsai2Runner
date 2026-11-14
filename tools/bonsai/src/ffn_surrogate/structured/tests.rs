@@ -12,14 +12,14 @@ fn vector(first: f32, second: f32) -> Vec<f32> {
 fn row(
     name: &str,
     split: &str,
-    input: Vec<f32>,
-    teacher: Vec<f32>,
-    retained: Vec<f32>,
-    original: Vec<f32>,
+    input: &[f32],
+    teacher: &[f32],
+    retained: &[f32],
+    original: &[f32],
 ) -> crate::Result<Value> {
     Ok(
         json!({"sampleId":name,"groupId":format!("group-{name}"),"tokenIndex":0,
-        "split":split,"sharedInputSha256":vector_hash(&input)?,"input":input,
+        "split":split,"sharedInputSha256":vector_hash(input)?,"input":input,
         "teacherTarget":teacher,"retainedBranch":retained,"originalPrefixTeacherTarget":original,
         "studentPrefixSha256":hash(format!("student-{name}").as_bytes())?,
         "originalPrefixSha256":hash(format!("original-{name}").as_bytes())?}),
@@ -41,9 +41,9 @@ fn fixture() -> crate::Result<Value> {
             "signIdentity":{"fullSignsSha256":"f".repeat(64),"downSignOffset":11264,"downSignCount":17408}},
         "controls":{"rank":2,"ridge":0.000_001,"timeBudgetMilliseconds":5000},
         "rows":[
-            row("fit-a","fit",vector(1.0,0.0),vector(2.0,0.0),vector(1.0,0.0),vector(2.0,0.0))?,
-            row("fit-b","fit",vector(0.0,1.0),vector(0.0,3.0),vector(0.0,2.0),vector(0.0,3.0))?,
-            row("dev","development",vector(1.0,1.0),vector(2.0,3.0),vector(1.0,2.0),vector(3.0,4.0))?]}))
+            row("fit-a","fit",&vector(1.0,0.0),&vector(2.0,0.0),&vector(1.0,0.0),&vector(2.0,0.0))?,
+            row("fit-b","fit",&vector(0.0,1.0),&vector(0.0,3.0),&vector(0.0,2.0),&vector(0.0,3.0))?,
+            row("dev","development",&vector(1.0,1.0),&vector(2.0,3.0),&vector(1.0,2.0),&vector(3.0,4.0))?]}))
 }
 
 fn run_fixture(request: Value) -> crate::Result<Value> {
@@ -81,6 +81,19 @@ fn paired_subtraction_recovers_missing_map_and_keeps_prefix_drift_visible() -> c
         ADAPTER_POLICY
     );
     assert_eq!(result["artifact"]["enabled"], false);
+    assert_eq!(
+        result["artifact"]["factorApplicationArithmetic"],
+        APPLICATION_ARITHMETIC
+    );
+    assert_eq!(result["sourceOrderF32DevelopmentScreen"]["passed"], true);
+    assert_eq!(
+        result["developmentScreen"]["requireSourceOrderF32Screen"],
+        true
+    );
+    assert!(
+        number(&result["sourceOrderF32Diagnostics"]["development"]["relativeSquaredError"])?
+            < 1e-10
+    );
     for field in [
         "sourceAuthenticated",
         "captureAndPrefixDeclarationsAuthenticated",
