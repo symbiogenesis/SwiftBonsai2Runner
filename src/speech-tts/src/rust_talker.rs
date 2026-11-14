@@ -824,7 +824,7 @@ fn align_icl(mut text: Vec<Vec<f32>>, codec: Vec<Vec<f32>>, pad: &[f32]) -> io::
     } else {
         vec![pad.to_vec()]
     };
-    text.resize(codec.len(), pad.to_vec());
+    text.resize_with(codec.len(), || pad.to_vec());
     for (row, code) in text.iter_mut().zip(codec) {
         add(row, &code)?;
     }
