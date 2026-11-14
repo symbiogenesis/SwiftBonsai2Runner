@@ -13,7 +13,7 @@ use serde_json::{Value, json};
 
 use super::{
     MODEL, PIN, allowance, cases, external, inventory, observation, pinned, smoke_deadline,
-    smoke_plan,
+    smoke_plan, target_host,
 };
 
 #[derive(Deserialize)]
