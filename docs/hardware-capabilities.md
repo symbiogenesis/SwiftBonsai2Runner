@@ -183,8 +183,8 @@ acceptance still need review.
 
 Reserved value-free `FallbackReason` codes are `unknown-capability`, `unavailable-backend`,
 `incompatible-runtime`, `incompatible-driver`, `stale-evidence`, `insufficient-memory` and
-`strict-backend-unavailable`. The selection contract below defines their use; no selector emits them
-yet.
+`strict-backend-unavailable`. The offline catalog below emits these reasons;
+serving does not consume them yet.
 
 ## Automatic profile selection
 
@@ -265,6 +265,24 @@ comparison digest bind to the same archived captures; parsing a receipt does not
 establish that trust. Stable ties prefer fewer accelerator phases, then backend
 order and profile ID. Mixed-phase observations require reviewed complete-state
 handoff; adding independently fast phase timings is insufficient.
+
+The [bounded catalog](../src/cpu-policy/src/hardware/catalog.rs) adds a request-boundary
+resource check to that ranking for at most 32 candidates. It retains the complete
+canonical prompt/output reservation and fresh/reused state, rejects changed or
+unknown backend initialization, and checks separate Job commit, total system
+commit, unique physical bytes plus the 4 GiB host reserve, and live GPU/NPU
+allowances. Shared physical pages count once; allocations outside the Job still
+consume the total resource ledger. Advertised heaps cannot supply live allowances.
+Unknown required capacity excludes a plan. Automatic selection can retain the
+independently eligible CPU control or another eligible measured candidate; strict
+phase placement refuses fallback. Neither path shortens the requested output,
+changes the immutable profile or recombines independently measured phases.
+
+These are trusted in-memory policy inputs. Receipt parsing does not verify the
+ledger, backend readiness or evidence review, and a returned selection reserves
+no operating-system resource. Callers must supply fresh facts and hold verified
+artifact/resource owners through execution. No production catalog is populated
+from the current experimental paths.
 
 The result contains only a provisional profile/placement recommendation. It opens
 no device, supplies no launch arguments and is not connected to serving admission.
