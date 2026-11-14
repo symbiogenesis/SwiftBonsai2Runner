@@ -66,7 +66,7 @@ smoke establishes broad quality or an inference-speed improvement.
 W8, or a recovery adapter for structured FFN omission. Unlike an FFN-down LoRA,
 `y = B*(A^T*x)` consumes the original normalized
 5,120-wide FFN input and predicts the complete 5,120-wide branch delta, including
-the teacher's frozen adapter contribution. A future replacement must omit that
+the teacher's frozen adapter contribution. A future schema-1 replacement must omit that
 site's original gate/up/down and adapter work; applying the skipped adapter again
 would double-count it. No runtime or application currently loads this artifact.
 
@@ -126,7 +126,9 @@ must share the supplied normalized student `input`; `sharedInputSha256` is
 verified against its F32-le bytes. `studentPrefixSha256` and
 `originalPrefixSha256` identify their separate replay histories. Samples,
 content groups, identical inputs and prefix identities cannot cross the
-fit/development boundary. Identities bind declarations; the offline fitter
+fit/development boundary. Select capture tokens after any shared prompt prefix;
+otherwise duplicate inputs can correctly reject the packet. Identities bind
+declarations; the offline fitter
 cannot authenticate the runtime, branches, signs or content independence.
 
 The fitter uses F64 subtraction of the supplied F32 teacher/retained values

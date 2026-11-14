@@ -449,7 +449,9 @@ evaluation controls without making the pruned candidate a prerequisite for W8.
   compatible MoE model; current dense Swift has no expert router.
 - [ ] **W8.1 — Screen structured FFN omission with small recovery adapters.**
   Prioritize retaining most nonlinear computation over replacing a complete FFN
-  with a linear map. Qualify paired full/retained branch capture on the same
+  with a linear map. Complete pinned Release compilation, strict analyzers and
+  focused fitter/capture regressions before actual-model intake. Qualify paired
+  full/retained branch capture on the same
   changed-prefix normalized input and the native `ffn-surrogate` compensation
   fitter. Bind complete 1,024-coordinate groups, original Hadamard signs/stride,
   retained standard-adapter semantics, original-prefix teacher drift,
