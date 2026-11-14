@@ -40,8 +40,10 @@ adoption decisions without displacing native daily-use acceptance.
   fresh same-run packages, source/digest verification and every selected check.
 - [ ] Complete owning-lane compiler/analyzer and focused regression acceptance
   for centralized UI bounded reads, atomic settings publication and transcript
-  insertion; TTS numerical/GGUF primitives and checked projection layouts; and
-  tools bounded intake, PE probing and release/Hexagon validation.
+  insertion and popup shortcut ownership; speech synthesis object-only intake;
+  TTS numerical/GGUF primitives, checked projection layouts and invalid sampler
+  distribution rejection; and tools bounded intake, selected nonblank startup
+  diagnostics, PE probing and release/Hexagon validation.
   The Hexagon inventory alias correction and pinned-linker
   process-tree regression still need compiled owning-lane verification, including
   cold Cargo host/target links; the local direct diagnostic compile/self-test and
