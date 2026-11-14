@@ -298,6 +298,25 @@ under [AGENTS.md](AGENTS.md).
   Real source intake remains pending: the publisher archive returned HTTP 404;
   the fixed workload stopped without retry before the Prism archive. See the
   [retained no-go](docs/evidence/native-source-archives/summary.json).
+- [x] ~~Expose complete Rust TTS graph observations for independent controls.~~
+  Serving now lends prompts/overlays, raw semantic/acoustic logits, every
+  committed KV layer, seeded decisions through EOS, conditioning, codes and PCM.
+  Six focused controls, strict Release analysis/docs and service linking passed;
+  independent pinned-model codec/speaker, parity and listening gates remain below.
+- [x] ~~Implement bounded independent ASR observation replay.~~ Reviewed
+  provider/model/PCM identities and tolerances bind streamed expected answers;
+  complete ordered logits/KV, transcript/EOF and cancellation are mandatory.
+  Seven focused controls and strict Rust-only Release analysis/docs passed;
+  independent native captures and production qualification remain below.
+- [x] ~~Bind selected compiler closure to its complete compilation database.~~
+  Schema 3 rejects omitted/extra/changed invocations while retaining recursive
+  generated-input provenance and older replay scopes. Five focused controls and
+  strict Release analysis passed; actual captures and linked closure remain below.
+- [x] ~~Inventory the remaining checked-in native families and operative edges.~~
+  Exact manifests bind Runner's two C controls and Prism's 40 C++ files/two C ABI
+  files, build/provider paths, green IDs and both original geometry schedules.
+  Four focused controls, strict Release analysis/docs and both snapshot checks
+  passed. The guard rejects source/edge changes and cannot grant retirement.
 - [ ] **S1 — Qualify Rust TTS.** Compare pinned Q8/Q4 models against independent
   controls: tokenizer, Philox/MSVC tie behavior, graph/cache/compute leases,
   Design teardown/Base extraction, voice identity, audio/listening, cancellation,
@@ -328,9 +347,9 @@ under [AGENTS.md](AGENTS.md).
   provider before its 40 active C++ files can be removed; retain every approved
   green ID, all 22,817 ordered backend geometries and separate performance work.
   Retain required replay data and qualify owning hosted builds without a project
-  C++ toolchain. Capture complete selected compiled/preprocessed/generated-source
-  closure with recursive schema-2 provenance beyond ASR's registry inventory;
-  qualify that verifier and actual package verification in owning CI.
+  C++ toolchain. Capture original selected compiled/preprocessed/generated inputs
+  and the complete schema-3 compilation database beyond ASR's registry inventory;
+  qualify both source verifiers and actual package/link verification in owning CI.
   Resolve authenticated intake of the exact publisher source archive before
   expanding its file inventory; retain the failed HTTP 404 outcome and do not
   substitute changed source or reopen the completed intake workload.

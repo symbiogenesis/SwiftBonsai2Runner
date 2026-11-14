@@ -58,6 +58,16 @@ for the file-level provider list. The native boundary under
 text/API, model/session or concurrency assertions have independent replacements;
 remove the final dispatcher after every provider has migrated.
 
+The [checked-in boundary verifier](../tools/ci/README.md#checked-in-native-retirement-boundary)
+now binds Runner's two C files and the clean read-only Prism snapshot's 40 C++
+files plus coupled C ABI source/header. Exact per-file families and declared
+compiler/provider/contracts identities preserve the green-ID baseline and both
+original ordered geometry schedules. Four focused controls, strict Release
+analysis/docs and real snapshot verification passed. The guard rejects added,
+deleted or changed files/declared edges and every retirement-qualified status;
+inventory acceptance cannot authorize deletion. It verifies original bytes,
+not Git revision provenance, external archives or compiled/link closure.
+
 ## External engines, generators and build dependencies
 
 | Boundary | Retirement requirement |
@@ -90,10 +100,12 @@ separately checks a reviewed selection of compiled translation units against
 original Clang dependency reports, preprocessed/object identities and generated
 input provenance. Schema-2 captures recursively classify and verify generated
 intermediates, including each original successful invocation and working directory;
-schema-1 replay retains its direct-input scope. Owning builds must still establish
-complete selection,
-configuration and linked-library closure; passing a selected capture does not
-qualify native retirement.
+schema-1 replay retains its direct-input scope. Schema 3 additionally binds the
+original complete argument-array compilation database, rejecting omitted, extra,
+duplicate or changed invocations and preserving distinct configurations of one
+source file. Five focused controls and strict Release analysis passed. Owning
+builds must still establish complete selection, effective configuration and
+linked-library closure; a selected capture does not qualify native retirement.
 
 The Rust [`native-archive-inventory` command](../tools/ci/README.md#immutable-external-source-archives)
 also expands pinned external source ZIPs into complete sorted member identities,
@@ -114,6 +126,26 @@ a partial transcript. Six focused controls, strict Rust-only Release analysis,
 docs and the qualification executable link passed. This supplies the Rust half
 of a comparison: callers still bind exact source/model/PCM and independent
 expected observations. It neither captures the native engine nor qualifies S2.
+
+The [ASR replay comparator](../src/speech-asr/README.md#streaming-independent-replay)
+now binds reviewed reference/candidate source/compiler/target/executable,
+arithmetic, verified model, actual PCM digest and explicit tolerances. It reads
+original expected values with bounded scratch and compares every stage, ordered
+generation decision and all-layer KV, including exceptional bits when requested.
+Engine success, the exact terminal transcript and EOF are mandatory; cancellation
+during terminal/EOF intake cannot grant success. Seven focused controls and strict
+Rust-only Release analysis/docs passed. Arbitrary readers still need caller-bound
+I/O and the original absolute deadline. No independent native observations were
+manufactured or captured, and production ASR remains on its existing native engine.
+
+[Rust TTS observations](../src/speech-tts/README.md#independent-graph-observations)
+likewise lend complete prompts/overlays, raw semantic and acoustic logits before
+sampling, all committed Talker/predictor KV, seeded decisions through EOS, codes,
+speaker/reference conditioning and validated Design/Base PCM. Callback refusal
+and unwinding invalidate reuse after input admission; ordinary service installs
+a no-op observer. Six focused controls, strict Release analysis/docs and service
+linking passed. These observations execute Rust only. Independent pinned-model
+codec/speaker controls, complete parity, listening and resource gates remain open.
 
 The [native Q8 projection adapter](../tools/hexagon/native_rpc/README.md#q8-matrix-preparation-and-immutable-placement)
 connects immutable host dispatch to signed-queue ABI calls, exact FD mapping,
