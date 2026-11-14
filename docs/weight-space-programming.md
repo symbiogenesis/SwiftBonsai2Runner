@@ -239,6 +239,12 @@ free generation require later support and acceptance. The released Runner
 runtime does not expose this experiment; the
 [tool contract](../tools/bonsai/README.md) describes the producer/consumer fields.
 
+With only one edited site and fixed token IDs, earlier layers remain unchanged;
+the selected site's inputs do not stress drift caused by earlier omissions.
+The separate original-target fields prevent discarding that distinction when
+later collectors support multiple sites. This first collector screens local
+capacity only; it cannot qualify compensation on an already-compressed prefix.
+
 Whole-FFN replacement remains a separate capacity experiment. Schema 1 fits
 `t_hat = B * (A^T * x)` for the complete branch immediately before residual
 addition, eventually substituting `residual_after_attention + t_hat`. A future
