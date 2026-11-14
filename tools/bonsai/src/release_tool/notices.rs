@@ -34,6 +34,25 @@ fn notice_name(name: &str) -> bool {
 }
 
 fn decoded(bytes: &[u8]) -> Result<String> {
+    if bytes.starts_with(&[0xff, 0xfe, 0, 0]) || bytes.starts_with(&[0, 0, 0xfe, 0xff]) {
+        if bytes.len() % 4 != 0 {
+            return Err("Invalid UTF-32 notice extent.".into());
+        }
+        let little = bytes[0] == 0xff;
+        return bytes[4..]
+            .as_chunks::<4>()
+            .0
+            .iter()
+            .map(|unit| {
+                let scalar = if little {
+                    u32::from_le_bytes(*unit)
+                } else {
+                    u32::from_be_bytes(*unit)
+                };
+                char::from_u32(scalar).ok_or_else(|| "Invalid UTF-32 notice scalar.".into())
+            })
+            .collect();
+    }
     if bytes.starts_with(&[0xff, 0xfe]) || bytes.starts_with(&[0xfe, 0xff]) {
         let little = bytes[0] == 0xff;
         if bytes.len() % 2 != 0 {
@@ -207,7 +226,9 @@ pub(super) fn blob(value: &Value) -> Result<Value> {
     if u64::try_from(raw.len()).ok() != file["size"].as_u64() {
         return Err("Upstream notice size changed.".into());
     }
-    Ok(json!({"text":decoded(&raw)?,"sha256":crate::identity::sha256(&raw)}))
+    let mut digest = crate::identity::Hasher::new()?;
+    digest.update(&raw)?;
+    Ok(json!({"text":decoded(&raw)?,"sha256":digest.finalize_hex()?}))
 }
 
 fn collect(
@@ -261,7 +282,18 @@ fn source(package: &Value) -> Result<Value> {
             root.join(declared)
         };
         resolve(&declared, false, false)?;
-        files.insert(declared);
+        let declared = declared.strip_prefix(&root).unwrap_or(&declared).to_owned();
+        let already_selected = files.iter().any(|file| {
+            if cfg!(windows) {
+                file.to_string_lossy()
+                    .eq_ignore_ascii_case(&declared.to_string_lossy())
+            } else {
+                file == &declared
+            }
+        });
+        if !already_selected {
+            files.insert(declared);
+        }
     }
     let mut content = String::new();
     for file in &files {
@@ -342,13 +374,37 @@ pub(super) fn sources(value: &Value) -> Result<Value> {
 mod tests {
     use super::*;
     #[test]
+    fn release_notice_preserves_bom_decoding_and_deduplicates_declared_licenses() -> Result<()> {
+        assert_eq!(decoded(&[0xff, 0xfe, 0, 0, b'b', 0, 0, 0])?, "b");
+        assert_eq!(decoded(&[0, 0, 0xfe, 0xff, 0, 0, 0, b'b'])?, "b");
+        assert!(decoded(&[0xff, 0xfe, 0, 0, 0, 0xd8, 0, 0]).is_err());
+        let root = std::env::temp_dir().join(format!(
+            "release-notice-source-{}",
+            crate::startup_process::unique()
+        ));
+        fs::create_dir(&root).map_err(|e| e.to_string())?;
+        let license = root.join("LICENSE-MIT");
+        fs::write(&license, b"Copyright fixture").map_err(|e| e.to_string())?;
+        let section = source(
+            &json!({"name":"example","version":"1.0.0","source":"registry+example","license":"MIT","license_file":license,"manifest_path":root.join("Cargo.toml")}),
+        )?;
+        assert_eq!(
+            text(&section, "text")?.matches("Copyright fixture").count(),
+            1
+        );
+        fs::remove_file(license)
+            .and_then(|()| fs::remove_dir(root))
+            .map_err(|e| e.to_string())?;
+        Ok(())
+    }
+    #[test]
     fn release_notice_admits_ordinary_source_files_inside_the_checkout() -> Result<()> {
         let root = Path::new(env!("CARGO_MANIFEST_DIR"))
             .parent()
             .and_then(Path::parent)
             .ok_or("Missing source root.")?;
         let license = bytes(&root.join("src/speech-tts/LICENSE.ggml"), 4 * 1024 * 1024)?;
-        assert!(!license.is_empty());
+        assert_ne!(license, Vec::<u8>::new());
         Ok(())
     }
     #[test]
