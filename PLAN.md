@@ -350,9 +350,36 @@ under [AGENTS.md](AGENTS.md).
 ### Direct LoRA weight editing
 
 Follow the [evaluation contract](docs/weight-space-programming.md#direct-edit-evaluation-contract).
-W1-W3 establish the next decision on the frozen candidate; W4 is conditional
-on that evidence, W5 qualifies selected candidates and W6 gates application use.
-W7 is an independent source prerequisite and does not block Abliteration work.
+Within this research area, W8 is primary. The existing adapter-compression,
+refitting and qualification work below is secondary; reuse its applicable
+evaluation controls without making the pruned candidate a prerequisite for W8.
+
+#### Primary: cheaper model execution with small weight edits
+
+- [ ] **W8 — Use small editable adapters to preserve quality under substantially
+  cheaper execution.** Investigate long-context attention/KV approximations and
+  selected FFN/layer/projection skipping or learned gating, with the packed base
+  weights immutable; select one measured bottleneck/profile first. Scope native
+  graph/loading/state changes and additional adapter targets/rank needed to
+  compensate; existing rank-one output adapters
+  need not suffice. Bound calibration/distillation cost before selecting work.
+  Compare the original graph, the cheaper graph without new compensation and the
+  same cheaper graph with frozen adapter edits; retain existing adapter behavior
+  at surviving sites and explicitly scope skipped targets. Bind execution/state
+  identities and qualify rollback per profile. Require held-out answer quality,
+  material useful-answer latency and/or actual-process memory benefit, with
+  predeclared tradeoffs and the existing budget/power/release gates. Distinguish
+  skipped computation from unloaded weights and reduced KV state; an FFN-down
+  adapter cannot replace a whole skipped FFN while still requiring its hidden
+  activations. Consider expert-routing edits only for a separately authenticated
+  compatible MoE model; current dense Swift has no expert router.
+
+#### Secondary: adapter compression, refitting and qualification
+
+W1-W3 assess the frozen pruning candidate if its expected benefit justifies more
+work; W4 remains conditional, W5 qualifies selected candidates and W6 gates app
+use. W7 concerns the original Swift correction's source and blocks neither W8
+nor editing the available Abliteration factors.
 
 - [ ] **W1 — Freeze the accuracy, speed and memory decision contract.** Define
   representative calibration/development/held-out answer groups covering facts,
@@ -399,7 +426,7 @@ W7 is an independent source prerequisite and does not block Abliteration work.
   retain approved-adapter rollback and qualify selected CPU/backend, broker,
   packaging and application paths. Gate extra kernels, factor precision or disk
   formats on measured benefit; research success alone changes no default.
-- [ ] **W7 — Obtain original Swift factors before planning Swift-specific edits.**
+- [ ] **W7 — Obtain original Swift LoRA factors before editing that correction.**
   Authenticate floating-point factors, base revision, target/basis mapping,
   merge/quantization recipe and license if they become available. Do not recover
   or substitute them by differencing quantized checkpoints or selecting a

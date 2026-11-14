@@ -114,10 +114,31 @@ invalidated the speed comparison. It remains an uninstalled research artifact.
 
 ## Direct-edit evaluation contract
 
-[PLAN.md W1-W7](../PLAN.md#direct-lora-weight-editing) owns the ordered outstanding
-work. The next decision concerns the frozen half-retained candidate. More
-aggressive pruning, refitting, precision changes and kernel work require a
-measured reason; a small factor payload saving alone need not justify their cost.
+[PLAN.md](../PLAN.md#direct-lora-weight-editing) owns the outstanding work and its
+priority. W8's primary research objective is to preserve quality with small adapter
+edits around substantially cheaper model execution. Adapter-storage pruning,
+direct A-factor refitting and their standalone qualification are secondary; the
+half-retained candidate is not a prerequisite for W8. Applicable W1/W2/W5/W6
+evaluation and release controls are shared. Further compression or kernel work
+needs a measured reason; a small factor saving alone need not justify its cost.
+
+W8 candidates couple explicit attention/KV approximations or selective computation
+skipping with compensating adapters, while keeping base weights packed and
+immutable. They may require new adapter targets/rank, native graph/loading/state
+support and bounded calibration or distillation. Select one measured bottleneck
+and execution profile first. Compare original execution, cheaper execution without
+new compensation and the same cheaper execution with frozen adapter edits.
+Existing adapters remain at surviving sites; skipped targets require explicit
+scope. Bind skip/retention policy, resident weights and cache/state geometry into
+distinct profile identities. Qualify state/reset/rollback per profile rather than
+requiring intentionally different states to match original state bits.
+Reduced operation counts, unloaded base weights and smaller KV state are separate
+mechanisms and need separate latency/memory attribution.
+The existing FFN-down adapter consumes post-gated hidden activations, so retaining
+that input computation does not implement whole-FFN skipping. Swift's current
+graph is dense; expert-routing experiments require a compatible MoE artifact,
+not merely a changed router policy in the existing model. These are research
+hypotheses, not established Swift benefits or implemented runtime modes.
 
 Quality and intended adapter behavior have predeclared nonregression margins.
 Speed, memory and accuracy are reported separately, with material-benefit targets
@@ -128,7 +149,8 @@ Calibration, development and held-out splits keep answer/content groups disjoint
 Freeze candidate bytes, settings, rubric and acceptance criteria before opening
 the held-out split; tuning after inspection needs a new untouched evaluation set.
 
-The following controls separate pruning from sparse execution. Dense execution
+For the secondary compression work, the following controls separate pruning from
+sparse execution. Dense execution
 of an edited candidate requires additional explicit research loader/helper
 support; the current edited session loader always selects sparse execution.
 
