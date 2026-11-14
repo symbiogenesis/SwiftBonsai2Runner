@@ -119,6 +119,52 @@ struct Control {
     removed: Vec<String>,
     commands: Vec<Value>,
 }
+
+const REMOVED_ENVIRONMENT: &[&str] = &[
+    "GITHUB_TOKEN",
+    "GH_TOKEN",
+    "ACTIONS_RUNTIME_TOKEN",
+    "ACTIONS_ID_TOKEN_REQUEST_TOKEN",
+    "ACTIONS_ID_TOKEN_REQUEST_URL",
+    "GHC_PACKAGE_PATH",
+    "GHC_ENVIRONMENT",
+    "GHC_OPTIONS",
+    "CABAL_CONFIG",
+    "CABAL_DIR",
+    "CABAL_BUILDDIR",
+    "LD_PRELOAD",
+    "LD_LIBRARY_PATH",
+    "GCC_EXEC_PREFIX",
+    "COMPILER_PATH",
+    "LIBRARY_PATH",
+    "CPATH",
+    "C_INCLUDE_PATH",
+    "CPLUS_INCLUDE_PATH",
+    "CFLAGS",
+    "CPPFLAGS",
+    "LDFLAGS",
+];
+
+fn child_environment(
+    windows: bool,
+    inherited: impl IntoIterator<Item = (String, String)>,
+) -> BTreeMap<String, String> {
+    if windows {
+        // The native Windows launcher inherits system/profile variables and
+        // removes selected names case-insensitively before applying overrides.
+        // Only compiler-specific changes belong in its protected overlay.
+        BTreeMap::new()
+    } else {
+        inherited
+            .into_iter()
+            .filter(|(name, _)| {
+                !REMOVED_ENVIRONMENT
+                    .iter()
+                    .any(|removed| name.eq_ignore_ascii_case(removed))
+            })
+            .collect()
+    }
+}
 impl Control {
     fn provenance(&self, report: &mut Value) -> Result<()> {
         let names = [
@@ -195,36 +241,11 @@ impl Control {
         directory(&request.output_directory)?;
         let review = request.output_directory.join("review");
         directory(&review)?;
-        let mut environment = std::env::vars().collect::<BTreeMap<_, _>>();
-        let removed = [
-            "GITHUB_TOKEN",
-            "GH_TOKEN",
-            "ACTIONS_RUNTIME_TOKEN",
-            "ACTIONS_ID_TOKEN_REQUEST_TOKEN",
-            "ACTIONS_ID_TOKEN_REQUEST_URL",
-            "GHC_PACKAGE_PATH",
-            "GHC_ENVIRONMENT",
-            "GHC_OPTIONS",
-            "CABAL_CONFIG",
-            "CABAL_DIR",
-            "CABAL_BUILDDIR",
-            "LD_PRELOAD",
-            "LD_LIBRARY_PATH",
-            "GCC_EXEC_PREFIX",
-            "COMPILER_PATH",
-            "LIBRARY_PATH",
-            "CPATH",
-            "C_INCLUDE_PATH",
-            "CPLUS_INCLUDE_PATH",
-            "CFLAGS",
-            "CPPFLAGS",
-            "LDFLAGS",
-        ]
-        .map(str::to_owned)
-        .to_vec();
-        for name in &removed {
-            environment.remove(name);
-        }
+        let environment = child_environment(windows, std::env::vars());
+        let removed = REMOVED_ENVIRONMENT
+            .iter()
+            .map(|name| (*name).to_owned())
+            .collect();
         Ok(Self {
             root: request.repository_directory.clone(),
             output: request.output_directory.clone(),
@@ -341,6 +362,76 @@ pub(super) fn run(request: &Request) -> Result<Value> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    fn inherited_fixture() -> Vec<(String, String)> {
+        [
+            ("SystemRoot", "protected-root"),
+            ("USERPROFILE", "protected-profile"),
+            ("gH_tOkEn", "fixture-secret"),
+            ("GitHub_Token", "fixture-secret"),
+            ("gHc_OpTiOnS", "unreviewed-options"),
+            ("PATH", "inherited-path"),
+            ("KEEP_PUBLIC_FIXTURE", "retained"),
+        ]
+        .into_iter()
+        .map(|(name, value)| (name.to_owned(), value.to_owned()))
+        .collect()
+    }
+    #[test]
+    fn compiler_environment_preserves_inheritance_without_protected_overlays() {
+        let windows = child_environment(true, inherited_fixture());
+        assert!(windows.is_empty());
+        let unix = child_environment(false, inherited_fixture());
+        for name in ["gH_tOkEn", "GitHub_Token", "gHc_OpTiOnS"] {
+            assert!(!unix.contains_key(name));
+        }
+        assert_eq!(
+            unix.get("KEEP_PUBLIC_FIXTURE").map(String::as_str),
+            Some("retained")
+        );
+        assert_eq!(
+            unix.get("SystemRoot").map(String::as_str),
+            Some("protected-root")
+        );
+    }
+    #[cfg(windows)]
+    #[test]
+    fn windows_compiler_child_inherits_profile_and_rejects_mixed_case_credential_reintroduction()
+    -> Result<()> {
+        let root = std::env::temp_dir().join(format!(
+            "Bonsai-Compiler-Environment-{}",
+            startup_process::unique()
+        ));
+        directory(&root)?;
+        let result = (|| {
+            let mut environment = child_environment(true, inherited_fixture());
+            environment.insert("BONSAI_HEXAGON_ENV_FIXTURE".into(), "expected".into());
+            let removed = REMOVED_ENVIRONMENT
+                .iter()
+                .map(|name| (*name).to_owned())
+                .collect::<Vec<_>>();
+            let executable = startup_process::resolve(std::ffi::OsStr::new("cmd.exe"))?;
+            let arguments=vec!["/d".into(),"/c".into(),"if not defined SystemRoot exit /b 41 & if not defined USERPROFILE exit /b 42 & if defined gH_tOkEn exit /b 43 & if defined GitHub_Token exit /b 44 & if not \"%BONSAI_HEXAGON_ENV_FIXTURE%\"==\"expected\" exit /b 45 & exit /b 0".into()];
+            let mut record = json!({"name":"compiler-environment-fixture","completed":false});
+            process::run(
+                &process::Spec {
+                    executable: &executable,
+                    arguments: &arguments,
+                    directory: &root,
+                    environment: &environment,
+                    removed: &removed,
+                    stdout: &root.join("stdout.log"),
+                    stderr: &root.join("stderr.log"),
+                    deadline: Instant::now() + Duration::from_secs(5),
+                },
+                &mut record,
+            )?;
+            assert_eq!(record["exitCode"], 0);
+            assert_eq!(record["cleanupConfirmed"], true);
+            Ok(())
+        })();
+        fs::remove_dir_all(&root).map_err(|error| error.to_string())?;
+        result
+    }
     #[test]
     fn public_json_intake_preserves_independent_cabal_plan_extent() -> Result<()> {
         let path = std::env::temp_dir().join(format!(
